@@ -220,7 +220,7 @@ Updates TypeScript from 5.4 to 5.5.4 for latest features and bug fixes.
 🤖 Generated with [Claude Code](https://claude.com/claude-code)"
 ```
 
-See [templates/pr-template.md](../templates/pr-template.md) for the copyable template.
+See [assets/pr-template.md](../assets/pr-template.md) for the copyable template.
 
 ---
 

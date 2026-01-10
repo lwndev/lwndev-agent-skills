@@ -47,8 +47,8 @@ Each skill in `src/skills/` contains:
 ```
 skill-name/
 ├── SKILL.md      # Required: YAML frontmatter (name, description) + markdown instructions
-├── templates/    # Optional: Output templates
-└── reference/    # Optional: Reference documentation
+├── assets/       # Optional: Output templates and static resources
+└── references/   # Optional: Reference documentation
 ```
 
 ### Existing Skills

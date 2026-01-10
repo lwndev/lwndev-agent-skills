@@ -170,7 +170,7 @@ git push -u origin chore/CHORE-XXX-description
 gh pr create --title "chore(category): description" --body "..."
 ```
 
-Use the PR template from [templates/pr-template.md](../templates/pr-template.md).
+Use the PR template from [assets/pr-template.md](../assets/pr-template.md).
 
 ### Step 10: Update GitHub Issue
 
