@@ -26,20 +26,20 @@ git status
 
 **Step 2: Propose**
 ```
-Current: ~/Projects/pullapod/pullapod-cli (branch: main)
+Current: ~/Projects/my-project (branch: main)
 
 Proposed worktrees:
-1. ../pullapod-feature-x
-   Branch: feature/apple-search
-   Purpose: Implement Apple Podcast search
+1. ../my-project-feature-x
+   Branch: feature/search
+   Purpose: Implement search functionality
 
-2. ../pullapod-bugfix-y
+2. ../my-project-bugfix-y
    Branch: fix/metadata-parsing
    Purpose: Fix metadata parsing bug
 
 Commands:
-git worktree add -b feature/apple-search ../pullapod-feature-x
-git worktree add -b fix/metadata-parsing ../pullapod-bugfix-y
+git worktree add -b feature/search ../my-project-feature-x
+git worktree add -b fix/metadata-parsing ../my-project-bugfix-y
 
 Proceed? (y/N)
 ```
@@ -47,23 +47,23 @@ Proceed? (y/N)
 **Step 3: Execute**
 ```bash
 # Create worktrees
-git worktree add -b feature/apple-search ../pullapod-feature-x
-git worktree add -b fix/metadata-parsing ../pullapod-bugfix-y
+git worktree add -b feature/search ../my-project-feature-x
+git worktree add -b fix/metadata-parsing ../my-project-bugfix-y
 
 # Setup each worktree
-cd ../pullapod-feature-x && npm install && npm test
-cd ../pullapod-bugfix-y && npm install && npm test
+cd ../my-project-feature-x && npm install && npm test
+cd ../my-project-bugfix-y && npm install && npm test
 ```
 
 **Step 4: Work Guidance**
 ```
 Worktree 1 (Feature X):
-  Path: ../pullapod-feature-x
-  Branch: feature/apple-search
-  Focus: src/clients/apple.ts, src/commands/search.ts
+  Path: ../my-project-feature-x
+  Branch: feature/search
+  Focus: src/clients/api.ts, src/commands/search.ts
 
 Worktree 2 (Bug Fix Y):
-  Path: ../pullapod-bugfix-y
+  Path: ../my-project-bugfix-y
   Branch: fix/metadata-parsing
   Focus: src/utils/metadata.ts, tests/unit/metadata.test.ts
 ```
@@ -76,18 +76,18 @@ Suggested merge order:
 
 Merge process:
 # After bug fix is complete
-cd ~/Projects/pullapod/pullapod-cli
+cd ~/Projects/my-project
 git checkout main
 git merge fix/metadata-parsing
 git push
-git worktree remove ../pullapod-bugfix-y
+git worktree remove ../my-project-bugfix-y
 git branch -d fix/metadata-parsing
 
 # After feature is complete
-git merge feature/apple-search
+git merge feature/search
 git push
-git worktree remove ../pullapod-feature-x
-git branch -d feature/apple-search
+git worktree remove ../my-project-feature-x
+git branch -d feature/search
 ```
 
 ## Scenario 2: Pull Request Review
@@ -114,12 +114,12 @@ git fetch origin pull/123/head:pr-123
 
 **Step 3: Create Review Worktree**
 ```bash
-git worktree add ../pullapod-pr-123 pr-123
+git worktree add ../my-project-pr-123 pr-123
 ```
 
 **Step 4: Setup Review Environment**
 ```bash
-cd ../pullapod-pr-123
+cd ../my-project-pr-123
 npm install
 npm test
 npm run build
@@ -142,15 +142,15 @@ git log main..pr-123      # View commits
 git diff main...pr-123    # View changes
 
 After review:
-cd ~/Projects/pullapod/pullapod-cli
-git worktree remove ../pullapod-pr-123
+cd ~/Projects/my-project
+git worktree remove ../my-project-pr-123
 git branch -d pr-123
 ```
 
 **Step 6: Post-Review**
 ```
 Your main work remains untouched at:
-~/Projects/pullapod/pullapod-cli
+~/Projects/my-project
 
 Continue where you left off with no context switching required.
 ```
@@ -174,24 +174,24 @@ Ask user to clarify:
 
 **Step 2: Propose Separated Worktrees**
 ```
-Current: ~/Projects/pullapod/pullapod-cli (branch: main)
+Current: ~/Projects/my-project (branch: main)
 
 Proposed parallel development:
 
-Session 1: Apple Podcast Search
-  Worktree: ../pullapod-task-search
-  Branch: feature/apple-search
+Session 1: Search Feature
+  Worktree: ../my-project-task-search
+  Branch: feature/search
   Scope:
-    - src/clients/apple.ts (new)
+    - src/clients/api.ts (new)
     - src/commands/search.ts (modify)
-    - tests/integration/apple.test.ts (new)
+    - tests/integration/search.test.ts (new)
   DO NOT modify:
     - src/index.ts
     - src/downloader.ts
     - src/commands/download.ts
 
 Session 2: Download Progress UI
-  Worktree: ../pullapod-task-progress
+  Worktree: ../my-project-task-progress
   Branch: feature/progress-ui
   Scope:
     - src/downloader.ts (modify)
@@ -206,27 +206,27 @@ Proceed? (y/N)
 
 **Step 3: Create Worktrees**
 ```bash
-git worktree add -b feature/apple-search ../pullapod-task-search
-git worktree add -b feature/progress-ui ../pullapod-task-progress
+git worktree add -b feature/search ../my-project-task-search
+git worktree add -b feature/progress-ui ../my-project-task-progress
 
-cd ../pullapod-task-search && npm install
-cd ../pullapod-task-progress && npm install
+cd ../my-project-task-search && npm install
+cd ../my-project-task-progress && npm install
 ```
 
 **Step 4: Provide Session Prompts**
 ```
 Claude Code Session 1 Prompt:
 ---
-Working directory: ~/Projects/pullapod/pullapod-task-search
-Task: Implement Apple Podcast search client
-Files in scope: src/clients/apple.ts, src/commands/search.ts
+Working directory: ~/Projects/my-project-task-search
+Task: Implement search client
+Files in scope: src/clients/api.ts, src/commands/search.ts
 DO NOT modify: src/index.ts, src/downloader.ts, src/commands/download.ts
-Branch: feature/apple-search
+Branch: feature/search
 ---
 
 Claude Code Session 2 Prompt:
 ---
-Working directory: ~/Projects/pullapod/pullapod-task-progress
+Working directory: ~/Projects/my-project-task-progress
 Task: Refactor download progress display with new UI
 Files in scope: src/downloader.ts, src/ui/progress.ts
 DO NOT modify: src/clients/*, src/commands/search.ts
@@ -259,17 +259,17 @@ User wants to try multiple implementation strategies and compare results.
 
 **Step 1: Propose Experiment Structure**
 ```
-Current: ~/Projects/pullapod/pullapod-cli (branch: main)
+Current: ~/Projects/my-project (branch: main)
 
 Experimental comparison for: Search optimization
 
 Approach A: In-memory caching
-  Worktree: ../pullapod-experiment-cache
+  Worktree: ../my-project-experiment-cache
   Branch: experiment/search-cache
   Strategy: Implement LRU cache for search results
 
 Approach B: Database indexing
-  Worktree: ../pullapod-experiment-db
+  Worktree: ../my-project-experiment-db
   Branch: experiment/search-db
   Strategy: Use SQLite for indexed search
 
@@ -280,11 +280,11 @@ Proceed? (y/N)
 
 **Step 2: Create Experiment Worktrees**
 ```bash
-git worktree add -b experiment/search-cache ../pullapod-experiment-cache
-git worktree add -b experiment/search-db ../pullapod-experiment-db
+git worktree add -b experiment/search-cache ../my-project-experiment-cache
+git worktree add -b experiment/search-db ../my-project-experiment-db
 
-cd ../pullapod-experiment-cache && npm install
-cd ../pullapod-experiment-db && npm install
+cd ../my-project-experiment-cache && npm install
+cd ../my-project-experiment-db && npm install
 ```
 
 **Step 3: Implement in Parallel**
@@ -300,12 +300,12 @@ cat > benchmark-search.sh << 'EOF'
 echo "Benchmarking search performance..."
 
 # Test approach A
-cd ../pullapod-experiment-cache
+cd ../my-project-experiment-cache
 echo "Testing cache approach:"
 time npm run search-benchmark
 
 # Test approach B
-cd ../pullapod-experiment-db
+cd ../my-project-experiment-db
 echo "Testing database approach:"
 time npm run search-benchmark
 EOF
@@ -321,14 +321,14 @@ After benchmarking:
 Winning approach: experiment/search-cache (2x faster)
 
 Merge process:
-cd ~/Projects/pullapod/pullapod-cli
+cd ~/Projects/my-project
 git checkout main
 git merge experiment/search-cache
 git push
 
 Cleanup:
-git worktree remove ../pullapod-experiment-cache
-git worktree remove ../pullapod-experiment-db
+git worktree remove ../my-project-experiment-cache
+git worktree remove ../my-project-experiment-db
 git branch -d experiment/search-cache
 git branch -d experiment/search-db
 ```
@@ -361,7 +361,7 @@ Proposed hotfix workflow:
 4. Return to feature work
 
 Commands:
-git worktree add -b hotfix/metadata-crash ../pullapod-hotfix main
+git worktree add -b hotfix/metadata-crash ../my-project-hotfix main
 
 Proceed? (y/N)
 ```
@@ -369,10 +369,10 @@ Proceed? (y/N)
 **Step 3: Create and Execute Hotfix**
 ```bash
 # Create hotfix worktree from main (not current branch)
-git worktree add -b hotfix/metadata-crash ../pullapod-hotfix main
+git worktree add -b hotfix/metadata-crash ../my-project-hotfix main
 
 # Setup
-cd ../pullapod-hotfix
+cd ../my-project-hotfix
 npm install
 
 # Fix the bug
@@ -394,20 +394,20 @@ git push -u origin hotfix/metadata-crash
 **Step 4: Merge Hotfix**
 ```bash
 # Switch to main worktree
-cd ~/Projects/pullapod/pullapod-cli
+cd ~/Projects/my-project
 git checkout main
 git merge hotfix/metadata-crash
 git push
 
 # Clean up hotfix worktree
-git worktree remove ../pullapod-hotfix
+git worktree remove ../my-project-hotfix
 git branch -d hotfix/metadata-crash
 ```
 
 **Step 5: Resume Feature Work**
 ```
 Your feature work is exactly as you left it:
-~/Projects/pullapod/pullapod-cli
+~/Projects/my-project
 
 All uncommitted changes preserved.
 Continue development without any context switching overhead.
@@ -427,29 +427,29 @@ User has a long-lived feature branch and needs to occasionally fix bugs in main 
 ```
 Strategy: Maintain two persistent worktrees
 
-Main worktree: ~/Projects/pullapod/pullapod-cli
+Main worktree: ~/Projects/my-project
   Branch: main
   Purpose: Bug fixes, reviews, hotfixes
 
-Feature worktree: ../pullapod-feature-large
-  Branch: feature/podcast-index-integration
+Feature worktree: ../my-project-feature-large
+  Branch: feature/large-integration
   Purpose: Long-running feature development
 
 Commands:
-git worktree add -b feature/podcast-index-integration ../pullapod-feature-large
+git worktree add -b feature/large-integration ../my-project-feature-large
 
 Setup:
-cd ../pullapod-feature-large && npm install
+cd ../my-project-feature-large && npm install
 ```
 
 **Step 2: Daily Workflow**
 ```
 Feature development:
-  Work in: ../pullapod-feature-large
+  Work in: ../my-project-feature-large
   Commit regularly to feature branch
 
 Bug fixes:
-  Work in: ~/Projects/pullapod/pullapod-cli (main)
+  Work in: ~/Projects/my-project (main)
   Create fix branches as needed
   Merge to main when complete
 
@@ -460,7 +460,7 @@ Synchronization:
 **Step 3: Bug Fix Process**
 ```bash
 # Bug report comes in
-cd ~/Projects/pullapod/pullapod-cli
+cd ~/Projects/my-project
 
 # Create fix branch
 git checkout -b fix/download-timeout main
@@ -476,14 +476,14 @@ git merge fix/download-timeout
 git push
 
 # Bring fix into feature branch
-cd ../pullapod-feature-large
+cd ../my-project-feature-large
 git merge main
 ```
 
 **Step 4: Feature Completion**
 ```bash
 # When feature is ready
-cd ../pullapod-feature-large
+cd ../my-project-feature-large
 
 # Final sync with main
 git merge main
@@ -494,14 +494,14 @@ npm run lint
 npm run build
 
 # Merge feature to main
-cd ~/Projects/pullapod/pullapod-cli
+cd ~/Projects/my-project
 git checkout main
-git merge feature/podcast-index-integration
+git merge feature/large-integration
 git push
 
 # Clean up feature worktree
-git worktree remove ../pullapod-feature-large
-git branch -d feature/podcast-index-integration
+git worktree remove ../my-project-feature-large
+git branch -d feature/large-integration
 ```
 
 **Step 5: Benefits**

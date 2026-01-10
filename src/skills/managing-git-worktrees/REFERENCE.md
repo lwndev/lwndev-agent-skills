@@ -15,7 +15,7 @@ git worktree add <path> <existing-branch>
 ```
 Example:
 ```bash
-git worktree add ../pullapod-hotfix hotfix/metadata-bug
+git worktree add ../my-project-hotfix hotfix/metadata-bug
 ```
 
 **Create worktree with new branch:**
@@ -24,7 +24,7 @@ git worktree add -b <new-branch> <path>
 ```
 Example:
 ```bash
-git worktree add -b feature/apple-search ../pullapod-search
+git worktree add -b feature/search ../my-project-search
 ```
 
 **Create worktree with new branch from specific commit:**
@@ -33,7 +33,7 @@ git worktree add -b <new-branch> <path> <commit-sha>
 ```
 Example:
 ```bash
-git worktree add -b fix/rollback ../pullapod-rollback abc1234
+git worktree add -b fix/rollback ../my-project-rollback abc1234
 ```
 
 ### Listing Worktrees
@@ -104,19 +104,19 @@ git worktree list | grep <branch-name>
 
 1. **Use a different branch name:**
 ```bash
-git worktree add -b feature/search-v2 ../pullapod-search-v2
+git worktree add -b feature/search-v2 ../my-project-search-v2
 ```
 
 2. **Remove existing worktree first:**
 ```bash
 git worktree remove <existing-path>
-git worktree add ../pullapod-new <branch-name>
+git worktree add ../my-project-new <branch-name>
 ```
 
 3. **Create from the same branch:**
 ```bash
 # Create new branch from existing one
-git worktree add -b feature/search-copy ../pullapod-search feature/search
+git worktree add -b feature/search-copy ../my-project-search feature/search
 ```
 
 **Ask user which approach to take.**
@@ -133,10 +133,10 @@ git worktree add -b <new-branch> <path>
 **Example:**
 ```bash
 # This will fail if branch doesn't exist:
-git worktree add ../pullapod-test feature/nonexistent
+git worktree add ../my-project-test feature/nonexistent
 
 # This will succeed:
-git worktree add -b feature/new-feature ../pullapod-test
+git worktree add -b feature/new-feature ../my-project-test
 ```
 
 ### Error: Directory already exists
@@ -152,7 +152,7 @@ ls -la <path>
 
 1. **Use a different path:**
 ```bash
-git worktree add ../pullapod-search-v2
+git worktree add ../my-project-search-v2
 ```
 
 2. **Remove existing directory (with user approval):**
@@ -355,7 +355,7 @@ git log --all --oneline | grep "your commit message"
 git branch recovery-branch <commit-sha>
 
 # Create worktree from recovery branch
-git worktree add ../pullapod-recovery recovery-branch
+git worktree add ../my-project-recovery recovery-branch
 ```
 
 ## Advanced Commands
@@ -368,7 +368,7 @@ git worktree add ../pullapod-recovery recovery-branch
 git fetch origin
 
 # Create worktree tracking remote branch
-git worktree add ../pullapod-feature origin/feature/search
+git worktree add ../my-project-feature origin/feature/search
 ```
 
 **Create worktree for PR review:**
@@ -377,7 +377,7 @@ git worktree add ../pullapod-feature origin/feature/search
 git fetch origin pull/123/head:pr-123
 
 # Create worktree
-git worktree add ../pullapod-pr-123 pr-123
+git worktree add ../my-project-pr-123 pr-123
 ```
 
 ### Batch Operations
@@ -386,7 +386,7 @@ git worktree add ../pullapod-pr-123 pr-123
 ```bash
 # From a list of branches
 for branch in feature/search feature/download fix/metadata; do
-    dir_name="../pullapod-${branch//\//-}"
+    dir_name="../my-project-${branch//\//-}"
     git worktree add -b "$branch" "$dir_name"
     cd "$dir_name" && npm install && cd -
 done
