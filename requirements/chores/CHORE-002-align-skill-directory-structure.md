@@ -28,12 +28,12 @@ Review and update skill directory structures in `src/skills/` to match the Agent
 
 ## Acceptance Criteria
 
-- [ ] All `reference/` directories renamed to `references/`
-- [ ] All `templates/` directories renamed to `assets/`
-- [ ] All internal links in `SKILL.md` files updated to reflect new paths
-- [ ] `asm validate` passes for all skills
-- [ ] `npm run build` succeeds
-- [ ] All tests pass
+- [x] All `reference/` directories renamed to `references/`
+- [x] All `templates/` directories renamed to `assets/`
+- [x] All internal links in `SKILL.md` files updated to reflect new paths
+- [x] `asm validate` passes for all skills
+- [x] `npm run build` succeeds
+- [x] All tests pass
 
 ## Notes
 
