@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/lwndev/lwndev-agent-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/lwndev/lwndev-agent-skills/actions/workflows/ci.yml)
 
-A reference implementation for [`ai-skills-manager`](https://github.com/anthropics/ai-skills-manager), demonstrating how to develop, build, and manage custom Agent Skills for Claude Code. Use this project as a template for creating your own skill development workflow.
+A reference implementation for [`ai-skills-manager`](https://github.com/lwndev/ai-skills-manager), demonstrating how to develop, build, and manage custom Agent Skills for Claude Code. Use this project as a template for creating your own skill development workflow.
 
 ## Getting Started
 
