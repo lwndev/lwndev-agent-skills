@@ -31,7 +31,7 @@ NC='\033[0m' # No Color
 
 if [ -z "$1" ]; then
     echo -e "${RED}Usage: $0 <branch-name>${NC}"
-    echo "Example: $0 feature/apple-search"
+    echo "Example: $0 feature/search"
     exit 1
 fi
 
@@ -86,8 +86,8 @@ chmod +x scripts/create-worktree.sh
 
 **Example Usage:**
 ```bash
-./scripts/create-worktree.sh feature/apple-search
-# Creates: ../pullapod-cli-feature-apple-search
+./scripts/create-worktree.sh feature/search
+# Creates: ../my-project-feature-search
 ```
 
 ## Automated Cleanup
@@ -188,8 +188,8 @@ set -e
 
 # List of branches to create worktrees for
 BRANCHES=(
-    "feature/apple-search"
-    "feature/spotify-search"
+    "feature/search"
+    "feature/api-search"
     "fix/metadata-parsing"
 )
 

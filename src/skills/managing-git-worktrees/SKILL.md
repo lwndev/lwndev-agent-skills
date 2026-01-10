@@ -72,12 +72,12 @@ User: "I need to work on the search feature while fixing a metadata bug"
 Claude: "I can set up two worktrees for parallel development.
 
 Current analysis:
-- Repository: /Users/leif/Projects/pullapod/pullapod-cli
+- Repository: my-project
 - Current branch: main
 - Existing worktrees: 1 (main worktree only)
 
 What would you like to name the branches?
-- For search feature: [suggest: feature/apple-search]
+- For search feature: [suggest: feature/search]
 - For metadata bug: [suggest: fix/metadata-parsing]
 ```
 
@@ -90,24 +90,22 @@ Based on user input, propose a structure following this pattern:
 
 **Example proposal:**
 ```
-Current: ~/Projects/pullapod/pullapod-cli (branch: main)
+Current: my-project (branch: main)
 
 Proposed worktrees:
-1. ../pullapod-search-feature
-   Branch: feature/apple-search
-   Path: /Users/leif/Projects/pullapod/pullapod-search-feature
+1. ../my-project-search-feature
+   Branch: feature/search
 
-2. ../pullapod-metadata-fix
+2. ../my-project-metadata-fix
    Branch: fix/metadata-parsing
-   Path: /Users/leif/Projects/pullapod/pullapod-metadata-fix
 
 Commands to execute:
-git worktree add -b feature/apple-search ../pullapod-search-feature
-git worktree add -b fix/metadata-parsing ../pullapod-metadata-fix
+git worktree add -b feature/search ../my-project-search-feature
+git worktree add -b fix/metadata-parsing ../my-project-metadata-fix
 
 After creation, each worktree will need:
-cd ../pullapod-search-feature && npm install
-cd ../pullapod-metadata-fix && npm install
+cd ../my-project-search-feature && npm install
+cd ../my-project-metadata-fix && npm install
 
 Proceed with creation? (y/N)
 ```
@@ -142,7 +140,7 @@ Next steps:
 
 ### Step 4: Provide Environment Setup Guidance
 
-**For Node.js projects (like pullapod-cli):**
+**For Node.js projects:**
 
 ```bash
 # Navigate to worktree
@@ -168,7 +166,7 @@ Explain the cleanup process for when work is complete:
 
 ```bash
 # After merging the feature (from main worktree)
-cd ~/Projects/pullapod/pullapod-cli
+cd /path/to/my-project  # or use: cd -
 git checkout main
 git merge {branch-name}
 git push
@@ -196,9 +194,9 @@ git worktree prune
 
 For detailed information, see:
 
-- **[REFERENCE.md](REFERENCE.md)** - Command reference, error handling, and monitoring
-- **[SCENARIOS.md](SCENARIOS.md)** - Common workflow scenarios with examples
-- **[SCRIPTS.md](SCRIPTS.md)** - Automation scripts for frequent operations
+- **[REFERENCE.md](reference/REFERENCE.md)** - Command reference, error handling, and monitoring
+- **[SCENARIOS.md](reference/SCENARIOS.md)** - Common workflow scenarios with examples
+- **[SCRIPTS.md](reference/SCRIPTS.md)** - Automation scripts for frequent operations
 
 ## Quick Reference
 
@@ -210,14 +208,14 @@ For detailed information, see:
 | `git worktree remove <path>` | Delete worktree |
 | `git worktree prune` | Clean up stale references |
 
-## Project-Specific Notes (pullapod-cli)
+## Node.js Project Notes
 
 **Dependency Management:**
 - Run `npm install` in each new worktree after creation
 - After `package.json` changes: `npm install` in all active worktrees
 
 **Build Artifacts:**
-- Each worktree has independent `dist/` directory
+- Each worktree has independent `dist/` or `build/` directory
 - Run `npm run build` separately in each worktree
 
 **Test Isolation:**
