@@ -31,5 +31,8 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Audit for vulnerabilities
+        run: npm audit
+
       - name: Build skills
         run: npm run build
