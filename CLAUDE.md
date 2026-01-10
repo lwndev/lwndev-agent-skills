@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This project is used to develop and version multiple Agent Skills for Claude Code. It includes TypeScript CLI scripts that invoke the `ai-skills-manager` CLI (via the `asm` command) to create, build, install, and manage custom AI Agent Skills that extend Claude's capabilities with domain-specific workflows.
+This project is used to develop multiple Agent Skills for Claude Code. It includes TypeScript CLI scripts that invoke the `ai-skills-manager` CLI (via the `asm` command) to create, build, install, and manage custom AI Agent Skills that extend Claude's capabilities with domain-specific workflows.
 
 ## Commands
 
