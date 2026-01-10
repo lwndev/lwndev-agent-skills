@@ -53,7 +53,7 @@ Phase Implementation:
 - [ ] Post GitHub issue completion comment
 ```
 
-See [step-details.md](reference/step-details.md) for detailed guidance on each step.
+See [step-details.md](references/step-details.md) for detailed guidance on each step.
 
 ## Phase Structure
 
@@ -101,6 +101,6 @@ Before marking a phase complete, verify:
 
 ## References
 
-- **Complete workflow example**: [workflow-example.md](reference/workflow-example.md) - Full Phase 2 implementation walkthrough
-- **GitHub issue templates**: [github-templates.md](reference/github-templates.md) - Comment templates for issue updates
-- **Detailed step guidance**: [step-details.md](reference/step-details.md) - In-depth explanation of each workflow step
+- **Complete workflow example**: [workflow-example.md](references/workflow-example.md) - Full Phase 2 implementation walkthrough
+- **GitHub issue templates**: [github-templates.md](references/github-templates.md) - Comment templates for issue updates
+- **Detailed step guidance**: [step-details.md](references/step-details.md) - In-depth explanation of each workflow step

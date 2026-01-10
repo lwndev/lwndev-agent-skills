@@ -45,7 +45,7 @@ Chore Execution:
 - [ ] Update GitHub issue with PR link (if exists)
 ```
 
-See [reference/workflow-details.md](reference/workflow-details.md) for detailed guidance on each step.
+See [references/workflow-details.md](references/workflow-details.md) for detailed guidance on each step.
 
 ## Branch Naming
 
@@ -83,9 +83,9 @@ Before creating the PR, verify:
 
 ## References
 
-- **Detailed workflow guidance**: [workflow-details.md](reference/workflow-details.md) - Step-by-step instructions for each phase
-- **GitHub templates**: [github-templates.md](reference/github-templates.md) - Issue comments, commit messages, PR format
-- **PR template**: [templates/pr-template.md](templates/pr-template.md) - Pull request format for chores
+- **Detailed workflow guidance**: [workflow-details.md](references/workflow-details.md) - Step-by-step instructions for each phase
+- **GitHub templates**: [github-templates.md](references/github-templates.md) - Issue comments, commit messages, PR format
+- **PR template**: [assets/pr-template.md](assets/pr-template.md) - Pull request format for chores
 
 ## Relationship to Other Skills
 

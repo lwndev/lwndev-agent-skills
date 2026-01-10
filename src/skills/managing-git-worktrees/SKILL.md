@@ -194,9 +194,9 @@ git worktree prune
 
 For detailed information, see:
 
-- **[REFERENCE.md](reference/REFERENCE.md)** - Command reference, error handling, and monitoring
-- **[SCENARIOS.md](reference/SCENARIOS.md)** - Common workflow scenarios with examples
-- **[SCRIPTS.md](reference/SCRIPTS.md)** - Automation scripts for frequent operations
+- **[REFERENCE.md](references/REFERENCE.md)** - Command reference, error handling, and monitoring
+- **[SCENARIOS.md](references/SCENARIOS.md)** - Common workflow scenarios with examples
+- **[SCRIPTS.md](references/SCRIPTS.md)** - Automation scripts for frequent operations
 
 ## Quick Reference
 

@@ -40,7 +40,7 @@ Adapt sections based on feature type:
 
 ## Template
 
-See [templates/feature-requirements.md](templates/feature-requirements.md) for the full template.
+See [assets/feature-requirements.md](assets/feature-requirements.md) for the full template.
 
 ### Structure Overview
 
@@ -76,5 +76,5 @@ Before finalizing, verify:
 
 ## Reference Examples
 
-- [feature-requirements-example-search-command.md](reference/feature-requirements-example-search-command.md) - CLI search command with API integration
-- [feature-requirements-example-episodes-command.md](reference/feature-requirements-example-episodes-command.md) - CLI command with date filtering and formatting
+- [feature-requirements-example-search-command.md](references/feature-requirements-example-search-command.md) - CLI search command with API integration
+- [feature-requirements-example-episodes-command.md](references/feature-requirements-example-episodes-command.md) - CLI command with date filtering and formatting

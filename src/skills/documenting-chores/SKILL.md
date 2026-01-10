@@ -20,7 +20,7 @@ Create lightweight chore task documents that capture maintenance work, dependenc
 
 1. Check for existing chores in `requirements/chores/` to determine the next Chore ID
 2. **Ask for GitHub issue URL** if not provided (optional but recommended for traceability)
-3. Identify the chore category (see [reference/categories.md](reference/categories.md))
+3. Identify the chore category (see [references/categories.md](references/categories.md))
 4. Create chore document using the template
 5. Save to `requirements/chores/CHORE-XXX-description.md`
 
@@ -46,7 +46,7 @@ To assign the next Chore ID:
 
 ## Template
 
-See [templates/chore-document.md](templates/chore-document.md) for the full template.
+See [assets/chore-document.md](assets/chore-document.md) for the full template.
 
 ### Structure Overview
 
@@ -71,7 +71,7 @@ Five supported categories with specific guidance:
 | `configuration` | Config file updates, tooling changes, CI/CD modifications |
 | `cleanup` | Removing dead code, unused files, deprecated features |
 
-See [reference/categories.md](reference/categories.md) for detailed guidance on each category.
+See [references/categories.md](references/categories.md) for detailed guidance on each category.
 
 ## Verification Checklist
 

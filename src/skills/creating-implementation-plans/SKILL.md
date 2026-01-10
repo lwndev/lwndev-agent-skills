@@ -37,7 +37,7 @@ Adapt based on project type:
 
 ## Template
 
-See [templates/implementation-plan.md](templates/implementation-plan.md) for the full template.
+See [assets/implementation-plan.md](assets/implementation-plan.md) for the full template.
 
 ### Structure Overview
 
@@ -80,4 +80,4 @@ Before finalizing:
 
 ## Reference
 
-See [implementation-plan-example.md](reference/implementation-plan-example.md) for a complete example covering 5 CLI features with full phase breakdowns.
+See [implementation-plan-example.md](references/implementation-plan-example.md) for a complete example covering 5 CLI features with full phase breakdowns.
