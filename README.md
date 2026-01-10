@@ -17,7 +17,7 @@ npm run build
 npm run install-skills
 ```
 
-## Available Skills
+## Available Skills Reference Project
 
 | Skill | Description |
 |-------|-------------|
