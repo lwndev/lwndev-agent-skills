@@ -87,7 +87,7 @@ chmod +x scripts/create-worktree.sh
 **Example Usage:**
 ```bash
 ./scripts/create-worktree.sh feature/search
-# Creates: ../my-project-cli-feature-search
+# Creates: ../my-project-feature-search
 ```
 
 ## Automated Cleanup

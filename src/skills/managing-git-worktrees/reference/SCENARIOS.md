@@ -26,7 +26,7 @@ git status
 
 **Step 2: Propose**
 ```
-Current: ~/Projects/my-project (branch: main)
+Current: my-project/ (branch: main)
 
 Proposed worktrees:
 1. ../my-project-feature-x
@@ -76,7 +76,7 @@ Suggested merge order:
 
 Merge process:
 # After bug fix is complete
-cd ~/Projects/my-project
+cd /path/to/my-project
 git checkout main
 git merge fix/metadata-parsing
 git push
@@ -142,15 +142,14 @@ git log main..pr-123      # View commits
 git diff main...pr-123    # View changes
 
 After review:
-cd ~/Projects/my-project
+cd /path/to/my-project
 git worktree remove ../my-project-pr-123
 git branch -d pr-123
 ```
 
 **Step 6: Post-Review**
 ```
-Your main work remains untouched at:
-~/Projects/my-project
+Your main work remains untouched in the main worktree.
 
 Continue where you left off with no context switching required.
 ```
@@ -174,7 +173,7 @@ Ask user to clarify:
 
 **Step 2: Propose Separated Worktrees**
 ```
-Current: ~/Projects/my-project (branch: main)
+Current: my-project/ (branch: main)
 
 Proposed parallel development:
 
@@ -217,7 +216,7 @@ cd ../my-project-task-progress && npm install
 ```
 Claude Code Session 1 Prompt:
 ---
-Working directory: ~/Projects/my-project-task-search
+Working directory: ../my-project-task-search
 Task: Implement search client
 Files in scope: src/clients/api.ts, src/commands/search.ts
 DO NOT modify: src/index.ts, src/downloader.ts, src/commands/download.ts
@@ -226,7 +225,7 @@ Branch: feature/search
 
 Claude Code Session 2 Prompt:
 ---
-Working directory: ~/Projects/my-project-task-progress
+Working directory: ../my-project-task-progress
 Task: Refactor download progress display with new UI
 Files in scope: src/downloader.ts, src/ui/progress.ts
 DO NOT modify: src/clients/*, src/commands/search.ts
@@ -259,7 +258,7 @@ User wants to try multiple implementation strategies and compare results.
 
 **Step 1: Propose Experiment Structure**
 ```
-Current: ~/Projects/my-project (branch: main)
+Current: my-project/ (branch: main)
 
 Experimental comparison for: Search optimization
 
@@ -321,7 +320,7 @@ After benchmarking:
 Winning approach: experiment/search-cache (2x faster)
 
 Merge process:
-cd ~/Projects/my-project
+cd /path/to/my-project
 git checkout main
 git merge experiment/search-cache
 git push
@@ -394,7 +393,7 @@ git push -u origin hotfix/metadata-crash
 **Step 4: Merge Hotfix**
 ```bash
 # Switch to main worktree
-cd ~/Projects/my-project
+cd /path/to/my-project
 git checkout main
 git merge hotfix/metadata-crash
 git push
@@ -406,8 +405,7 @@ git branch -d hotfix/metadata-crash
 
 **Step 5: Resume Feature Work**
 ```
-Your feature work is exactly as you left it:
-~/Projects/my-project
+Your feature work is exactly as you left it in the main worktree.
 
 All uncommitted changes preserved.
 Continue development without any context switching overhead.
@@ -427,7 +425,7 @@ User has a long-lived feature branch and needs to occasionally fix bugs in main 
 ```
 Strategy: Maintain two persistent worktrees
 
-Main worktree: ~/Projects/my-project
+Main worktree: my-project/
   Branch: main
   Purpose: Bug fixes, reviews, hotfixes
 
@@ -449,7 +447,7 @@ Feature development:
   Commit regularly to feature branch
 
 Bug fixes:
-  Work in: ~/Projects/my-project (main)
+  Work in: my-project/ (main)
   Create fix branches as needed
   Merge to main when complete
 
@@ -460,7 +458,7 @@ Synchronization:
 **Step 3: Bug Fix Process**
 ```bash
 # Bug report comes in
-cd ~/Projects/my-project
+cd /path/to/my-project
 
 # Create fix branch
 git checkout -b fix/download-timeout main
@@ -494,7 +492,7 @@ npm run lint
 npm run build
 
 # Merge feature to main
-cd ~/Projects/my-project
+cd /path/to/my-project
 git checkout main
 git merge feature/large-integration
 git push

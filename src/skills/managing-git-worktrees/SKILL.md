@@ -72,7 +72,7 @@ User: "I need to work on the search feature while fixing a metadata bug"
 Claude: "I can set up two worktrees for parallel development.
 
 Current analysis:
-- Repository: ~/Projects/my-project
+- Repository: my-project
 - Current branch: main
 - Existing worktrees: 1 (main worktree only)
 
@@ -90,16 +90,14 @@ Based on user input, propose a structure following this pattern:
 
 **Example proposal:**
 ```
-Current: ~/Projects/my-project (branch: main)
+Current: my-project (branch: main)
 
 Proposed worktrees:
 1. ../my-project-search-feature
    Branch: feature/search
-   Path: ~/Projects/my-project-search-feature
 
 2. ../my-project-metadata-fix
    Branch: fix/metadata-parsing
-   Path: ~/Projects/my-project-metadata-fix
 
 Commands to execute:
 git worktree add -b feature/search ../my-project-search-feature
@@ -168,7 +166,7 @@ Explain the cleanup process for when work is complete:
 
 ```bash
 # After merging the feature (from main worktree)
-cd ~/Projects/my-project
+cd /path/to/my-project  # or use: cd -
 git checkout main
 git merge {branch-name}
 git push
