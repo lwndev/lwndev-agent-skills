@@ -65,7 +65,15 @@ async function main(): Promise<void> {
   }
 
   // Build command
-  const args = ['npx', 'asm', 'scaffold', name, '-d', JSON.stringify(description), '-o', SKILLS_SOURCE_DIR];
+  const args = [
+    'asm',
+    'scaffold',
+    name,
+    '-d',
+    JSON.stringify(description),
+    '-o',
+    SKILLS_SOURCE_DIR,
+  ];
 
   if (allowedTools) {
     args.push('-t', allowedTools);

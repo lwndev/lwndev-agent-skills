@@ -41,7 +41,7 @@ async function main(): Promise<void> {
 
     // Step 1: Validate
     try {
-      execSync(`npx asm validate "${skill.path}" --quiet`, {
+      execSync(`asm validate "${skill.path}" --quiet`, {
         stdio: 'pipe',
         encoding: 'utf-8',
       });
@@ -57,7 +57,7 @@ async function main(): Promise<void> {
 
     // Step 2: Package
     try {
-      execSync(`npx asm package "${skill.path}" -o "${DIST_DIR}" -f`, {
+      execSync(`asm package "${skill.path}" -o "${DIST_DIR}" -f`, {
         stdio: 'pipe',
         encoding: 'utf-8',
       });

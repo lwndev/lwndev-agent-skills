@@ -82,7 +82,7 @@ async function main(): Promise<void> {
 
   for (const name of selectedNames) {
     const packagePath = getPackagedSkillPath(name);
-    const command = `npx asm install "${packagePath}" --scope ${scope} --force`;
+    const command = `asm install "${packagePath}" --scope ${scope} --force`;
 
     try {
       execSync(command, { stdio: 'pipe' });

@@ -29,7 +29,11 @@ async function main(): Promise<void> {
   console.log('');
 
   // Prompt for skill selection
-  const selectedNames = await promptForSkillSelection(installedSkills, 'Select skills to uninstall:', true);
+  const selectedNames = await promptForSkillSelection(
+    installedSkills,
+    'Select skills to uninstall:',
+    true
+  );
 
   if (selectedNames.length === 0) {
     printInfo('No skills selected.');
@@ -59,7 +63,7 @@ async function main(): Promise<void> {
   let failCount = 0;
 
   for (const name of selectedNames) {
-    const command = `npx asm uninstall "${name}" --scope ${scope} --force`;
+    const command = `asm uninstall "${name}" --scope ${scope} --force`;
 
     try {
       execSync(command, { stdio: 'pipe' });

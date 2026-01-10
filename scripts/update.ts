@@ -2,7 +2,13 @@
 import { confirm } from '@inquirer/prompts';
 import { execSync } from 'node:child_process';
 import { getSourceSkills, packagedSkillExists, getPackagedSkillPath } from './lib/skill-utils.js';
-import { promptForScope, promptForSingleSkill, printSuccess, printError, printInfo } from './lib/prompts.js';
+import {
+  promptForScope,
+  promptForSingleSkill,
+  printSuccess,
+  printError,
+  printInfo,
+} from './lib/prompts.js';
 
 async function main(): Promise<void> {
   printInfo('Update an installed skill from dist/');
@@ -47,7 +53,7 @@ async function main(): Promise<void> {
   }
 
   // Execute update
-  const command = `npx asm update "${selectedName}" "${packagePath}" --scope ${scope} --force`;
+  const command = `asm update "${selectedName}" "${packagePath}" --scope ${scope} --force`;
 
   try {
     execSync(command, { stdio: 'inherit' });

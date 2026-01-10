@@ -41,10 +41,7 @@ export async function promptForSkillSelection(
   });
 }
 
-export async function promptForSingleSkill(
-  skills: SkillInfo[],
-  message: string
-): Promise<string> {
+export async function promptForSingleSkill(skills: SkillInfo[], message: string): Promise<string> {
   return await select({
     message,
     choices: skills.map((skill) => ({
