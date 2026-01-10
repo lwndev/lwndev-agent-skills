@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/lwndev/lwndev-agent-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/lwndev/lwndev-agent-skills/actions/workflows/ci.yml)
 
-This project is used to develop multiple Agent Skills for Claude Code. It includes TypeScript CLI scripts that invoke the `ai-skills-manager` CLI (`asm`) to create, build, install, and manage custom AI Agent Skills.
+A reference implementation for [`ai-skills-manager`](https://github.com/anthropics/ai-skills-manager), demonstrating how to develop, build, and manage custom Agent Skills for Claude Code. Use this project as a template for creating your own skill development workflow.
 
 ## Getting Started
 
@@ -17,7 +17,7 @@ npm run build
 npm run install-skills
 ```
 
-## Available Skills Reference Project
+## Included Skills
 
 | Skill | Description |
 |-------|-------------|
@@ -60,8 +60,8 @@ npm run format:check    # Check formatting
 ├── src/skills/           # Skill source directories
 │   └── {skill-name}/
 │       ├── SKILL.md      # Required: YAML frontmatter + instructions
-│       ├── templates/    # Optional: Output templates
-│       └── reference/    # Optional: Reference documentation
+│       ├── assets/       # Optional: Templates and static resources
+│       └── references/   # Optional: Reference documentation
 ├── scripts/              # CLI scripts
 │   ├── lib/              # Shared utilities
 │   └── __tests__/        # Test suites
