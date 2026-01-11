@@ -1,6 +1,6 @@
 ---
 name: implementing-plan-phases
-description: Executes implementation plan phases systematically, tracking progress with todos, managing feature branches, and verifying deliverables. Use when the user requests "implement phase N", "build the next phase", "continue implementation", "execute validation phase", or references implementation plans in requirements/implementation/. Handles branch creation, step-by-step execution, deliverable verification, and status updates.
+description: Required workflow for implementing phases from plans in requirements/implementation/. Enforces status tracking (Pending → 🔄 In Progress → ✅ Complete), GitHub issue comments, branch naming (feat/{ID}-summary), and verification sequence. Use when the user says "run phase workflow", "execute phase workflow", "start phase N workflow", or asks to implement from an implementation plan document.
 ---
 
 # Implementing Plan Phases
@@ -9,9 +9,9 @@ Execute implementation plan phases with systematic tracking and verification.
 
 ## When to Use
 
-- User requests "implement phase N" or "build the next phase"
+- User says "run phase workflow", "execute phase workflow", or "start phase N workflow"
+- User asks to implement from an implementation plan document
 - References files in `requirements/implementation/`
-- Continuing multi-phase implementation work
 
 ## Quick Start
 
