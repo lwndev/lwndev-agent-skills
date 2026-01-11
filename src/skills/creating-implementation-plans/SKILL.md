@@ -35,6 +35,12 @@ Adapt based on project type:
 
 - `requirements/implementation/` - Implementation plan documents
 
+### Filename Convention
+
+Use the primary Feature ID as the filename prefix:
+- Single feature: `FEAT-XXX-feature-name.md` (e.g., `FEAT-001-user-authentication.md`)
+- Multiple features: `FEAT-XXX-project-name.md` using the first/primary feature ID (e.g., `FEAT-001-podcast-cli-features.md`)
+
 ## Template
 
 See [assets/implementation-plan.md](assets/implementation-plan.md) for the full template.
