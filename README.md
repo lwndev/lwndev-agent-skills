@@ -96,7 +96,7 @@ Instructions for Claude on how to use this skill...
 
 ## Dependencies
 
-- **ai-skills-manager** - Core CLI for skill operations (`asm` command)
+- **ai-skills-manager** - Programmatic API for skill operations (v1.6.0+)
 - **@inquirer/prompts** - Interactive CLI prompts
 - **chalk** - Colored console output
 - **gray-matter** - YAML frontmatter parsing
