@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 import { confirm } from '@inquirer/prompts';
-import { execSync } from 'node:child_process';
+import { update as updateSkill, type ApiScope } from 'ai-skills-manager';
 import { getSourceSkills, packagedSkillExists, getPackagedSkillPath } from './lib/skill-utils.js';
 import {
   promptForScope,
@@ -52,14 +52,23 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Execute update
-  const command = `asm update "${selectedName}" "${packagePath}" --scope ${scope} --force`;
-
+  // Execute update using programmatic API
   try {
-    execSync(command, { stdio: 'inherit' });
+    const result = await updateSkill({
+      name: selectedName,
+      file: packagePath,
+      scope: scope as ApiScope,
+      force: true,
+    });
     printSuccess(`Successfully updated: ${selectedName}`);
-  } catch {
-    printError(`Failed to update ${selectedName}`);
+    if (result.previousVersion || result.newVersion) {
+      printInfo(
+        `Version: ${result.previousVersion || 'unknown'} -> ${result.newVersion || 'unknown'}`
+      );
+    }
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    printError(`Failed to update ${selectedName}: ${error.message}`);
     process.exit(1);
   }
 }

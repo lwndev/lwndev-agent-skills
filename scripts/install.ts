@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 import { confirm } from '@inquirer/prompts';
-import { execSync } from 'node:child_process';
+import { install as installSkill, type ApiScope } from 'ai-skills-manager';
 import { getSourceSkills, packagedSkillExists, getPackagedSkillPath } from './lib/skill-utils.js';
 import {
   promptForScope,
@@ -76,21 +76,24 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Install each skill
+  // Install each skill using programmatic API
   let successCount = 0;
   let failCount = 0;
 
   for (const name of selectedNames) {
     const packagePath = getPackagedSkillPath(name);
-    const command = `asm install "${packagePath}" --scope ${scope} --force`;
 
     try {
-      execSync(command, { stdio: 'pipe' });
-      printSuccess(`Installed: ${name}`);
+      const result = await installSkill({
+        file: packagePath,
+        scope: scope as ApiScope,
+        force: true,
+      });
+      printSuccess(`Installed: ${result.skillName} to ${result.installedPath}`);
       successCount++;
     } catch (err: unknown) {
-      const error = err as { stderr?: string; message?: string };
-      printError(`Failed to install ${name}: ${error.stderr || error.message}`);
+      const error = err as { message?: string };
+      printError(`Failed to install ${name}: ${error.message}`);
       failCount++;
     }
   }

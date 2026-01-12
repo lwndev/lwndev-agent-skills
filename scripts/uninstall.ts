@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 import { confirm } from '@inquirer/prompts';
-import { execSync } from 'node:child_process';
+import { uninstall as uninstallSkill, type ApiScope } from 'ai-skills-manager';
 import { getInstalledSkills } from './lib/skill-utils.js';
 import {
   promptForScope,
@@ -58,29 +58,34 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Uninstall each skill
-  let successCount = 0;
-  let failCount = 0;
+  // Uninstall using programmatic API
+  try {
+    const result = await uninstallSkill({
+      names: selectedNames,
+      scope: scope as ApiScope,
+      force: true,
+    });
 
-  for (const name of selectedNames) {
-    const command = `asm uninstall "${name}" --scope ${scope} --force`;
-
-    try {
-      execSync(command, { stdio: 'pipe' });
+    for (const name of result.removed) {
       printSuccess(`Uninstalled: ${name}`);
-      successCount++;
-    } catch (err: unknown) {
-      const error = err as { stderr?: string; message?: string };
-      printError(`Failed to uninstall ${name}: ${error.stderr || error.message}`);
-      failCount++;
     }
-  }
 
-  // Summary
-  console.log('');
-  printInfo(`Uninstallation complete: ${successCount} succeeded, ${failCount} failed`);
+    for (const name of result.notFound) {
+      printWarning(`Not found: ${name}`);
+    }
 
-  if (failCount > 0) {
+    // Summary
+    console.log('');
+    printInfo(
+      `Uninstallation complete: ${result.removed.length} succeeded, ${result.notFound.length} not found`
+    );
+
+    if (result.notFound.length > 0 && result.removed.length === 0) {
+      process.exit(1);
+    }
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    printError(`Failed to uninstall: ${error.message}`);
     process.exit(1);
   }
 }

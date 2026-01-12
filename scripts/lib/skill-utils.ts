@@ -1,7 +1,8 @@
 import { readdir, readFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import matter from 'gray-matter';
-import { SKILLS_SOURCE_DIR, DIST_DIR, getSkillsDir, type Scope } from './constants.js';
+import { list as listSkills, type ApiScope } from 'ai-skills-manager';
+import { SKILLS_SOURCE_DIR, DIST_DIR, type Scope } from './constants.js';
 
 export interface SkillInfo {
   name: string;
@@ -47,46 +48,21 @@ export async function getSourceSkills(): Promise<SkillInfo[]> {
 }
 
 /**
- * Get installed skills from a scope (project or personal)
+ * Get installed skills from a scope (project or personal) using the programmatic API
  */
 export async function getInstalledSkills(scope: Scope): Promise<SkillInfo[]> {
-  const skills: SkillInfo[] = [];
-  const skillsDir = getSkillsDir(scope);
-
   try {
-    await access(skillsDir);
-    const entries = await readdir(skillsDir, { withFileTypes: true });
+    const installedSkills = await listSkills({ scope: scope as ApiScope });
 
-    for (const entry of entries) {
-      if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
-
-      const skillPath = join(skillsDir, entry.name);
-      const skillMdPath = join(skillPath, 'SKILL.md');
-
-      try {
-        const content = await readFile(skillMdPath, 'utf-8');
-        const { data } = matter(content);
-
-        skills.push({
-          name: data.name || entry.name,
-          description: data.description || 'No description',
-          path: skillPath,
-        });
-      } catch {
-        // Include directory even if SKILL.md is unreadable
-        skills.push({
-          name: entry.name,
-          description: 'Unable to read description',
-          path: skillPath,
-        });
-      }
-    }
+    return installedSkills.map((skill) => ({
+      name: skill.name,
+      description: skill.description || 'No description',
+      path: skill.path,
+    }));
   } catch {
-    // Directory doesn't exist or is inaccessible - return empty array
+    // If list fails (e.g., directory doesn't exist), return empty array
     return [];
   }
-
-  return skills.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**

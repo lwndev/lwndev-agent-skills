@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 import { input, confirm } from '@inquirer/prompts';
-import { execSync } from 'node:child_process';
 import { accessSync } from 'node:fs';
+import { scaffold as scaffoldSkill } from 'ai-skills-manager';
 import { SKILLS_SOURCE_DIR } from './lib/constants.js';
 import { printSuccess, printError, printInfo } from './lib/prompts.js';
 
@@ -40,11 +40,14 @@ async function main(): Promise<void> {
     default: false,
   });
 
-  let allowedTools = '';
+  let allowedTools: string[] = [];
   if (wantAllowedTools) {
-    allowedTools = await input({
+    const toolsInput = await input({
       message: 'Allowed tools (comma-separated, e.g., Read,Write,Bash):',
     });
+    if (toolsInput) {
+      allowedTools = toolsInput.split(',').map((t) => t.trim());
+    }
   }
 
   // Check if skill already exists
@@ -64,34 +67,20 @@ async function main(): Promise<void> {
     // Skill doesn't exist, continue
   }
 
-  // Build command
-  const args = [
-    'asm',
-    'scaffold',
-    name,
-    '-d',
-    JSON.stringify(description),
-    '-o',
-    SKILLS_SOURCE_DIR,
-  ];
-
-  if (allowedTools) {
-    args.push('-t', allowedTools);
-  }
-
-  if (force) {
-    args.push('-f');
-  }
-
-  const command = args.join(' ');
-
-  printInfo(`Running: ${command}`);
-
+  // Create skill using programmatic API
   try {
-    execSync(command, { stdio: 'inherit' });
-    printSuccess(`Skill "${name}" created at ${skillPath}`);
-  } catch {
-    printError('Failed to create skill');
+    const result = await scaffoldSkill({
+      name,
+      description,
+      output: SKILLS_SOURCE_DIR,
+      allowedTools: allowedTools.length > 0 ? allowedTools : undefined,
+      force,
+    });
+    printSuccess(`Skill "${name}" created at ${result.path}`);
+    printInfo(`Files created: ${result.files.join(', ')}`);
+  } catch (err: unknown) {
+    const error = err as { message?: string };
+    printError(`Failed to create skill: ${error.message}`);
     process.exit(1);
   }
 }

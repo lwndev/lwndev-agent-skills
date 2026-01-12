@@ -32,13 +32,16 @@ npm run format:check    # Check formatting
 ### Script Pipeline
 The scripts implement a skill lifecycle: `scaffold → build → install/update/uninstall`
 
-- **scaffold.ts** - Creates new skill directories via `asm scaffold`
-- **build.ts** - Validates all skills with `asm validate`, then packages to `dist/*.skill`
-- **install.ts** - Installs from `dist/` to project (`.claude/skills/`) or personal (`~/.claude/skills/`) scope
-- **update.ts** / **uninstall.ts** - Manage installed skills
+Scripts use the `ai-skills-manager` programmatic API (v1.6.0+) for all operations:
+
+- **scaffold.ts** - Creates new skill directories using `scaffold()` API
+- **build.ts** - Validates with `validate()` and packages with `createPackage()` to `dist/*.skill`
+- **install.ts** - Installs from `dist/` using `install()` API to project or personal scope
+- **update.ts** - Updates installed skills using `update()` API
+- **uninstall.ts** - Removes skills using `uninstall()` API
 
 ### Shared Library (`scripts/lib/`)
-- **skill-utils.ts** - Core functions: `getSourceSkills()`, `getInstalledSkills(scope)`, `packagedSkillExists()`
+- **skill-utils.ts** - Core functions: `getSourceSkills()`, `getInstalledSkills(scope)` (uses `list()` API), `packagedSkillExists()`
 - **constants.ts** - Path constants for `src/skills`, `dist`, `.claude/skills`
 - **prompts.ts** - Interactive CLI utilities using `@inquirer/prompts`
 
@@ -59,7 +62,7 @@ Six skills exist that form a workflow chain:
 
 ## Key Patterns
 
-- All skill operations delegate to `asm` CLI commands
+- All skill operations use the `ai-skills-manager` programmatic API (not CLI)
 - Skills use YAML frontmatter in SKILL.md for metadata extraction
 - Tests run sequentially (`maxWorkers: 1`) to prevent race conditions with shared `src/skills/` and `dist/` directories
 - Interactive prompts use scope selection: "project" vs "personal" installation paths

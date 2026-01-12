@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
-import { execSync } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
+import { validate, createPackage, ValidationError } from 'ai-skills-manager';
 import { getSourceSkills } from './lib/skill-utils.js';
 import { DIST_DIR } from './lib/constants.js';
 import { printSuccess, printError, printInfo, printWarning } from './lib/prompts.js';
@@ -39,33 +39,42 @@ async function main(): Promise<void> {
 
     console.log(`Building: ${skill.name}`);
 
-    // Step 1: Validate
+    // Step 1: Validate using programmatic API
     try {
-      execSync(`asm validate "${skill.path}" --quiet`, {
-        stdio: 'pipe',
-        encoding: 'utf-8',
-      });
+      const validation = await validate(skill.path);
+      if (!validation.valid) {
+        const errorMessages = validation.errors.map((e) => e.message).join('; ');
+        result.error = `Validation failed: ${errorMessages}`;
+        printError('  Validation failed');
+        results.push(result);
+        continue;
+      }
       result.validated = true;
       printSuccess('  Validated');
     } catch (err: unknown) {
-      const error = err as { stderr?: string; message?: string };
-      result.error = `Validation failed: ${error.stderr || error.message}`;
+      if (err instanceof ValidationError) {
+        result.error = `Validation failed: ${err.message}`;
+      } else {
+        const error = err as { message?: string };
+        result.error = `Validation failed: ${error.message}`;
+      }
       printError('  Validation failed');
       results.push(result);
       continue;
     }
 
-    // Step 2: Package
+    // Step 2: Package using programmatic API
     try {
-      execSync(`asm package "${skill.path}" -o "${DIST_DIR}" -f`, {
-        stdio: 'pipe',
-        encoding: 'utf-8',
+      const packageResult = await createPackage({
+        path: skill.path,
+        output: DIST_DIR,
+        force: true,
       });
       result.packaged = true;
-      printSuccess(`  Packaged to ${DIST_DIR}/${skill.name}.skill`);
+      printSuccess(`  Packaged to ${packageResult.packagePath}`);
     } catch (err: unknown) {
-      const error = err as { stderr?: string; message?: string };
-      result.error = `Packaging failed: ${error.stderr || error.message}`;
+      const error = err as { message?: string };
+      result.error = `Packaging failed: ${error.message}`;
       printError('  Packaging failed');
     }
 
