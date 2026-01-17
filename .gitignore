@@ -5,4 +5,7 @@ node_modules/
 dist/
 
 # Don't include local claude settings
-.claude/*
+.claude/settings.local.json
+
+# Don't include environment variable files
+*.env
