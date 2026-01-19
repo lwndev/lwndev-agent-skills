@@ -20,13 +20,21 @@ Add a Completion section to the chore document template and update related skill
 
 ## Acceptance Criteria
 
-- [ ] Chore template has Completion section after Acceptance Criteria and before Notes
-- [ ] Completion section includes Status field (`Pending` | `In Progress` | `Completed`)
-- [ ] Completion section includes Completed date field
-- [ ] Completion section includes Pull Request link field
-- [ ] documenting-chores SKILL.md Structure Overview reflects new section
-- [ ] executing-chores SKILL.md includes step to update chore document with completion details
-- [ ] executing-chores Workflow Checklist includes updating chore document status
+- [x] Chore template has Completion section after Acceptance Criteria and before Notes
+- [x] Completion section includes Status field (`Pending` | `In Progress` | `Completed`)
+- [x] Completion section includes Completed date field
+- [x] Completion section includes Pull Request link field
+- [x] documenting-chores SKILL.md Structure Overview reflects new section
+- [x] executing-chores SKILL.md includes step to update chore document with completion details
+- [x] executing-chores Workflow Checklist includes updating chore document status
+
+## Completion
+
+**Status:** `Completed`
+
+**Completed:** 2026-01-18
+
+**Pull Request:** [#4](https://github.com/lwndev/lwndev-agent-skills/pull/4)
 
 ## Notes
 
