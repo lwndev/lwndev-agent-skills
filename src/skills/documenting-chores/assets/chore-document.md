@@ -73,6 +73,28 @@ Examples:
 - [ ] Tests pass after changes
 -->
 
+## Completion
+
+**Status:** `Pending`
+
+<!--
+Update status as work progresses:
+- Pending: Not yet started
+- In Progress: Branch created, work underway
+- Completed: PR merged
+
+When completed, fill in the fields below:
+-->
+
+**Completed:** YYYY-MM-DD
+
+**Pull Request:** [#N](https://github.com/org/repo/pull/N)
+
+<!--
+Optional: Brief summary of implementation if it differs from the plan
+or if there are noteworthy details for future reference.
+-->
+
 ## Notes
 
 <!--
