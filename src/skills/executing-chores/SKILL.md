@@ -26,6 +26,7 @@ Execute chore task workflows with systematic tracking from branch creation throu
 8. Run tests/build verification
 9. Create pull request
 10. Update GitHub issue with PR link (if issue exists)
+11. Update chore document completion section (status, date, PR link)
 
 ## Workflow Checklist
 
@@ -43,6 +44,7 @@ Chore Execution:
 - [ ] Run tests/build verification
 - [ ] Create pull request
 - [ ] Update GitHub issue with PR link (if exists)
+- [ ] Update chore document (status → Completed, date, PR link)
 ```
 
 See [references/workflow-details.md](references/workflow-details.md) for detailed guidance on each step.

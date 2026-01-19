@@ -56,6 +56,7 @@ See [assets/chore-document.md](assets/chore-document.md) for the full template.
 - Description (1-2 sentences)
 - Affected Files
 - Acceptance Criteria
+- Completion (status, date, PR link)
 - Notes (optional)
 ```
 
