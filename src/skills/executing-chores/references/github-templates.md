@@ -188,11 +188,13 @@ Brief description of what this chore accomplishes.
 - [ ] Linting passes (if applicable)
 
 ## Related
-- Closes #N (if GitHub issue exists)
+- Closes #N <!-- REQUIRED if chore document has a GitHub Issue link -->
 
 ---
 🤖 Generated with [Claude Code](https://claude.com/claude-code)"
 ```
+
+**Important:** If the chore document links to a GitHub issue, you MUST include `Closes #N` in the Related section. This auto-closes the issue when the PR is merged.
 
 **Example:**
 

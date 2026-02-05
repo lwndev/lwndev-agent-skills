@@ -18,14 +18,14 @@ Execute chore task workflows with systematic tracking from branch creation throu
 
 1. Locate chore document in `requirements/chores/`
 2. Extract Chore ID and review acceptance criteria
-3. Check for linked GitHub issue (update if exists)
-4. Create git branch: `chore/CHORE-XXX-description`
-5. Execute the defined changes, tracking with todos
-6. Commit changes with descriptive messages
-7. Verify acceptance criteria are met
-8. Run tests/build verification
-9. Create pull request
-10. Update GitHub issue with PR link (if issue exists)
+3. **Note GitHub issue number if linked** (needed for PR to auto-close issue)
+4. Post start comment on GitHub issue (if exists)
+5. Create git branch: `chore/CHORE-XXX-description`
+6. Execute the defined changes, tracking with todos
+7. Commit changes with descriptive messages
+8. Verify acceptance criteria are met
+9. Run tests/build verification
+10. Create pull request **(MUST include `Closes #N` if issue exists)**
 11. Update chore document completion section (status, date, PR link)
 
 ## Workflow Checklist
@@ -35,6 +35,7 @@ Copy this checklist to track progress:
 ```
 Chore Execution:
 - [ ] Locate chore document (get Chore ID)
+- [ ] Note GitHub issue number from chore document (if linked)
 - [ ] Post GitHub issue start comment (if issue exists)
 - [ ] Create git branch: chore/CHORE-XXX-description
 - [ ] Load acceptance criteria into todos
@@ -42,10 +43,11 @@ Chore Execution:
 - [ ] Commit with chore(category): message format
 - [ ] Verify acceptance criteria met
 - [ ] Run tests/build verification
-- [ ] Create pull request
-- [ ] Update GitHub issue with PR link (if exists)
+- [ ] Create pull request (include "Closes #N" in body if issue exists)
 - [ ] Update chore document (status → Completed, date, PR link)
 ```
+
+**Important:** Including `Closes #N` in the PR body auto-closes the linked GitHub issue when merged. Without it, the issue must be closed manually.
 
 See [references/workflow-details.md](references/workflow-details.md) for detailed guidance on each step.
 
