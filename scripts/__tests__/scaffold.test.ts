@@ -50,6 +50,15 @@ describe('scaffold script integration', () => {
 });
 
 describe('scaffold template options', () => {
+  beforeEach(async () => {
+    // Clean slate for each test to avoid order-dependent results
+    try {
+      await rm(TEMPLATE_SKILL_PATH, { recursive: true, force: true });
+    } catch {
+      // Ignore if doesn't exist
+    }
+  });
+
   afterAll(async () => {
     try {
       await rm(TEMPLATE_SKILL_PATH, { recursive: true, force: true });

@@ -98,19 +98,6 @@ async function main(): Promise<void> {
     });
   }
 
-  // Prompt for argument hint (optional)
-  const argumentHint = await input({
-    message: 'Argument hint (optional, e.g. "<query> [--deep]"):',
-    validate: (value) => {
-      if (value.length > 100) return 'Argument hint must be 100 characters or less';
-      return true;
-    },
-  });
-
-  if (argumentHint) {
-    template.argumentHint = argumentHint;
-  }
-
   // Prompt for allowed tools (optional)
   const wantAllowedTools = await confirm({
     message: 'Specify allowed tools? (optional)',
@@ -125,6 +112,24 @@ async function main(): Promise<void> {
     if (toolsInput) {
       allowedTools = toolsInput.split(',').map((t) => t.trim());
     }
+  }
+
+  // Prompt for argument hint (optional)
+  const wantArgumentHint = await confirm({
+    message: 'Specify argument hint? (optional)',
+    default: false,
+  });
+
+  if (wantArgumentHint) {
+    const argumentHint = await input({
+      message: 'Argument hint (e.g. "<query> [--deep]"):',
+      validate: (value) => {
+        if (!value) return 'Argument hint is required when enabled';
+        if (value.length > 100) return 'Argument hint must be 100 characters or less';
+        return true;
+      },
+    });
+    template.argumentHint = argumentHint;
   }
 
   // Check if skill already exists
