@@ -31,11 +31,11 @@ Expose the `ai-skills-manager` v1.7.0 scaffold template options in the interacti
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `Completed`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-02-08
 
-**Pull Request:** N/A
+**Pull Request:** https://github.com/lwndev/lwndev-agent-skills/pull/6
 
 ## Notes
 
