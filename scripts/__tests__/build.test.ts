@@ -80,4 +80,17 @@ describe('build script validation', () => {
     expect(output).toContain('Build Summary');
     expect(output).toContain('Successful');
   });
+
+  it('should display detailed validation check counts', () => {
+    const output = execSync('npm run build', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    // Each skill should show per-check validation results (e.g., "24/24 checks passed")
+    const checkPattern = /Validated \(\d+\/\d+ checks passed\)/g;
+    const matches = output.match(checkPattern);
+    expect(matches).not.toBeNull();
+    expect(matches!.length).toBeGreaterThanOrEqual(1);
+  });
 });
