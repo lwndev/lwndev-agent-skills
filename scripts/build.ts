@@ -48,11 +48,11 @@ async function main(): Promise<void> {
     try {
       const validation: DetailedValidateResult = await validate(skill.path, { detailed: true });
       const checkEntries = Object.entries(validation.checks);
-      const passed = checkEntries.filter(([, c]) => c.passed).length;
       const total = checkEntries.length;
+      const failed = checkEntries.filter(([, c]) => !c.passed);
+      const passed = total - failed.length;
 
       if (!validation.valid) {
-        const failed = checkEntries.filter(([, c]) => !c.passed);
         for (const [name, check] of failed) {
           printError(`  ${name}: ${check.error}`);
         }

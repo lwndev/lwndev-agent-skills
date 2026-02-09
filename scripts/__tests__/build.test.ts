@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { access, readdir } from 'node:fs/promises';
+import { access, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 describe('build script integration', () => {
@@ -63,34 +63,60 @@ describe('build script integration', () => {
 });
 
 describe('build script validation', () => {
+  let buildOutput: string;
+
+  beforeAll(() => {
+    buildOutput = execSync('npm run build', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  });
+
   it('should exit with code 0 on success', () => {
-    // This should not throw
-    expect(() => {
-      execSync('npm run build', { stdio: 'pipe' });
-    }).not.toThrow();
+    expect(buildOutput).toBeDefined();
   });
 
   it('should output build summary', () => {
-    const output = execSync('npm run build', {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-
-    expect(output).toContain('Building all skills');
-    expect(output).toContain('Build Summary');
-    expect(output).toContain('Successful');
+    expect(buildOutput).toContain('Building all skills');
+    expect(buildOutput).toContain('Build Summary');
+    expect(buildOutput).toContain('Successful');
   });
 
   it('should display detailed validation check counts', () => {
-    const output = execSync('npm run build', {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-
     // Each skill should show per-check validation results (e.g., "24/24 checks passed")
     const checkPattern = /Validated \(\d+\/\d+ checks passed\)/g;
-    const matches = output.match(checkPattern);
-    expect(matches).not.toBeNull();
-    expect(matches!.length).toBeGreaterThanOrEqual(1);
+    const matches = buildOutput.match(checkPattern) ?? [];
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('build script failure handling', () => {
+  const badSkillDir = join('src', 'skills', '_test-bad-skill');
+
+  afterAll(async () => {
+    await rm(badSkillDir, { recursive: true, force: true });
+  });
+
+  it('should display failed check details for invalid skills', async () => {
+    await mkdir(badSkillDir, { recursive: true });
+    await writeFile(
+      join(badSkillDir, 'SKILL.md'),
+      '---\nname: wrong-name-mismatch\ndescription: A test skill with intentional issues\n---\n\n# Bad Skill\n'
+    );
+
+    let stdout = '';
+    try {
+      execSync('npm run build', {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+    } catch (err: unknown) {
+      stdout = (err as { stdout: string }).stdout;
+    }
+
+    // Should show per-check failure details (check name + error message)
+    expect(stdout).toContain('nameMatchesDirectory');
+    // Should show the checks failed summary
+    expect(stdout).toMatch(/\d+\/\d+ checks failed/);
   });
 });
