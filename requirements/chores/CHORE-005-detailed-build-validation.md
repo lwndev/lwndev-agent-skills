@@ -29,11 +29,11 @@ Switch the build script from simple `validate()` to `validate(path, { detailed: 
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `Completed`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-02-08
 
-**Pull Request:** N/A
+**Pull Request:** [#7](https://github.com/lwndev/lwndev-agent-skills/pull/7)
 
 ## Notes
 
