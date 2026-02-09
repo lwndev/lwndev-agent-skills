@@ -1,6 +1,11 @@
 #!/usr/bin/env tsx
 import { mkdir } from 'node:fs/promises';
-import { validate, createPackage, ValidationError } from 'ai-skills-manager';
+import {
+  validate,
+  createPackage,
+  ValidationError,
+  type DetailedValidateResult,
+} from 'ai-skills-manager';
 import { getSourceSkills } from './lib/skill-utils.js';
 import { DIST_DIR } from './lib/constants.js';
 import { printSuccess, printError, printInfo, printWarning } from './lib/prompts.js';
@@ -39,18 +44,31 @@ async function main(): Promise<void> {
 
     console.log(`Building: ${skill.name}`);
 
-    // Step 1: Validate using programmatic API
+    // Step 1: Validate using programmatic API (detailed mode)
     try {
-      const validation = await validate(skill.path);
+      const validation: DetailedValidateResult = await validate(skill.path, { detailed: true });
+      const checkEntries = Object.entries(validation.checks);
+      const total = checkEntries.length;
+      const failed = checkEntries.filter(([, c]) => !c.passed);
+      const passed = total - failed.length;
+
       if (!validation.valid) {
-        const errorMessages = validation.errors.map((e) => e.message).join('; ');
-        result.error = `Validation failed: ${errorMessages}`;
-        printError('  Validation failed');
+        for (const [name, check] of failed) {
+          printError(`  ${name}: ${check.error}`);
+        }
+        result.error = `Validation failed: ${failed.length}/${total} checks failed`;
         results.push(result);
         continue;
       }
+
       result.validated = true;
-      printSuccess('  Validated');
+      printSuccess(`  Validated (${passed}/${total} checks passed)`);
+
+      if (validation.warnings && validation.warnings.length > 0) {
+        for (const warning of validation.warnings) {
+          printWarning(`  ${warning}`);
+        }
+      }
     } catch (err: unknown) {
       if (err instanceof ValidationError) {
         result.error = `Validation failed: ${err.message}`;
