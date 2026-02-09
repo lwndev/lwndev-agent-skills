@@ -1,9 +1,12 @@
 #!/usr/bin/env tsx
-import { input, confirm } from '@inquirer/prompts';
+import { input, select, confirm } from '@inquirer/prompts';
 import { accessSync } from 'node:fs';
 import { scaffold as scaffoldSkill } from 'ai-skills-manager';
+import type { ScaffoldTemplateOptions } from 'ai-skills-manager';
 import { SKILLS_SOURCE_DIR } from './lib/constants.js';
 import { printSuccess, printError, printInfo } from './lib/prompts.js';
+
+type TemplateType = NonNullable<ScaffoldTemplateOptions['templateType']>;
 
 async function main(): Promise<void> {
   printInfo('Create a new skill in src/skills/');
@@ -34,6 +37,67 @@ async function main(): Promise<void> {
     },
   });
 
+  // Prompt for template type
+  const templateType = await select<TemplateType>({
+    message: 'Template type:',
+    choices: [
+      { name: 'basic – General-purpose skill', value: 'basic' },
+      { name: 'forked – Runs in isolated (fork) context', value: 'forked' },
+      { name: 'with-hooks – Includes hook configuration examples', value: 'with-hooks' },
+      { name: 'internal – Non-user-invocable helper skill', value: 'internal' },
+      { name: 'agent – Autonomous agent with model/memory config', value: 'agent' },
+    ],
+    default: 'basic',
+  });
+
+  // Prompt for minimal toggle
+  const minimal = await confirm({
+    message: 'Minimal output? (concise SKILL.md without guidance comments)',
+    default: false,
+  });
+
+  // Build template options, auto-setting fields based on template type
+  const template: ScaffoldTemplateOptions = { templateType, minimal };
+
+  if (templateType === 'forked') {
+    template.context = 'fork';
+  }
+
+  if (templateType === 'agent') {
+    template.agent = name;
+  }
+
+  // Prompt for memory scope (relevant for all template types)
+  const wantMemory = await confirm({
+    message: 'Configure memory scope?',
+    default: false,
+  });
+
+  if (wantMemory) {
+    template.memory = await select<NonNullable<ScaffoldTemplateOptions['memory']>>({
+      message: 'Memory scope:',
+      choices: [
+        { name: 'project – Repo-specific, stored in .claude/', value: 'project' },
+        { name: 'user – Cross-project, stored in ~/.claude/', value: 'user' },
+        { name: 'local – Machine-specific, not committed', value: 'local' },
+      ],
+      default: 'project',
+    });
+  }
+
+  // Prompt for model selection when agent template is chosen
+  if (templateType === 'agent') {
+    template.model = await select<string>({
+      message: 'Agent model:',
+      choices: [
+        { name: 'sonnet (default)', value: 'sonnet' },
+        { name: 'opus', value: 'opus' },
+        { name: 'haiku', value: 'haiku' },
+      ],
+      default: 'sonnet',
+    });
+  }
+
   // Prompt for allowed tools (optional)
   const wantAllowedTools = await confirm({
     message: 'Specify allowed tools? (optional)',
@@ -48,6 +112,24 @@ async function main(): Promise<void> {
     if (toolsInput) {
       allowedTools = toolsInput.split(',').map((t) => t.trim());
     }
+  }
+
+  // Prompt for argument hint (optional)
+  const wantArgumentHint = await confirm({
+    message: 'Specify argument hint? (optional)',
+    default: false,
+  });
+
+  if (wantArgumentHint) {
+    const argumentHint = await input({
+      message: 'Argument hint (e.g. "<query> [--deep]"):',
+      validate: (value) => {
+        if (!value) return 'Argument hint is required when enabled';
+        if (value.length > 100) return 'Argument hint must be 100 characters or less';
+        return true;
+      },
+    });
+    template.argumentHint = argumentHint;
   }
 
   // Check if skill already exists
@@ -75,6 +157,7 @@ async function main(): Promise<void> {
       output: SKILLS_SOURCE_DIR,
       allowedTools: allowedTools.length > 0 ? allowedTools : undefined,
       force,
+      template,
     });
     printSuccess(`Skill "${name}" created at ${result.path}`);
     printInfo(`Files created: ${result.files.join(', ')}`);

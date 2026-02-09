@@ -52,7 +52,7 @@ export async function getSourceSkills(): Promise<SkillInfo[]> {
  */
 export async function getInstalledSkills(scope: Scope): Promise<SkillInfo[]> {
   try {
-    const installedSkills = await listSkills({ scope: scope as ApiScope });
+    const { skills: installedSkills } = await listSkills({ scope: scope as ApiScope });
 
     return installedSkills.map((skill) => ({
       name: skill.name,
