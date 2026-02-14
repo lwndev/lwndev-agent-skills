@@ -55,10 +55,10 @@ skill-name/
 ```
 
 ### Existing Skills
-Six skills exist that form a workflow chain:
+Seven skills exist that form three workflow chains:
 1. **documenting-features** → **creating-implementation-plans** → **implementing-plan-phases**
 2. **documenting-chores** → **executing-chores**
-3. **managing-git-worktrees** (parallel development support)
+3. **documenting-bugs** → **executing-bug-fixes**
 
 ## Key Patterns
 
