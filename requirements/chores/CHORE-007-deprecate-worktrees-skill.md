@@ -33,11 +33,11 @@ Deprecate and remove the `managing-git-worktrees` skill from the repository. The
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `Completed`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-02-14
 
-**Pull Request:** [#N](https://github.com/lwndev/lwndev-agent-skills/pull/N)
+**Pull Request:** [#16](https://github.com/lwndev/lwndev-agent-skills/pull/16)
 
 ## Notes
 
