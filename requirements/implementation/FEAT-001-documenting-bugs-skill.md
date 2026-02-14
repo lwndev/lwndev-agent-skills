@@ -49,7 +49,7 @@ Add a `documenting-bugs` skill to the lwndev-agent-skills project that creates s
 
 ### Phase 2: Bug Document Template
 **Feature:** [FEAT-001](../features/FEAT-001-documenting-bugs-skill.md) | [#8](https://github.com/lwndev/lwndev-agent-skills/issues/8)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - **Core deliverable**: The bug document template is what users actually produce when using the skill — it must include all required sections from FR-3
@@ -78,11 +78,11 @@ Add a `documenting-bugs` skill to the lwndev-agent-skills project that creates s
 6. Verify HTML comment style matches `chore-document.md` conventions
 
 #### Deliverables
-- [ ] `src/skills/documenting-bugs/assets/bug-document.md` with all required sections
-- [ ] HTML guidance comments throughout the template
-- [ ] Severity level definitions documented
-- [ ] Root cause numbering pattern with file references
-- [ ] `(RC-N)` tagging convention in acceptance criteria
+- [x] `src/skills/documenting-bugs/assets/bug-document.md` with all required sections
+- [x] HTML guidance comments throughout the template
+- [x] Severity level definitions documented
+- [x] Root cause numbering pattern with file references
+- [x] `(RC-N)` tagging convention in acceptance criteria
 
 ---
 
