@@ -58,6 +58,16 @@ describe('skill-utils', () => {
       // These skills should exist in the project
       expect(names).toContain('documenting-features');
       expect(names).toContain('creating-implementation-plans');
+      expect(names).toContain('documenting-bugs');
+    });
+
+    it('should return documenting-bugs with correct metadata', async () => {
+      const skills = await getSourceSkills();
+      const docBugs = skills.find((s) => s.name === 'documenting-bugs');
+
+      expect(docBugs).toBeDefined();
+      expect(docBugs?.description).toBeTruthy();
+      expect(docBugs?.path).toContain('src/skills/documenting-bugs');
     });
   });
 

@@ -26,6 +26,7 @@ describe('build script integration', () => {
     expect(skillFiles).toContain('executing-chores.skill');
     expect(skillFiles).toContain('implementing-plan-phases.skill');
     expect(skillFiles).toContain('managing-git-worktrees.skill');
+    expect(skillFiles).toContain('documenting-bugs.skill');
   });
 
   it('should create valid zip archives as .skill files', async () => {

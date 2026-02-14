@@ -14,7 +14,7 @@ Add a `documenting-bugs` skill to the lwndev-agent-skills project that creates s
 
 ### Phase 1: Skill Structure and SKILL.md
 **Feature:** [FEAT-001](../features/FEAT-001-documenting-bugs-skill.md) | [#8](https://github.com/lwndev/lwndev-agent-skills/issues/8)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - **Foundation first**: The SKILL.md is the entry point for the skill — it defines when and how the skill is used, and must exist before the template and references it points to
@@ -41,15 +41,15 @@ Add a `documenting-bugs` skill to the lwndev-agent-skills project that creates s
 11. Verify SKILL.md follows the same structure and tone as `documenting-chores/SKILL.md`
 
 #### Deliverables
-- [ ] `src/skills/documenting-bugs/SKILL.md` with complete instructions
-- [ ] `src/skills/documenting-bugs/assets/` directory created
-- [ ] `src/skills/documenting-bugs/references/` directory created
+- [x] `src/skills/documenting-bugs/SKILL.md` with complete instructions
+- [x] `src/skills/documenting-bugs/assets/` directory created
+- [x] `src/skills/documenting-bugs/references/` directory created
 
 ---
 
 ### Phase 2: Bug Document Template
 **Feature:** [FEAT-001](../features/FEAT-001-documenting-bugs-skill.md) | [#8](https://github.com/lwndev/lwndev-agent-skills/issues/8)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - **Core deliverable**: The bug document template is what users actually produce when using the skill — it must include all required sections from FR-3
@@ -78,17 +78,17 @@ Add a `documenting-bugs` skill to the lwndev-agent-skills project that creates s
 6. Verify HTML comment style matches `chore-document.md` conventions
 
 #### Deliverables
-- [ ] `src/skills/documenting-bugs/assets/bug-document.md` with all required sections
-- [ ] HTML guidance comments throughout the template
-- [ ] Severity level definitions documented
-- [ ] Root cause numbering pattern with file references
-- [ ] `(RC-N)` tagging convention in acceptance criteria
+- [x] `src/skills/documenting-bugs/assets/bug-document.md` with all required sections
+- [x] HTML guidance comments throughout the template
+- [x] Severity level definitions documented
+- [x] Root cause numbering pattern with file references
+- [x] `(RC-N)` tagging convention in acceptance criteria
 
 ---
 
 ### Phase 3: Bug Categories Reference
 **Feature:** [FEAT-001](../features/FEAT-001-documenting-bugs-skill.md) | [#8](https://github.com/lwndev/lwndev-agent-skills/issues/8)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - **Completes the skill content**: The categories reference is the last content file, rounding out the skill's reference documentation
@@ -113,14 +113,14 @@ Add a `documenting-bugs` skill to the lwndev-agent-skills project that creates s
 4. Verify structure matches chore categories format exactly
 
 #### Deliverables
-- [ ] `src/skills/documenting-bugs/references/categories.md` with all 6 categories
-- [ ] Each category has: common use cases, typical affected files, suggested acceptance criteria, notes
+- [x] `src/skills/documenting-bugs/references/categories.md` with all 6 categories
+- [x] Each category has: common use cases, typical affected files, suggested acceptance criteria, notes
 
 ---
 
 ### Phase 4: Automated Tests
 **Feature:** [FEAT-001](../features/FEAT-001-documenting-bugs-skill.md) | [#8](https://github.com/lwndev/lwndev-agent-skills/issues/8)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - **Depends on Phases 1-3**: All skill content must exist before tests can validate it
@@ -156,12 +156,12 @@ Add a `documenting-bugs` skill to the lwndev-agent-skills project that creates s
 6. Run `npm run build` to verify build succeeds with the new skill
 
 #### Deliverables
-- [ ] `scripts/__tests__/build.test.ts` updated with documenting-bugs build tests
-- [ ] `scripts/__tests__/skill-utils.test.ts` updated with documenting-bugs discovery tests
-- [ ] `scripts/__tests__/documenting-bugs.test.ts` created with all content validation tests
-- [ ] Validation API test for `documenting-bugs` skill
-- [ ] All existing tests continue to pass
-- [ ] Build succeeds with new skill included
+- [x] `scripts/__tests__/build.test.ts` updated with documenting-bugs build tests
+- [x] `scripts/__tests__/skill-utils.test.ts` updated with documenting-bugs discovery tests
+- [x] `scripts/__tests__/documenting-bugs.test.ts` created with all content validation tests
+- [x] Validation API test for `documenting-bugs` skill
+- [x] All existing tests continue to pass
+- [x] Build succeeds with new skill included
 
 ---
 
