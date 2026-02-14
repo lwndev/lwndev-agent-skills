@@ -88,7 +88,7 @@ Add a `documenting-bugs` skill to the lwndev-agent-skills project that creates s
 
 ### Phase 3: Bug Categories Reference
 **Feature:** [FEAT-001](../features/FEAT-001-documenting-bugs-skill.md) | [#8](https://github.com/lwndev/lwndev-agent-skills/issues/8)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - **Completes the skill content**: The categories reference is the last content file, rounding out the skill's reference documentation
@@ -113,8 +113,8 @@ Add a `documenting-bugs` skill to the lwndev-agent-skills project that creates s
 4. Verify structure matches chore categories format exactly
 
 #### Deliverables
-- [ ] `src/skills/documenting-bugs/references/categories.md` with all 6 categories
-- [ ] Each category has: common use cases, typical affected files, suggested acceptance criteria, notes
+- [x] `src/skills/documenting-bugs/references/categories.md` with all 6 categories
+- [x] Each category has: common use cases, typical affected files, suggested acceptance criteria, notes
 
 ---
 
