@@ -21,6 +21,7 @@ Deprecate and remove the `managing-git-worktrees` skill from the repository. The
 - `src/skills/managing-git-worktrees/` (entire directory removal)
 - `CLAUDE.md` (remove references to managing-git-worktrees)
 - `dist/` (remove any build artifacts for this skill)
+- `scripts/__tests__/build.test.ts` (remove assertion for `managing-git-worktrees.skill`)
 
 ## Acceptance Criteria
 
@@ -41,6 +42,7 @@ Deprecate and remove the `managing-git-worktrees` skill from the repository. The
 
 ## Notes
 
-- The skill count in `CLAUDE.md` should be updated from "six" to "five" existing skills
-- The workflow chain listing should be updated to remove the `managing-git-worktrees` entry
-- Run uninstall in both project and personal scopes before deleting the source
+- The skill count in `CLAUDE.md` was updated from "six" to "five" existing skills
+- The workflow chain listing was updated to remove the `managing-git-worktrees` entry
+- The skill was only installed at personal scope (`~/.claude/skills/`); no project-scope installation existed
+- `build.test.ts` had an explicit `toContain('managing-git-worktrees.skill')` assertion that was not identified in the original scope — removal was required for tests to pass
