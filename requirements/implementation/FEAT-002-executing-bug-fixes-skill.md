@@ -53,7 +53,7 @@ Add an `executing-bug-fixes` skill to the lwndev-agent-skills project that execu
 
 ### Phase 2: PR Template
 **Feature:** [FEAT-002](../features/FEAT-002-executing-bug-fixes-skill.md) | [#9](https://github.com/lwndev/lwndev-agent-skills/issues/9)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - **Core output artifact**: The PR template defines the structure of every bug fix pull request — it must exist before the workflow details reference it
@@ -77,12 +77,12 @@ Add an `executing-bug-fixes` skill to the lwndev-agent-skills project that execu
 6. Include critical note: "Use `Closes #N` to auto-close linked issue on merge" — required if bug document has GitHub Issue link
 
 #### Deliverables
-- [ ] `src/skills/executing-bug-fixes/assets/pr-template.md` with all required sections
-- [ ] Root Cause(s) section with numbered entries
-- [ ] "How Each Root Cause Was Addressed" traceability table
-- [ ] Per-root-cause verification in testing checklist
-- [ ] `Closes #N` placeholder in Related section
-- [ ] Filled example and section guidelines
+- [x] `src/skills/executing-bug-fixes/assets/pr-template.md` with all required sections
+- [x] Root Cause(s) section with numbered entries
+- [x] "How Each Root Cause Was Addressed" traceability table
+- [x] Per-root-cause verification in testing checklist
+- [x] `Closes #N` placeholder in Related section
+- [x] Filled example and section guidelines
 
 ---
 
