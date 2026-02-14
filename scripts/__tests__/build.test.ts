@@ -25,7 +25,6 @@ describe('build script integration', () => {
     expect(skillFiles).toContain('documenting-chores.skill');
     expect(skillFiles).toContain('executing-chores.skill');
     expect(skillFiles).toContain('implementing-plan-phases.skill');
-    expect(skillFiles).toContain('managing-git-worktrees.skill');
     expect(skillFiles).toContain('documenting-bugs.skill');
     expect(skillFiles).toContain('executing-bug-fixes.skill');
   });
