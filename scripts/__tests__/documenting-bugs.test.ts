@@ -80,10 +80,15 @@ describe('documenting-bugs skill', () => {
     });
 
     it('should document all 4 severity levels', () => {
-      expect(template).toContain('critical');
-      expect(template).toContain('high');
-      expect(template).toContain('medium');
-      expect(template).toContain('low');
+      // Extract severity section to avoid matching common words elsewhere
+      const severitySection = template.slice(
+        template.indexOf('## Severity'),
+        template.indexOf('## Description')
+      );
+      expect(severitySection).toContain('critical');
+      expect(severitySection).toContain('high');
+      expect(severitySection).toContain('medium');
+      expect(severitySection).toContain('low');
     });
 
     it('should contain RC-N pattern in acceptance criteria section', () => {
