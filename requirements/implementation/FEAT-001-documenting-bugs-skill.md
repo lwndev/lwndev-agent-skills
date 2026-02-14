@@ -14,7 +14,7 @@ Add a `documenting-bugs` skill to the lwndev-agent-skills project that creates s
 
 ### Phase 1: Skill Structure and SKILL.md
 **Feature:** [FEAT-001](../features/FEAT-001-documenting-bugs-skill.md) | [#8](https://github.com/lwndev/lwndev-agent-skills/issues/8)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - **Foundation first**: The SKILL.md is the entry point for the skill — it defines when and how the skill is used, and must exist before the template and references it points to
@@ -41,9 +41,9 @@ Add a `documenting-bugs` skill to the lwndev-agent-skills project that creates s
 11. Verify SKILL.md follows the same structure and tone as `documenting-chores/SKILL.md`
 
 #### Deliverables
-- [ ] `src/skills/documenting-bugs/SKILL.md` with complete instructions
-- [ ] `src/skills/documenting-bugs/assets/` directory created
-- [ ] `src/skills/documenting-bugs/references/` directory created
+- [x] `src/skills/documenting-bugs/SKILL.md` with complete instructions
+- [x] `src/skills/documenting-bugs/assets/` directory created
+- [x] `src/skills/documenting-bugs/references/` directory created
 
 ---
 
