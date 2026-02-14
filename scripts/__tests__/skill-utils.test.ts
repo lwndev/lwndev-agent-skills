@@ -59,6 +59,7 @@ describe('skill-utils', () => {
       expect(names).toContain('documenting-features');
       expect(names).toContain('creating-implementation-plans');
       expect(names).toContain('documenting-bugs');
+      expect(names).toContain('executing-bug-fixes');
     });
 
     it('should return documenting-bugs with correct metadata', async () => {
@@ -68,6 +69,15 @@ describe('skill-utils', () => {
       expect(docBugs).toBeDefined();
       expect(docBugs?.description).toBeTruthy();
       expect(docBugs?.path).toContain('src/skills/documenting-bugs');
+    });
+
+    it('should return executing-bug-fixes with correct metadata', async () => {
+      const skills = await getSourceSkills();
+      const execBugFixes = skills.find((s) => s.name === 'executing-bug-fixes');
+
+      expect(execBugFixes).toBeDefined();
+      expect(execBugFixes?.description).toBeTruthy();
+      expect(execBugFixes?.path).toContain('src/skills/executing-bug-fixes');
     });
   });
 

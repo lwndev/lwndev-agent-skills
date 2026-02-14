@@ -128,7 +128,7 @@ Add an `executing-bug-fixes` skill to the lwndev-agent-skills project that execu
 
 ### Phase 4: Automated Tests
 **Feature:** [FEAT-002](../features/FEAT-002-executing-bug-fixes-skill.md) | [#9](https://github.com/lwndev/lwndev-agent-skills/issues/9)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - **Depends on Phases 1-3**: All skill content must exist before tests can validate it
@@ -177,12 +177,12 @@ Add an `executing-bug-fixes` skill to the lwndev-agent-skills project that execu
 5. Run `npm run build` to verify build succeeds with the new skill
 
 #### Deliverables
-- [ ] `scripts/__tests__/build.test.ts` updated with `executing-bug-fixes.skill` in expected list
-- [ ] `scripts/__tests__/skill-utils.test.ts` updated with `executing-bug-fixes` discovery tests
-- [ ] `scripts/__tests__/executing-bug-fixes.test.ts` created with all content validation tests
-- [ ] Validation API test for `executing-bug-fixes` skill
-- [ ] All existing tests continue to pass
-- [ ] Build succeeds with new skill included
+- [x] `scripts/__tests__/build.test.ts` updated with `executing-bug-fixes.skill` in expected list
+- [x] `scripts/__tests__/skill-utils.test.ts` updated with `executing-bug-fixes` discovery tests
+- [x] `scripts/__tests__/executing-bug-fixes.test.ts` created with all content validation tests
+- [x] Validation API test for `executing-bug-fixes` skill
+- [x] All existing tests continue to pass
+- [x] Build succeeds with new skill included
 
 ---
 
