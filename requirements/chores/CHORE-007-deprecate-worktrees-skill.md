@@ -25,12 +25,12 @@ Deprecate and remove the `managing-git-worktrees` skill from the repository. The
 
 ## Acceptance Criteria
 
-- [ ] `src/skills/managing-git-worktrees/` directory is deleted
-- [ ] Skill is uninstalled from any active scopes
-- [ ] `CLAUDE.md` no longer references `managing-git-worktrees`
-- [ ] No build artifacts remain in `dist/` for this skill
-- [ ] All tests pass
-- [ ] Build script runs successfully
+- [x] `src/skills/managing-git-worktrees/` directory is deleted
+- [x] Skill is uninstalled from any active scopes
+- [x] `CLAUDE.md` no longer references `managing-git-worktrees`
+- [x] No build artifacts remain in `dist/` for this skill
+- [x] All tests pass
+- [x] Build script runs successfully
 
 ## Completion
 
