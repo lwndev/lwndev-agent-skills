@@ -120,7 +120,7 @@ Add a `documenting-bugs` skill to the lwndev-agent-skills project that creates s
 
 ### Phase 4: Automated Tests
 **Feature:** [FEAT-001](../features/FEAT-001-documenting-bugs-skill.md) | [#8](https://github.com/lwndev/lwndev-agent-skills/issues/8)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - **Depends on Phases 1-3**: All skill content must exist before tests can validate it
@@ -156,12 +156,12 @@ Add a `documenting-bugs` skill to the lwndev-agent-skills project that creates s
 6. Run `npm run build` to verify build succeeds with the new skill
 
 #### Deliverables
-- [ ] `scripts/__tests__/build.test.ts` updated with documenting-bugs build tests
-- [ ] `scripts/__tests__/skill-utils.test.ts` updated with documenting-bugs discovery tests
-- [ ] `scripts/__tests__/documenting-bugs.test.ts` created with all content validation tests
-- [ ] Validation API test for `documenting-bugs` skill
-- [ ] All existing tests continue to pass
-- [ ] Build succeeds with new skill included
+- [x] `scripts/__tests__/build.test.ts` updated with documenting-bugs build tests
+- [x] `scripts/__tests__/skill-utils.test.ts` updated with documenting-bugs discovery tests
+- [x] `scripts/__tests__/documenting-bugs.test.ts` created with all content validation tests
+- [x] Validation API test for `documenting-bugs` skill
+- [x] All existing tests continue to pass
+- [x] Build succeeds with new skill included
 
 ---
 
