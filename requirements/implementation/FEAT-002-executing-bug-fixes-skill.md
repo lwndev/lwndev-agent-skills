@@ -88,7 +88,7 @@ Add an `executing-bug-fixes` skill to the lwndev-agent-skills project that execu
 
 ### Phase 3: Reference Documents
 **Feature:** [FEAT-002](../features/FEAT-002-executing-bug-fixes-skill.md) | [#9](https://github.com/lwndev/lwndev-agent-skills/issues/9)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - **Completes skill content**: The workflow details and GitHub templates are the last content files, rounding out the skill's reference documentation
@@ -114,15 +114,15 @@ Add an `executing-bug-fixes` skill to the lwndev-agent-skills project that execu
 12. Add Creating New Issues section (mirroring chore template)
 
 #### Deliverables
-- [ ] `src/skills/executing-bug-fixes/references/workflow-details.md` with all 3 phases
-- [ ] Root cause redeclaration in Phase 1
-- [ ] Per-root-cause execution loop in Phase 2
-- [ ] Reproduction verification step
-- [ ] Error recovery including bug-specific scenarios
-- [ ] `src/skills/executing-bug-fixes/references/github-templates.md`
-- [ ] Starting work comment template with root causes
-- [ ] Work complete comment template with per-RC resolution status
-- [ ] Commit message categories table with examples
+- [x] `src/skills/executing-bug-fixes/references/workflow-details.md` with all 3 phases
+- [x] Root cause redeclaration in Phase 1
+- [x] Per-root-cause execution loop in Phase 2
+- [x] Reproduction verification step
+- [x] Error recovery including bug-specific scenarios
+- [x] `src/skills/executing-bug-fixes/references/github-templates.md`
+- [x] Starting work comment template with root causes
+- [x] Work complete comment template with per-RC resolution status
+- [x] Commit message categories table with examples
 
 ---
 
