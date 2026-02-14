@@ -246,7 +246,7 @@ As your Skill grows, you can bundle additional content that Claude loads only wh
 
 The complete Skill directory structure might look like this:
 
-```
+```text
 pdf/
 ├── SKILL.md              # Main instructions (loaded when triggered)
 ├── FORMS.md              # Form-filling guide (loaded as needed)
@@ -290,7 +290,7 @@ Claude loads FORMS.md, REFERENCE.md, or EXAMPLES.md only when needed.
 
 For Skills with multiple domains, organize content by domain to avoid loading irrelevant context. When a user asks about sales metrics, Claude only needs to read sales-related schemas, not finance or marketing data. This keeps token usage low and context focused.
 
-```
+```text
 bigquery-skill/
 ├── SKILL.md (overview and navigation)
 └── reference/
@@ -848,13 +848,13 @@ def process_file(path):
     except FileNotFoundError:
         # Create file with default content instead of failing
         print(f"File {path} not found, creating default")
-        with open(path, 'w') as f:
-            f.write('')
-        return ''
+        with open(path, "w") as f:
+            f.write("")
+        return ""
     except PermissionError:
         # Provide alternative instead of failing
         print(f"Cannot access {path}, using default")
-        return ''
+        return ""
 ```
 
 **Bad example: Punt to Claude**:
@@ -880,7 +880,7 @@ MAX_RETRIES = 3
 **Bad example: Magic numbers**:
 ```python
 TIMEOUT = 47  # Why 47?
-RETRIES = 5   # Why 5?
+RETRIES = 5  # Why 5?
 ```
 
 ### Provide utility scripts
@@ -1011,7 +1011,7 @@ Skills run in a code execution environment with filesystem access, bash commands
 
 **Example:**
 
-```
+```text
 bigquery-skill/
 ├── SKILL.md (overview, points to reference files)
 └── reference/
