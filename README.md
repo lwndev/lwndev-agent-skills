@@ -26,7 +26,8 @@ npm run install-skills
 | **implementing-plan-phases** | Executes implementation plan phases with branch management, progress tracking, and deliverable verification |
 | **documenting-chores** | Creates lightweight documentation for maintenance tasks (refactoring, dependency updates, cleanup) |
 | **executing-chores** | Executes chore workflows including branch creation, implementation, and PR creation |
-| **managing-git-worktrees** | Creates and manages Git worktrees for parallel development workflows |
+| **documenting-bugs** | Creates structured bug report documents with root cause analysis and traceable acceptance criteria |
+| **executing-bug-fixes** | Executes bug fix workflows from branch creation through pull request with root cause driven execution |
 
 ## Skill Lifecycle Commands
 
@@ -96,7 +97,7 @@ Instructions for Claude on how to use this skill...
 
 ## Dependencies
 
-- **ai-skills-manager** - Programmatic API for skill operations (v1.6.0+)
+- **ai-skills-manager** - Programmatic API for skill operations (v1.8.0+)
 - **@inquirer/prompts** - Interactive CLI prompts
 - **chalk** - Colored console output
 - **gray-matter** - YAML frontmatter parsing

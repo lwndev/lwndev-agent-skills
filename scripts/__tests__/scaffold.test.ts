@@ -68,14 +68,14 @@ describe('scaffold template options', () => {
   });
 
   it('should pass template type to scaffold API', async () => {
-    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Template test" -o src/skills -f --template agent`;
+    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Template test" -o src/skills -f --template forked`;
 
     execSync(command, { stdio: 'pipe' });
 
     const content = await readFile(join(TEMPLATE_SKILL_PATH, 'SKILL.md'), 'utf-8');
     expect(content).toContain(`name: ${TEMPLATE_SKILL_NAME}`);
-    // Agent template sets the agent field
-    expect(content).toContain('agent:');
+    // Forked template sets the context field
+    expect(content).toContain('context:');
   });
 
   it('should pass minimal flag to scaffold API', async () => {
@@ -89,24 +89,24 @@ describe('scaffold template options', () => {
     expect(content.length).toBeLessThan(2000);
   });
 
-  it('should pass memory scope to scaffold API', async () => {
-    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Memory test" -o src/skills -f --memory user`;
+  it('should pass agent name to scaffold API', async () => {
+    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Agent test" -o src/skills -f --agent Explore`;
 
     execSync(command, { stdio: 'pipe' });
 
     const content = await readFile(join(TEMPLATE_SKILL_PATH, 'SKILL.md'), 'utf-8');
-    expect(content).toContain('memory:');
-    expect(content).toContain('user');
+    expect(content).toContain('agent:');
+    expect(content).toContain('Explore');
   });
 
-  it('should pass model to scaffold API for agent template', async () => {
-    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Model test" -o src/skills -f --template agent --model haiku`;
+  it('should pass license to scaffold API', async () => {
+    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "License test" -o src/skills -f --license MIT`;
 
     execSync(command, { stdio: 'pipe' });
 
     const content = await readFile(join(TEMPLATE_SKILL_PATH, 'SKILL.md'), 'utf-8');
-    expect(content).toContain('model:');
-    expect(content).toContain('haiku');
+    expect(content).toContain('license:');
+    expect(content).toContain('MIT');
   });
 
   it('should pass argument hint to scaffold API', async () => {
@@ -119,16 +119,16 @@ describe('scaffold template options', () => {
   });
 
   it('should combine multiple template options', async () => {
-    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Combined test" -o src/skills -f --template agent --minimal --memory project --model opus --argument-hint "<file>"`;
+    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Combined test" -o src/skills -f --template forked --minimal --agent Explore --argument-hint "<file>" --license MIT`;
 
     execSync(command, { stdio: 'pipe' });
 
     const content = await readFile(join(TEMPLATE_SKILL_PATH, 'SKILL.md'), 'utf-8');
     expect(content).toContain(`name: ${TEMPLATE_SKILL_NAME}`);
-    expect(content).toContain('memory:');
-    expect(content).toContain('model:');
+    expect(content).toContain('context:');
+    expect(content).toContain('agent:');
     expect(content).toContain('argument-hint:');
-    // Minimal agent template is concise
+    // Minimal forked template is concise
     expect(content.length).toBeLessThan(2000);
   });
 });

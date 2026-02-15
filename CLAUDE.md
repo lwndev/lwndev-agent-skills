@@ -32,7 +32,7 @@ npm run format:check    # Check formatting
 ### Script Pipeline
 The scripts implement a skill lifecycle: `scaffold → build → install/update/uninstall`
 
-Scripts use the `ai-skills-manager` programmatic API (v1.6.0+) for all operations:
+Scripts use the `ai-skills-manager` programmatic API (v1.8.0+) for all operations:
 
 - **scaffold.ts** - Creates new skill directories using `scaffold()` API
 - **build.ts** - Validates with `validate()` and packages with `createPackage()` to `dist/*.skill`
