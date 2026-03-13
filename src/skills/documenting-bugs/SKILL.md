@@ -1,6 +1,12 @@
 ---
 name: documenting-bugs
 description: Creates structured bug report documents for tracking defects and issues. Use when the user needs to document a bug, unexpected behavior, regression, UI/UX defect, performance issue, or security vulnerability with root cause analysis and traceable acceptance criteria.
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 ---
 
 # Documenting Bugs

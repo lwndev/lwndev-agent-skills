@@ -1,6 +1,12 @@
 ---
 name: creating-implementation-plans
 description: Creates structured implementation plans from feature requirements. Use when planning new features, multi-phase projects, or when the user asks for an implementation plan, build plan, or development roadmap.
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 ---
 
 # Creating Implementation Plans

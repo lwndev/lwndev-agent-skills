@@ -1,6 +1,14 @@
 ---
 name: executing-chores
 description: Executes chore task workflows including branch creation, implementation, and pull request creation. Use when the user says "execute chore", "implement this chore", "run the chore workflow", or references chore documents in requirements/chores/.
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - Glob
+  - Grep
+  - Agent
 ---
 
 # Executing Chores

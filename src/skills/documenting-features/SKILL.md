@@ -1,6 +1,12 @@
 ---
 name: documenting-features
 description: Creates structured feature requirement documents for software features. Use when defining new features, writing requirements, specifying CLI commands, API endpoints, or when the user asks for feature documentation, requirements, specs, or PRDs.
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Glob
+  - Grep
 ---
 
 # Documenting Features

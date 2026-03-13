@@ -1,6 +1,14 @@
 ---
 name: executing-bug-fixes
 description: Executes bug fix workflows from branch creation through pull request with root cause driven execution. Use when the user says "execute bug fix", "fix this bug", "run the bug fix workflow", or references bug documents in requirements/bugs/.
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - Glob
+  - Grep
+  - Agent
 ---
 
 # Executing Bug Fixes

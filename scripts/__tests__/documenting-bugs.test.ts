@@ -54,6 +54,27 @@ describe('documenting-bugs skill', () => {
     });
   });
 
+  describe('allowed-tools', () => {
+    it('should have allowed-tools in frontmatter', () => {
+      expect(skillMd).toMatch(/^---\s*\n[\s\S]*?allowed-tools:[\s\S]*?---/);
+    });
+
+    it('should include Read, Write, Edit, Glob, Grep', () => {
+      const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
+      expect(frontmatter).toContain('- Read');
+      expect(frontmatter).toContain('- Write');
+      expect(frontmatter).toContain('- Edit');
+      expect(frontmatter).toContain('- Glob');
+      expect(frontmatter).toContain('- Grep');
+    });
+
+    it('should NOT include Bash or Agent', () => {
+      const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
+      expect(frontmatter).not.toContain('- Bash');
+      expect(frontmatter).not.toContain('- Agent');
+    });
+  });
+
   describe('bug document template', () => {
     const requiredSections = [
       'Bug ID',
