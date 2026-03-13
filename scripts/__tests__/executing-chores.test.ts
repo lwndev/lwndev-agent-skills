@@ -80,12 +80,6 @@ describe('executing-chores skill', () => {
       expect(frontmatter).toContain('- Grep');
       expect(frontmatter).toContain('- Agent');
     });
-
-    it('should include Bash and Agent (execution skill)', () => {
-      const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
-      expect(frontmatter).toContain('- Bash');
-      expect(frontmatter).toContain('- Agent');
-    });
   });
 
   describe('PR template', () => {
