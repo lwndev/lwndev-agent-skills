@@ -1,34 +1,28 @@
-# Agent Skills
+# LWNDEV Plugin Marketplace
 
 [![CI](https://github.com/lwndev/lwndev-marketplace/actions/workflows/ci.yml/badge.svg)](https://github.com/lwndev/lwndev-marketplace/actions/workflows/ci.yml)
 
-A reference implementation for developing, building, and distributing custom Agent Skills for Claude Code as a plugin. Use this project as a template for creating your own skill development workflow.
+A marketplace for distributing Claude Code plugins. Add the marketplace to access SDLC workflow plugins for documenting, planning, and executing features, chores, and bug fixes.
 
-## Getting Started
+## Adding the Marketplace
 
 ```bash
-# Install dependencies
-npm install
-
-# Build the plugin
-npm run build
+/plugin marketplace add lwndev/lwndev-marketplace
 ```
 
-## Plugin Installation
+## Available Plugins
 
-### Via marketplace
+| Plugin | Description |
+|--------|-------------|
+| **lwndev-sdlc** | SDLC workflow skills for documenting, planning, and executing features, chores, and bug fixes |
+
+### Installing a Plugin
 
 ```bash
-# Add the marketplace
-/plugin marketplace add lwndev/lwndev-marketplace
-
-# Install the plugin
 /plugin install lwndev-sdlc@lwndev-plugins
 ```
 
-### Via project settings
-
-Add to your project's `.claude/settings.json`:
+Or add to your project's `.claude/settings.json`:
 
 ```json
 {
@@ -46,25 +40,13 @@ Add to your project's `.claude/settings.json`:
 }
 ```
 
-## Included Skills
-
-| Skill | Description |
-|-------|-------------|
-| **documenting-features** | Creates structured feature requirement documents with user stories, acceptance criteria, and functional/non-functional requirements |
-| **creating-implementation-plans** | Transforms feature requirements into phased implementation plans with deliverables and success criteria |
-| **implementing-plan-phases** | Executes implementation plan phases with branch management, progress tracking, and deliverable verification |
-| **documenting-chores** | Creates lightweight documentation for maintenance tasks (refactoring, dependency updates, cleanup) |
-| **executing-chores** | Executes chore workflows including branch creation, implementation, and PR creation |
-| **documenting-bugs** | Creates structured bug report documents with root cause analysis and traceable acceptance criteria |
-| **executing-bug-fixes** | Executes bug fix workflows from branch creation through pull request with root cause driven execution |
-
 ## Development
 
 ### Commands
 
 ```bash
 npm run scaffold         # Create a new skill interactively
-npm run build            # Validate and build plugin to dist/
+npm run build            # Validate and build all plugins to dist/
 npm test                 # Run all tests
 npm run lint             # Check for linting issues
 npm run lint:fix         # Auto-fix linting issues
@@ -75,31 +57,30 @@ npm run format:check     # Check formatting
 ### Project Structure
 
 ```
-├── src/skills/                        # Skill source directories
-│   └── {skill-name}/
-│       ├── SKILL.md                   # Required: YAML frontmatter + instructions
-│       ├── assets/                    # Optional: Templates and static resources
-│       └── references/                # Optional: Reference documentation
-├── src/plugin/                        # Plugin metadata source
-│   ├── plugin.json                    # Plugin manifest
-│   └── README.md                      # Plugin README
+├── src/plugins/                       # Plugin source directories
+│   └── lwndev-sdlc/                  # SDLC workflow plugin
+│       ├── plugin.json               # Plugin manifest
+│       ├── README.md                  # Plugin documentation
+│       └── skills/                    # Skill directories
+│           └── {skill-name}/
+│               ├── SKILL.md           # Required: YAML frontmatter + instructions
+│               ├── assets/            # Optional: Templates and static resources
+│               └── references/        # Optional: Reference documentation
 ├── .claude-plugin/
 │   └── marketplace.json               # Marketplace manifest
 ├── scripts/                           # CLI scripts
 │   ├── lib/                           # Shared utilities
 │   └── __tests__/                     # Test suites
-└── dist/lwndev-sdlc-plugin/          # Built plugin (gitignored)
-    ├── .claude-plugin/plugin.json
-    ├── skills/                        # All skill directories
-    └── README.md
+└── dist/                              # Built plugins (gitignored)
+    └── lwndev-sdlc-plugin/
 ```
 
-### Creating a New Skill
+### Adding a New Plugin
 
-1. Run `npm run scaffold` and follow the prompts
-2. Edit the generated `src/skills/{name}/SKILL.md` with your skill instructions
-3. Add templates and reference docs as needed
-4. Run `npm run build` to validate and build the plugin
+1. Create `src/plugins/{plugin-name}/` with `plugin.json`, `README.md`, and a `skills/` directory
+2. Add skills under `src/plugins/{plugin-name}/skills/` (use `npm run scaffold`)
+3. Add the plugin entry to `.claude-plugin/marketplace.json`
+4. Run `npm run build` to validate and build
 
 ### SKILL.md Format
 

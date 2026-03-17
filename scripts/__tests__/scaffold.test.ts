@@ -2,11 +2,12 @@ import { execSync } from 'node:child_process';
 import { access, rm, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
+const PLUGIN_SKILLS_DIR = 'src/plugins/lwndev-sdlc/skills';
 const TEST_SKILL_NAME = 'test-scaffold-skill';
-const TEST_SKILL_PATH = join('src/skills', TEST_SKILL_NAME);
+const TEST_SKILL_PATH = join(PLUGIN_SKILLS_DIR, TEST_SKILL_NAME);
 
 const TEMPLATE_SKILL_NAME = 'test-scaffold-template';
-const TEMPLATE_SKILL_PATH = join('src/skills', TEMPLATE_SKILL_NAME);
+const TEMPLATE_SKILL_PATH = join(PLUGIN_SKILLS_DIR, TEMPLATE_SKILL_NAME);
 
 describe('scaffold script integration', () => {
   afterAll(async () => {
@@ -19,8 +20,7 @@ describe('scaffold script integration', () => {
   });
 
   it('should create a new skill with asm scaffold', async () => {
-    // Run asm scaffold directly (the script is interactive, so we test the underlying command)
-    const command = `asm scaffold ${TEST_SKILL_NAME} -d "A test skill created by automated tests" -o src/skills -f`;
+    const command = `asm scaffold ${TEST_SKILL_NAME} -d "A test skill created by automated tests" -o ${PLUGIN_SKILLS_DIR} -f`;
 
     execSync(command, { stdio: 'pipe' });
 
@@ -41,7 +41,7 @@ describe('scaffold script integration', () => {
 
   it('should be discoverable by getSourceSkills after creation', async () => {
     const { getSourceSkills } = await import('../lib/skill-utils.js');
-    const skills = await getSourceSkills();
+    const skills = await getSourceSkills('lwndev-sdlc');
     const testSkill = skills.find((s) => s.name === TEST_SKILL_NAME);
 
     expect(testSkill).toBeDefined();
@@ -68,7 +68,7 @@ describe('scaffold template options', () => {
   });
 
   it('should pass template type to scaffold API', async () => {
-    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Template test" -o src/skills -f --template forked`;
+    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Template test" -o ${PLUGIN_SKILLS_DIR} -f --template forked`;
 
     execSync(command, { stdio: 'pipe' });
 
@@ -79,7 +79,7 @@ describe('scaffold template options', () => {
   });
 
   it('should pass minimal flag to scaffold API', async () => {
-    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Minimal test" -o src/skills -f --minimal`;
+    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Minimal test" -o ${PLUGIN_SKILLS_DIR} -f --minimal`;
 
     execSync(command, { stdio: 'pipe' });
 
@@ -90,7 +90,7 @@ describe('scaffold template options', () => {
   });
 
   it('should pass agent name to scaffold API', async () => {
-    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Agent test" -o src/skills -f --agent Explore`;
+    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Agent test" -o ${PLUGIN_SKILLS_DIR} -f --agent Explore`;
 
     execSync(command, { stdio: 'pipe' });
 
@@ -100,7 +100,7 @@ describe('scaffold template options', () => {
   });
 
   it('should pass license to scaffold API', async () => {
-    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "License test" -o src/skills -f --license MIT`;
+    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "License test" -o ${PLUGIN_SKILLS_DIR} -f --license MIT`;
 
     execSync(command, { stdio: 'pipe' });
 
@@ -110,7 +110,7 @@ describe('scaffold template options', () => {
   });
 
   it('should pass argument hint to scaffold API', async () => {
-    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Hint test" -o src/skills -f --argument-hint "<query> [--deep]"`;
+    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Hint test" -o ${PLUGIN_SKILLS_DIR} -f --argument-hint "<query> [--deep]"`;
 
     execSync(command, { stdio: 'pipe' });
 
@@ -119,7 +119,7 @@ describe('scaffold template options', () => {
   });
 
   it('should combine multiple template options', async () => {
-    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Combined test" -o src/skills -f --template forked --minimal --agent Explore --argument-hint "<file>" --license MIT`;
+    const command = `asm scaffold ${TEMPLATE_SKILL_NAME} -d "Combined test" -o ${PLUGIN_SKILLS_DIR} -f --template forked --minimal --agent Explore --argument-hint "<file>" --license MIT`;
 
     execSync(command, { stdio: 'pipe' });
 

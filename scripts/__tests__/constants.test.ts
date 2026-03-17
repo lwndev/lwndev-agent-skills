@@ -1,18 +1,18 @@
 import { join } from 'node:path';
 import {
-  SKILLS_SOURCE_DIR,
+  PLUGINS_SOURCE_DIR,
   DIST_DIR,
-  PLUGIN_NAME,
-  PLUGIN_OUTPUT_DIR,
-  PLUGIN_SKILLS_DIR,
-  PLUGIN_MANIFEST_DIR,
-  PLUGIN_SOURCE_DIR,
+  getPluginSourceDir,
+  getPluginSkillsSourceDir,
+  getPluginOutputDir,
+  getPluginSkillsOutputDir,
+  getPluginManifestOutputDir,
 } from '../lib/constants.js';
 
 describe('constants', () => {
   describe('path constants', () => {
-    it('should have correct SKILLS_SOURCE_DIR', () => {
-      expect(SKILLS_SOURCE_DIR).toBe('src/skills');
+    it('should have correct PLUGINS_SOURCE_DIR', () => {
+      expect(PLUGINS_SOURCE_DIR).toBe('src/plugins');
     });
 
     it('should have correct DIST_DIR', () => {
@@ -20,25 +20,36 @@ describe('constants', () => {
     });
   });
 
-  describe('plugin constants', () => {
-    it('should have correct PLUGIN_NAME', () => {
-      expect(PLUGIN_NAME).toBe('lwndev-sdlc');
+  describe('plugin path helpers', () => {
+    it('should return correct plugin source dir', () => {
+      expect(getPluginSourceDir('lwndev-sdlc')).toBe(join('src', 'plugins', 'lwndev-sdlc'));
     });
 
-    it('should have correct PLUGIN_OUTPUT_DIR', () => {
-      expect(PLUGIN_OUTPUT_DIR).toBe(join('dist', 'lwndev-sdlc-plugin'));
+    it('should return correct plugin skills source dir', () => {
+      expect(getPluginSkillsSourceDir('lwndev-sdlc')).toBe(
+        join('src', 'plugins', 'lwndev-sdlc', 'skills')
+      );
     });
 
-    it('should have correct PLUGIN_SKILLS_DIR', () => {
-      expect(PLUGIN_SKILLS_DIR).toBe(join('dist', 'lwndev-sdlc-plugin', 'skills'));
+    it('should return correct plugin output dir', () => {
+      expect(getPluginOutputDir('lwndev-sdlc')).toBe(join('dist', 'lwndev-sdlc-plugin'));
     });
 
-    it('should have correct PLUGIN_MANIFEST_DIR', () => {
-      expect(PLUGIN_MANIFEST_DIR).toBe(join('dist', 'lwndev-sdlc-plugin', '.claude-plugin'));
+    it('should return correct plugin skills output dir', () => {
+      expect(getPluginSkillsOutputDir('lwndev-sdlc')).toBe(
+        join('dist', 'lwndev-sdlc-plugin', 'skills')
+      );
     });
 
-    it('should have correct PLUGIN_SOURCE_DIR', () => {
-      expect(PLUGIN_SOURCE_DIR).toBe(join('src', 'plugin'));
+    it('should return correct plugin manifest output dir', () => {
+      expect(getPluginManifestOutputDir('lwndev-sdlc')).toBe(
+        join('dist', 'lwndev-sdlc-plugin', '.claude-plugin')
+      );
+    });
+
+    it('should work with different plugin names', () => {
+      expect(getPluginSourceDir('another-plugin')).toBe(join('src', 'plugins', 'another-plugin'));
+      expect(getPluginOutputDir('another-plugin')).toBe(join('dist', 'another-plugin-plugin'));
     });
   });
 });

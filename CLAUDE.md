@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This project develops, builds, and distributes custom Agent Skills for Claude Code as a plugin. Skills are authored in `src/skills/`, validated and assembled into a plugin directory by the build script, and distributed via a marketplace manifest for installation with `/plugin install`.
+This repository is a plugin marketplace for Claude Code. Plugins are authored under `src/plugins/`, each containing skills that are validated and assembled by the build script, then distributed via a marketplace manifest for installation with `/plugin install`.
 
 ## Commands
 
-### Skill Lifecycle
+### Plugin Lifecycle
 ```bash
-npm run scaffold        # Create new skill interactively
-npm run build           # Validate skills and build plugin to dist/lwndev-sdlc-plugin/
+npm run scaffold        # Create new skill interactively (prompts for plugin if multiple exist)
+npm run build           # Validate and build all plugins to dist/
 ```
 
 ### Development
@@ -27,24 +27,35 @@ npm run format:check    # Check formatting
 ## Architecture
 
 ### Plugin Build Pipeline
-The build script produces a Claude Code plugin: `scaffold → build → /plugin install`
+The build script discovers and builds all plugins: `scaffold → build → /plugin install`
 
-- **scaffold.ts** - Creates new skill directories using `scaffold()` API from `ai-skills-manager`
-- **build.ts** - Validates each skill with `validate()` API, then copies all validated skills into the plugin directory structure at `dist/lwndev-sdlc-plugin/`
+- **scaffold.ts** - Creates new skill directories using `scaffold()` API from `ai-skills-manager`. Discovers plugins via `getSourcePlugins()` and auto-selects if only one exists.
+- **build.ts** - Discovers all plugins under `src/plugins/`, validates each plugin's skills with `validate()` API, then copies validated skills into per-plugin output directories under `dist/`.
+
+### Source Structure
+```
+src/plugins/
+└── lwndev-sdlc/               # Each plugin is self-contained
+    ├── plugin.json             # Plugin manifest (name, version, metadata)
+    ├── README.md               # Plugin documentation
+    └── skills/                 # Skill directories
+        ├── documenting-features/
+        ├── creating-implementation-plans/
+        ├── implementing-plan-phases/
+        ├── documenting-chores/
+        ├── executing-chores/
+        ├── documenting-bugs/
+        └── executing-bug-fixes/
+```
 
 ### Plugin Output Structure
+Each plugin builds to `dist/<plugin-name>-plugin/`:
 ```
 dist/lwndev-sdlc-plugin/
 ├── .claude-plugin/
-│   └── plugin.json          # Plugin manifest (name: lwndev-sdlc)
-├── skills/                  # All 7 skill directories
-│   ├── documenting-features/
-│   ├── creating-implementation-plans/
-│   ├── implementing-plan-phases/
-│   ├── documenting-chores/
-│   ├── executing-chores/
-│   ├── documenting-bugs/
-│   └── executing-bug-fixes/
+│   └── plugin.json
+├── skills/
+│   └── (all skill directories)
 └── README.md
 ```
 
@@ -56,12 +67,12 @@ The repository hosts a marketplace manifest at `.claude-plugin/marketplace.json`
 ```
 
 ### Shared Library (`scripts/lib/`)
-- **skill-utils.ts** - Core functions: `getSourceSkills()`, `pluginBuildExists()`
-- **constants.ts** - Path constants: `SKILLS_SOURCE_DIR`, `DIST_DIR`, `PLUGIN_NAME`, `PLUGIN_OUTPUT_DIR`, `PLUGIN_SKILLS_DIR`, `PLUGIN_MANIFEST_DIR`, `PLUGIN_SOURCE_DIR`
+- **constants.ts** - `PLUGINS_SOURCE_DIR`, `DIST_DIR`, and parameterized helpers: `getPluginSourceDir()`, `getPluginSkillsSourceDir()`, `getPluginOutputDir()`, `getPluginSkillsOutputDir()`, `getPluginManifestOutputDir()`
+- **skill-utils.ts** - Core functions: `getSourcePlugins()`, `getSourceSkills(pluginName)`, `pluginBuildExists(pluginName)`
 - **prompts.ts** - CLI print utilities (`printSuccess`, `printError`, `printInfo`, `printWarning`)
 
 ### Skill Structure
-Each skill in `src/skills/` contains:
+Each skill in a plugin's `skills/` directory contains:
 ```
 skill-name/
 ├── SKILL.md      # Required: YAML frontmatter (name, description) + markdown instructions
@@ -69,7 +80,7 @@ skill-name/
 └── references/   # Optional: Reference documentation
 ```
 
-### Existing Skills
+### Existing Skills (lwndev-sdlc plugin)
 Seven skills exist that form three workflow chains:
 1. **documenting-features** → **creating-implementation-plans** → **implementing-plan-phases**
 2. **documenting-chores** → **executing-chores**
@@ -79,5 +90,6 @@ Seven skills exist that form three workflow chains:
 
 - Skill validation uses the `ai-skills-manager` programmatic API (`validate()`)
 - Skills use YAML frontmatter in SKILL.md for metadata extraction
-- Tests run sequentially (`maxWorkers: 1`) to prevent race conditions with shared `src/skills/` and `dist/` directories
-- Plugin source files (`plugin.json`, `README.md`) live in `src/plugin/` and are copied to `dist/` during build
+- Tests run sequentially (`maxWorkers: 1`) to prevent race conditions with shared `src/plugins/` and `dist/` directories
+- Plugin discovery is filesystem-driven: directories under `src/plugins/` with a `plugin.json` are treated as plugins
+- Constants are parameterized functions that accept a plugin name, not hardcoded values

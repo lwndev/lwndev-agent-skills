@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { validate, type DetailedValidateResult } from 'ai-skills-manager';
 
-const SKILL_DIR = 'src/skills/implementing-plan-phases';
+const SKILL_DIR = 'src/plugins/lwndev-sdlc/skills/implementing-plan-phases';
 const SKILL_MD_PATH = join(SKILL_DIR, 'SKILL.md');
 const WORKFLOW_EXAMPLE_PATH = join(SKILL_DIR, 'references', 'workflow-example.md');
 const GITHUB_TEMPLATES_PATH = join(SKILL_DIR, 'references', 'github-templates.md');

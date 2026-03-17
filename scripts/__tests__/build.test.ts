@@ -95,7 +95,7 @@ describe('build script validation', () => {
 });
 
 describe('build script failure handling', () => {
-  const badSkillDir = join('src', 'skills', '_test-bad-skill');
+  const badSkillDir = join('src', 'plugins', 'lwndev-sdlc', 'skills', '_test-bad-skill');
 
   afterAll(async () => {
     await rm(badSkillDir, { recursive: true, force: true });

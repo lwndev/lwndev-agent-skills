@@ -2,12 +2,12 @@
 import { cp, rm, mkdir, copyFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { validate, ValidationError, type DetailedValidateResult } from 'ai-skills-manager';
-import { getSourceSkills } from './lib/skill-utils.js';
+import { getSourcePlugins, getSourceSkills } from './lib/skill-utils.js';
 import {
-  PLUGIN_OUTPUT_DIR,
-  PLUGIN_SKILLS_DIR,
-  PLUGIN_MANIFEST_DIR,
-  PLUGIN_SOURCE_DIR,
+  getPluginSourceDir,
+  getPluginOutputDir,
+  getPluginSkillsOutputDir,
+  getPluginManifestOutputDir,
 } from './lib/constants.js';
 import { printSuccess, printError, printInfo, printWarning } from './lib/prompts.js';
 
@@ -18,19 +18,24 @@ interface BuildResult {
   error?: string;
 }
 
-async function main(): Promise<void> {
-  printInfo('Building plugin from src/skills/');
+async function buildPlugin(pluginName: string): Promise<boolean> {
+  const pluginSourceDir = getPluginSourceDir(pluginName);
+  const pluginOutputDir = getPluginOutputDir(pluginName);
+  const pluginSkillsDir = getPluginSkillsOutputDir(pluginName);
+  const pluginManifestDir = getPluginManifestOutputDir(pluginName);
+
+  printInfo(`Building plugin "${pluginName}" from ${pluginSourceDir}/`);
 
   // Clean and create plugin output directories
-  await rm(PLUGIN_OUTPUT_DIR, { recursive: true, force: true });
-  await mkdir(PLUGIN_MANIFEST_DIR, { recursive: true });
-  await mkdir(PLUGIN_SKILLS_DIR, { recursive: true });
+  await rm(pluginOutputDir, { recursive: true, force: true });
+  await mkdir(pluginManifestDir, { recursive: true });
+  await mkdir(pluginSkillsDir, { recursive: true });
 
-  const skills = await getSourceSkills();
+  const skills = await getSourceSkills(pluginName);
 
   if (skills.length === 0) {
-    printWarning('No skills found in src/skills/');
-    return;
+    printWarning(`No skills found for plugin "${pluginName}"`);
+    return true;
   }
 
   printInfo(`Found ${skills.length} skill(s)`);
@@ -86,7 +91,7 @@ async function main(): Promise<void> {
 
     // Step 2: Copy skill directory to plugin output
     try {
-      const destPath = join(PLUGIN_SKILLS_DIR, skill.name);
+      const destPath = join(pluginSkillsDir, skill.name);
       await cp(skill.path, destPath, { recursive: true });
       result.copied = true;
       printSuccess(`  Copied to ${destPath}`);
@@ -102,7 +107,7 @@ async function main(): Promise<void> {
   // Summary
   console.log('');
   console.log('-'.repeat(50));
-  console.log('Build Summary:');
+  console.log(`Build Summary (${pluginName}):`);
 
   const successful = results.filter((r) => r.validated && r.copied);
   const failed = results.filter((r) => !r.validated || !r.copied);
@@ -117,19 +122,47 @@ async function main(): Promise<void> {
       printError(`  ${f.name}: ${f.error}`);
     }
     // Clean up partial plugin output on failure
-    await rm(PLUGIN_OUTPUT_DIR, { recursive: true, force: true });
-    process.exit(1);
+    await rm(pluginOutputDir, { recursive: true, force: true });
+    return false;
   }
 
   // Copy plugin manifest and README only on full success
-  await copyFile(join(PLUGIN_SOURCE_DIR, 'plugin.json'), join(PLUGIN_MANIFEST_DIR, 'plugin.json'));
+  await copyFile(join(pluginSourceDir, 'plugin.json'), join(pluginManifestDir, 'plugin.json'));
   printSuccess('Copied plugin.json');
 
-  await copyFile(join(PLUGIN_SOURCE_DIR, 'README.md'), join(PLUGIN_OUTPUT_DIR, 'README.md'));
+  await copyFile(join(pluginSourceDir, 'README.md'), join(pluginOutputDir, 'README.md'));
   printSuccess('Copied README.md');
 
   console.log('');
-  printSuccess(`Plugin built at ${PLUGIN_OUTPUT_DIR}`);
+  printSuccess(`Plugin built at ${pluginOutputDir}`);
+  return true;
+}
+
+async function main(): Promise<void> {
+  const plugins = await getSourcePlugins();
+
+  if (plugins.length === 0) {
+    printWarning('No plugins found in src/plugins/');
+    return;
+  }
+
+  printInfo(`Found ${plugins.length} plugin(s): ${plugins.join(', ')}`);
+  console.log('');
+
+  let allSucceeded = true;
+
+  for (const pluginName of plugins) {
+    const success = await buildPlugin(pluginName);
+    if (!success) {
+      allSucceeded = false;
+    }
+    console.log('');
+  }
+
+  if (!allSucceeded) {
+    printError('One or more plugins failed to build');
+    process.exit(1);
+  }
 }
 
 main().catch((err) => {
