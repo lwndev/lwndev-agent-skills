@@ -57,11 +57,11 @@ Eliminate `src/` and `dist/` directories by moving plugins to a top-level `plugi
 
 ## Completion
 
-**Status:** `In Progress`
+**Status:** `Completed`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-03-17
 
-**Pull Request:** [#N](https://github.com/lwndev/lwndev-marketplace/pull/N)
+**Pull Request:** [#30](https://github.com/lwndev/lwndev-marketplace/pull/30)
 
 ## Notes
 
