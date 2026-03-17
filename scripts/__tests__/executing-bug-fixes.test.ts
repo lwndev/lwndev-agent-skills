@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { validate, type DetailedValidateResult } from 'ai-skills-manager';
 
-const SKILL_DIR = 'src/plugins/lwndev-sdlc/skills/executing-bug-fixes';
+const SKILL_DIR = 'plugins/lwndev-sdlc/skills/executing-bug-fixes';
 const SKILL_MD_PATH = join(SKILL_DIR, 'SKILL.md');
 const PR_TEMPLATE_PATH = join(SKILL_DIR, 'assets', 'pr-template.md');
 const WORKFLOW_PATH = join(SKILL_DIR, 'references', 'workflow-details.md');

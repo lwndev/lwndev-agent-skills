@@ -1,11 +1,7 @@
 import { readdir, readFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import matter from 'gray-matter';
-import {
-  PLUGINS_SOURCE_DIR,
-  getPluginSkillsSourceDir,
-  getPluginManifestOutputDir,
-} from './constants.js';
+import { PLUGINS_DIR, getPluginSkillsDir } from './constants.js';
 
 export interface SkillInfo {
   name: string;
@@ -14,23 +10,23 @@ export interface SkillInfo {
 }
 
 /**
- * Discover all plugins under src/plugins/ by looking for directories with a plugin.json
+ * Discover all plugins under plugins/ by looking for directories with .claude-plugin/plugin.json
  */
 export async function getSourcePlugins(): Promise<string[]> {
   const plugins: string[] = [];
 
   try {
-    const entries = await readdir(PLUGINS_SOURCE_DIR, { withFileTypes: true });
+    const entries = await readdir(PLUGINS_DIR, { withFileTypes: true });
 
     for (const entry of entries) {
       if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
 
-      const pluginJsonPath = join(PLUGINS_SOURCE_DIR, entry.name, 'plugin.json');
+      const pluginJsonPath = join(PLUGINS_DIR, entry.name, '.claude-plugin', 'plugin.json');
       try {
         await access(pluginJsonPath);
         plugins.push(entry.name);
       } catch {
-        // Skip directories without plugin.json
+        // Skip directories without .claude-plugin/plugin.json
       }
     }
   } catch (err) {
@@ -45,7 +41,7 @@ export async function getSourcePlugins(): Promise<string[]> {
  */
 export async function getSourceSkills(pluginName: string): Promise<SkillInfo[]> {
   const skills: SkillInfo[] = [];
-  const skillsDir = getPluginSkillsSourceDir(pluginName);
+  const skillsDir = getPluginSkillsDir(pluginName);
 
   try {
     const entries = await readdir(skillsDir, { withFileTypes: true });
@@ -76,16 +72,4 @@ export async function getSourceSkills(pluginName: string): Promise<SkillInfo[]> 
   }
 
   return skills.sort((a, b) => a.name.localeCompare(b.name));
-}
-
-/**
- * Check if a plugin has been built (plugin.json exists in output)
- */
-export async function pluginBuildExists(pluginName: string): Promise<boolean> {
-  try {
-    await access(join(getPluginManifestOutputDir(pluginName), 'plugin.json'));
-    return true;
-  } catch {
-    return false;
-  }
 }

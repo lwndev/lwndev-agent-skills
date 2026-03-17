@@ -46,7 +46,7 @@ Or add to your project's `.claude/settings.json`:
 
 ```bash
 npm run scaffold         # Create a new skill interactively
-npm run build            # Validate and build all plugins to dist/
+npm run build            # Validate all plugins
 npm test                 # Run all tests
 npm run lint             # Check for linting issues
 npm run lint:fix         # Auto-fix linting issues
@@ -57,30 +57,29 @@ npm run format:check     # Check formatting
 ### Project Structure
 
 ```
-├── src/plugins/                       # Plugin source directories
+├── plugins/                           # Plugin directories (committed)
 │   └── lwndev-sdlc/                  # SDLC workflow plugin
-│       ├── plugin.json               # Plugin manifest
-│       ├── README.md                  # Plugin documentation
-│       └── skills/                    # Skill directories
-│           └── {skill-name}/
-│               ├── SKILL.md           # Required: YAML frontmatter + instructions
-│               ├── assets/            # Optional: Templates and static resources
-│               └── references/        # Optional: Reference documentation
+│       ├── .claude-plugin/
+│       │   └── plugin.json           # Plugin manifest
+│       ├── skills/                    # Skill directories
+│       │   └── {skill-name}/
+│       │       ├── SKILL.md           # Required: YAML frontmatter + instructions
+│       │       ├── assets/            # Optional: Templates and static resources
+│       │       └── references/        # Optional: Reference documentation
+│       └── README.md                  # Plugin documentation
 ├── .claude-plugin/
 │   └── marketplace.json               # Marketplace manifest
-├── scripts/                           # CLI scripts
-│   ├── lib/                           # Shared utilities
-│   └── __tests__/                     # Test suites
-└── dist/                              # Built plugins (gitignored)
-    └── lwndev-sdlc/
+└── scripts/                           # CLI scripts
+    ├── lib/                           # Shared utilities
+    └── __tests__/                     # Test suites
 ```
 
 ### Adding a New Plugin
 
-1. Create `src/plugins/{plugin-name}/` with `plugin.json`, `README.md`, and a `skills/` directory
-2. Add skills under `src/plugins/{plugin-name}/skills/` (use `npm run scaffold`)
+1. Create `plugins/{plugin-name}/` with `.claude-plugin/plugin.json`, `README.md`, and a `skills/` directory
+2. Add skills under `plugins/{plugin-name}/skills/` (use `npm run scaffold`)
 3. Add the plugin entry to `.claude-plugin/marketplace.json`
-4. Run `npm run build` to validate and build
+4. Run `npm run build` to validate
 
 ### SKILL.md Format
 

@@ -5,12 +5,12 @@
   },
   "metadata": {
     "description": "SDLC workflow plugins for Claude Code",
-    "pluginRoot": "./dist"
+    "pluginRoot": "./plugins"
   },
   "plugins": [
     {
       "name": "lwndev-sdlc",
-      "source": "./dist/lwndev-sdlc",
+      "source": "./plugins/lwndev-sdlc",
       "description": "SDLC workflow skills for documenting, planning, and executing features, chores, and bug fixes",
       "version": "1.0.0"
     }

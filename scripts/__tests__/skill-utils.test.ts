@@ -1,11 +1,11 @@
 import { mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { getSourceSkills, getSourcePlugins, pluginBuildExists } from '../lib/skill-utils.js';
+import { getSourceSkills, getSourcePlugins } from '../lib/skill-utils.js';
 
 describe('skill-utils', () => {
   describe('getSourcePlugins', () => {
-    it('should discover plugins in src/plugins/', async () => {
+    it('should discover plugins in plugins/', async () => {
       const plugins = await getSourcePlugins();
       expect(plugins.length).toBeGreaterThan(0);
       expect(plugins).toContain('lwndev-sdlc');
@@ -57,7 +57,7 @@ describe('skill-utils', () => {
 
       expect(docBugs).toBeDefined();
       expect(docBugs?.description).toBeTruthy();
-      expect(docBugs?.path).toContain('src/plugins/lwndev-sdlc/skills/documenting-bugs');
+      expect(docBugs?.path).toContain('plugins/lwndev-sdlc/skills/documenting-bugs');
     });
 
     it('should return executing-bug-fixes with correct metadata', async () => {
@@ -66,37 +66,7 @@ describe('skill-utils', () => {
 
       expect(execBugFixes).toBeDefined();
       expect(execBugFixes?.description).toBeTruthy();
-      expect(execBugFixes?.path).toContain('src/plugins/lwndev-sdlc/skills/executing-bug-fixes');
-    });
-  });
-
-  describe('pluginBuildExists', () => {
-    it('should return false when plugin output does not exist', async () => {
-      const { rename } = await import('node:fs/promises');
-      const { getPluginManifestOutputDir } = await import('../lib/constants.js');
-      const manifestDir = getPluginManifestOutputDir('lwndev-sdlc');
-      const backupPath = `${manifestDir}-backup`;
-      let renamed = false;
-
-      try {
-        await rename(manifestDir, backupPath);
-        renamed = true;
-      } catch {
-        // Dir doesn't exist (clean dist), false case is naturally true
-      }
-
-      try {
-        const result = await pluginBuildExists('lwndev-sdlc');
-        if (renamed) {
-          expect(result).toBe(false);
-        } else {
-          expect(typeof result).toBe('boolean');
-        }
-      } finally {
-        if (renamed) {
-          await rename(backupPath, manifestDir);
-        }
-      }
+      expect(execBugFixes?.path).toContain('plugins/lwndev-sdlc/skills/executing-bug-fixes');
     });
   });
 });
@@ -138,6 +108,6 @@ This is a test skill.
 
     expect(docFeatures).toBeDefined();
     expect(docFeatures?.description).toBeTruthy();
-    expect(docFeatures?.path).toContain('src/plugins/lwndev-sdlc/skills/documenting-features');
+    expect(docFeatures?.path).toContain('plugins/lwndev-sdlc/skills/documenting-features');
   });
 });

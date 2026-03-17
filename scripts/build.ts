@@ -1,59 +1,40 @@
 #!/usr/bin/env tsx
-import { access, cp, rm, mkdir, copyFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import { validate, ValidationError, type DetailedValidateResult } from 'ai-skills-manager';
 import { getSourcePlugins, getSourceSkills } from './lib/skill-utils.js';
-import {
-  getPluginSourceDir,
-  getPluginOutputDir,
-  getPluginSkillsOutputDir,
-  getPluginManifestOutputDir,
-} from './lib/constants.js';
+import { getPluginDir } from './lib/constants.js';
 import { printSuccess, printError, printInfo, printWarning } from './lib/prompts.js';
 
-interface BuildResult {
+interface ValidateResult {
   name: string;
-  validated: boolean;
-  copied: boolean;
+  valid: boolean;
   error?: string;
 }
 
-async function buildPlugin(pluginName: string): Promise<boolean> {
-  const pluginSourceDir = getPluginSourceDir(pluginName);
-  const pluginOutputDir = getPluginOutputDir(pluginName);
-  const pluginSkillsDir = getPluginSkillsOutputDir(pluginName);
-  const pluginManifestDir = getPluginManifestOutputDir(pluginName);
+async function validatePlugin(pluginName: string): Promise<boolean> {
+  const pluginDir = getPluginDir(pluginName);
 
-  printInfo(`Building plugin "${pluginName}" from ${pluginSourceDir}/`);
-
-  // Clean and create plugin output directories
-  await rm(pluginOutputDir, { recursive: true, force: true });
-  await mkdir(pluginManifestDir, { recursive: true });
-  await mkdir(pluginSkillsDir, { recursive: true });
+  printInfo(`Validating plugin "${pluginName}" at ${pluginDir}/`);
 
   const skills = await getSourceSkills(pluginName);
 
   if (skills.length === 0) {
     printError(`No skills found for plugin "${pluginName}"`);
-    await rm(pluginOutputDir, { recursive: true, force: true });
     return false;
   }
 
   printInfo(`Found ${skills.length} skill(s)`);
   console.log('');
 
-  const results: BuildResult[] = [];
+  const results: ValidateResult[] = [];
 
   for (const skill of skills) {
-    const result: BuildResult = {
+    const result: ValidateResult = {
       name: skill.name,
-      validated: false,
-      copied: false,
+      valid: false,
     };
 
-    console.log(`Building: ${skill.name}`);
+    console.log(`Validating: ${skill.name}`);
 
-    // Step 1: Validate using programmatic API (detailed mode)
     try {
       const validation: DetailedValidateResult = await validate(skill.path, { detailed: true });
       const checkEntries = Object.entries(validation.checks);
@@ -70,7 +51,7 @@ async function buildPlugin(pluginName: string): Promise<boolean> {
         continue;
       }
 
-      result.validated = true;
+      result.valid = true;
       printSuccess(`  Validated (${passed}/${total} checks passed)`);
 
       if (validation.warnings && validation.warnings.length > 0) {
@@ -86,20 +67,6 @@ async function buildPlugin(pluginName: string): Promise<boolean> {
         result.error = `Validation failed: ${error.message}`;
       }
       printError('  Validation failed');
-      results.push(result);
-      continue;
-    }
-
-    // Step 2: Copy skill directory to plugin output
-    try {
-      const destPath = join(pluginSkillsDir, skill.name);
-      await cp(skill.path, destPath, { recursive: true });
-      result.copied = true;
-      printSuccess(`  Copied to ${destPath}`);
-    } catch (err: unknown) {
-      const error = err as { message?: string };
-      result.error = `Copy failed: ${error.message}`;
-      printError('  Copy failed');
     }
 
     results.push(result);
@@ -108,13 +75,13 @@ async function buildPlugin(pluginName: string): Promise<boolean> {
   // Summary
   console.log('');
   console.log('-'.repeat(50));
-  console.log(`Build Summary (${pluginName}):`);
+  console.log(`Validation Summary (${pluginName}):`);
 
-  const successful = results.filter((r) => r.validated && r.copied);
-  const failed = results.filter((r) => !r.validated || !r.copied);
+  const successful = results.filter((r) => r.valid);
+  const failed = results.filter((r) => !r.valid);
 
   printInfo(`Total: ${results.length}`);
-  printSuccess(`Successful: ${successful.length}`);
+  printSuccess(`Passed: ${successful.length}`);
 
   if (failed.length > 0) {
     printError(`Failed: ${failed.length}`);
@@ -122,26 +89,11 @@ async function buildPlugin(pluginName: string): Promise<boolean> {
     for (const f of failed) {
       printError(`  ${f.name}: ${f.error}`);
     }
-    // Clean up partial plugin output on failure
-    await rm(pluginOutputDir, { recursive: true, force: true });
     return false;
   }
 
-  // Copy plugin manifest and README only on full success
-  await copyFile(join(pluginSourceDir, 'plugin.json'), join(pluginManifestDir, 'plugin.json'));
-  printSuccess('Copied plugin.json');
-
-  const readmeSrc = join(pluginSourceDir, 'README.md');
-  try {
-    await access(readmeSrc);
-    await copyFile(readmeSrc, join(pluginOutputDir, 'README.md'));
-    printSuccess('Copied README.md');
-  } catch {
-    // README.md is optional
-  }
-
   console.log('');
-  printSuccess(`Plugin built at ${pluginOutputDir}`);
+  printSuccess(`Plugin "${pluginName}" validated successfully`);
   return true;
 }
 
@@ -149,7 +101,7 @@ async function main(): Promise<void> {
   const plugins = await getSourcePlugins();
 
   if (plugins.length === 0) {
-    printWarning('No plugins found in src/plugins/');
+    printWarning('No plugins found in plugins/');
     return;
   }
 
@@ -159,7 +111,7 @@ async function main(): Promise<void> {
   let allSucceeded = true;
 
   for (const pluginName of plugins) {
-    const success = await buildPlugin(pluginName);
+    const success = await validatePlugin(pluginName);
     if (!success) {
       allSucceeded = false;
     }
@@ -167,7 +119,7 @@ async function main(): Promise<void> {
   }
 
   if (!allSucceeded) {
-    printError('One or more plugins failed to build');
+    printError('One or more plugins failed validation');
     process.exit(1);
   }
 }

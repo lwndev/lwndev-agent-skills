@@ -2,7 +2,7 @@ import { execSync } from 'node:child_process';
 import { access, rm, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-const PLUGIN_SKILLS_DIR = 'src/plugins/lwndev-sdlc/skills';
+const PLUGIN_SKILLS_DIR = 'plugins/lwndev-sdlc/skills';
 const TEST_SKILL_NAME = 'test-scaffold-skill';
 const TEST_SKILL_PATH = join(PLUGIN_SKILLS_DIR, TEST_SKILL_NAME);
 

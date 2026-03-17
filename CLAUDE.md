@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repository is a plugin marketplace for Claude Code. Plugins are authored under `src/plugins/`, each containing skills that are validated and assembled by the build script, then distributed via a marketplace manifest for installation with `/plugin install`.
+This repository is a plugin marketplace for Claude Code. Plugins live under `plugins/` in their final Claude Code-consumable structure, validated by the build script and distributed via a marketplace manifest for installation with `/plugin install`.
 
 ## Commands
 
 ### Plugin Lifecycle
 ```bash
 npm run scaffold        # Create new skill interactively (prompts for plugin if multiple exist)
-npm run build           # Validate and build all plugins to dist/
+npm run build           # Validate all plugins
 ```
 
 ### Development
@@ -26,49 +26,40 @@ npm run format:check    # Check formatting
 
 ## Architecture
 
-### Plugin Build Pipeline
-The build script discovers and builds all plugins: `scaffold → build → /plugin install`
+### Plugin Validation Pipeline
+The build script discovers and validates all plugins: `scaffold → build (validate) → /plugin install`
 
-- **scaffold.ts** - Creates new skill directories using `scaffold()` API from `ai-skills-manager`. Discovers plugins via `getSourcePlugins()` and auto-selects if only one exists.
-- **build.ts** - Discovers all plugins under `src/plugins/`, validates each plugin's skills with `validate()` API, then copies validated skills into per-plugin output directories under `dist/`.
+- **scaffold.ts** - Creates new skill directories using `scaffold()` API from `ai-skills-manager`. Discovers plugins via `getSourcePlugins()` and auto-selects if only one exists. Supports `--plugin <name>` flag.
+- **build.ts** - Discovers all plugins under `plugins/`, validates each plugin's skills with `validate()` API in-place. No copy step — plugins are already in their final structure.
 
-### Source Structure
+### Plugin Structure
+Each plugin under `plugins/` is self-contained and directly consumable by Claude Code:
 ```
-src/plugins/
-└── lwndev-sdlc/               # Each plugin is self-contained
-    ├── plugin.json             # Plugin manifest (name, version, metadata)
-    ├── README.md               # Plugin documentation
-    └── skills/                 # Skill directories
-        ├── documenting-features/
-        ├── creating-implementation-plans/
-        ├── implementing-plan-phases/
-        ├── documenting-chores/
-        ├── executing-chores/
-        ├── documenting-bugs/
-        └── executing-bug-fixes/
-```
-
-### Plugin Output Structure
-Each plugin builds to `dist/<plugin-name>/`:
-```
-dist/lwndev-sdlc/
-├── .claude-plugin/
-│   └── plugin.json
-├── skills/
-│   └── (all skill directories)
-└── README.md
+plugins/
+└── lwndev-sdlc/
+    ├── .claude-plugin/
+    │   └── plugin.json         # Plugin manifest (name, version, metadata)
+    ├── skills/                 # Skill directories
+    │   ├── documenting-features/
+    │   ├── creating-implementation-plans/
+    │   ├── implementing-plan-phases/
+    │   ├── documenting-chores/
+    │   ├── executing-chores/
+    │   ├── documenting-bugs/
+    │   └── executing-bug-fixes/
+    └── README.md               # Plugin documentation
 ```
 
 ### Marketplace
-The repository hosts a marketplace manifest at `.claude-plugin/marketplace.json` for plugin distribution. Users install via:
+The repository hosts a marketplace manifest at `.claude-plugin/marketplace.json` for plugin distribution. Source paths point directly to committed `plugins/` directories. Users install via:
 ```bash
 /plugin marketplace add lwndev/lwndev-marketplace
 /plugin install lwndev-sdlc@lwndev-plugins
 ```
 
 ### Shared Library (`scripts/lib/`)
-- **constants.ts** - `PLUGINS_SOURCE_DIR`, `DIST_DIR`, and parameterized helpers: `getPluginSourceDir()`, `getPluginSkillsSourceDir()`, `getPluginOutputDir()`, `getPluginSkillsOutputDir()`, `getPluginManifestOutputDir()`
-- **skill-utils.ts** - Core functions: `getSourcePlugins()`, `getSourceSkills(pluginName)`, `pluginBuildExists(pluginName)`
+- **constants.ts** - `PLUGINS_DIR` and parameterized helpers: `getPluginDir()`, `getPluginSkillsDir()`, `getPluginManifestDir()`
+- **skill-utils.ts** - Core functions: `getSourcePlugins()`, `getSourceSkills(pluginName)`
 - **prompts.ts** - CLI print utilities (`printSuccess`, `printError`, `printInfo`, `printWarning`)
 
 ### Skill Structure
@@ -90,6 +81,6 @@ Seven skills exist that form three workflow chains:
 
 - Skill validation uses the `ai-skills-manager` programmatic API (`validate()`)
 - Skills use YAML frontmatter in SKILL.md for metadata extraction
-- Tests run sequentially (`maxWorkers: 1`) to prevent race conditions with shared `src/plugins/` and `dist/` directories
-- Plugin discovery is filesystem-driven: directories under `src/plugins/` with a `plugin.json` are treated as plugins
-- Constants are parameterized functions that accept a plugin name, not hardcoded values
+- Tests run sequentially (`maxWorkers: 1`) to prevent race conditions with shared `plugins/` directories
+- Plugin discovery is filesystem-driven: directories under `plugins/` with `.claude-plugin/plugin.json` are treated as plugins
+- No build output — plugins live in their final structure under `plugins/` and marketplace source paths point directly to them

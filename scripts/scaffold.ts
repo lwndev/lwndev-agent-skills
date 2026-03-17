@@ -5,7 +5,7 @@ import { accessSync } from 'node:fs';
 import { join } from 'node:path';
 import { scaffold as scaffoldSkill } from 'ai-skills-manager';
 import type { ScaffoldTemplateOptions } from 'ai-skills-manager';
-import { getPluginSkillsSourceDir } from './lib/constants.js';
+import { getPluginSkillsDir } from './lib/constants.js';
 import { getSourcePlugins } from './lib/skill-utils.js';
 import { printSuccess, printError, printInfo } from './lib/prompts.js';
 
@@ -28,7 +28,7 @@ async function main(): Promise<void> {
   const plugins = await getSourcePlugins();
 
   if (plugins.length === 0) {
-    printError('No plugins found in src/plugins/');
+    printError('No plugins found in plugins/');
     process.exit(1);
   }
 
@@ -53,7 +53,7 @@ async function main(): Promise<void> {
     });
   }
 
-  const skillsDir = getPluginSkillsSourceDir(selectedPlugin);
+  const skillsDir = getPluginSkillsDir(selectedPlugin);
   printInfo(`Create a new skill in ${skillsDir}/`);
 
   // Prompt for skill name

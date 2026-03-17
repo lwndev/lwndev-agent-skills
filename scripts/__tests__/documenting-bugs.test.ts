@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { validate, type DetailedValidateResult } from 'ai-skills-manager';
 
-const SKILL_DIR = 'src/plugins/lwndev-sdlc/skills/documenting-bugs';
+const SKILL_DIR = 'plugins/lwndev-sdlc/skills/documenting-bugs';
 const SKILL_MD_PATH = join(SKILL_DIR, 'SKILL.md');
 const TEMPLATE_PATH = join(SKILL_DIR, 'assets', 'bug-document.md');
 const CATEGORIES_PATH = join(SKILL_DIR, 'references', 'categories.md');

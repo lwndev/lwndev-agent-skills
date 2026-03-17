@@ -2,20 +2,45 @@ import { execSync } from 'node:child_process';
 import { access, readdir, readFile, rm, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-const PLUGIN_DIR = 'dist/lwndev-sdlc';
+const PLUGIN_DIR = 'plugins/lwndev-sdlc';
 const MANIFEST_PATH = join(PLUGIN_DIR, '.claude-plugin', 'plugin.json');
 const SKILLS_DIR = join(PLUGIN_DIR, 'skills');
 
-describe('build script integration', () => {
-  beforeAll(async () => {
-    execSync('npm run build', { stdio: 'pipe' });
+describe('build script validation', () => {
+  let buildOutput: string;
+
+  beforeAll(() => {
+    buildOutput = execSync('npm run build', {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
   });
 
-  it('should create plugin output directory', async () => {
-    await expect(access(PLUGIN_DIR)).resolves.toBeUndefined();
+  it('should exit with code 0 on success', () => {
+    expect(buildOutput).toBeDefined();
   });
 
-  it('should create .claude-plugin directory with plugin.json', async () => {
+  it('should output validation summary', () => {
+    expect(buildOutput).toContain('Validating plugin');
+    expect(buildOutput).toContain('Validation Summary');
+    expect(buildOutput).toContain('Passed');
+  });
+
+  it('should display detailed validation check counts', () => {
+    const checkPattern = /Validated \(\d+\/\d+ checks passed\)/g;
+    const matches = buildOutput.match(checkPattern) ?? [];
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('should validate all 7 skills', () => {
+    const validatedPattern = /Validating: /g;
+    const matches = buildOutput.match(validatedPattern) ?? [];
+    expect(matches.length).toBe(7);
+  });
+});
+
+describe('plugin structure', () => {
+  it('should have .claude-plugin directory with plugin.json', async () => {
     await expect(access(MANIFEST_PATH)).resolves.toBeUndefined();
 
     const content = await readFile(MANIFEST_PATH, 'utf-8');
@@ -27,7 +52,7 @@ describe('build script integration', () => {
     expect(manifest.author).toEqual({ name: 'lwndev' });
   });
 
-  it('should create skills directory with all 7 skills', async () => {
+  it('should have skills directory with all 7 skills', async () => {
     const skillDirs = await readdir(SKILLS_DIR);
 
     expect(skillDirs).toContain('documenting-features');
@@ -49,55 +74,14 @@ describe('build script integration', () => {
     }
   });
 
-  it('should include assets directories when present', async () => {
-    // documenting-features has assets/
-    const assetsPath = join(SKILLS_DIR, 'documenting-features', 'assets');
-    await expect(access(assetsPath)).resolves.toBeUndefined();
-  });
-
-  it('should include references directories when present', async () => {
-    // executing-chores has references/
-    const refsPath = join(SKILLS_DIR, 'executing-chores', 'references');
-    await expect(access(refsPath)).resolves.toBeUndefined();
-  });
-
   it('should include README.md at plugin root', async () => {
     const readmePath = join(PLUGIN_DIR, 'README.md');
     await expect(access(readmePath)).resolves.toBeUndefined();
   });
 });
 
-describe('build script validation', () => {
-  let buildOutput: string;
-
-  beforeAll(() => {
-    buildOutput = execSync('npm run build', {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-  });
-
-  it('should exit with code 0 on success', () => {
-    expect(buildOutput).toBeDefined();
-  });
-
-  it('should output build summary', () => {
-    expect(buildOutput).toContain('Building plugin');
-    expect(buildOutput).toContain('Build Summary');
-    expect(buildOutput).toContain('Successful');
-  });
-
-  it('should display detailed validation check counts', () => {
-    const checkPattern = /Validated \(\d+\/\d+ checks passed\)/g;
-    const matches = buildOutput.match(checkPattern) ?? [];
-    expect(matches.length).toBeGreaterThanOrEqual(1);
-  });
-});
-
 describe('marketplace manifest validation', () => {
-  it('should have source paths that resolve to built plugin directories', async () => {
-    execSync('npm run build', { stdio: 'pipe' });
-
+  it('should have source paths that resolve to plugin directories', async () => {
     const content = await readFile('.claude-plugin/marketplace.json', 'utf-8');
     const marketplace = JSON.parse(content);
 
@@ -110,7 +94,7 @@ describe('marketplace manifest validation', () => {
     }
   });
 
-  it('should list plugins whose names match built plugin.json names', async () => {
+  it('should list plugins whose names match plugin.json names', async () => {
     const content = await readFile('.claude-plugin/marketplace.json', 'utf-8');
     const marketplace = JSON.parse(content);
 
@@ -127,7 +111,7 @@ describe('marketplace manifest validation', () => {
 });
 
 describe('build script failure handling', () => {
-  const badSkillDir = join('src', 'plugins', 'lwndev-sdlc', 'skills', '_test-bad-skill');
+  const badSkillDir = join('plugins', 'lwndev-sdlc', 'skills', '_test-bad-skill');
 
   afterAll(async () => {
     await rm(badSkillDir, { recursive: true, force: true });
