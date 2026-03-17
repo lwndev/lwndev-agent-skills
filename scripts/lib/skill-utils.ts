@@ -1,8 +1,7 @@
 import { readdir, readFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import matter from 'gray-matter';
-import { list as listSkills, type ApiScope } from 'ai-skills-manager';
-import { SKILLS_SOURCE_DIR, DIST_DIR, type Scope } from './constants.js';
+import { SKILLS_SOURCE_DIR, PLUGIN_MANIFEST_DIR } from './constants.js';
 
 export interface SkillInfo {
   name: string;
@@ -48,36 +47,11 @@ export async function getSourceSkills(): Promise<SkillInfo[]> {
 }
 
 /**
- * Get installed skills from a scope (project or personal) using the programmatic API
+ * Check if the plugin has been built (plugin.json exists in output)
  */
-export async function getInstalledSkills(scope: Scope): Promise<SkillInfo[]> {
+export async function pluginBuildExists(): Promise<boolean> {
   try {
-    const { skills: installedSkills } = await listSkills({ scope: scope as ApiScope });
-
-    return installedSkills.map((skill) => ({
-      name: skill.name,
-      description: skill.description || 'No description',
-      path: skill.path,
-    }));
-  } catch {
-    // If list fails (e.g., directory doesn't exist), return empty array
-    return [];
-  }
-}
-
-/**
- * Get the packaged skill file path
- */
-export function getPackagedSkillPath(skillName: string): string {
-  return join(DIST_DIR, `${skillName}.skill`);
-}
-
-/**
- * Check if a packaged skill exists in dist/
- */
-export async function packagedSkillExists(skillName: string): Promise<boolean> {
-  try {
-    await access(getPackagedSkillPath(skillName));
+    await access(join(PLUGIN_MANIFEST_DIR, 'plugin.json'));
     return true;
   } catch {
     return false;

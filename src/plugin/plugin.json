@@ -1,0 +1,11 @@
+{
+  "name": "lwndev-sdlc",
+  "version": "1.0.0",
+  "description": "SDLC workflow skills for documenting, planning, and executing features, chores, and bug fixes",
+  "author": {
+    "name": "lwndev"
+  },
+  "repository": "https://github.com/lwndev/lwndev-marketplace",
+  "license": "MIT",
+  "keywords": ["sdlc", "workflow", "features", "bugs", "chores"]
+}

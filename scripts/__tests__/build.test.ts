@@ -1,65 +1,69 @@
 import { execSync } from 'node:child_process';
-import { access, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
+import { access, readdir, readFile, rm, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+
+const PLUGIN_DIR = 'dist/lwndev-sdlc-plugin';
+const MANIFEST_PATH = join(PLUGIN_DIR, '.claude-plugin', 'plugin.json');
+const SKILLS_DIR = join(PLUGIN_DIR, 'skills');
 
 describe('build script integration', () => {
   beforeAll(async () => {
-    // Run the build script before tests
     execSync('npm run build', { stdio: 'pipe' });
   });
 
-  it('should create dist directory', async () => {
-    await expect(access('dist')).resolves.toBeUndefined();
+  it('should create plugin output directory', async () => {
+    await expect(access(PLUGIN_DIR)).resolves.toBeUndefined();
   });
 
-  it('should create .skill files for all source skills', async () => {
-    const distFiles = await readdir('dist');
-    const skillFiles = distFiles.filter((f) => f.endsWith('.skill'));
+  it('should create .claude-plugin directory with plugin.json', async () => {
+    await expect(access(MANIFEST_PATH)).resolves.toBeUndefined();
 
-    // Should have created skill files
-    expect(skillFiles.length).toBeGreaterThan(0);
+    const content = await readFile(MANIFEST_PATH, 'utf-8');
+    const manifest = JSON.parse(content);
 
-    // Check for known skills
-    expect(skillFiles).toContain('documenting-features.skill');
-    expect(skillFiles).toContain('creating-implementation-plans.skill');
-    expect(skillFiles).toContain('documenting-chores.skill');
-    expect(skillFiles).toContain('executing-chores.skill');
-    expect(skillFiles).toContain('implementing-plan-phases.skill');
-    expect(skillFiles).toContain('documenting-bugs.skill');
-    expect(skillFiles).toContain('executing-bug-fixes.skill');
+    expect(manifest.name).toBe('lwndev-sdlc');
+    expect(manifest.version).toBe('1.0.0');
+    expect(manifest.description).toBeTruthy();
+    expect(manifest.author).toEqual({ name: 'lwndev' });
   });
 
-  it('should create valid zip archives as .skill files', async () => {
-    const distFiles = await readdir('dist');
-    const skillFiles = distFiles.filter((f) => f.endsWith('.skill'));
+  it('should create skills directory with all 7 skills', async () => {
+    const skillDirs = await readdir(SKILLS_DIR);
 
-    for (const skillFile of skillFiles) {
-      const filePath = join('dist', skillFile);
+    expect(skillDirs).toContain('documenting-features');
+    expect(skillDirs).toContain('creating-implementation-plans');
+    expect(skillDirs).toContain('implementing-plan-phases');
+    expect(skillDirs).toContain('documenting-chores');
+    expect(skillDirs).toContain('executing-chores');
+    expect(skillDirs).toContain('documenting-bugs');
+    expect(skillDirs).toContain('executing-bug-fixes');
+    expect(skillDirs.length).toBe(7);
+  });
 
-      // Use unzip -t to test archive validity
-      const result = execSync(`unzip -t "${filePath}"`, {
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
+  it('should include SKILL.md in each skill directory', async () => {
+    const skillDirs = await readdir(SKILLS_DIR);
 
-      expect(result).toContain('No errors detected');
+    for (const skillDir of skillDirs) {
+      const skillMdPath = join(SKILLS_DIR, skillDir, 'SKILL.md');
+      await expect(access(skillMdPath)).resolves.toBeUndefined();
     }
   });
 
-  it('should include SKILL.md in each package', async () => {
-    const distFiles = await readdir('dist');
-    const skillFiles = distFiles.filter((f) => f.endsWith('.skill'));
+  it('should include assets directories when present', async () => {
+    // documenting-features has assets/
+    const assetsPath = join(SKILLS_DIR, 'documenting-features', 'assets');
+    await expect(access(assetsPath)).resolves.toBeUndefined();
+  });
 
-    for (const skillFile of skillFiles) {
-      const filePath = join('dist', skillFile);
+  it('should include references directories when present', async () => {
+    // executing-chores has references/
+    const refsPath = join(SKILLS_DIR, 'executing-chores', 'references');
+    await expect(access(refsPath)).resolves.toBeUndefined();
+  });
 
-      // List contents of the zip
-      const contents = execSync(`unzip -l "${filePath}"`, {
-        encoding: 'utf-8',
-      });
-
-      expect(contents).toContain('SKILL.md');
-    }
+  it('should include README.md at plugin root', async () => {
+    const readmePath = join(PLUGIN_DIR, 'README.md');
+    await expect(access(readmePath)).resolves.toBeUndefined();
   });
 });
 
@@ -78,13 +82,12 @@ describe('build script validation', () => {
   });
 
   it('should output build summary', () => {
-    expect(buildOutput).toContain('Building all skills');
+    expect(buildOutput).toContain('Building plugin');
     expect(buildOutput).toContain('Build Summary');
     expect(buildOutput).toContain('Successful');
   });
 
   it('should display detailed validation check counts', () => {
-    // Each skill should show per-check validation results (e.g., "24/24 checks passed")
     const checkPattern = /Validated \(\d+\/\d+ checks passed\)/g;
     const matches = buildOutput.match(checkPattern) ?? [];
     expect(matches.length).toBeGreaterThanOrEqual(1);

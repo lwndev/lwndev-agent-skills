@@ -1,11 +1,12 @@
-import { homedir } from 'node:os';
 import { join } from 'node:path';
 import {
   SKILLS_SOURCE_DIR,
   DIST_DIR,
-  PROJECT_SKILLS_DIR,
-  PERSONAL_SKILLS_DIR,
-  getSkillsDir,
+  PLUGIN_NAME,
+  PLUGIN_OUTPUT_DIR,
+  PLUGIN_SKILLS_DIR,
+  PLUGIN_MANIFEST_DIR,
+  PLUGIN_SOURCE_DIR,
 } from '../lib/constants.js';
 
 describe('constants', () => {
@@ -17,23 +18,27 @@ describe('constants', () => {
     it('should have correct DIST_DIR', () => {
       expect(DIST_DIR).toBe('dist');
     });
-
-    it('should have correct PROJECT_SKILLS_DIR', () => {
-      expect(PROJECT_SKILLS_DIR).toBe('.claude/skills');
-    });
-
-    it('should have correct PERSONAL_SKILLS_DIR', () => {
-      expect(PERSONAL_SKILLS_DIR).toBe(join(homedir(), '.claude', 'skills'));
-    });
   });
 
-  describe('getSkillsDir', () => {
-    it('should return project path for project scope', () => {
-      expect(getSkillsDir('project')).toBe('.claude/skills');
+  describe('plugin constants', () => {
+    it('should have correct PLUGIN_NAME', () => {
+      expect(PLUGIN_NAME).toBe('lwndev-sdlc');
     });
 
-    it('should return personal path for personal scope', () => {
-      expect(getSkillsDir('personal')).toBe(join(homedir(), '.claude', 'skills'));
+    it('should have correct PLUGIN_OUTPUT_DIR', () => {
+      expect(PLUGIN_OUTPUT_DIR).toBe(join('dist', 'lwndev-sdlc-plugin'));
+    });
+
+    it('should have correct PLUGIN_SKILLS_DIR', () => {
+      expect(PLUGIN_SKILLS_DIR).toBe(join('dist', 'lwndev-sdlc-plugin', 'skills'));
+    });
+
+    it('should have correct PLUGIN_MANIFEST_DIR', () => {
+      expect(PLUGIN_MANIFEST_DIR).toBe(join('dist', 'lwndev-sdlc-plugin', '.claude-plugin'));
+    });
+
+    it('should have correct PLUGIN_SOURCE_DIR', () => {
+      expect(PLUGIN_SOURCE_DIR).toBe(join('src', 'plugin'));
     });
   });
 });

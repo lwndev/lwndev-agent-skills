@@ -1,31 +1,9 @@
 import { mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import {
-  getSourceSkills,
-  getInstalledSkills,
-  getPackagedSkillPath,
-  packagedSkillExists,
-} from '../lib/skill-utils.js';
+import { getSourceSkills, pluginBuildExists } from '../lib/skill-utils.js';
 
 describe('skill-utils', () => {
-  describe('getPackagedSkillPath', () => {
-    it('should return correct path for skill package', () => {
-      expect(getPackagedSkillPath('my-skill')).toBe('dist/my-skill.skill');
-    });
-
-    it('should handle skill names with hyphens', () => {
-      expect(getPackagedSkillPath('my-awesome-skill')).toBe('dist/my-awesome-skill.skill');
-    });
-  });
-
-  describe('packagedSkillExists', () => {
-    it('should return false for non-existent package', async () => {
-      const exists = await packagedSkillExists('non-existent-skill-xyz');
-      expect(exists).toBe(false);
-    });
-  });
-
   describe('getSourceSkills', () => {
     it('should return skills from src/skills directory', async () => {
       const skills = await getSourceSkills();
@@ -55,7 +33,6 @@ describe('skill-utils', () => {
       const skills = await getSourceSkills();
       const names = skills.map((s) => s.name);
 
-      // These skills should exist in the project
       expect(names).toContain('documenting-features');
       expect(names).toContain('creating-implementation-plans');
       expect(names).toContain('documenting-bugs');
@@ -81,11 +58,33 @@ describe('skill-utils', () => {
     });
   });
 
-  describe('getInstalledSkills', () => {
-    it('should return empty array for non-existent directory', async () => {
-      // Personal scope might be empty or not exist
-      const skills = await getInstalledSkills('project');
-      expect(Array.isArray(skills)).toBe(true);
+  describe('pluginBuildExists', () => {
+    it('should return false when plugin output does not exist', async () => {
+      // Temporarily rename the manifest dir to test the false case
+      const { rename } = await import('node:fs/promises');
+      const { PLUGIN_MANIFEST_DIR } = await import('../lib/constants.js');
+      const backupPath = `${PLUGIN_MANIFEST_DIR}-backup`;
+      let renamed = false;
+
+      try {
+        await rename(PLUGIN_MANIFEST_DIR, backupPath);
+        renamed = true;
+      } catch {
+        // Dir doesn't exist (clean dist), false case is naturally true
+      }
+
+      try {
+        const result = await pluginBuildExists();
+        if (renamed) {
+          expect(result).toBe(false);
+        } else {
+          expect(typeof result).toBe('boolean');
+        }
+      } finally {
+        if (renamed) {
+          await rename(backupPath, PLUGIN_MANIFEST_DIR);
+        }
+      }
     });
   });
 });

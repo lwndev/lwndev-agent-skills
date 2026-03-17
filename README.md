@@ -1,8 +1,8 @@
 # Agent Skills
 
-[![CI](https://github.com/lwndev/lwndev-agent-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/lwndev/lwndev-agent-skills/actions/workflows/ci.yml)
+[![CI](https://github.com/lwndev/lwndev-marketplace/actions/workflows/ci.yml/badge.svg)](https://github.com/lwndev/lwndev-marketplace/actions/workflows/ci.yml)
 
-A reference implementation for [`ai-skills-manager`](https://github.com/lwndev/ai-skills-manager), demonstrating how to develop, build, and manage custom Agent Skills for Claude Code. Use this project as a template for creating your own skill development workflow.
+A reference implementation for developing, building, and distributing custom Agent Skills for Claude Code as a plugin. Use this project as a template for creating your own skill development workflow.
 
 ## Getting Started
 
@@ -10,11 +10,40 @@ A reference implementation for [`ai-skills-manager`](https://github.com/lwndev/a
 # Install dependencies
 npm install
 
-# Build all skills
+# Build the plugin
 npm run build
+```
 
-# Install skills to Claude Code
-npm run install-skills
+## Plugin Installation
+
+### Via marketplace
+
+```bash
+# Add the marketplace
+/plugin marketplace add lwndev/lwndev-marketplace
+
+# Install the plugin
+/plugin install lwndev-sdlc@lwndev-plugins
+```
+
+### Via project settings
+
+Add to your project's `.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "lwndev-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "lwndev/lwndev-marketplace"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "lwndev-sdlc@lwndev-plugins": true
+  }
+}
 ```
 
 ## Included Skills
@@ -29,54 +58,48 @@ npm run install-skills
 | **documenting-bugs** | Creates structured bug report documents with root cause analysis and traceable acceptance criteria |
 | **executing-bug-fixes** | Executes bug fix workflows from branch creation through pull request with root cause driven execution |
 
-## Skill Lifecycle Commands
+## Development
+
+### Commands
 
 ```bash
 npm run scaffold         # Create a new skill interactively
-npm run build            # Validate and package all skills to dist/
-npm run install-skills   # Install packaged skills to Claude Code
-npm run update-skills    # Update an installed skill
-npm run uninstall-skills # Remove installed skills
+npm run build            # Validate and build plugin to dist/
+npm test                 # Run all tests
+npm run lint             # Check for linting issues
+npm run lint:fix         # Auto-fix linting issues
+npm run format           # Format code with Prettier
+npm run format:check     # Check formatting
 ```
 
-### Installation Scopes
-
-Skills can be installed to two locations:
-- **Project scope** (`.claude/skills/`) - Available only in this project
-- **Personal scope** (`~/.claude/skills/`) - Available across all projects
-
-## Development
-
-```bash
-npm test                # Run all tests
-npm run lint            # Check for linting issues
-npm run lint:fix        # Auto-fix linting issues
-npm run format          # Format code with Prettier
-npm run format:check    # Check formatting
-```
-
-## Project Structure
+### Project Structure
 
 ```
-├── src/skills/           # Skill source directories
+├── src/skills/                        # Skill source directories
 │   └── {skill-name}/
-│       ├── SKILL.md      # Required: YAML frontmatter + instructions
-│       ├── assets/       # Optional: Templates and static resources
-│       └── references/   # Optional: Reference documentation
-├── scripts/              # CLI scripts
-│   ├── lib/              # Shared utilities
-│   └── __tests__/        # Test suites
-├── dist/                 # Built .skill packages
-└── .claude/skills/       # Project-installed skills
+│       ├── SKILL.md                   # Required: YAML frontmatter + instructions
+│       ├── assets/                    # Optional: Templates and static resources
+│       └── references/                # Optional: Reference documentation
+├── src/plugin/                        # Plugin metadata source
+│   ├── plugin.json                    # Plugin manifest
+│   └── README.md                      # Plugin README
+├── .claude-plugin/
+│   └── marketplace.json               # Marketplace manifest
+├── scripts/                           # CLI scripts
+│   ├── lib/                           # Shared utilities
+│   └── __tests__/                     # Test suites
+└── dist/lwndev-sdlc-plugin/          # Built plugin (gitignored)
+    ├── .claude-plugin/plugin.json
+    ├── skills/                        # All skill directories
+    └── README.md
 ```
 
-## Creating a New Skill
+### Creating a New Skill
 
 1. Run `npm run scaffold` and follow the prompts
 2. Edit the generated `src/skills/{name}/SKILL.md` with your skill instructions
 3. Add templates and reference docs as needed
-4. Run `npm run build` to validate and package
-5. Run `npm run install-skills` to install to Claude Code
+4. Run `npm run build` to validate and build the plugin
 
 ### SKILL.md Format
 
@@ -84,7 +107,7 @@ npm run format:check    # Check formatting
 ---
 name: my-skill-name
 description: Brief description of what the skill does
-allowed_tools:
+allowed-tools:
   - Read
   - Write
   - Bash
@@ -97,7 +120,7 @@ Instructions for Claude on how to use this skill...
 
 ## Dependencies
 
-- **ai-skills-manager** - Programmatic API for skill operations (v1.8.0+)
+- **ai-skills-manager** - Programmatic API for skill validation (v1.8.0+)
 - **@inquirer/prompts** - Interactive CLI prompts
 - **chalk** - Colored console output
 - **gray-matter** - YAML frontmatter parsing

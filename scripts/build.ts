@@ -1,27 +1,30 @@
 #!/usr/bin/env tsx
-import { mkdir } from 'node:fs/promises';
-import {
-  validate,
-  createPackage,
-  ValidationError,
-  type DetailedValidateResult,
-} from 'ai-skills-manager';
+import { cp, rm, mkdir, copyFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { validate, ValidationError, type DetailedValidateResult } from 'ai-skills-manager';
 import { getSourceSkills } from './lib/skill-utils.js';
-import { DIST_DIR } from './lib/constants.js';
+import {
+  PLUGIN_OUTPUT_DIR,
+  PLUGIN_SKILLS_DIR,
+  PLUGIN_MANIFEST_DIR,
+  PLUGIN_SOURCE_DIR,
+} from './lib/constants.js';
 import { printSuccess, printError, printInfo, printWarning } from './lib/prompts.js';
 
 interface BuildResult {
   name: string;
   validated: boolean;
-  packaged: boolean;
+  copied: boolean;
   error?: string;
 }
 
 async function main(): Promise<void> {
-  printInfo('Building all skills from src/skills/');
+  printInfo('Building plugin from src/skills/');
 
-  // Ensure dist directory exists
-  await mkdir(DIST_DIR, { recursive: true });
+  // Clean and create plugin output directories
+  await rm(PLUGIN_OUTPUT_DIR, { recursive: true, force: true });
+  await mkdir(PLUGIN_MANIFEST_DIR, { recursive: true });
+  await mkdir(PLUGIN_SKILLS_DIR, { recursive: true });
 
   const skills = await getSourceSkills();
 
@@ -39,7 +42,7 @@ async function main(): Promise<void> {
     const result: BuildResult = {
       name: skill.name,
       validated: false,
-      packaged: false,
+      copied: false,
     };
 
     console.log(`Building: ${skill.name}`);
@@ -81,19 +84,16 @@ async function main(): Promise<void> {
       continue;
     }
 
-    // Step 2: Package using programmatic API
+    // Step 2: Copy skill directory to plugin output
     try {
-      const packageResult = await createPackage({
-        path: skill.path,
-        output: DIST_DIR,
-        force: true,
-      });
-      result.packaged = true;
-      printSuccess(`  Packaged to ${packageResult.packagePath}`);
+      const destPath = join(PLUGIN_SKILLS_DIR, skill.name);
+      await cp(skill.path, destPath, { recursive: true });
+      result.copied = true;
+      printSuccess(`  Copied to ${destPath}`);
     } catch (err: unknown) {
       const error = err as { message?: string };
-      result.error = `Packaging failed: ${error.message}`;
-      printError('  Packaging failed');
+      result.error = `Copy failed: ${error.message}`;
+      printError('  Copy failed');
     }
 
     results.push(result);
@@ -104,8 +104,8 @@ async function main(): Promise<void> {
   console.log('-'.repeat(50));
   console.log('Build Summary:');
 
-  const successful = results.filter((r) => r.validated && r.packaged);
-  const failed = results.filter((r) => !r.validated || !r.packaged);
+  const successful = results.filter((r) => r.validated && r.copied);
+  const failed = results.filter((r) => !r.validated || !r.copied);
 
   printInfo(`Total: ${results.length}`);
   printSuccess(`Successful: ${successful.length}`);
@@ -116,8 +116,20 @@ async function main(): Promise<void> {
     for (const f of failed) {
       printError(`  ${f.name}: ${f.error}`);
     }
+    // Clean up partial plugin output on failure
+    await rm(PLUGIN_OUTPUT_DIR, { recursive: true, force: true });
     process.exit(1);
   }
+
+  // Copy plugin manifest and README only on full success
+  await copyFile(join(PLUGIN_SOURCE_DIR, 'plugin.json'), join(PLUGIN_MANIFEST_DIR, 'plugin.json'));
+  printSuccess('Copied plugin.json');
+
+  await copyFile(join(PLUGIN_SOURCE_DIR, 'README.md'), join(PLUGIN_OUTPUT_DIR, 'README.md'));
+  printSuccess('Copied README.md');
+
+  console.log('');
+  printSuccess(`Plugin built at ${PLUGIN_OUTPUT_DIR}`);
 }
 
 main().catch((err) => {

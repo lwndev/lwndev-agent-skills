@@ -4,17 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This project is a reference implementation for `ai-skills-manager`, demonstrating how to develop, build, and manage custom Agent Skills for Claude Code. It includes TypeScript CLI scripts that invoke the `asm` command to create, build, install, and manage skills that extend Claude's capabilities with domain-specific workflows.
+This project develops, builds, and distributes custom Agent Skills for Claude Code as a plugin. Skills are authored in `src/skills/`, validated and assembled into a plugin directory by the build script, and distributed via a marketplace manifest for installation with `/plugin install`.
 
 ## Commands
 
 ### Skill Lifecycle
 ```bash
 npm run scaffold        # Create new skill interactively
-npm run build           # Validate and package all skills to dist/
-npm run install-skills  # Install packaged skills (interactive)
-npm run update-skills   # Update installed skill (interactive)
-npm run uninstall-skills # Remove installed skills (interactive)
+npm run build           # Validate skills and build plugin to dist/lwndev-sdlc-plugin/
 ```
 
 ### Development
@@ -29,21 +26,39 @@ npm run format:check    # Check formatting
 
 ## Architecture
 
-### Script Pipeline
-The scripts implement a skill lifecycle: `scaffold → build → install/update/uninstall`
+### Plugin Build Pipeline
+The build script produces a Claude Code plugin: `scaffold → build → /plugin install`
 
-Scripts use the `ai-skills-manager` programmatic API (v1.8.0+) for all operations:
+- **scaffold.ts** - Creates new skill directories using `scaffold()` API from `ai-skills-manager`
+- **build.ts** - Validates each skill with `validate()` API, then copies all validated skills into the plugin directory structure at `dist/lwndev-sdlc-plugin/`
 
-- **scaffold.ts** - Creates new skill directories using `scaffold()` API
-- **build.ts** - Validates with `validate()` and packages with `createPackage()` to `dist/*.skill`
-- **install.ts** - Installs from `dist/` using `install()` API to project or personal scope
-- **update.ts** - Updates installed skills using `update()` API
-- **uninstall.ts** - Removes skills using `uninstall()` API
+### Plugin Output Structure
+```
+dist/lwndev-sdlc-plugin/
+├── .claude-plugin/
+│   └── plugin.json          # Plugin manifest (name: lwndev-sdlc)
+├── skills/                  # All 7 skill directories
+│   ├── documenting-features/
+│   ├── creating-implementation-plans/
+│   ├── implementing-plan-phases/
+│   ├── documenting-chores/
+│   ├── executing-chores/
+│   ├── documenting-bugs/
+│   └── executing-bug-fixes/
+└── README.md
+```
+
+### Marketplace
+The repository hosts a marketplace manifest at `.claude-plugin/marketplace.json` for plugin distribution. Users install via:
+```bash
+/plugin marketplace add lwndev/lwndev-marketplace
+/plugin install lwndev-sdlc@lwndev-plugins
+```
 
 ### Shared Library (`scripts/lib/`)
-- **skill-utils.ts** - Core functions: `getSourceSkills()`, `getInstalledSkills(scope)` (uses `list()` API), `packagedSkillExists()`
-- **constants.ts** - Path constants for `src/skills`, `dist`, `.claude/skills`
-- **prompts.ts** - Interactive CLI utilities using `@inquirer/prompts`
+- **skill-utils.ts** - Core functions: `getSourceSkills()`, `pluginBuildExists()`
+- **constants.ts** - Path constants: `SKILLS_SOURCE_DIR`, `DIST_DIR`, `PLUGIN_NAME`, `PLUGIN_OUTPUT_DIR`, `PLUGIN_SKILLS_DIR`, `PLUGIN_MANIFEST_DIR`, `PLUGIN_SOURCE_DIR`
+- **prompts.ts** - CLI print utilities (`printSuccess`, `printError`, `printInfo`, `printWarning`)
 
 ### Skill Structure
 Each skill in `src/skills/` contains:
@@ -62,7 +77,7 @@ Seven skills exist that form three workflow chains:
 
 ## Key Patterns
 
-- All skill operations use the `ai-skills-manager` programmatic API (not CLI)
+- Skill validation uses the `ai-skills-manager` programmatic API (`validate()`)
 - Skills use YAML frontmatter in SKILL.md for metadata extraction
 - Tests run sequentially (`maxWorkers: 1`) to prevent race conditions with shared `src/skills/` and `dist/` directories
-- Interactive prompts use scope selection: "project" vs "personal" installation paths
+- Plugin source files (`plugin.json`, `README.md`) live in `src/plugin/` and are copied to `dist/` during build

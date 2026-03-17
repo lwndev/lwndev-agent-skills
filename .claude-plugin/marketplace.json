@@ -1,0 +1,18 @@
+{
+  "name": "lwndev-plugins",
+  "owner": {
+    "name": "lwndev"
+  },
+  "metadata": {
+    "description": "SDLC workflow plugins for Claude Code",
+    "pluginRoot": "./dist"
+  },
+  "plugins": [
+    {
+      "name": "lwndev-sdlc",
+      "source": "./dist/lwndev-sdlc-plugin",
+      "description": "SDLC workflow skills for documenting, planning, and executing features, chores, and bug fixes",
+      "version": "1.0.0"
+    }
+  ]
+}
