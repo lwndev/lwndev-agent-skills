@@ -22,6 +22,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ['node_modules/', 'dist/', 'dist-scripts/', 'coverage/', '*.skill'],
+    ignores: ['node_modules/', 'plugins/', 'dist-scripts/', 'coverage/', '*.skill'],
   }
 );

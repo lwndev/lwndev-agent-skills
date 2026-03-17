@@ -10,7 +10,7 @@ describe('build script validation', () => {
   let buildOutput: string;
 
   beforeAll(() => {
-    buildOutput = execSync('npm run build', {
+    buildOutput = execSync('npm run validate', {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
     });
@@ -126,7 +126,7 @@ describe('build script failure handling', () => {
 
     let stdout = '';
     try {
-      execSync('npm run build', {
+      execSync('npm run validate', {
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
       });

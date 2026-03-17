@@ -2,7 +2,7 @@
   "type": "module",
   "scripts": {
     "scaffold": "tsx scripts/scaffold.ts",
-    "build": "tsx scripts/build.ts",
+    "validate": "tsx scripts/build.ts",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",

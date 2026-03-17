@@ -46,7 +46,7 @@ Or add to your project's `.claude/settings.json`:
 
 ```bash
 npm run scaffold         # Create a new skill interactively
-npm run build            # Validate all plugins
+npm run validate            # Validate all plugins
 npm test                 # Run all tests
 npm run lint             # Check for linting issues
 npm run lint:fix         # Auto-fix linting issues
@@ -79,7 +79,7 @@ npm run format:check     # Check formatting
 1. Create `plugins/{plugin-name}/` with `.claude-plugin/plugin.json`, `README.md`, and a `skills/` directory
 2. Add skills under `plugins/{plugin-name}/skills/` (use `npm run scaffold`)
 3. Add the plugin entry to `.claude-plugin/marketplace.json`
-4. Run `npm run build` to validate
+4. Run `npm run validate` to validate
 
 ### SKILL.md Format
 

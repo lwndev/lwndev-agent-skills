@@ -11,7 +11,7 @@ This repository is a plugin marketplace for Claude Code. Plugins live under `plu
 ### Plugin Lifecycle
 ```bash
 npm run scaffold        # Create new skill interactively (prompts for plugin if multiple exist)
-npm run build           # Validate all plugins
+npm run validate           # Validate all plugins
 ```
 
 ### Development

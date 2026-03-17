@@ -34,5 +34,5 @@ jobs:
       - name: Audit for vulnerabilities
         run: npm audit
 
-      - name: Build skills
-        run: npm run build
+      - name: Validate plugins
+        run: npm run validate
