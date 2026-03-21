@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process';
 import { access, readdir, readFile, rm, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import semver from 'semver';
 
 const PLUGIN_DIR = 'plugins/lwndev-sdlc';
 const MANIFEST_PATH = join(PLUGIN_DIR, '.claude-plugin', 'plugin.json');
@@ -47,9 +48,21 @@ describe('plugin structure', () => {
     const manifest = JSON.parse(content);
 
     expect(manifest.name).toBe('lwndev-sdlc');
-    expect(manifest.version).toBe('1.1.0');
+    expect(semver.valid(manifest.version)).toBeTruthy();
     expect(manifest.description).toBeTruthy();
     expect(manifest.author).toEqual({ name: 'lwndev' });
+  });
+
+  it('should have plugin.json version matching marketplace.json version', async () => {
+    const pluginContent = await readFile(MANIFEST_PATH, 'utf-8');
+    const pluginManifest = JSON.parse(pluginContent);
+
+    const marketplaceContent = await readFile('.claude-plugin/marketplace.json', 'utf-8');
+    const marketplace = JSON.parse(marketplaceContent);
+
+    const entry = marketplace.plugins.find((p: { name: string }) => p.name === pluginManifest.name);
+    expect(entry).toBeDefined();
+    expect(entry.version).toBe(pluginManifest.version);
   });
 
   it('should have skills directory with all 9 skills', async () => {
