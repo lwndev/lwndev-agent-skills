@@ -56,7 +56,7 @@ Implement an automated plugin release workflow consisting of a release script (`
 
 ### Phase 2: Release Script (`npm run release`)
 **Feature:** [FEAT-005](../features/FEAT-005-plugin-release-workflow.md) | [#37](https://github.com/lwndev/lwndev-marketplace/issues/37)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - **Core deliverable**: The release script is the primary value of this feature
@@ -105,17 +105,17 @@ Implement an automated plugin release workflow consisting of a release script (`
    - Integration tests using a temporary git repo (init, commit, run release, verify outputs)
 
 #### Deliverables
-- [ ] `scripts/release.ts` — release script implementation
-- [ ] `scripts/__tests__/release.test.ts` — unit and integration tests
-- [ ] `package.json` updated with `release` script
-- [ ] All error messages match NFR-1 specifications
-- [ ] All tests pass
+- [x] `scripts/release.ts` — release script implementation
+- [x] `scripts/__tests__/release.test.ts` — 17 tests (argument validation, full workflow, error handling)
+- [x] `package.json` updated with `release` script
+- [x] All error messages match NFR-1 specifications
+- [x] All tests pass (254/254)
 
 ---
 
 ### Phase 3: Tagging Script (`npm run release:tag`)
 **Feature:** [FEAT-005](../features/FEAT-005-plugin-release-workflow.md) | [#37](https://github.com/lwndev/lwndev-marketplace/issues/37)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - **Completes the release workflow**: Without tagging, changelog diff links and version history tracking don't work
@@ -143,17 +143,17 @@ Implement an automated plugin release workflow consisting of a release script (`
    - Successful tag creation and annotation message
 
 #### Deliverables
-- [ ] `scripts/release-tag.ts` — tagging script implementation
-- [ ] `scripts/__tests__/release-tag.test.ts` — tests
-- [ ] `package.json` updated with `release:tag` script
-- [ ] All error messages match NFR-1 specifications
-- [ ] All tests pass
+- [x] `scripts/release-tag.ts` — tagging script implementation
+- [x] `scripts/__tests__/release-tag.test.ts` — 6 tests (branch check, clean tree, duplicate tag, plugin not found, successful tagging, explicit --plugin)
+- [x] `package.json` updated with `release:tag` script
+- [x] All error messages match NFR-1 specifications
+- [x] All tests pass (260/260)
 
 ---
 
 ### Phase 4: Releasing Skill
 **Feature:** [FEAT-005](../features/FEAT-005-plugin-release-workflow.md) | [#37](https://github.com/lwndev/lwndev-marketplace/issues/37)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - **Build last**: The skill wraps the scripts from Phases 2-3, so those must exist first
@@ -171,8 +171,8 @@ Implement an automated plugin release workflow consisting of a release script (`
    - Run `claude --print-skills` or check `/skills` in a session to confirm it appears
 
 #### Deliverables
-- [ ] `.claude/skills/releasing-plugins/SKILL.md` — repo-local release skill
-- [ ] Skill appears in `/skills` listing when working in this repo
+- [x] `.claude/skills/releasing-plugins/SKILL.md` — repo-local release skill
+- [ ] Skill appears in `/skills` listing when working in this repo (verify after `/reload-plugins`)
 
 ---
 
