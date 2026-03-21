@@ -1,5 +1,7 @@
 # lwndev-sdlc
 
+**Version:** 1.3.0 | **Released:** 2026-03-21
+
 SDLC workflow skills for Claude Code — documenting, planning, and executing features, chores, and bug fixes with QA validation capabilities.
 
 ## Skills
