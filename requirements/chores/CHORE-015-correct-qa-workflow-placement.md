@@ -45,11 +45,11 @@ Correct the placement of `documenting-qa` and `executing-qa` in the SDLC workflo
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `Completed`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-03-21
 
-**Pull Request:** [#N](https://github.com/lwndev/lwndev-marketplace/pull/N)
+**Pull Request:** [#47](https://github.com/lwndev/lwndev-marketplace/pull/47)
 
 ## Notes
 
