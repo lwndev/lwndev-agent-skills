@@ -80,11 +80,17 @@ Before finalizing, verify:
 - [ ] Edge cases identified
 - [ ] Acceptance criteria are testable
 
-## Next Step
-
-After finalizing the feature requirements document, consider running `/reviewing-requirements` to verify it against the codebase and docs before proceeding to implementation planning.
-
 ## Reference Examples
 
 - [feature-requirements-example-search-command.md](references/feature-requirements-example-search-command.md) - CLI search command with API integration
 - [feature-requirements-example-episodes-command.md](references/feature-requirements-example-episodes-command.md) - CLI command with date filtering and formatting
+
+## Relationship to Other Skills
+
+| Task Type | Recommended Approach |
+|-----------|---------------------|
+| New feature with requirements | Use this skill (`documenting-features`) |
+| Chore/maintenance task | Use `documenting-chores` skill |
+| Bug or defect report | Use `documenting-bugs` skill |
+
+After documenting a feature, consider running `/reviewing-requirements` to verify the document against the codebase and docs before proceeding. Then use the `creating-implementation-plans` skill to plan the implementation.

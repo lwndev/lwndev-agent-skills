@@ -56,6 +56,8 @@ Search for files matching the pattern `{PREFIX}-{NNN}*.md` in the appropriate di
 
 **If the ID matches files in multiple directories** (e.g., a FEAT-XXX has both a feature doc and an implementation plan), review all matching documents together. The feature requirements document is the primary target; the implementation plan is reviewed as a secondary document.
 
+**Self-referential documents**: If the resolved document describes this skill itself (e.g., FEAT-006), proceed normally but note in the summary that findings about missing references or gaps may reflect the document describing features not yet implemented rather than actual errors. Use **Info** severity for ambiguous cases.
+
 **If no match is found**, display an error listing the directories searched:
 ```
 No requirement document found for ID "FEAT-099".
@@ -80,7 +82,7 @@ Determine the type from the ID prefix or file location:
 ### Extract References
 
 While parsing, collect all items that need verification:
-- **File paths**: Any path-like strings (e.g., `scripts/lib/skill-utils.ts`, `plugins/lwndev-sdlc/skills/`)
+- **File paths**: Strings containing `/` that look like project paths — typically starting with a known directory (`plugins/`, `scripts/`, `requirements/`, `src/`) or containing a file extension (e.g., `scripts/lib/skill-utils.ts`, `plugins/lwndev-sdlc/skills/`). Exclude URL paths, severity labels like `Error/Warning/Info`, and prose that happens to contain slashes.
 - **Function/class names**: Code identifiers referenced in requirements (e.g., `validate()`, `getSourcePlugins()`)
 - **Cross-references**: References to other requirement IDs (e.g., "See FEAT-005", "Depends on CHORE-003")
 - **GitHub references**: Issue/PR numbers (e.g., `#38`, `PR #40`)
@@ -114,7 +116,7 @@ For each file path, function name, and code reference extracted in Step 2:
 For each external claim or documentation citation found in Step 2:
 
 1. **Framework/library API claims**: Search for the referenced API in:
-   - `node_modules/` type definitions (if available)
+   - `node_modules/<specific-package>/` type definitions when a specific package is named (e.g., search `node_modules/ai-skills-manager/` not all of `node_modules/`)
    - README files in the project
    - `references/` directories in relevant skills
 2. **Behavior claims**: If the document asserts specific behavior of a tool, framework, or library, check if this can be verified against available documentation
@@ -187,7 +189,7 @@ For each reference to another requirement document (e.g., "See FEAT-005", "Relat
 3. If found but the reference is imprecise (e.g., says "FEAT-003" but file is `FEAT-003-skill-allowed-tools.md`), classify as **Info** suggesting a more precise reference
 
 ### GitHub Issue References
-For each `#N` reference:
+For each `#N` reference (validate up to 5; if more exist, note the remainder as unchecked to avoid API rate limits):
 1. Use `gh issue view N --json state,title` to verify the issue exists
 2. If the command fails or issue is not found, classify as **Warning** (the issue may be in a different repo or inaccessible)
 3. If the issue exists, optionally verify its title aligns with the context
