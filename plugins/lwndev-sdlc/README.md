@@ -7,6 +7,7 @@ SDLC workflow skills for Claude Code — documenting, planning, and executing fe
 | Skill | Description |
 |-------|-------------|
 | **documenting-features** | Creates structured feature requirement documents with user stories, acceptance criteria, and functional/non-functional requirements |
+| **reviewing-requirements** | Validates requirement documents against the codebase and docs, catching incorrect references, inconsistencies, and gaps before implementation |
 | **creating-implementation-plans** | Transforms feature requirements into phased implementation plans with deliverables and success criteria |
 | **implementing-plan-phases** | Executes implementation plan phases with branch management, progress tracking, and deliverable verification |
 | **documenting-chores** | Creates lightweight documentation for maintenance tasks (refactoring, dependency updates, cleanup) |
@@ -60,6 +61,7 @@ Skills are invoked as slash commands, namespaced under the plugin:
 
 ```
 /lwndev-sdlc:documenting-features
+/lwndev-sdlc:reviewing-requirements
 /lwndev-sdlc:creating-implementation-plans
 /lwndev-sdlc:implementing-plan-phases
 /lwndev-sdlc:documenting-chores
@@ -74,7 +76,7 @@ Skills are invoked as slash commands, namespaced under the plugin:
 
 The skills form four workflow chains:
 
-1. **Features**: `documenting-features` → `creating-implementation-plans` → `implementing-plan-phases`
-2. **Chores**: `documenting-chores` → `executing-chores`
-3. **Bugs**: `documenting-bugs` → `executing-bug-fixes`
+1. **Features**: `documenting-features` → `reviewing-requirements` → `creating-implementation-plans` → `implementing-plan-phases`
+2. **Chores**: `documenting-chores` → `reviewing-requirements` → `executing-chores`
+3. **Bugs**: `documenting-bugs` → `reviewing-requirements` → `executing-bug-fixes`
 4. **QA Validation**: `documenting-qa` → `executing-qa`

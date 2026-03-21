@@ -14,7 +14,7 @@ A marketplace for distributing Claude Code plugins. Add the marketplace to acces
 
 | Plugin | Description |
 |--------|-------------|
-| **lwndev-sdlc** | SDLC workflow skills for documenting, planning, and executing features, chores, and bug fixes |
+| **lwndev-sdlc** | SDLC workflow skills for documenting, planning, and executing features, chores, and bug fixes with requirements review and QA validation |
 
 ### Installing a Plugin
 
