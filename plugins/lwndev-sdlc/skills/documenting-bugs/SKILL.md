@@ -118,4 +118,4 @@ Before finalizing, verify:
 | Bug or defect report | Use this skill (`documenting-bugs`) |
 | Quick fix (no tracking needed) | Direct implementation |
 
-After documenting a bug, use the `executing-bug-fixes` skill to implement the fix with proper branch management and PR creation.
+After documenting a bug, consider running `/reviewing-requirements` to verify the document against the codebase and docs. Then use the `executing-bug-fixes` skill to implement the fix with proper branch management and PR creation.

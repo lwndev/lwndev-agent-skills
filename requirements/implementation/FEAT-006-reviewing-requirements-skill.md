@@ -55,7 +55,7 @@ This plan covers building the `reviewing-requirements` skill for the `lwndev-sdl
 
 ### Phase 2: Documenting Skill Integration
 **Feature:** [FEAT-006](../features/FEAT-006-reviewing-requirements-skill.md) | [#38](https://github.com/lwndev/lwndev-marketplace/issues/38)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - **Depends on Phase 1**: The skill must exist before other skills can recommend it
@@ -72,10 +72,10 @@ This plan covers building the `reviewing-requirements` skill for the `lwndev-sdl
 4. Run `npm run validate` to ensure all modified skills still pass validation
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/documenting-features/SKILL.md` — Updated with review recommendation
-- [ ] `plugins/lwndev-sdlc/skills/documenting-chores/SKILL.md` — Updated with review recommendation
-- [ ] `plugins/lwndev-sdlc/skills/documenting-bugs/SKILL.md` — Updated with review recommendation
-- [ ] All skills pass `npm run validate`
+- [x] `plugins/lwndev-sdlc/skills/documenting-features/SKILL.md` — Updated with review recommendation
+- [x] `plugins/lwndev-sdlc/skills/documenting-chores/SKILL.md` — Updated with review recommendation
+- [x] `plugins/lwndev-sdlc/skills/documenting-bugs/SKILL.md` — Updated with review recommendation
+- [x] All skills pass `npm run validate`
 
 ---
 

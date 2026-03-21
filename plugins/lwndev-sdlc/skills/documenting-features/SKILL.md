@@ -80,6 +80,10 @@ Before finalizing, verify:
 - [ ] Edge cases identified
 - [ ] Acceptance criteria are testable
 
+## Next Step
+
+After finalizing the feature requirements document, consider running `/reviewing-requirements` to verify it against the codebase and docs before proceeding to implementation planning.
+
 ## Reference Examples
 
 - [feature-requirements-example-search-command.md](references/feature-requirements-example-search-command.md) - CLI search command with API integration

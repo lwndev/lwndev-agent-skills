@@ -99,4 +99,4 @@ Before finalizing, verify:
 | Chore/maintenance task | Use this skill (`documenting-chores`) |
 | Quick fix (no tracking needed) | Direct implementation |
 
-After documenting a chore, use the `executing-chores` skill to implement it with proper branch management and PR creation.
+After documenting a chore, consider running `/reviewing-requirements` to verify the document against the codebase and docs. Then use the `executing-chores` skill to implement it with proper branch management and PR creation.
