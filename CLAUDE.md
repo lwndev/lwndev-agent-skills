@@ -41,12 +41,15 @@ plugins/
     │   └── plugin.json         # Plugin manifest (name, version, metadata)
     ├── skills/                 # Skill directories
     │   ├── documenting-features/
+    │   ├── reviewing-requirements/
     │   ├── creating-implementation-plans/
     │   ├── implementing-plan-phases/
     │   ├── documenting-chores/
     │   ├── executing-chores/
     │   ├── documenting-bugs/
-    │   └── executing-bug-fixes/
+    │   ├── executing-bug-fixes/
+    │   ├── documenting-qa/
+    │   └── executing-qa/
     └── README.md               # Plugin documentation
 ```
 
@@ -72,10 +75,11 @@ skill-name/
 ```
 
 ### Existing Skills (lwndev-sdlc plugin)
-Seven skills exist that form three workflow chains:
-1. **documenting-features** → **creating-implementation-plans** → **implementing-plan-phases**
-2. **documenting-chores** → **executing-chores**
-3. **documenting-bugs** → **executing-bug-fixes**
+Ten skills exist that form four workflow chains:
+1. **documenting-features** → **reviewing-requirements** → **creating-implementation-plans** → **implementing-plan-phases**
+2. **documenting-chores** → **reviewing-requirements** → **executing-chores**
+3. **documenting-bugs** → **reviewing-requirements** → **executing-bug-fixes**
+4. **documenting-qa** → **executing-qa**
 
 ## Key Patterns
 
