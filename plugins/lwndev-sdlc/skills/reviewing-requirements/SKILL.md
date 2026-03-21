@@ -305,7 +305,9 @@ Before finishing, verify:
 ## Relationship to Other Skills
 
 ```
-documenting-* → reviewing-requirements → documenting-qa → creating-implementation-plans / executing-* → executing-qa
+Features: documenting-features → reviewing-requirements → documenting-qa → creating-implementation-plans → implementing-plan-phases → executing-qa
+Chores:   documenting-chores   → reviewing-requirements → documenting-qa → executing-chores    → executing-qa
+Bugs:     documenting-bugs     → reviewing-requirements → documenting-qa → executing-bug-fixes → executing-qa
 ```
 
 | Task | Recommended Approach |

@@ -25,7 +25,7 @@ Execute QA verification against a test plan, then reconcile requirements documen
 
 - User says "execute qa", "run qa", or "verify implementation"
 - User wants to validate a PR against its requirements
-- After `documenting-qa` has produced a test plan
+- After implementation is complete and `documenting-qa` has produced a test plan
 - Before merging — as a final QA gate
 
 ## Quick Start
