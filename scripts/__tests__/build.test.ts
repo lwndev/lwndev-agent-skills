@@ -33,10 +33,10 @@ describe('build script validation', () => {
     expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('should validate all 9 skills', () => {
+  it('should validate all 10 skills', () => {
     const validatedPattern = /Validating: /g;
     const matches = buildOutput.match(validatedPattern) ?? [];
-    expect(matches.length).toBe(9);
+    expect(matches.length).toBe(10);
   });
 });
 
@@ -65,7 +65,7 @@ describe('plugin structure', () => {
     expect(entry.version).toBe(pluginManifest.version);
   });
 
-  it('should have skills directory with all 9 skills', async () => {
+  it('should have skills directory with all 10 skills', async () => {
     const skillDirs = await readdir(SKILLS_DIR);
 
     expect(skillDirs).toContain('documenting-features');
@@ -77,7 +77,8 @@ describe('plugin structure', () => {
     expect(skillDirs).toContain('executing-bug-fixes');
     expect(skillDirs).toContain('documenting-qa');
     expect(skillDirs).toContain('executing-qa');
-    expect(skillDirs.length).toBe(9);
+    expect(skillDirs).toContain('reviewing-requirements');
+    expect(skillDirs.length).toBe(10);
   });
 
   it('should include SKILL.md in each skill directory', async () => {
