@@ -48,12 +48,12 @@ describe('executing-qa skill', () => {
       expect(skillMd).toContain('BUG-');
     });
 
-    it('should document loading test plan from test/test-plans/', () => {
-      expect(skillMd).toContain('test/test-plans/QA-plan-');
+    it('should document loading test plan from qa/test-plans/', () => {
+      expect(skillMd).toContain('qa/test-plans/QA-plan-');
     });
 
     it('should specify test results output path format', () => {
-      expect(skillMd).toContain('test/test-results/QA-results-');
+      expect(skillMd).toContain('qa/test-results/QA-results-');
     });
 
     it('should document qa-verifier subagent delegation', () => {

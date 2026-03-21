@@ -59,7 +59,7 @@ describe('documenting-qa skill', () => {
     });
 
     it('should specify test plan output path format', () => {
-      expect(skillMd).toContain('test/test-plans/QA-plan-');
+      expect(skillMd).toContain('qa/test-plans/QA-plan-');
     });
 
     it('should document qa-verifier subagent delegation', () => {

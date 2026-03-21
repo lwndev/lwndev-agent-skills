@@ -122,10 +122,10 @@ If the subagent identifies gaps:
 
 ## Step 5: Save and Present
 
-1. Save the completed test plan to `test/test-plans/QA-plan-{id}.md`
+1. Save the completed test plan to `qa/test-plans/QA-plan-{id}.md`
    - `{id}` is the full ID: e.g., `FEAT-003`, `BUG-001`
-   - Example: `test/test-plans/QA-plan-FEAT-003.md`
-   - Create the `test/test-plans/` directory if it doesn't exist
+   - Example: `qa/test-plans/QA-plan-FEAT-003.md`
+   - Create the `qa/test-plans/` directory if it doesn't exist
 2. Present the test plan to the user for review before they proceed to `executing-qa`
 
 ## Verification Checklist

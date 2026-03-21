@@ -56,10 +56,10 @@ Parse the requirement ID to determine the type:
 | `CHORE-` | Chore | `requirements/chores/` | — |
 | `BUG-` | Bug | `requirements/bugs/` | — |
 
-Load the test plan from `test/test-plans/QA-plan-{id}.md` where `{type}` is lowercase (`feat`, `chore`, `bug`).
+Load the test plan from `qa/test-plans/QA-plan-{id}.md` where `{type}` is lowercase (`feat`, `chore`, `bug`).
 
 **If the test plan does not exist**, stop and inform the user:
-> No test plan found at `test/test-plans/QA-plan-{id}.md`. Run `documenting-qa` first to generate a test plan for this requirement.
+> No test plan found at `qa/test-plans/QA-plan-{id}.md`. Run `documenting-qa` first to generate a test plan for this requirement.
 
 Also load the source requirements document(s) for use during verification and reconciliation.
 
@@ -154,10 +154,10 @@ After each reconciliation pass, attempt to finish. The same Stop hook detects th
 
 ## Step 4: Save Results and Present
 
-1. Save the QA results to `test/test-results/QA-results-{id}.md`
+1. Save the QA results to `qa/test-results/QA-results-{id}.md`
    - `{id}` is the full ID: e.g., `FEAT-003`, `BUG-001`
-   - Example: `test/test-results/QA-results-FEAT-003.md`
-   - Create the `test/test-results/` directory if it doesn't exist
+   - Example: `qa/test-results/QA-results-FEAT-003.md`
+   - Create the `qa/test-results/` directory if it doesn't exist
    - Use the template from [assets/test-results-template.md](assets/test-results-template.md)
 
 2. Present the results summary to the user, including:
