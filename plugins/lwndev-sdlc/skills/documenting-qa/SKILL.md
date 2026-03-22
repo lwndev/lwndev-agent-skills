@@ -124,6 +124,25 @@ If the subagent identifies gaps:
 
 **Important**: State the verification results clearly in your message when attempting to finish — the Stop hook is a prompt-based evaluator with no tool access. It can only assess completeness from what you report in your message.
 
+### Minimizing Verification Iterations
+
+This verification loop involves multiple API calls across models: the main conversation, the qa-verifier subagent (Sonnet), and the Stop hook evaluator (Haiku). To reduce cumulative API pressure:
+
+- **Build a thorough test plan in Step 3 before entering verification.** Cover every AC, FR-N, RC-N, and phase deliverable on the first pass rather than relying on the verification loop to catch gaps iteratively.
+- **When the subagent identifies gaps, address all of them in a single pass** before re-delegating — do not fix one gap at a time.
+- **Aim to complete verification in 1–2 rounds.** If verification requires more than 2 rounds, pause and review whether the test plan template is being applied correctly.
+
+### Handling Transient API Errors
+
+The qa-verifier subagent may fail due to transient API errors (e.g., "service overloaded"). When this occurs:
+
+1. **Retry the subagent delegation** — spawn a new qa-verifier subagent with the same inputs. Transient errors typically resolve on a subsequent attempt.
+2. **Retry up to 2 times** (3 total attempts including the original). Do not retry indefinitely.
+3. **If all retries fail, degrade gracefully:**
+   - Save the test plan as-is to the standard output path
+   - Present the plan to the user with a clear note that automated verification could not be completed due to API errors
+   - Recommend the user review the plan manually or re-run the skill later to complete verification
+
 ## Step 5: Save and Present
 
 1. Save the completed test plan to `qa/test-plans/QA-plan-{id}.md`
