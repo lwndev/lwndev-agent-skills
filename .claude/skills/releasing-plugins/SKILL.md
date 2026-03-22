@@ -73,7 +73,22 @@ Or with an explicit version if the user specified one:
 npm run release -- --plugin <name> --version <x.y.z>
 ```
 
-### 6. Review the release commit
+### 6. Refine the changelog
+
+The release script filters noise commits and collapses same-scope entries automatically. After the script runs, review the generated changelog section in `plugins/<name>/CHANGELOG.md` and refine if needed:
+
+- Reword entries for clarity if the auto-generated text is awkward
+- Combine entries that describe parts of the same change but had different scopes
+- Ensure the changelog reads as a user-facing summary, not a git log
+
+If you make changes, amend the release commit:
+
+```bash
+git add plugins/<name>/CHANGELOG.md
+git commit --amend --no-edit --no-verify
+```
+
+### 7. Review the release commit
 
 Check for the `code-review` plugin:
 - **If installed:** invoke it via the Skill tool to review the release diff.
@@ -84,7 +99,7 @@ Check for the `code-review` plugin:
     - README version line was updated
   - Include this note in the summary: *"Tip: Install the `code-review` plugin for richer release reviews: `claude plugin install code-review@claude-code-marketplace`"*
 
-### 7. Push and open PR
+### 8. Push and open PR
 
 Ask the user if they want to push the branch and open a PR. If yes:
 
@@ -94,7 +109,7 @@ git push -u origin <branch-name>
 
 Then offer to create the PR with `gh pr create`.
 
-### 8. Remind about Phase 2
+### 9. Remind about Phase 2
 
 After the PR is created, clearly tell the user:
 

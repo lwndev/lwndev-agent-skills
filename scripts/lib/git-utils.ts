@@ -86,6 +86,17 @@ export function getCommitsSinceTag(tag: string | null): ParsedCommit[] {
   }
 }
 
+const NOISE_PATTERNS: RegExp[] = [
+  /^Merge\s/i,
+  /^address\s+(pr\s+)?review\s+feedback/i,
+  /^mark\s+.+\s+as\s+completed/i,
+  /^update\s+[A-Z]+-\d+\s+status/i,
+];
+
+export function filterNoiseCommits(commits: ParsedCommit[]): ParsedCommit[] {
+  return commits.filter((commit) => !NOISE_PATTERNS.some((pattern) => pattern.test(commit.raw)));
+}
+
 export function tagExists(tagName: string): boolean {
   try {
     exec(`git rev-parse --verify "refs/tags/${tagName}"`);

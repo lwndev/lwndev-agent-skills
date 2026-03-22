@@ -13,7 +13,12 @@ import {
   writeMarketplaceManifest,
   getMarketplacePluginEntry,
 } from './lib/plugin-manifest.js';
-import { isWorkingTreeClean, getLatestTagForPlugin, getCommitsSinceTag } from './lib/git-utils.js';
+import {
+  isWorkingTreeClean,
+  getLatestTagForPlugin,
+  getCommitsSinceTag,
+  filterNoiseCommits,
+} from './lib/git-utils.js';
 import { printSuccess, printError, printInfo, printWarning } from './lib/prompts.js';
 import type { ParsedCommit } from './lib/git-utils.js';
 
@@ -143,6 +148,45 @@ function groupCommitsByType(commits: ParsedCommit[]): Map<string, ParsedCommit[]
   return groups;
 }
 
+function collapseByScope(commits: ParsedCommit[]): ParsedCommit[] {
+  // Pre-collect commits per scope
+  const scopeGroups = new Map<string, ParsedCommit[]>();
+  for (const commit of commits) {
+    if (!commit.scope) continue;
+    const group = scopeGroups.get(commit.scope) ?? [];
+    group.push(commit);
+    scopeGroups.set(commit.scope, group);
+  }
+
+  // Emit in original order; collapse at first occurrence of each scope
+  const emitted = new Set<string>();
+  const result: ParsedCommit[] = [];
+
+  for (const commit of commits) {
+    if (!commit.scope) {
+      result.push(commit);
+      continue;
+    }
+    if (emitted.has(commit.scope)) continue;
+    emitted.add(commit.scope);
+
+    const group = scopeGroups.get(commit.scope)!;
+    if (group.length === 1) {
+      result.push(group[0]);
+    } else {
+      result.push({
+        hash: group[0].hash,
+        type: group[0].type,
+        scope: commit.scope,
+        message: `${group[0].message} (+${group.length - 1} more)`,
+        raw: group[0].raw,
+      });
+    }
+  }
+
+  return result;
+}
+
 function generateChangelog(
   newVersion: string,
   pluginName: string,
@@ -152,16 +196,19 @@ function generateChangelog(
   const date = new Date().toISOString().split('T')[0];
   const newTag = `${pluginName}@${newVersion}`;
 
+  const filtered = filterNoiseCommits(commits);
+
   let content = `## [${newVersion}] - ${date}\n\n`;
 
-  if (commits.length === 0) {
+  if (filtered.length === 0) {
     content += '_No notable changes._\n';
   } else {
-    const groups = groupCommitsByType(commits);
+    const groups = groupCommitsByType(filtered);
 
     for (const [label, groupCommits] of groups) {
+      const collapsed = collapseByScope(groupCommits);
       content += `### ${label}\n\n`;
-      for (const commit of groupCommits) {
+      for (const commit of collapsed) {
         const scope = commit.scope ? `**${commit.scope}:** ` : '';
         content += `- ${scope}${commit.message}\n`;
       }

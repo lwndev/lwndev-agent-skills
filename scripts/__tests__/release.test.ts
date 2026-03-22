@@ -276,6 +276,117 @@ describe('release script full workflow', () => {
     expect(changelog).toContain('**ui:** add new button');
   });
 
+  it('should filter noise commits from changelog', async () => {
+    // Add noise commits
+    await writeFile(join(testDir, 'noise1.txt'), 'noise');
+    execSync('git add -A && git commit -m "address review feedback"', {
+      cwd: testDir,
+      stdio: 'pipe',
+    });
+    await writeFile(join(testDir, 'noise2.txt'), 'noise');
+    execSync('git add -A && git commit -m "mark CHORE-015 as completed"', {
+      cwd: testDir,
+      stdio: 'pipe',
+    });
+    await writeFile(join(testDir, 'noise3.txt'), 'noise');
+    execSync('git add -A && git commit -m "update CHORE-012 status to completed"', {
+      cwd: testDir,
+      stdio: 'pipe',
+    });
+
+    const { exitCode } = runRelease('--bump patch', testDir);
+    expect(exitCode).toBe(0);
+
+    const changelog = await readFile(join(testDir, 'plugins/test-plugin/CHANGELOG.md'), 'utf-8');
+    // Noise should be excluded
+    expect(changelog).not.toContain('address review feedback');
+    expect(changelog).not.toContain('mark CHORE-015 as completed');
+    expect(changelog).not.toContain('update CHORE-012 status');
+    // Real commits should remain
+    expect(changelog).toContain('fix a bug');
+  });
+
+  it('should filter merge commits from changelog', async () => {
+    await writeFile(join(testDir, 'merge.txt'), 'merge');
+    execSync('git add -A && git commit -m "Merge pull request #42 from user/branch"', {
+      cwd: testDir,
+      stdio: 'pipe',
+    });
+
+    const { exitCode } = runRelease('--bump patch', testDir);
+    expect(exitCode).toBe(0);
+
+    const changelog = await readFile(join(testDir, 'plugins/test-plugin/CHANGELOG.md'), 'utf-8');
+    expect(changelog).not.toContain('Merge pull request');
+  });
+
+  it('should collapse same-scope commits into single entry', async () => {
+    // Add multiple commits with the same scope
+    await writeFile(join(testDir, 'feat1.txt'), 'feat1');
+    execSync('git add -A && git commit -m "feat(auth): add login endpoint"', {
+      cwd: testDir,
+      stdio: 'pipe',
+    });
+    await writeFile(join(testDir, 'feat2.txt'), 'feat2');
+    execSync('git add -A && git commit -m "feat(auth): add logout endpoint"', {
+      cwd: testDir,
+      stdio: 'pipe',
+    });
+    await writeFile(join(testDir, 'feat3.txt'), 'feat3');
+    execSync('git add -A && git commit -m "feat(auth): add token refresh"', {
+      cwd: testDir,
+      stdio: 'pipe',
+    });
+
+    const { exitCode } = runRelease('--bump minor', testDir);
+    expect(exitCode).toBe(0);
+
+    const changelog = await readFile(join(testDir, 'plugins/test-plugin/CHANGELOG.md'), 'utf-8');
+    // Should have a single collapsed entry for auth scope
+    expect(changelog).toContain('**auth:**');
+    expect(changelog).toContain('(+2 more)');
+    // Should NOT have 3 separate auth entries
+    const authMatches = changelog.match(/\*\*auth:\*\*/g);
+    expect(authMatches).toHaveLength(1);
+  });
+
+  it('should not collapse single-commit scopes', async () => {
+    await writeFile(join(testDir, 'feat1.txt'), 'feat1');
+    execSync('git add -A && git commit -m "feat(ui): add button"', {
+      cwd: testDir,
+      stdio: 'pipe',
+    });
+
+    const { exitCode } = runRelease('--bump minor', testDir);
+    expect(exitCode).toBe(0);
+
+    const changelog = await readFile(join(testDir, 'plugins/test-plugin/CHANGELOG.md'), 'utf-8');
+    expect(changelog).toContain('**ui:** add button');
+    expect(changelog).not.toContain('+');
+  });
+
+  it('should show no notable changes when all commits are noise', async () => {
+    // Tag current state so only noise commits are in range
+    execSync('git tag "test-plugin@1.0.0"', { cwd: testDir, stdio: 'pipe' });
+
+    await writeFile(join(testDir, 'noise1.txt'), 'noise');
+    execSync('git add -A && git commit -m "address review feedback"', {
+      cwd: testDir,
+      stdio: 'pipe',
+    });
+    await writeFile(join(testDir, 'noise2.txt'), 'noise');
+    execSync('git add -A && git commit -m "mark CHORE-015 as completed"', {
+      cwd: testDir,
+      stdio: 'pipe',
+    });
+
+    const { exitCode } = runRelease('--bump patch', testDir);
+    expect(exitCode).toBe(0);
+
+    const changelog = await readFile(join(testDir, 'plugins/test-plugin/CHANGELOG.md'), 'utf-8');
+    expect(changelog).toContain('No notable changes');
+  });
+
   it('should prepend new version to existing changelog', async () => {
     // First release
     runRelease('--bump patch', testDir);
