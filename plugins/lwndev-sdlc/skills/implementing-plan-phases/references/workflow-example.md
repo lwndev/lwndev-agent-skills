@@ -14,8 +14,9 @@ This example demonstrates executing Phase 2 (Validation Engine) from the validat
   - [6. Load Todos](#6-load-todos)
   - [7. Execute Each Step](#7-execute-each-step)
   - [8. Verify Deliverables](#8-verify-deliverables)
-  - [9. Update Plan Status](#9-update-plan-status)
-  - [10. Update GitHub Issue](#10-update-github-issue)
+  - [9. Commit and Push Changes](#9-commit-and-push-changes)
+  - [10. Update Plan Status](#10-update-plan-status)
+  - [11. Update GitHub Issue](#11-update-github-issue)
 - [Common Patterns](#common-patterns)
 - [Result](#result)
 - [Final Phase Completion](#final-phase-completion)
@@ -190,7 +191,25 @@ Confirm all files exist:
 - `tests/unit/validators/required-fields.test.ts`
 - `tests/unit/generators/validate.test.ts`
 
-### 9. Update Plan Status
+### 9. Commit and Push Changes
+
+Stage and commit all phase deliverables:
+
+```bash
+git add src/validators/file-exists.ts src/validators/required-fields.ts src/generators/validate.ts \
+  tests/unit/validators/file-exists.test.ts tests/unit/validators/required-fields.test.ts \
+  tests/unit/generators/validate.test.ts
+
+git commit -m "feat(FEAT-002): complete phase 2 - validation engine"
+```
+
+Push to remote (first push for this branch uses `-u`):
+
+```bash
+git push -u origin feat/FEAT-002-validate-skill-command
+```
+
+### 10. Update Plan Status
 
 Edit `requirements/implementation/02-validate-skill-command.md`:
 
@@ -208,7 +227,7 @@ Edit `requirements/implementation/02-validate-skill-command.md`:
 - [x] `tests/unit/generators/validate.test.ts` - Orchestrator tests
 ```
 
-### 10. Update GitHub Issue
+### 11. Update GitHub Issue
 
 Post completion comment:
 
@@ -286,6 +305,7 @@ Phase 2 is complete when:
 - All 6 deliverables created
 - Tests pass with >80% coverage
 - Build succeeds
+- Changes committed and pushed to remote
 - Plan status updated to "✅ Complete"
 - All deliverable checkboxes marked `[x]`
 - GitHub issue updated with completion comment

@@ -37,8 +37,9 @@ Execute implementation plan phases with systematic tracking and verification.
 6. Load implementation steps into todos
 7. Execute each step, marking complete as you go
 8. Verify deliverables (tests pass, build succeeds)
-9. Update plan status to "✅ Complete"
-10. Update GitHub issue with completion comment:
+9. Commit and push changes to remote
+10. Update plan status to "✅ Complete"
+11. Update GitHub issue with completion comment:
     ```bash
     gh issue comment <ISSUE_NUM> --body "✅ Completed Phase N: <Name>..."
     ```
@@ -57,6 +58,7 @@ Phase Implementation:
 - [ ] Load steps into todos
 - [ ] Execute implementation steps
 - [ ] Verify deliverables
+- [ ] Commit and push changes to remote
 - [ ] Update plan status to "✅ Complete"
 - [ ] Post GitHub issue completion comment
 ```
@@ -104,6 +106,7 @@ Before marking a phase complete, verify:
 - Tests pass: `npm test`
 - Build succeeds: `npm run build`
 - Coverage meets threshold (if specified)
+- Changes committed and pushed to remote
 - Plan status updated with checkmarks
 - GitHub issue updated
 

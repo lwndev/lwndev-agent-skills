@@ -86,6 +86,8 @@ gh issue comment <ISSUE_NUM> --body "✅ Completed Phase <N>: <Phase Name>
 - ✅ Build successful
 - ✅ Coverage: <X>%
 
+**Commit:** \`<short SHA>\` — \`feat(FEAT-XXX): complete phase N - <phase name>\`
+
 **Status:** ✅ Complete"
 ```
 
@@ -106,6 +108,8 @@ gh issue comment 2 --body "✅ Completed Phase 2: Validation Engine
 - ✅ Tests passing
 - ✅ Build successful
 - ✅ Coverage: 85%
+
+**Commit:** \`a1b2c3d\` — \`feat(FEAT-002): complete phase 2 - validation engine\`
 
 **Status:** ✅ Complete"
 ```
