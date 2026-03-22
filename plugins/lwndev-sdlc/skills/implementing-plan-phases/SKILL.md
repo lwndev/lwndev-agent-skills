@@ -43,6 +43,7 @@ Execute implementation plan phases with systematic tracking and verification.
     ```bash
     gh issue comment <ISSUE_NUM> --body "✅ Completed Phase N: <Name>..."
     ```
+12. **After all phases complete:** Create pull request **(MUST include `Closes #N` if issue exists)**
 
 ## Workflow
 
@@ -61,7 +62,10 @@ Phase Implementation:
 - [ ] Commit and push changes to remote
 - [ ] Update plan status to "✅ Complete"
 - [ ] Post GitHub issue completion comment
+- [ ] Create pull request after all phases complete (include "Closes #N" in body if issue exists)
 ```
+
+**Important:** Including `Closes #N` in the PR body auto-closes the linked GitHub issue when merged. Without it, the issue must be closed manually.
 
 See [step-details.md](references/step-details.md) for detailed guidance on each step.
 
@@ -109,9 +113,11 @@ Before marking a phase complete, verify:
 - Changes committed and pushed to remote
 - Plan status updated with checkmarks
 - GitHub issue updated
+- After all phases: create PR per Step 12
 
 ## References
 
 - **Complete workflow example**: [workflow-example.md](references/workflow-example.md) - Full Phase 2 implementation walkthrough
 - **GitHub issue templates**: [github-templates.md](references/github-templates.md) - Comment templates for issue updates
 - **Detailed step guidance**: [step-details.md](references/step-details.md) - In-depth explanation of each workflow step
+- **PR template**: [assets/pr-template.md](assets/pr-template.md) - Pull request format for feature implementations

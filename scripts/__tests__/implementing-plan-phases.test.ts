@@ -7,18 +7,21 @@ const SKILL_MD_PATH = join(SKILL_DIR, 'SKILL.md');
 const WORKFLOW_EXAMPLE_PATH = join(SKILL_DIR, 'references', 'workflow-example.md');
 const GITHUB_TEMPLATES_PATH = join(SKILL_DIR, 'references', 'github-templates.md');
 const STEP_DETAILS_PATH = join(SKILL_DIR, 'references', 'step-details.md');
+const PR_TEMPLATE_PATH = join(SKILL_DIR, 'assets', 'pr-template.md');
 
 describe('implementing-plan-phases skill', () => {
   let skillMd: string;
   let workflowExample: string;
   let githubTemplates: string;
   let stepDetails: string;
+  let prTemplate: string;
 
   beforeAll(async () => {
     skillMd = await readFile(SKILL_MD_PATH, 'utf-8');
     workflowExample = await readFile(WORKFLOW_EXAMPLE_PATH, 'utf-8');
     githubTemplates = await readFile(GITHUB_TEMPLATES_PATH, 'utf-8');
     stepDetails = await readFile(STEP_DETAILS_PATH, 'utf-8');
+    prTemplate = await readFile(PR_TEMPLATE_PATH, 'utf-8');
   });
 
   describe('SKILL.md', () => {
@@ -51,6 +54,11 @@ describe('implementing-plan-phases skill', () => {
     it('should document status tracking workflow', () => {
       expect(skillMd).toContain('🔄 In Progress');
       expect(skillMd).toContain('✅ Complete');
+    });
+
+    it('should include PR creation step after all phases complete', () => {
+      expect(skillMd).toContain('**After all phases complete:** Create pull request');
+      expect(skillMd).toContain('Closes #N');
     });
   });
 
@@ -85,6 +93,21 @@ describe('implementing-plan-phases skill', () => {
     it('should have step-details.md', () => {
       expect(stepDetails).toBeDefined();
       expect(stepDetails.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('assets', () => {
+    it('should have pr-template.md', () => {
+      expect(prTemplate).toBeDefined();
+      expect(prTemplate.length).toBeGreaterThan(0);
+    });
+
+    it('should include implementation plan link in PR template', () => {
+      expect(prTemplate).toContain('Implementation Plan');
+    });
+
+    it('should include Closes #N in PR template', () => {
+      expect(prTemplate).toContain('Closes #N');
     });
   });
 

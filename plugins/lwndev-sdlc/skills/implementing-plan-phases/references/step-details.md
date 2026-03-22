@@ -15,6 +15,7 @@ Detailed guidance for each step in the phase implementation workflow.
 - [Step 9: Commit and Push Changes](#step-9-commit-and-push-changes)
 - [Step 10: Update Plan Status](#step-10-update-plan-status)
 - [Step 11: Update GitHub Issue (Completion)](#step-11-update-github-issue-completion)
+- [Step 12: Create Pull Request (All Phases Complete)](#step-12-create-pull-request-all-phases-complete)
 - [Common Patterns](#common-patterns)
 
 ---
@@ -423,6 +424,46 @@ All deliverables implemented, tested, and verified.
 
 Implementation complete."
 ```
+
+---
+
+## Step 12: Create Pull Request (All Phases Complete)
+
+After all phases in the implementation plan are marked **✅ Complete**, create a pull request to merge the feature branch.
+
+**This step only runs once — after the final phase is complete**, not after each individual phase.
+
+### Check All Phases Are Complete
+
+Before creating the PR, verify every phase in the plan shows **Status: ✅ Complete**:
+
+```bash
+# Search for any phases that are not complete
+grep "**Status:**" requirements/implementation/<plan-file>.md
+```
+
+If any phase is still Pending or 🔄 In Progress, complete it before proceeding.
+
+### Create the Pull Request
+
+Use the PR template from [assets/pr-template.md](../assets/pr-template.md):
+
+```bash
+gh pr create --title "feat(FEAT-XXX): <feature summary>" --body "..."
+```
+
+**Important:** If the implementation plan links to a GitHub issue, you MUST include `Closes #N` in the Related section. This auto-closes the issue when the PR is merged.
+
+### PR Title Format
+
+```
+feat(FEAT-XXX): <feature summary>
+```
+
+**Examples:**
+- `feat(FEAT-001): add scaffold skill command`
+- `feat(FEAT-002): add validation engine`
+- `feat(FEAT-007): add chore task skill`
 
 ---
 
