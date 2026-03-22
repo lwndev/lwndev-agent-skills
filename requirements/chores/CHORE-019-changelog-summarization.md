@@ -18,10 +18,11 @@ Refactor changelog generation in the release script to produce concise, user-fac
 
 ## Affected Files
 
-- `scripts/release.ts` — `generateChangelog()` and `groupCommitsByType()` (lines 121–177)
-- `scripts/lib/git-utils.ts` — `getCommitsSinceTag()` (lines 65–87)
-- `.claude/skills/releasing-plugins/SKILL.md` — skill workflow instructions
-- `plugins/lwndev-sdlc/CHANGELOG.md` — existing changelog (will reflect new format on next release)
+- `scripts/release.ts` — added `collapseByScope()` (lines 151–185), modified `generateChangelog()` to call `filterNoiseCommits` and `collapseByScope` (lines 187–221)
+- `scripts/lib/git-utils.ts` — added `NOISE_PATTERNS` and `filterNoiseCommits()` (lines 89–98)
+- `.claude/skills/releasing-plugins/SKILL.md` — added Step 6 "Refine the changelog", renumbered subsequent steps
+- `scripts/__tests__/git-utils.test.ts` — new unit tests for `filterNoiseCommits` (8 tests)
+- `scripts/__tests__/release.test.ts` — added 5 integration tests for noise filtering, scope collapsing, and edge cases
 
 ## Acceptance Criteria
 
@@ -49,5 +50,5 @@ Refactor changelog generation in the release script to produce concise, user-fac
 ## Notes
 
 - The release script runs non-interactively and commits automatically, so any AI-assisted summarization must happen in the skill workflow (before or after the script), not within the script itself.
-- The skill already reviews the release commit (step 6 in SKILL.md) — summarization could be added as a pre-step or as a post-step edit of the generated changelog before final commit.
-- A hybrid approach is likely best: script-level filtering of noise commits + skill-level summarization of remaining entries into meaningful changelog lines.
+- Summarization was added as Step 6 "Refine the changelog" in SKILL.md, before the review step (now Step 7). The skill reviews and optionally rewrites the auto-generated changelog before the release commit is finalized.
+- Hybrid approach implemented: script-level filtering of noise commits + scope collapsing at the script level, with skill-level refinement for wording and cross-scope consolidation.
