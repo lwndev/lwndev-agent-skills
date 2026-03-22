@@ -30,8 +30,8 @@ Execute chore task workflows with systematic tracking from branch creation throu
 4. Post start comment on GitHub issue (if exists)
 5. Create git branch: `chore/CHORE-XXX-description`
 6. Execute the defined changes, tracking with todos
-7. Commit changes with descriptive messages
-8. Verify acceptance criteria are met
+7. **Check off each acceptance criterion** in the chore document (`- [ ]` → `- [x]`) as it is verified
+8. Commit changes with descriptive messages
 9. Run tests/build verification
 10. Create pull request **(MUST include `Closes #N` if issue exists)**
 11. Update chore document completion section (status, date, PR link)
@@ -48,8 +48,8 @@ Chore Execution:
 - [ ] Create git branch: chore/CHORE-XXX-description
 - [ ] Load acceptance criteria into todos
 - [ ] Execute defined changes
+- [ ] Check off each acceptance criterion in chore document (- [ ] → - [x]) as verified
 - [ ] Commit with chore(category): message format
-- [ ] Verify acceptance criteria met
 - [ ] Run tests/build verification
 - [ ] Create pull request (include "Closes #N" in body if issue exists)
 - [ ] Update chore document (status → Completed, date, PR link)

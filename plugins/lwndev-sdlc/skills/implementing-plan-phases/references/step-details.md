@@ -178,7 +178,10 @@ For each implementation step:
 2. **Implement:** Write the code/tests
 3. **Follow patterns:** Reference existing code style and architecture
 4. **Use shared infrastructure:** Check plan's "Shared Infrastructure" section
-5. **Mark completed:** Update todo when step is done
+5. **Check off the deliverable in the implementation plan** — edit the plan file to change `- [ ]` to `- [x]` for each deliverable as it is completed
+6. **Mark completed:** Update todo when step is done
+
+**Important:** Update the implementation plan deliverable checkbox at the point each deliverable is completed, not in a batch at the end. This provides real-time progress visibility in the plan document.
 
 **Keep exactly ONE todo in_progress at a time.**
 
@@ -346,25 +349,15 @@ Edit the implementation plan file to mark the phase complete:
 
 **Change:**
 ```markdown
-### Phase N: [Phase Name]
 **Status:** 🔄 In Progress
-
-#### Deliverables
-- [ ] `file1.ts` - Description
-- [ ] `file2.ts` - Description
 ```
 
 **To:**
 ```markdown
-### Phase N: [Phase Name]
 **Status:** ✅ Complete
-
-#### Deliverables
-- [x] `file1.ts` - Description
-- [x] `file2.ts` - Description
 ```
 
-Update both the status line and all deliverable checkboxes.
+Confirm that all deliverable checkboxes have already been checked off (`- [x]`) during Step 7. If any were missed, check them off now as a final catch.
 
 ## Step 11: Update GitHub Issue (Completion)
 

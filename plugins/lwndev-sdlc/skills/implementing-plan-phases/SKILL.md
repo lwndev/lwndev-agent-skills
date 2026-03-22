@@ -35,7 +35,7 @@ Execute implementation plan phases with systematic tracking and verification.
    ```
 5. Create feature branch (if not already exists): `feat/{Feature ID}-{2-3-word-summary}`
 6. Load implementation steps into todos
-7. Execute each step, marking complete as you go
+7. Execute each step, **checking off each deliverable** in the implementation plan (`- [ ]` → `- [x]`) as it is completed
 8. Verify deliverables (tests pass, build succeeds)
 9. Commit and push changes to remote
 10. Update plan status to "✅ Complete"
@@ -56,7 +56,7 @@ Phase Implementation:
 - [ ] Post GitHub issue start comment
 - [ ] Create/switch to feature branch
 - [ ] Load steps into todos
-- [ ] Execute implementation steps
+- [ ] Execute implementation steps, checking off deliverables (- [ ] → - [x]) as completed
 - [ ] Verify deliverables
 - [ ] Commit and push changes to remote
 - [ ] Update plan status to "✅ Complete"

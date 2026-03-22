@@ -116,10 +116,11 @@ For each root cause (RC-1, RC-2, ...):
 2. **Investigate**: Understand the specific code paths involved
 3. **Implement**: Make the fix for that root cause
 4. **Verify**: Confirm the `(RC-N)` tagged acceptance criteria pass
-5. Mark the RC as `completed`
-6. Move to the next root cause
+5. **Check off the verified criteria in the bug document** — edit the source file to change `- [ ]` to `- [x]` for each `(RC-N)` criterion that now passes
+6. Mark the RC as `completed`
+7. Move to the next root cause
 
-**Important:** Address root causes one at a time. Complete and verify each before moving to the next to maintain traceability.
+**Important:** Address root causes one at a time. Complete and verify each before moving to the next to maintain traceability. Update the bug document checkbox at the point each criterion is verified, not in a batch at the end.
 
 ### Step 7: Verify Reproduction Steps
 
@@ -162,13 +163,7 @@ git commit -m "fix(category): brief description"
 
 ### Step 9: Verify All Root Causes Addressed
 
-Review each root cause from the bug document:
-
-```markdown
-## Root Causes
-- [x] RC-1: Null check missing — FIXED
-- [x] RC-2: Error handler swallows exception — FIXED
-```
+Confirm that all acceptance criteria in the bug document have been checked off (`- [x]`) during Step 6. Each checkbox should already be marked — this step is a final review to catch any that were missed.
 
 If any root cause cannot be fully addressed:
 - Document the blocker

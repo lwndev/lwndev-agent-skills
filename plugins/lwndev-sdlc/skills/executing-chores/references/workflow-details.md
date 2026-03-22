@@ -95,8 +95,11 @@ Work through each acceptance criterion:
 1. Mark current task as `in_progress`
 2. Make the necessary changes
 3. Test locally if applicable
-4. Mark task as `completed`
-5. Move to next criterion
+4. **Check off the criterion in the chore document** — edit the source file to change `- [ ]` to `- [x]` for the criterion you just verified
+5. Mark task as `completed`
+6. Move to next criterion
+
+**Important:** Update the chore document checkbox at the point each criterion is verified, not in a batch at the end. This provides real-time progress visibility in the source document.
 
 ### Step 6: Commit Changes
 
@@ -130,14 +133,7 @@ git commit -m "chore(category): brief description"
 
 ### Step 7: Verify Acceptance Criteria
 
-Review each criterion from the chore document:
-
-```markdown
-## Acceptance Criteria
-- [x] Criterion 1 - verified
-- [x] Criterion 2 - verified
-- [x] Criterion 3 - verified
-```
+Confirm that all acceptance criteria in the chore document have been checked off (`- [x]`) during Step 5. Each checkbox should already be marked — this step is a final review to catch any that were missed.
 
 If any criteria cannot be met:
 - Document the blocker
