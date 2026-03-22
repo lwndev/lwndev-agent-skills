@@ -23,12 +23,12 @@ Commit the updated `package-lock.json` that was left unstaged after `npm install
 ## Acceptance Criteria
 
 - [x] `package-lock.json` is committed
-- [ ] `git status` shows a clean working tree after merge
+- [x] `git status` shows a clean working tree after merge
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `Completed`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-03-22
 
 **Pull Request:** [#N](https://github.com/lwndev/lwndev-marketplace/pull/N)
