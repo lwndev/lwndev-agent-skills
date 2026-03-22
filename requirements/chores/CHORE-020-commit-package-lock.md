@@ -31,4 +31,4 @@ Commit the updated `package-lock.json` that was left unstaged after `npm install
 
 **Completed:** 2026-03-22
 
-**Pull Request:** [#N](https://github.com/lwndev/lwndev-marketplace/pull/N)
+**Pull Request:** [#63](https://github.com/lwndev/lwndev-marketplace/pull/63)
