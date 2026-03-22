@@ -31,11 +31,12 @@ Execute bug fix workflows with root cause driven execution from branch creation 
 5. Post start comment on GitHub issue (if exists) — include root causes
 6. Create git branch: `fix/BUG-XXX-description`
 7. Address each root cause systematically, implementing fixes and tracking with todos
-8. Commit changes with `fix(category): description` messages
-9. Verify each root cause is addressed and reproduction steps no longer trigger the bug
-10. Run tests/build verification
-11. Create pull request **(MUST include `Closes #N` if issue exists)**
-12. Update bug document completion section (status, date, PR link)
+8. **Check off each acceptance criterion** in the bug document (`- [ ]` → `- [x]`) as it is verified
+9. Commit changes with `fix(category): description` messages
+10. Verify reproduction steps no longer trigger the bug
+11. Run tests/build verification
+12. Create pull request **(MUST include `Closes #N` if issue exists)**
+13. Update bug document completion section (status, date, PR link)
 
 ## Workflow Checklist
 
@@ -50,7 +51,7 @@ Bug Fix Execution:
 - [ ] Post GitHub issue start comment with root causes (if issue exists)
 - [ ] Create git branch: fix/BUG-XXX-description
 - [ ] Address each root cause systematically (RC-1, RC-2, ...)
-- [ ] Verify per-root-cause acceptance criteria (RC-N)
+- [ ] Check off each acceptance criterion in bug document (- [ ] → - [x]) as verified
 - [ ] Commit with fix(category): message format
 - [ ] Verify reproduction steps no longer trigger the bug
 - [ ] Run tests/build verification
