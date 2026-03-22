@@ -35,6 +35,10 @@ Build a comprehensive QA test plan from requirements documents. The test plan ma
 5. Verify plan completeness via qa-verifier subagent
 6. Save test plan and present to user
 
+## Important: No Bash Usage
+
+This skill does not include `Bash` in its allowed tools. Do NOT use Bash commands (including `echo`) for output formatting, status messages, or any other purpose. Use direct text output in your response instead. All communication with the user should be through your response text, not through shell commands.
+
 ## Input
 
 The user provides a requirement ID in one of these formats:
