@@ -12,8 +12,9 @@ Detailed guidance for each step in the phase implementation workflow.
 - [Step 6: Load Steps into Todos](#step-6-load-steps-into-todos)
 - [Step 7: Execute Implementation](#step-7-execute-implementation)
 - [Step 8: Verify Deliverables](#step-8-verify-deliverables)
-- [Step 9: Update Plan Status](#step-9-update-plan-status)
-- [Step 10: Update GitHub Issue (Completion)](#step-10-update-github-issue-completion)
+- [Step 9: Commit and Push Changes](#step-9-commit-and-push-changes)
+- [Step 10: Update Plan Status](#step-10-update-plan-status)
+- [Step 11: Update GitHub Issue (Completion)](#step-11-update-github-issue-completion)
 - [Common Patterns](#common-patterns)
 
 ---
@@ -259,7 +260,87 @@ ls -la tests/unit/validators/file-exists.test.ts
 # ... etc for all deliverables
 ```
 
-## Step 9: Update Plan Status
+## Step 9: Commit and Push Changes
+
+After verification passes, commit all changes and push to the remote. This preserves a per-phase audit trail in git and ensures work is not lost between phases.
+
+### Stage Changed Files
+
+Stage all files that were created or modified during this phase:
+
+```bash
+# Stage specific deliverable files
+git add src/validators/file-exists.ts src/validators/required-fields.ts ...
+
+# Or stage all changes if all modifications are phase-related
+git add .
+```
+
+Review what will be committed before proceeding:
+
+```bash
+git status
+```
+
+### Commit with Phase-Traceable Message
+
+Use a commit message that includes the Feature ID, phase number, and phase name:
+
+```bash
+git commit -m "feat(FEAT-XXX): complete phase N - <phase name>"
+```
+
+**Format:** `feat(<Feature ID>): complete phase <N> - <phase name>`
+
+**Examples:**
+- `feat(FEAT-001): complete phase 1 - yaml parsing infrastructure`
+- `feat(FEAT-002): complete phase 2 - validation engine`
+- `feat(FEAT-007): complete phase 3 - chore execution workflow`
+
+### Push to Remote
+
+Push the feature branch to the remote. Use `-u` on the first push to set upstream tracking:
+
+```bash
+# First push for this branch
+git push -u origin feat/FEAT-XXX-summary
+
+# Subsequent pushes (upstream already set)
+git push
+```
+
+If the branch was already pushed in a prior phase, a simple `git push` is sufficient.
+
+### Push Failure Recovery
+
+If the push fails, diagnose and resolve before proceeding:
+
+**Network / authentication errors:**
+```bash
+# Verify remote is reachable
+git remote -v
+
+# Retry the push
+git push
+```
+
+If authentication has expired, re-authenticate (e.g., `gh auth login`) and retry.
+
+**Rejected push (remote has new commits):**
+```bash
+# Fetch and rebase onto the latest remote
+git fetch origin
+git rebase origin/<branch-name>
+
+# Resolve any conflicts, then push
+git push
+```
+
+**Important:** Do not proceed to Step 10 (Update Plan Status) until the push succeeds. The commit is local-only until pushed, and subsequent phases or collaborators will not see the work.
+
+---
+
+## Step 10: Update Plan Status
 
 Edit the implementation plan file to mark the phase complete:
 
@@ -285,7 +366,7 @@ Edit the implementation plan file to mark the phase complete:
 
 Update both the status line and all deliverable checkboxes.
 
-## Step 10: Update GitHub Issue (Completion)
+## Step 11: Update GitHub Issue (Completion)
 
 Post a completion comment to the GitHub issue.
 
@@ -303,6 +384,8 @@ gh issue comment <ISSUE_NUM> --body "✅ Completed Phase <N>: <Phase Name>
 - ✅ Tests passing
 - ✅ Build successful
 - ✅ Coverage: <X>%
+
+**Commit:** \`<short SHA>\` — \`feat(FEAT-XXX): complete phase N - <phase name>\`
 
 **Status:** ✅ Complete"
 ```
@@ -324,6 +407,8 @@ gh issue comment 2 --body "✅ Completed Phase 2: Validation Engine
 - ✅ Tests passing
 - ✅ Build successful
 - ✅ Coverage: 85%
+
+**Commit:** \`a1b2c3d\` — \`feat(FEAT-002): complete phase 2 - validation engine\`
 
 **Status:** ✅ Complete"
 ```
