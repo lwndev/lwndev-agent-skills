@@ -64,10 +64,10 @@ Wait for user confirmation. Once confirmed, execute the following sequence:
 ### Step 1: Merge the PR
 
 ```bash
-gh pr merge --merge
+gh pr merge --delete-branch
 ```
 
-Use the repository's default merge strategy. Do not force-merge or bypass required checks.
+Use the repository's default merge strategy (no `--merge`, `--squash`, or `--rebase` flag). The `--delete-branch` flag cleans up the remote and local branch after merge. Do not force-merge or bypass required checks.
 
 If the merge fails, stop and report the error. Do not retry automatically.
 
