@@ -57,7 +57,7 @@ Migrate the test framework from Jest (v30 + ts-jest) to Vitest for native ESM an
 
 **Completed:** 2026-03-28
 
-**Pull Request:** [#75](https://github.com/lwndev/lwndev-marketplace/pull/75)
+**Pull Request:** [#78](https://github.com/lwndev/lwndev-marketplace/pull/78)
 
 ## Notes
 
