@@ -12,7 +12,23 @@
 | **Verdict** | PASS / FAIL |
 | **Verification Iterations** | N |
 
-## Test Suite Results
+## Per-Entry Verification Results
+
+Direct verification of each test plan entry:
+
+| # | Entry | Section | Result | Evidence |
+|---|-------|---------|--------|----------|
+| <!-- 1 --> | <!-- entry description --> | <!-- Code Path / AC / Reproduction / Deliverable --> | <!-- PASS / FAIL --> | <!-- what was found or not found --> |
+
+### Summary
+
+- **Total entries:** N
+- **Passed:** N
+- **Failed:** N
+
+## Test Suite Results (if run)
+
+<!-- Optional: automated test results as a secondary verification input. Remove section if not run. -->
 
 | Metric | Count |
 |--------|-------|
@@ -23,37 +39,19 @@
 
 ### Failed Tests
 
-<!-- List any tests that failed during verification. Remove section if all passed. -->
+<!-- List any tests that failed. Remove section if all passed. -->
 
 | Test | Failure Reason | Resolution |
 |------|---------------|------------|
 | <!-- test name --> | <!-- why it failed --> | <!-- how it was fixed --> |
 
-## Coverage Analysis
+## Issues Found and Fixed
 
-### Gaps Identified
+<!-- Entries that initially failed and were fixed during verification iterations -->
 
-<!-- Coverage gaps found during verification -->
-
-| Gap | Affected Code | Status |
-|-----|--------------|--------|
-| <!-- description --> | <!-- file:function --> | <!-- Resolved / Open --> |
-
-### Gaps Resolved
-
-<!-- Gaps that were fixed during verification iterations -->
-
-| Gap | Resolution | Test Added |
-|-----|-----------|------------|
-| <!-- description --> | <!-- what was done --> | <!-- path/to/test --> |
-
-## Code Path Verification Results
-
-<!-- Traceability from requirements to verified implementation -->
-
-| Requirement | Description | Verified | Notes |
-|-------------|-------------|----------|-------|
-| <!-- FR-N / RC-N / AC --> | <!-- what it requires --> | <!-- YES / NO --> | <!-- any notes --> |
+| Entry # | Issue | Resolution | Iteration Fixed |
+|---------|-------|-----------|-----------------|
+| <!-- entry number --> | <!-- what failed --> | <!-- what was done --> | <!-- iteration N --> |
 
 ## Reconciliation Summary
 

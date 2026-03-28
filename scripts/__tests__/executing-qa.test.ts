@@ -69,8 +69,8 @@ describe('executing-qa skill', () => {
       expect(skillMd).toContain('Reconciliation Loop');
     });
 
-    it('should document auto-fix behavior', () => {
-      expect(skillMd).toContain('Auto-fix');
+    it('should document fix behavior for failed entries', () => {
+      expect(skillMd).toContain('Fix issues');
     });
 
     it('should document preservation rules for existing documents', () => {
@@ -136,12 +136,12 @@ describe('executing-qa skill', () => {
       expect(template).toContain('## Test Suite Results');
     });
 
-    it('should contain Coverage Analysis section', () => {
-      expect(template).toContain('## Coverage Analysis');
+    it('should contain Per-Entry Verification Results section', () => {
+      expect(template).toContain('## Per-Entry Verification Results');
     });
 
-    it('should contain Code Path Verification Results section', () => {
-      expect(template).toContain('## Code Path Verification Results');
+    it('should contain Issues Found and Fixed section', () => {
+      expect(template).toContain('## Issues Found and Fixed');
     });
 
     it('should contain Reconciliation Summary section', () => {

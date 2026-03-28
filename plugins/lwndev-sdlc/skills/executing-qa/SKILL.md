@@ -32,7 +32,7 @@ Execute QA verification against a test plan, then reconcile requirements documen
 
 1. Accept a requirement ID as input
 2. Load the test plan produced by `documenting-qa`
-3. Run the verification ralph loop (test + fix until clean pass)
+3. Run the verification ralph loop (verify entries + fix until clean pass)
 4. Run the reconciliation loop (update requirements docs to match implementation)
 5. Save results and present to user
 
@@ -65,24 +65,24 @@ Also load the source requirements document(s) for use during verification and re
 
 ## Step 2: Verification Ralph Loop
 
-This loop runs tests, identifies issues, fixes them, and re-verifies until the qa-verifier returns a clean pass.
+This loop directly verifies each test plan entry, identifies failed entries, fixes the underlying issues, and re-verifies until all entries pass.
 
 ### Each Iteration
 
 1. **Delegate to qa-verifier subagent** using the Agent tool:
    - Provide the test plan content
    - Provide the source requirements document(s) content
-   - Instruct the subagent to run the full test suite, check coverage, and verify code paths against acceptance criteria
+   - Instruct the subagent to directly verify each test plan entry by checking the described condition (reading files, running targeted commands, searching for patterns) and return a per-entry PASS/FAIL verdict
 
 2. **Evaluate the verdict**:
-   - If **PASS** with no remaining issues → verification is complete, proceed to Step 3
-   - If **FAIL** with actionable issues → auto-fix them (see below)
+   - If **PASS** with all entries verified → verification is complete, proceed to Step 3
+   - If **FAIL** with specific entries failing → fix the underlying issues (see below)
 
-3. **Auto-fix issues** found by the verifier:
-   - Write missing tests for uncovered code paths
-   - Fix broken or failing tests
-   - Address coverage gaps for new/changed functionality
-   - Correct logic mismatches between code and acceptance criteria
+3. **Fix issues** underlying failed entries:
+   - For entries that failed because code or configuration is wrong — fix the code
+   - For entries that failed because expected files or sections are missing — add or correct them
+   - For entries that failed because behavior doesn't match — address the root cause
+   - Do NOT write automated tests to fill coverage gaps — directly fix what the entry describes
 
 4. **After each fix-and-verify round, attempt to finish.** The Stop hook evaluates your last message:
    - If verification passed cleanly → the hook allows stop (you proceed to reconciliation)
@@ -92,17 +92,17 @@ This loop runs tests, identifies issues, fixes them, and re-verifies until the q
 ### Type-Specific Verification
 
 #### FEAT (Features)
-- Verify each functional requirement (FR-N) has corresponding test coverage
-- Validate acceptance criteria against implementation
-- Confirm phase deliverables from the implementation plan are present
+- Verify each functional requirement (FR-N) by checking the implementing code path directly
+- Validate acceptance criteria against actual implementation behavior
+- Confirm phase deliverables from the implementation plan exist at expected paths
 
 #### CHORE (Maintenance Tasks)
-- Verify acceptance criteria are met
+- Verify each acceptance criterion by directly checking the described condition
 - Confirm changes are minimal and correctly scoped
 - Validate no unrelated modifications were introduced
 
 #### BUG (Bug Fixes)
-- Verify each root cause (RC-N) has targeted regression tests
+- Verify each root cause (RC-N) is addressed by checking the fix in the code
 - Confirm reproduction steps no longer reproduce the bug
 - Validate fix addresses root causes, not just symptoms
 
