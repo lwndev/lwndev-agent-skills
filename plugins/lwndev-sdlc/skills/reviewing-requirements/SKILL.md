@@ -32,7 +32,7 @@ Validate requirement documents against the codebase and documentation. Operates 
 1. Accept a requirement document path or ID (supports `--pr <number>` flag for code-review reconciliation)
 2. Resolve to a file path if an ID was given
 3. **Detect mode**: Check for PR → test plan → default to standard review
-4. **If PR exists** → Code-review reconciliation: Run Steps CR1-CR4 (advisory drift report)
+4. **If PR exists** → Code-review reconciliation: Run Steps CR1-CR5 (advisory drift report)
 5. **If test plan exists (no PR)** → Test-plan reconciliation: Run Steps R1-R7
 6. **If neither** → Standard review: Parse document, run Steps 3-7, present findings, offer fixes
 
@@ -42,6 +42,8 @@ The user provides either:
 
 - **A file path**: `requirements/features/FEAT-006-reviewing-requirements-skill.md`
 - **A requirement ID**: `FEAT-006`, `CHORE-003`, `BUG-001`
+
+An optional `--pr <number>` flag can be appended to force code-review reconciliation mode with a specific PR (e.g., `/reviewing-requirements FEAT-007 --pr 85`).
 
 If no input is provided, ask the user for a document path or requirement ID.
 
@@ -102,7 +104,7 @@ For draft PRs, display: `found Draft PR #N from branch <branch-name>`
 |------|---------|------------|
 | Standard review | No PR, no test plan | Steps 2-9 |
 | Test-plan reconciliation | Test plan exists, no PR | Steps R1-R7 |
-| Code-review reconciliation | PR exists (with or without test plan) | Steps CR1-CR4 |
+| Code-review reconciliation | PR exists (with or without test plan) | Steps CR1-CR5 |
 
 ## Step 2: Parse Document
 
