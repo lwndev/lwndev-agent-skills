@@ -42,12 +42,12 @@ describe('qa-verifier agent', () => {
   });
 
   describe('verification responsibilities', () => {
-    it('should document test suite execution', () => {
-      expect(agentMd).toContain('test suite');
+    it('should document direct verification of test plan entries', () => {
+      expect(agentMd).toContain('Verify Each Entry Directly');
     });
 
-    it('should document test coverage analysis', () => {
-      expect(agentMd).toContain('coverage');
+    it('should document per-entry PASS/FAIL results', () => {
+      expect(agentMd).toContain('Per-Entry Results');
     });
 
     it('should document acceptance criteria verification', () => {
