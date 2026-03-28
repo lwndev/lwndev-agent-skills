@@ -71,7 +71,7 @@ Test plan entries are never directly verified — they are used as a guide for w
 
 **Completed:** 2026-03-28
 
-**Pull Request:** [#N](https://github.com/lwndev/lwndev-marketplace/pull/N)
+**Pull Request:** [#77](https://github.com/lwndev/lwndev-marketplace/pull/77)
 
 ## Notes
 
