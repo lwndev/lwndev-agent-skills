@@ -373,12 +373,12 @@ Before finishing a code-review reconciliation, verify:
 
 ## Relationship to Other Skills
 
-This skill appears at multiple points in each workflow chain. The mode is automatic: PR exists → code-review reconciliation; test plan exists (no PR) → test-plan reconciliation; otherwise → standard review.
+This skill appears at multiple points in each workflow chain. The mode is automatic: PR exists → code-review reconciliation; test plan exists (no PR) → test-plan reconciliation; otherwise → standard review. Reconciliation steps are optional but recommended.
 
 ```
-Pre-QA:   documenting-* → reviewing-requirements (standard review) → documenting-qa
-Post-QA:  documenting-qa → reviewing-requirements (test-plan reconciliation) → creating-implementation-plans / executing-*
-Post-PR:  PR review → reviewing-requirements (code-review reconciliation) → executing-qa
+Features: documenting-features → reviewing-requirements (standard) → creating-implementation-plans → documenting-qa → reviewing-requirements (test-plan) → implementing-plan-phases → PR review → reviewing-requirements (code-review) → executing-qa → finalizing-workflow
+Chores:   documenting-chores   → reviewing-requirements (standard) → documenting-qa → reviewing-requirements (test-plan) → executing-chores   → PR review → reviewing-requirements (code-review) → executing-qa → finalizing-workflow
+Bugs:     documenting-bugs     → reviewing-requirements (standard) → documenting-qa → reviewing-requirements (test-plan) → executing-bug-fixes → PR review → reviewing-requirements (code-review) → executing-qa → finalizing-workflow
 ```
 
 | Task | Recommended Approach |
@@ -386,9 +386,10 @@ Post-PR:  PR review → reviewing-requirements (code-review reconciliation) → 
 | Document requirements first | Use `documenting-features`, `documenting-chores`, or `documenting-bugs` |
 | **Review requirements (before QA)** | **Use this skill — standard review mode** |
 | Build QA test plan | Use `documenting-qa` |
-| **Review requirements (after QA)** | **Use this skill — test-plan reconciliation mode** |
-| **Review requirements (after PR review)** | **Use this skill — code-review reconciliation mode** |
+| **Reconcile after QA plan creation** | **Use this skill — test-plan reconciliation mode (optional but recommended)** |
 | Create implementation plan | Use `creating-implementation-plans` |
 | Implement the plan | Use `implementing-plan-phases` |
 | Execute chore or bug fix | Use `executing-chores` or `executing-bug-fixes` |
+| **Reconcile after PR review** | **Use this skill — code-review reconciliation mode (optional but recommended)** |
 | Execute QA verification | Use `executing-qa` |
+| Merge PR and reset to main | Use `finalizing-workflow` |

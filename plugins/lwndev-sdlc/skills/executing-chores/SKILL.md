@@ -108,4 +108,4 @@ Before creating the PR, verify:
 | New feature with requirements | Use `documenting-features` -> `creating-implementation-plans` -> `implementing-plan-phases` |
 | Quick fix (no tracking needed) | Direct implementation |
 
-After executing a chore, consider running `/executing-qa` to verify the implementation against the test plan before merging.
+After executing a chore, consider running `/reviewing-requirements` for code-review reconciliation after PR review (optional but recommended), then `/executing-qa` to verify the implementation against the test plan, and `/finalizing-workflow` to merge.

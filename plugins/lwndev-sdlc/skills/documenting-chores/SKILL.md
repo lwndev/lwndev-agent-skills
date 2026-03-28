@@ -99,4 +99,4 @@ Before finalizing, verify:
 | Chore/maintenance task | Use this skill (`documenting-chores`) |
 | Quick fix (no tracking needed) | Direct implementation |
 
-After documenting a chore, consider running `/reviewing-requirements` to verify the document against the codebase and docs, then `/documenting-qa` to create a test plan before proceeding. Then use the `executing-chores` skill to implement it with proper branch management and PR creation.
+After documenting a chore, run `/reviewing-requirements` to verify the document against the codebase and docs, then `/documenting-qa` to create a test plan. Optionally run `/reviewing-requirements` again for test-plan reconciliation. Then use `/executing-chores` to implement it. After PR review, optionally run `/reviewing-requirements` for code-review reconciliation, then `/executing-qa` to verify, and `/finalizing-workflow` to merge.

@@ -106,13 +106,23 @@ After all steps succeed, report:
 
 ## Relationship to Other Skills
 
+This skill is the terminal step in all workflow chains. Reconciliation steps are optional but recommended.
+
+```
+Features: ... → implementing-plan-phases → PR review → reviewing-requirements → executing-qa → finalizing-workflow
+Chores:   ... → executing-chores   → PR review → reviewing-requirements → executing-qa → finalizing-workflow
+Bugs:     ... → executing-bug-fixes → PR review → reviewing-requirements → executing-qa → finalizing-workflow
+```
+
 | Task | Recommended Approach |
 |------|---------------------|
 | Document requirements | Use `documenting-features`, `documenting-chores`, or `documenting-bugs` |
 | Review requirements | Use `reviewing-requirements` |
 | Build QA test plan | Use `documenting-qa` |
+| Reconcile after QA plan creation | Use `reviewing-requirements` — test-plan reconciliation mode (optional but recommended) |
 | Create implementation plan | Use `creating-implementation-plans` |
 | Implement the plan | Use `implementing-plan-phases` |
 | Execute chore or bug fix | Use `executing-chores` or `executing-bug-fixes` |
+| Reconcile after PR review | Use `reviewing-requirements` — code-review reconciliation mode (optional but recommended) |
 | Execute QA verification | Use `executing-qa` |
 | **Merge PR and reset to main** | **Use this skill (`finalizing-workflow`)** |

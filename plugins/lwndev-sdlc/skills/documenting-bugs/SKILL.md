@@ -118,4 +118,4 @@ Before finalizing, verify:
 | Bug or defect report | Use this skill (`documenting-bugs`) |
 | Quick fix (no tracking needed) | Direct implementation |
 
-After documenting a bug, consider running `/reviewing-requirements` to verify the document against the codebase and docs, then `/documenting-qa` to create a test plan before proceeding. Then use the `executing-bug-fixes` skill to implement the fix with proper branch management and PR creation.
+After documenting a bug, run `/reviewing-requirements` to verify the document against the codebase and docs, then `/documenting-qa` to create a test plan. Optionally run `/reviewing-requirements` again for test-plan reconciliation. Then use `/executing-bug-fixes` to implement the fix. After PR review, optionally run `/reviewing-requirements` for code-review reconciliation, then `/executing-qa` to verify, and `/finalizing-workflow` to merge.

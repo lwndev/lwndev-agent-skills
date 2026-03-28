@@ -201,7 +201,10 @@ Before finishing, verify:
 | Document requirements first | Use `documenting-features`, `documenting-chores`, or `documenting-bugs` |
 | Review requirements | Use `reviewing-requirements` |
 | Build QA test plan | Use `documenting-qa` (prerequisite for this skill) |
+| Reconcile after QA plan creation | Use `reviewing-requirements` — test-plan reconciliation mode (optional but recommended) |
 | Create implementation plan | Use `creating-implementation-plans` |
 | Implement the plan | Use `implementing-plan-phases` |
 | Execute chore or bug fix | Use `executing-chores` or `executing-bug-fixes` |
+| Reconcile after PR review | Use `reviewing-requirements` — code-review reconciliation mode (optional but recommended) |
 | **Execute QA verification** | **Use this skill (`executing-qa`)** |
+| Merge PR and reset to main | Use `finalizing-workflow` |
