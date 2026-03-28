@@ -1,6 +1,6 @@
 ---
 name: reviewing-requirements
-description: Validates requirement documents against the codebase and docs. Use when the user says "review requirements", "validate requirements", "check requirements", or wants to verify a requirement document before implementation planning.
+description: Validates requirement documents against the codebase and docs. Operates in two modes - standard review (before QA planning) and test-plan reconciliation (after QA planning). Use when the user says "review requirements", "validate requirements", "check requirements", or wants to verify a requirement document.
 allowed-tools:
   - Read
   - Write
@@ -13,23 +13,25 @@ allowed-tools:
 
 # Reviewing Requirements
 
-Validate requirement documents against the codebase and documentation after drafting. Catches incorrect references, internal inconsistencies, gaps, and stale cross-references before they propagate into implementation plans and code.
+Validate requirement documents against the codebase and documentation. Operates in two modes depending on whether a QA test plan exists for the requirement:
+
+- **Standard review** — validates requirements before QA planning begins (the default)
+- **Test-plan reconciliation** — validates bidirectional consistency between the QA test plan and upstream artifacts after QA planning
 
 ## When to Use This Skill
 
 - User says "review requirements", "validate requirements", or "check requirements"
 - User provides a requirement document path or ID for review
-- After a `documenting-*` skill has produced a requirement document
-- Before proceeding to `creating-implementation-plans`
+- **Standard review**: After a `documenting-*` skill has produced a requirement document, before `documenting-qa`
+- **Test-plan reconciliation**: After `documenting-qa` has produced a test plan, before execution (`implementing-plan-phases`, `executing-chores`, `executing-bug-fixes`)
 
 ## Quick Start
 
 1. Accept a requirement document path or ID
 2. Resolve to a file path if an ID was given
-3. Parse the document and identify its type
-4. Run verification checks (Steps 3-7)
-5. Present findings organized by severity
-6. Offer to apply fixes with user approval
+3. **Detect mode**: Check if a QA test plan exists at `qa/test-plans/QA-plan-{ID}.md`
+4. **If no test plan** → Standard review: Parse document, run Steps 3-7, present findings, offer fixes
+5. **If test plan exists** → Test-plan reconciliation: Run reconciliation Steps R1-R7
 
 ## Input
 
@@ -62,6 +64,26 @@ Search for files matching the pattern `{PREFIX}-{NNN}*.md` in the appropriate di
 ```
 No requirement document found for ID "FEAT-099".
 Searched: requirements/features/, requirements/implementation/
+```
+
+## Step 1.5: Detect Review Mode
+
+After resolving the requirement document, check whether a QA test plan exists:
+
+1. Extract the requirement ID from the resolved document (e.g., `FEAT-006`, `CHORE-022`, `BUG-001`)
+2. Use Glob to check for `qa/test-plans/QA-plan-{ID}.md` (e.g., `qa/test-plans/QA-plan-CHORE-022.md`)
+
+**If a test plan exists** → Enter **test-plan reconciliation mode**. Skip Steps 2-9 and proceed to [Test-Plan Reconciliation Mode](#test-plan-reconciliation-mode).
+
+**If no test plan exists** → Continue with **standard review** (Steps 2-9 below).
+
+Display the detected mode to the user:
+```
+Detected mode: Standard review (no test plan found for {ID})
+```
+or:
+```
+Detected mode: Test-plan reconciliation (found qa/test-plans/QA-plan-{ID}.md)
 ```
 
 ## Step 2: Parse Document
@@ -267,6 +289,111 @@ After presenting findings, offer to apply fixes **only for findings that have cl
 
 **Never modify the document without explicit user approval.**
 
+## Test-Plan Reconciliation Mode
+
+When a QA test plan exists for the given requirement ID, this mode validates bidirectional consistency between the test plan and the upstream requirement document. This closes the feedback loop where QA planning surfaces new insights that should be propagated back to requirements.
+
+### Step R1: Load Documents
+
+1. Read the requirement document (already resolved in Step 1)
+2. Read the QA test plan at `qa/test-plans/QA-plan-{ID}.md`
+3. If an implementation plan exists (for `FEAT-` IDs), also load it from `requirements/implementation/`
+
+Extract from the requirement document:
+- All traceability IDs: FR-N (features), RC-N (bugs), acceptance criteria
+- NFR-N entries (if present)
+
+Extract from the test plan:
+- All entries in Code Path Verification (with their Requirement references)
+- All entries in New Test Analysis (with their Requirement Ref)
+- All entries in Coverage Gap Analysis (with their Requirement Ref)
+- Deliverable Verification entries
+- Verification Checklist items
+
+### Step R2: Bidirectional Cross-Reference Check
+
+Validate that every traceability ID maps in both directions:
+
+**Requirements → Test Plan direction:**
+For each FR-N, RC-N, or acceptance criterion in the requirement document, check that at least one test plan entry references it. Flag any requirement item without test plan coverage.
+
+**Test Plan → Requirements direction:**
+For each test plan entry that references a traceability ID (FR-N, RC-N, AC), verify that the referenced ID exists in the requirement document. Flag any test plan entry that references a non-existent requirement.
+
+Classify findings:
+- **Error**: Test plan references a traceability ID that does not exist in the requirements
+- **Warning**: A requirement (FR-N, RC-N, or AC) has no corresponding test plan entry
+
+### Step R3: Drift Detection
+
+Identify test plan entries that introduce scenarios, edge cases, or assumptions not present in the original requirements:
+
+1. Scan the test plan's New Test Analysis and Coverage Gap Analysis sections for entries that do not trace back to any FR-N, RC-N, or acceptance criterion
+2. Scan the test plan's Code Path Verification for "Expected Code Path" descriptions that describe behavior not stated in the requirements
+3. Check the test plan's Verification Checklist for items that go beyond what the requirements specify
+
+For each drift finding:
+- Describe what the test plan introduced
+- Classify as **Info** with the label "Backport Candidate"
+- Suggest which section of the requirements document should be updated to incorporate the new scenario
+
+### Step R4: Reconciliation Gap Analysis
+
+Identify requirements that lack test plan coverage. This is distinct from standard review Step 6 ("Untested Paths"), which checks the requirement document's own inline "Testing Requirements" section against its FR-N entries. Reconciliation gap analysis instead checks the external QA test plan document at `qa/test-plans/QA-plan-{ID}.md` against the requirement's traceability IDs.
+
+1. For each FR-N or RC-N in the requirements, check whether the test plan's Code Path Verification table has a corresponding row
+2. For each acceptance criterion, check whether it appears in the test plan's Verification Checklist or Code Path Verification
+3. For implementation plans: check whether each phase deliverable appears in the test plan's Deliverable Verification table
+
+Classify findings:
+- **Warning**: Requirement item has no corresponding test plan entry (may indicate the test plan is incomplete)
+
+### Step R5: Inconsistency Detection
+
+Compare the expected behavior described in the test plan against what the requirements specify:
+
+1. For each Code Path Verification entry, compare its "Description" and "Expected Code Path" against the corresponding FR-N or RC-N description in the requirements
+2. Check that the test plan's Deliverable Verification paths match the expected paths in the requirements or implementation plan
+3. If the test plan's New Test Analysis recommends tests for scenarios that contradict a requirement, flag the contradiction
+
+Classify findings:
+- **Error**: Direct contradiction between test plan expectation and requirement specification
+- **Warning**: Ambiguous inconsistency that may reflect a difference in interpretation
+
+### Step R6: Present Reconciliation Findings
+
+Use the same severity classification and finding format as standard review (Step 8), with these additional category groupings:
+
+1. **Cross-Reference Consistency** (Step R2)
+2. **Drift / Backport Candidates** (Step R3)
+3. **Test Plan Coverage Gaps** (Step R4)
+4. **Inconsistencies** (Step R5)
+
+Display a summary count at the top:
+```
+Test-plan reconciliation for {ID}: Found **N errors**, **N warnings**, **N info**
+```
+
+For each finding, include an actionable suggestion specifying which artifact to update:
+- **Requirements document**: "Consider adding this edge case to the Edge Cases section of {requirement file}"
+- **GitHub issue**: "Consider posting a comment on #{issue_number} noting this scope clarification"
+- **Implementation plan**: "Consider updating Phase N deliverables in {implementation plan file}"
+
+### Step R7: Offer Updates
+
+After presenting reconciliation findings, offer to apply updates where the correction is clear:
+
+**Applicable updates:**
+- Adding backport candidate scenarios to the requirements document's Edge Cases or Acceptance Criteria sections
+- Adding missing traceability references to test plan entries
+
+**Not applicable (require manual review):**
+- Resolving contradictions between test plan and requirements (requires design decision)
+- Posting GitHub issue comments (requires user judgment on wording)
+- Modifying implementation plan phases (may affect scope and timeline)
+
+Follow the same fix workflow as Step 9: list applicable vs. manual-review items, ask for approval, show diff preview before applying.
+
 ## Document Type Adaptations
 
 ### When Reviewing a Feature Requirement
@@ -290,10 +417,13 @@ Run all steps (1-9). This is the most comprehensive review.
 
 ## Verification Checklist
 
-Before finishing, verify:
+### Standard Review
+
+Before finishing a standard review, verify:
 
 - [ ] Document was resolved and read successfully
 - [ ] Document type was correctly identified
+- [ ] Mode detection confirmed no test plan exists
 - [ ] Codebase references were verified (file paths, functions, modules)
 - [ ] Internal consistency was checked (type-appropriate checks applied)
 - [ ] Gap analysis was performed
@@ -302,19 +432,44 @@ Before finishing, verify:
 - [ ] Summary count is accurate
 - [ ] Fix suggestions are offered where applicable
 
+### Test-Plan Reconciliation
+
+Before finishing a reconciliation review, verify:
+
+- [ ] Requirement document and test plan were both loaded successfully
+- [ ] Mode detection confirmed test plan exists
+- [ ] Bidirectional cross-references were validated (R2)
+- [ ] Drift detection was performed and backport candidates identified (R3)
+- [ ] Reconciliation gap analysis was performed against the test plan document (R4)
+- [ ] Inconsistency detection compared test plan expectations against requirements (R5)
+- [ ] Findings are organized by reconciliation category
+- [ ] Findings include actionable suggestions targeting specific artifacts
+- [ ] Summary count is accurate
+- [ ] Update suggestions are offered where applicable
+
 ## Relationship to Other Skills
 
+This skill appears in two positions in each workflow chain — once before QA planning (standard review) and optionally again after QA planning (test-plan reconciliation):
+
 ```
-Features: documenting-features → reviewing-requirements → documenting-qa → creating-implementation-plans → implementing-plan-phases → executing-qa
-Chores:   documenting-chores   → reviewing-requirements → documenting-qa → executing-chores    → executing-qa
-Bugs:     documenting-bugs     → reviewing-requirements → documenting-qa → executing-bug-fixes → executing-qa
+Features: documenting-features → reviewing-requirements → documenting-qa → reviewing-requirements → creating-implementation-plans → implementing-plan-phases → executing-qa
+                                  (standard review)                          (reconciliation)
+
+Chores:   documenting-chores → reviewing-requirements → documenting-qa → reviewing-requirements → executing-chores → executing-qa
+                                (standard review)                          (reconciliation)
+
+Bugs:     documenting-bugs → reviewing-requirements → documenting-qa → reviewing-requirements → executing-bug-fixes → executing-qa
+                              (standard review)                          (reconciliation)
 ```
+
+The mode is automatic: if a test plan exists when invoked, it runs reconciliation; otherwise, it runs standard review.
 
 | Task | Recommended Approach |
 |------|---------------------|
 | Document requirements first | Use `documenting-features`, `documenting-chores`, or `documenting-bugs` |
-| **Review requirements** | **Use this skill (`reviewing-requirements`)** |
+| **Review requirements (before QA)** | **Use this skill — standard review mode** |
 | Build QA test plan | Use `documenting-qa` |
+| **Review requirements (after QA)** | **Use this skill — test-plan reconciliation mode** |
 | Create implementation plan | Use `creating-implementation-plans` |
 | Implement the plan | Use `implementing-plan-phases` |
 | Execute chore or bug fix | Use `executing-chores` or `executing-bug-fixes` |
