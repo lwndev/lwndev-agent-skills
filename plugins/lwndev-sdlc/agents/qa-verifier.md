@@ -87,6 +87,7 @@ Return your findings in this structured format:
 - Total: N tests
 - Passed: N
 - Failed: N
+- Errors: N
 
 ### Issues Requiring Action
 1. [Entry N FAILED: specific actionable issue]
