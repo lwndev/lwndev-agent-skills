@@ -1,6 +1,0 @@
-node_modules/
-plugins/
-dist-scripts/
-coverage/
-*.skill
-package-lock.json
