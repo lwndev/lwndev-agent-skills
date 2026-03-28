@@ -1,18 +1,14 @@
 {
-  "name": "lwndev-plugins",
+  "name": "test-marketplace",
   "owner": {
-    "name": "lwndev"
-  },
-  "metadata": {
-    "description": "SDLC workflow plugins for Claude Code",
-    "pluginRoot": "./plugins"
+    "name": "test"
   },
   "plugins": [
     {
-      "name": "lwndev-sdlc",
-      "source": "./plugins/lwndev-sdlc",
-      "description": "SDLC workflow skills for documenting, planning, and executing features, chores, and bug fixes with QA validation capabilities",
-      "version": "1.3.0"
+      "name": "test-plugin",
+      "source": "./plugins/test-plugin",
+      "description": "A test plugin",
+      "version": "1.0.0"
     }
   ]
 }
