@@ -50,7 +50,7 @@ All changes are to SKILL.md files — no application code changes. The work is p
 
 ### Phase 2: Documentation and Planning Skills — Frontmatter and Argument Handling
 **Feature:** [FEAT-008](../features/FEAT-008-skill-argument-hints.md) | [#14](https://github.com/lwndev/lwndev-marketplace/issues/14)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 1 (follows the argument-handling instruction pattern established there)
 
 #### Rationale
@@ -95,7 +95,7 @@ All changes are to SKILL.md files — no application code changes. The work is p
 
 ### Phase 3: Tests and Validation
 **Feature:** [FEAT-008](../features/FEAT-008-skill-argument-hints.md) | [#14](https://github.com/lwndev/lwndev-marketplace/issues/14)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 1, Phase 2
 
 #### Rationale
@@ -115,9 +115,9 @@ All changes are to SKILL.md files — no application code changes. The work is p
 4. Run `npm test` to confirm no regressions
 
 #### Deliverables
-- [ ] `scripts/__tests__/argument-hint.test.ts` — unit tests for argument-hint frontmatter and instructions
-- [ ] Full plugin validation passing (`npm run validate`)
-- [ ] Full test suite passing (`npm test`)
+- [x] `scripts/__tests__/argument-hint.test.ts` — unit tests for argument-hint frontmatter and instructions
+- [x] Full plugin validation passing (`npm run validate`)
+- [x] Full test suite passing (`npm test`)
 
 ---
 
