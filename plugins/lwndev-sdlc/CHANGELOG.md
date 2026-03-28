@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.4.0] - 2026-03-28
+
+### Features
+
+- **FEAT-008:** add argument-hint support to skills (#86)
+- **reviewing-requirements:** add code-review reconciliation mode (#82)
+
+### Bug Fixes
+
+- **QA verification:** rewrite from coverage auditor to direct entry verification, restore Errors count in output format
+- **documenting-qa:** prevent excessive echo permission prompts; add retry and resilience guidance
+- **security:** bump brace-expansion to patch GHSA-f886-m6hf-6m8v
+
+### Chores
+
+- Add finalizing-workflow skill for end-of-chain wrap-up
+- Migrate test runner from Jest to Vitest
+- Update workflow chains across all skills with reconciliation step labels
+- Align QA templates with execution lifecycle
+- Add acceptance criteria checkoff to execution skills
+- Add commit-and-push step to implementing-plan-phases
+- Add PR creation to implementing-plan-phases
+- Automate release branch creation in release script
+- Add stop hook and release branch enforcement to releasing-plugins
+- Add changelog noise filtering and scope collapsing
+- Remove unneeded .gitkeep files
+
+[1.4.0]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.3.0...lwndev-sdlc@1.4.0
+
 ## [1.3.0] - 2026-03-21
 
 ### Chores

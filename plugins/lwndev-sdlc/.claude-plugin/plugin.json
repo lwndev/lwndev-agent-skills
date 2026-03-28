@@ -1,6 +1,6 @@
 {
   "name": "lwndev-sdlc",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "SDLC workflow skills for documenting, planning, and executing features, chores, and bug fixes with QA validation capabilities",
   "author": {
     "name": "lwndev"
