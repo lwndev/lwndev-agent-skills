@@ -21,6 +21,15 @@ export function getCurrentBranch(): string {
   return exec('git rev-parse --abbrev-ref HEAD');
 }
 
+export function getDefaultBranch(): string {
+  try {
+    const ref = exec('git symbolic-ref refs/remotes/origin/HEAD');
+    return ref.replace('refs/remotes/origin/', '');
+  } catch {
+    return 'main';
+  }
+}
+
 export function getTagsForPlugin(pluginName: string): string[] {
   try {
     const output = exec(`git tag -l "${pluginName}@*"`);
