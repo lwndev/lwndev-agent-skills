@@ -140,6 +140,12 @@ describe('executing-qa skill', () => {
       expect(template).toContain('## Per-Entry Verification Results');
     });
 
+    it('should have NTA-mirrored columns in Per-Entry Verification Results', () => {
+      expect(template).toMatch(
+        /## Per-Entry Verification Results[\s\S]*?\| # \| Test Description \| Target File\(s\) \| Requirement Ref \| Result \| Notes \|/
+      );
+    });
+
     it('should contain Issues Found and Fixed section', () => {
       expect(template).toContain('## Issues Found and Fixed');
     });

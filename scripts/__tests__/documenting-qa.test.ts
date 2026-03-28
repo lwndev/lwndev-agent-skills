@@ -141,8 +141,24 @@ describe('documenting-qa skill', () => {
       expect(template).toContain('## Code Path Verification');
     });
 
-    it('should contain Verification Checklist section', () => {
-      expect(template).toContain('## Verification Checklist');
+    it('should contain Plan Completeness Checklist section', () => {
+      expect(template).toContain('## Plan Completeness Checklist');
+    });
+
+    it('should include Status column in New Test Analysis table', () => {
+      expect(template).toMatch(/## New Test Analysis[\s\S]*?\| .* \| Status \|/);
+    });
+
+    it('should include Status column in Code Path Verification table', () => {
+      expect(template).toMatch(/## Code Path Verification[\s\S]*?\| .* \| Status \|/);
+    });
+
+    it('should include Status column in Deliverable Verification table', () => {
+      expect(template).toMatch(/## Deliverable Verification[\s\S]*?\| .* \| Status \|/);
+    });
+
+    it('should not have Exists column in Deliverable Verification table', () => {
+      expect(template).not.toMatch(/## Deliverable Verification[\s\S]*?\| .* \| Exists \|/);
     });
   });
 

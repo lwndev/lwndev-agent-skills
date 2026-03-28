@@ -14,17 +14,18 @@
 
 ## Per-Entry Verification Results
 
-Direct verification of each test plan entry:
+Direct verification of each test plan entry, mirroring the test plan's NTA structure:
 
-| # | Entry | Section | Result | Evidence |
-|---|-------|---------|--------|----------|
-| <!-- 1 --> | <!-- entry description --> | <!-- Code Path / AC / Reproduction / Deliverable --> | <!-- PASS / FAIL --> | <!-- what was found or not found --> |
+| # | Test Description | Target File(s) | Requirement Ref | Result | Notes |
+|---|-----------------|----------------|-----------------|--------|-------|
+| <!-- 1 --> | <!-- mirrors NTA entry --> | <!-- file(s) under test --> | <!-- FR-N / RC-N / AC --> | <!-- PASS / FAIL / SKIP --> | <!-- evidence or reason --> |
 
 ### Summary
 
 - **Total entries:** N
 - **Passed:** N
 - **Failed:** N
+- **Skipped:** N
 
 ## Test Suite Results (if run)
 

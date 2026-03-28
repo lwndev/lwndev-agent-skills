@@ -106,6 +106,17 @@ This loop directly verifies each test plan entry, identifies failed entries, fix
 - Confirm reproduction steps no longer reproduce the bug
 - Validate fix addresses root causes, not just symptoms
 
+### Update Test Plan Statuses
+
+After each verification iteration, write back the results to the test plan document (`qa/test-plans/QA-plan-{id}.md`):
+
+- **Existing Test Verification** — update each row's `Status` column to `PASS`, `FAIL`, or `SKIP`
+- **New Test Analysis** — update each row's `Status` column to `PASS`, `FAIL`, or `SKIP`
+- **Code Path Verification** — update each row's `Status` column to `PASS`, `FAIL`, or `SKIP`
+- **Deliverable Verification** — update each row's `Status` column to `PASS`, `FAIL`, or `SKIP`
+
+This keeps the test plan as a living document that reflects the current verification state.
+
 **Important**: State the verification results clearly in your message when attempting to finish — the Stop hook is a prompt-based evaluator with no tool access. It can only assess the phase from what you report.
 
 ## Step 3: Reconciliation Loop

@@ -105,6 +105,9 @@ For each extracted item from Step 2, create a test plan entry in the appropriate
 - Add reproduction step verification entries (confirm bug no longer reproduces)
 - Identify existing tests related to the bug area
 
+### Plan Completeness Checklist
+After populating all sections, check off (`- [x]`) each item in the template's `## Plan Completeness Checklist` that has been satisfied. Items should be checked as the plan is built — do not leave them unchecked for later.
+
 ## Step 4: Verify Plan Completeness (Ralph Loop)
 
 Delegate plan completeness verification to the `qa-verifier` subagent:

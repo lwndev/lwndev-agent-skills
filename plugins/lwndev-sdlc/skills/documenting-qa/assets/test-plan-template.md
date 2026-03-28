@@ -22,9 +22,9 @@ Tests that already exist and must continue to pass (regression baseline):
 
 New or modified tests that should be created or verified during QA execution:
 
-| Test Description | Target File(s) | Requirement Ref | Priority |
-|-----------------|----------------|-----------------|----------|
-| <!-- what to test --> | <!-- file(s) under test --> | <!-- FR-N / RC-N / AC --> | <!-- High / Medium / Low --> |
+| Test Description | Target File(s) | Requirement Ref | Priority | Status |
+|-----------------|----------------|-----------------|----------|--------|
+| <!-- what to test --> | <!-- file(s) under test --> | <!-- FR-N / RC-N / AC --> | <!-- High / Medium / Low --> | -- |
 
 ## Coverage Gap Analysis
 
@@ -42,20 +42,20 @@ Traceability from requirements to implementation:
 <!-- For BUG: one entry per RC-N -->
 <!-- For CHORE: one entry per AC -->
 
-| Requirement | Description | Expected Code Path | Verification Method |
-|-------------|-------------|-------------------|-------------------|
-| <!-- FR-N / RC-N / AC --> | <!-- what it requires --> | <!-- file:function or code area --> | <!-- automated test / code review / manual --> |
+| Requirement | Description | Expected Code Path | Verification Method | Status |
+|-------------|-------------|-------------------|-------------------|--------|
+| <!-- FR-N / RC-N / AC --> | <!-- what it requires --> | <!-- file:function or code area --> | <!-- automated test / code review / manual --> | -- |
 
 ## Deliverable Verification
 
 <!-- For FEAT with implementation plan: one entry per phase deliverable -->
 <!-- For CHORE/BUG: list key output artifacts -->
 
-| Deliverable | Source Phase | Expected Path | Exists |
+| Deliverable | Source Phase | Expected Path | Status |
 |-------------|-------------|---------------|--------|
-| <!-- deliverable name --> | <!-- Phase N --> | <!-- expected file path --> | <!-- YES / NO / PENDING --> |
+| <!-- deliverable name --> | <!-- Phase N --> | <!-- expected file path --> | -- |
 
-## Verification Checklist
+## Plan Completeness Checklist
 
 - [ ] All existing tests pass (regression baseline)
 - [ ] All FR-N / RC-N / AC entries have corresponding test plan entries
