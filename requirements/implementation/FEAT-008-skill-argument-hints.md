@@ -95,7 +95,7 @@ All changes are to SKILL.md files — no application code changes. The work is p
 
 ### Phase 3: Tests and Validation
 **Feature:** [FEAT-008](../features/FEAT-008-skill-argument-hints.md) | [#14](https://github.com/lwndev/lwndev-marketplace/issues/14)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 1, Phase 2
 
 #### Rationale
