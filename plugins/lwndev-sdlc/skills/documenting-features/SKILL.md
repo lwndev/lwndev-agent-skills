@@ -93,4 +93,4 @@ Before finalizing, verify:
 | Chore/maintenance task | Use `documenting-chores` skill |
 | Bug or defect report | Use `documenting-bugs` skill |
 
-After documenting a feature, run `/reviewing-requirements` to verify the document against the codebase and docs. Then use `/creating-implementation-plans` to plan the implementation, followed by `/documenting-qa` to create a test plan. Optionally run `/reviewing-requirements` again for test-plan reconciliation. After implementation and PR review, optionally run `/reviewing-requirements` for code-review reconciliation, then `/executing-qa` to verify, and `/finalizing-workflow` to merge.
+After documenting a feature, run `/reviewing-requirements` to verify the document against the codebase and docs. Then use `/creating-implementation-plans` to plan the implementation, followed by `/documenting-qa` to create a test plan. Optionally run `/reviewing-requirements` again for test-plan reconciliation. After `/implementing-plan-phases` and PR review, optionally run `/reviewing-requirements` for code-review reconciliation, then `/executing-qa` to verify, and `/finalizing-workflow` to merge.

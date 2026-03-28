@@ -376,9 +376,9 @@ Before finishing a code-review reconciliation, verify:
 This skill appears at multiple points in each workflow chain. The mode is automatic: PR exists → code-review reconciliation; test plan exists (no PR) → test-plan reconciliation; otherwise → standard review. Reconciliation steps are optional but recommended.
 
 ```
-Features: documenting-features → reviewing-requirements → creating-implementation-plans → documenting-qa → reviewing-requirements → implementing-plan-phases → PR review → reviewing-requirements → executing-qa → finalizing-workflow
-Chores:   documenting-chores   → reviewing-requirements → documenting-qa → reviewing-requirements → executing-chores   → PR review → reviewing-requirements → executing-qa → finalizing-workflow
-Bugs:     documenting-bugs     → reviewing-requirements → documenting-qa → reviewing-requirements → executing-bug-fixes → PR review → reviewing-requirements → executing-qa → finalizing-workflow
+Features: documenting-features → reviewing-requirements (standard) → creating-implementation-plans → documenting-qa → reviewing-requirements (test-plan) → implementing-plan-phases → PR review → reviewing-requirements (code-review) → executing-qa → finalizing-workflow
+Chores:   documenting-chores   → reviewing-requirements (standard) → documenting-qa → reviewing-requirements (test-plan) → executing-chores   → PR review → reviewing-requirements (code-review) → executing-qa → finalizing-workflow
+Bugs:     documenting-bugs     → reviewing-requirements (standard) → documenting-qa → reviewing-requirements (test-plan) → executing-bug-fixes → PR review → reviewing-requirements (code-review) → executing-qa → finalizing-workflow
 ```
 
 | Task | Recommended Approach |
