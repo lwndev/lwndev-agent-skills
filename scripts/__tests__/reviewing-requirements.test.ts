@@ -18,15 +18,11 @@ describe('reviewing-requirements skill', () => {
 
   describe('SKILL.md', () => {
     it('should have frontmatter with name: reviewing-requirements', () => {
-      expect(skillMd).toMatch(
-        /^---\s*\n[\s\S]*?name:\s*reviewing-requirements[\s\S]*?---/,
-      );
+      expect(skillMd).toMatch(/^---\s*\n[\s\S]*?name:\s*reviewing-requirements[\s\S]*?---/);
     });
 
     it('should have frontmatter with non-empty description', () => {
-      const match = skillMd.match(
-        /^---\s*\n[\s\S]*?description:\s*(.+)[\s\S]*?---/,
-      );
+      const match = skillMd.match(/^---\s*\n[\s\S]*?description:\s*(.+)[\s\S]*?---/);
       expect(match).not.toBeNull();
       expect(match![1].trim().length).toBeGreaterThan(0);
     });
@@ -84,9 +80,7 @@ describe('reviewing-requirements skill', () => {
 
     it('should document mode detection with precedence rule', () => {
       expect(skillMd).toContain('## Step 1.5: Detect Review Mode');
-      expect(skillMd).toContain(
-        'code-review reconciliation takes precedence',
-      );
+      expect(skillMd).toContain('code-review reconciliation takes precedence');
     });
 
     it('should include mode detection table with all three modes', () => {
@@ -136,9 +130,7 @@ describe('reviewing-requirements skill', () => {
 
   describe('allowed-tools', () => {
     it('should have allowed-tools in frontmatter', () => {
-      expect(skillMd).toMatch(
-        /^---\s*\n[\s\S]*?allowed-tools:[\s\S]*?---/,
-      );
+      expect(skillMd).toMatch(/^---\s*\n[\s\S]*?allowed-tools:[\s\S]*?---/);
     });
 
     it('should include Read, Write, Edit, Bash, Glob, Grep, Agent', () => {
