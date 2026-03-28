@@ -25,7 +25,7 @@ New or modified tests that should be created or verified during QA execution:
 | # | Test Description | Target File(s) | Requirement Ref | Priority |
 |---|-----------------|----------------|-----------------|----------|
 | 1 | SKILL.md frontmatter includes all three modes in description | `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` | FR-8, AC-9, Phase 1 Step 5 | High |
-| 2 | SKILL.md documents code-review reconciliation mode steps (CR1-CR4) | `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` | FR-8, AC-7, Phase 2 Step 1 | High |
+| 2 | SKILL.md documents code-review reconciliation mode steps (CR1-CR5) | `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` | FR-8, AC-7, Phase 2 Step 1 | High |
 | 3 | SKILL.md contains PR detection logic (branch naming patterns `feat/{ID}-*`, `chore/{ID}-*`, `fix/{ID}-*`) | `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` | FR-1, AC-1, Phase 1 Step 6 | High |
 | 4 | SKILL.md contains mode detection table with all three modes and their triggers | `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` | FR-6, AC-10, Phase 1 Step 6 | High |
 | 5 | SKILL.md "Relationship to Other Skills" section includes code-review reconciliation workflow position and `executing-qa` boundary | `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` | FR-8, AC-7, Phase 2 Step 5 | High |
@@ -96,7 +96,7 @@ Implementation plan: `requirements/implementation/FEAT-007-code-review-reconcili
 
 | # | Deliverable | Impl Step | Expected Path | NTA/CPV Trace | Exists |
 |---|-------------|-----------|---------------|---------------|--------|
-| 5 | Code-review reconciliation mode (steps CR1-CR4) | Step 1 | `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` | NTA 2, CPV FR-2/FR-3/FR-4 | YES (to be modified) |
+| 5 | Code-review reconciliation mode (steps CR1-CR5) | Step 1 | `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` | NTA 2, CPV FR-2/FR-3/FR-4/FR-7 | YES (modified) |
 | 6 | Scope boundary note (no `executing-qa` duplication) | Step 2 | `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` | NTA 12, CPV FR-5 | YES (to be modified) |
 | 7 | Code-review reconciliation findings presentation | Step 3 | `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` | NTA 10/11, CPV FR-7 | YES (to be modified) |
 | 8 | Updated Verification Checklist with code-review reconciliation items | Step 4 | `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` (checklist) | NTA 6 | YES (to be modified) |

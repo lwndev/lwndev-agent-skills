@@ -84,7 +84,7 @@ After resolving the requirement document, detect the mode in this order:
 3. **Check for a test plan** (test-plan reconciliation):
    - Use Glob to check for `qa/test-plans/QA-plan-{ID}.md`
    - If found → Enter **test-plan reconciliation mode**. Proceed to [Test-Plan Reconciliation Mode](#test-plan-reconciliation-mode).
-4. **Default** → Continue with **standard review** (Steps 2-9 below).
+4. **Default** → Continue with **standard review** (Steps 2-9 below). If no PR was detected via branch naming, display: "No PR detected via branch naming convention. Use `--pr <number>` to specify a PR."
 
 **Precedence**: If both a PR and a test plan exist, code-review reconciliation takes precedence (it is the later workflow step).
 
@@ -272,7 +272,7 @@ When a PR exists for the requirement ID, produce an advisory drift report. This 
 
 ### Step CR1: Load PR Context
 
-Fetch the PR diff using `gh pr diff <number>`. If `gh` is unavailable, fall back to `git diff <base-branch>...HEAD`. Load the requirement document (already resolved in Step 1). Load the test plan from `qa/test-plans/QA-plan-{ID}.md` if it exists — if not, skip CR2 and note as **Info** ("No test plan found; test plan staleness detection skipped"). If the PR diff is very large (> 100 changed files), warn the user and focus on files referenced in requirements and test plan.
+Fetch the PR diff using `gh pr diff <number>`. If `gh` is unavailable, fall back to `git diff <base-branch>...HEAD`. Load the requirement document (already resolved in Step 1). Load the test plan from `qa/test-plans/QA-plan-{ID}.md` if it exists — if not, skip CR2 and note as **Info** ("No test plan found; test plan staleness detection skipped"). If the PR diff is very large (> 100 changed files), warn the user and focus on files referenced in requirements and test plan. Fork PRs are supported — `gh pr diff` works normally for PRs from forks.
 
 ### Step CR2: Test Plan Staleness Detection
 

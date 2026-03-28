@@ -76,7 +76,7 @@ Add a third operating mode to the `reviewing-requirements` skill that detects wh
 
 #### Implementation Steps
 
-1. **Add Code-Review Reconciliation Mode section** — insert after the Test-Plan Reconciliation Mode section, before Document Type Adaptations. Add steps CR1-CR4:
+1. **Add Code-Review Reconciliation Mode section** — insert after the Test-Plan Reconciliation Mode section, before Document Type Adaptations. Add steps CR1-CR5 (CR5 is findings presentation, implementing FR-7):
 
    - **Step CR1: Load PR Context** — fetch the PR diff using `gh pr diff <number>`, load the test plan (if exists), load the requirement document. If `gh` is unavailable, fall back to `git diff <base-branch>...HEAD`. Note: if test plan doesn't exist, skip CR2 and note as Info.
 
