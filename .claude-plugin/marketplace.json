@@ -7,7 +7,7 @@
     {
       "name": "test-plugin",
       "source": "./plugins/test-plugin",
-      "description": "A test plugin",
+      "description": "Old description",
       "version": "1.0.0"
     }
   ]
