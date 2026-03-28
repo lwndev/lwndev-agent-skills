@@ -19,6 +19,7 @@ The release script (`npm run release`) commits directly to whatever branch is cu
 ## Affected Files
 
 - `scripts/release.ts`
+- `scripts/lib/git-utils.ts`
 - `scripts/__tests__/release.test.ts`
 - `.claude/skills/releasing-plugins/SKILL.md`
 
