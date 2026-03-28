@@ -7,6 +7,7 @@ allowed-tools:
   - Edit
   - Glob
   - Grep
+argument-hint: <requirements-file>
 ---
 
 # Creating Implementation Plans
@@ -28,6 +29,11 @@ Adapt based on project type:
 - **Multi-feature project**: Full phase breakdown with dependencies
 - **Refactoring**: Focus on risk assessment and rollback strategy
 - **Prototypes**: Lighter on testing, heavier on deliverables
+
+## Arguments
+
+- **When argument is provided**: Match the argument against files in `requirements/features/` by ID prefix (e.g., `FEAT-003` matches `FEAT-003-skill-allowed-tools.md`). If no match is found, inform the user and fall back to interactive selection. If multiple matches are found, present the options and ask the user to choose.
+- **When no argument is provided**: Scan `requirements/features/` for requirement documents and prompt the user to select one, or ask for paths.
 
 ## Quick Start
 

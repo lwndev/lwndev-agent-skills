@@ -9,6 +9,7 @@ allowed-tools:
   - Glob
   - Grep
   - Agent
+argument-hint: <requirements-file>
 ---
 
 # Reviewing Requirements
@@ -26,6 +27,11 @@ Validate requirement documents against the codebase and documentation. Operates 
 - **Standard review**: After a `documenting-*` skill has produced a requirement document, before `documenting-qa`
 - **Test-plan reconciliation**: After `documenting-qa` has produced a test plan, before execution (`implementing-plan-phases`, `executing-chores`, `executing-bug-fixes`)
 - **Code-review reconciliation**: After a PR has been reviewed and its findings addressed, before `executing-qa`
+
+## Arguments
+
+- **When argument is provided**: Match the argument against requirement files by ID prefix. Search across `requirements/features/`, `requirements/chores/`, and `requirements/bugs/` for a matching document (e.g., `FEAT-006` matches `FEAT-006-reviewing-requirements-skill.md`). If no match is found, inform the user and fall back to interactive selection. If multiple matches are found, present the options.
+- **When no argument is provided**: Ask the user for a requirement document path or ID.
 
 ## Quick Start
 

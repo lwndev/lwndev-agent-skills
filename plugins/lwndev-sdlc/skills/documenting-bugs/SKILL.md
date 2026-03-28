@@ -7,6 +7,7 @@ allowed-tools:
   - Edit
   - Glob
   - Grep
+argument-hint: "[bug-title]"
 ---
 
 # Documenting Bugs
@@ -21,6 +22,11 @@ Create structured bug report documents that capture defects with reproduction st
 - Capturing performance issues or resource problems
 - Documenting security vulnerabilities or auth bypasses
 - Any defect that requires root cause analysis before fixing
+
+## Arguments
+
+- **When argument is provided**: Use the argument as a pre-filled bug title for the document being created.
+- **When no argument is provided**: Prompt the user interactively for the bug details.
 
 ## Quick Start
 

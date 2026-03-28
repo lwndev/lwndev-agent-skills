@@ -7,6 +7,7 @@ allowed-tools:
   - Edit
   - Glob
   - Grep
+argument-hint: "[chore-title]"
 ---
 
 # Documenting Chores
@@ -21,6 +22,11 @@ Create lightweight chore task documents that capture maintenance work, dependenc
 - Capturing configuration changes
 - Cleaning up dead code or unused files
 - Any maintenance task that doesn't warrant full feature requirements
+
+## Arguments
+
+- **When argument is provided**: Use the argument as a pre-filled chore title for the document being created.
+- **When no argument is provided**: Prompt the user interactively for the chore details.
 
 ## Quick Start
 

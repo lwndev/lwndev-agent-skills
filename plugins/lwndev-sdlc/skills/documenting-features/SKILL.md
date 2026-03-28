@@ -7,6 +7,7 @@ allowed-tools:
   - Edit
   - Glob
   - Grep
+argument-hint: "[feature-name or #issue-number]"
 ---
 
 # Documenting Features
@@ -28,6 +29,11 @@ Adapt sections based on feature type:
 - **API endpoints**: Include API Integration section, skip Command Syntax
 - **UI features**: Focus on user flows and interactions, skip command syntax
 - **Internal features**: May skip user-facing documentation sections
+
+## Arguments
+
+- **When argument is provided**: Use the argument as a pre-filled feature name or title. If the argument uses `#<number>` syntax (e.g., `#14`), fetch the corresponding GitHub issue and use its title and body to pre-fill the requirements template. If the GitHub API call fails (non-existent issue, network error, auth failure), warn the user and continue with manual input.
+- **When no argument is provided**: Prompt the user interactively for the feature scope, purpose, and details.
 
 ## Quick Start
 

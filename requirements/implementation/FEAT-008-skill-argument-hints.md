@@ -16,7 +16,7 @@ All changes are to SKILL.md files — no application code changes. The work is p
 
 ### Phase 1: Execution Skills — Frontmatter and Argument Handling
 **Feature:** [FEAT-008](../features/FEAT-008-skill-argument-hints.md) | [#14](https://github.com/lwndev/lwndev-marketplace/issues/14)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 
 #### Rationale
 - Execution skills have the most complex argument resolution pattern (ID prefix matching against `requirements/` subdirectories)
@@ -50,7 +50,7 @@ All changes are to SKILL.md files — no application code changes. The work is p
 
 ### Phase 2: Documentation and Planning Skills — Frontmatter and Argument Handling
 **Feature:** [FEAT-008](../features/FEAT-008-skill-argument-hints.md) | [#14](https://github.com/lwndev/lwndev-marketplace/issues/14)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 1 (follows the argument-handling instruction pattern established there)
 
 #### Rationale
@@ -84,12 +84,12 @@ All changes are to SKILL.md files — no application code changes. The work is p
 4. Validate all six skills pass `asm validate`
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/documenting-features/SKILL.md` — frontmatter + argument handling
-- [ ] `plugins/lwndev-sdlc/skills/documenting-chores/SKILL.md` — frontmatter + argument handling
-- [ ] `plugins/lwndev-sdlc/skills/documenting-bugs/SKILL.md` — frontmatter + argument handling
-- [ ] `plugins/lwndev-sdlc/skills/documenting-qa/SKILL.md` — frontmatter + argument handling
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/SKILL.md` — frontmatter + argument handling
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` — frontmatter + argument handling
+- [x] `plugins/lwndev-sdlc/skills/documenting-features/SKILL.md` — frontmatter + argument handling
+- [x] `plugins/lwndev-sdlc/skills/documenting-chores/SKILL.md` — frontmatter + argument handling
+- [x] `plugins/lwndev-sdlc/skills/documenting-bugs/SKILL.md` — frontmatter + argument handling
+- [x] `plugins/lwndev-sdlc/skills/documenting-qa/SKILL.md` — frontmatter + argument handling
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/SKILL.md` — frontmatter + argument handling
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` — frontmatter + argument handling
 
 ---
 
