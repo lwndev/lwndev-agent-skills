@@ -16,8 +16,8 @@
 
 | Metric | Count |
 |--------|-------|
-| **Total Tests** | 280 |
-| **Passed** | 280 |
+| **Total Tests** | 306 |
+| **Passed** | 306 |
 | **Failed** | 0 |
 | **Errors** | 0 |
 
@@ -27,7 +27,7 @@
 
 | Gap | Affected Code | Status |
 |-----|--------------|--------|
-| No dedicated `reviewing-requirements.test.ts` (CGA-1) | `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` | Open (pre-existing, documented in test plan) |
+| No dedicated `reviewing-requirements.test.ts` (CGA-1) | `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` | Resolved — 26 tests added |
 | Runtime behavior not unit-testable — prompt-based skill (CGA-2) | SKILL.md | Open (by design — manual verification required) |
 | Test plan drift detection accuracy requires real PR diff (CGA-3) | SKILL.md CR2 | Open (manual verification required) |
 | GitHub issue suggestion quality requires real issue context (CGA-4) | SKILL.md CR3 | Open (manual verification required) |
