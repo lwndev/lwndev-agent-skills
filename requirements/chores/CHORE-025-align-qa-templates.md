@@ -42,7 +42,7 @@ Align the QA test plan and test results templates with the execution lifecycle. 
 
 **Completed:** 2026-03-28
 
-**Pull Request:** <!-- Updated after PR creation -->
+**Pull Request:** [#84](https://github.com/lwndev/lwndev-marketplace/pull/84)
 
 ## Notes
 
