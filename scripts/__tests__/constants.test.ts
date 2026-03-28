@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
 import {
   PLUGINS_DIR,

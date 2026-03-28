@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach } from 'vitest';
 import { execSync } from 'node:child_process';
 import { mkdtemp, writeFile, readFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -5,11 +6,18 @@ import { tmpdir } from 'node:os';
 
 const RELEASE_SCRIPT = join(process.cwd(), 'scripts/release.ts');
 
+// Strip GIT_* env vars so child git processes use their own repo, not the parent's
+// (e.g., when tests run inside a pre-commit hook that sets GIT_DIR/GIT_INDEX_FILE)
+const cleanEnv = Object.fromEntries(
+  Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
+);
+
 // Helper to run the release script in a given cwd
 function runRelease(args: string, cwd: string): { stdout: string; exitCode: number } {
   try {
     const stdout = execSync(`tsx ${RELEASE_SCRIPT} ${args}`, {
       cwd,
+      env: cleanEnv,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
     });
@@ -25,9 +33,9 @@ async function createTestRepo(): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), 'release-test-'));
 
   // Init git repo
-  execSync('git init', { cwd: dir, stdio: 'pipe' });
-  execSync('git config user.email "test@test.com"', { cwd: dir, stdio: 'pipe' });
-  execSync('git config user.name "Test"', { cwd: dir, stdio: 'pipe' });
+  execSync('git init', { cwd: dir, env: cleanEnv, stdio: 'pipe' });
+  execSync('git config user.email "test@test.com"', { cwd: dir, env: cleanEnv, stdio: 'pipe' });
+  execSync('git config user.name "Test"', { cwd: dir, env: cleanEnv, stdio: 'pipe' });
 
   // Create plugin structure
   const pluginDir = join(dir, 'plugins', 'test-plugin');
@@ -81,13 +89,17 @@ async function createTestRepo(): Promise<string> {
   );
 
   // Initial commit
-  execSync('git add -A', { cwd: dir, stdio: 'pipe' });
-  execSync('git commit -m "feat(init): initial commit"', { cwd: dir, stdio: 'pipe' });
+  execSync('git add -A', { cwd: dir, env: cleanEnv, stdio: 'pipe' });
+  execSync('git commit -m "feat(init): initial commit"', {
+    cwd: dir,
+    env: cleanEnv,
+    stdio: 'pipe',
+  });
 
   // Add another commit for changelog content
   await writeFile(join(dir, 'dummy.txt'), 'change');
-  execSync('git add -A', { cwd: dir, stdio: 'pipe' });
-  execSync('git commit -m "fix(core): fix a bug"', { cwd: dir, stdio: 'pipe' });
+  execSync('git add -A', { cwd: dir, env: cleanEnv, stdio: 'pipe' });
+  execSync('git commit -m "fix(core): fix a bug"', { cwd: dir, env: cleanEnv, stdio: 'pipe' });
 
   return dir;
 }
@@ -184,11 +196,15 @@ describe('release script full workflow', () => {
     expect(readme).toContain('**Released:**');
 
     // Verify git commit
-    const log = execSync('git log --oneline -1', { cwd: testDir, encoding: 'utf-8' });
+    const log = execSync('git log --oneline -1', {
+      cwd: testDir,
+      env: cleanEnv,
+      encoding: 'utf-8',
+    });
     expect(log).toContain('release(test-plugin): v1.0.1');
 
     // Verify no tag was created
-    const tags = execSync('git tag -l', { cwd: testDir, encoding: 'utf-8' }).trim();
+    const tags = execSync('git tag -l', { cwd: testDir, env: cleanEnv, encoding: 'utf-8' }).trim();
     expect(tags).toBe('');
   });
 
@@ -242,6 +258,7 @@ describe('release script full workflow', () => {
     await writeFile(marketplacePath, JSON.stringify(marketplace, null, 2) + '\n');
     execSync('git add -A && git commit -m "chore: drift description"', {
       cwd: testDir,
+      env: cleanEnv,
       stdio: 'pipe',
     });
 
@@ -258,11 +275,13 @@ describe('release script full workflow', () => {
     await writeFile(join(testDir, 'feat.txt'), 'new feature');
     execSync('git add -A && git commit -m "feat(ui): add new button"', {
       cwd: testDir,
+      env: cleanEnv,
       stdio: 'pipe',
     });
     await writeFile(join(testDir, 'docs.txt'), 'docs');
     execSync('git add -A && git commit -m "docs: update readme"', {
       cwd: testDir,
+      env: cleanEnv,
       stdio: 'pipe',
     });
 
@@ -281,16 +300,19 @@ describe('release script full workflow', () => {
     await writeFile(join(testDir, 'noise1.txt'), 'noise');
     execSync('git add -A && git commit -m "address review feedback"', {
       cwd: testDir,
+      env: cleanEnv,
       stdio: 'pipe',
     });
     await writeFile(join(testDir, 'noise2.txt'), 'noise');
     execSync('git add -A && git commit -m "mark CHORE-015 as completed"', {
       cwd: testDir,
+      env: cleanEnv,
       stdio: 'pipe',
     });
     await writeFile(join(testDir, 'noise3.txt'), 'noise');
     execSync('git add -A && git commit -m "update CHORE-012 status to completed"', {
       cwd: testDir,
+      env: cleanEnv,
       stdio: 'pipe',
     });
 
@@ -310,6 +332,7 @@ describe('release script full workflow', () => {
     await writeFile(join(testDir, 'merge.txt'), 'merge');
     execSync('git add -A && git commit -m "Merge pull request #42 from user/branch"', {
       cwd: testDir,
+      env: cleanEnv,
       stdio: 'pipe',
     });
 
@@ -325,16 +348,19 @@ describe('release script full workflow', () => {
     await writeFile(join(testDir, 'feat1.txt'), 'feat1');
     execSync('git add -A && git commit -m "feat(auth): add login endpoint"', {
       cwd: testDir,
+      env: cleanEnv,
       stdio: 'pipe',
     });
     await writeFile(join(testDir, 'feat2.txt'), 'feat2');
     execSync('git add -A && git commit -m "feat(auth): add logout endpoint"', {
       cwd: testDir,
+      env: cleanEnv,
       stdio: 'pipe',
     });
     await writeFile(join(testDir, 'feat3.txt'), 'feat3');
     execSync('git add -A && git commit -m "feat(auth): add token refresh"', {
       cwd: testDir,
+      env: cleanEnv,
       stdio: 'pipe',
     });
 
@@ -354,6 +380,7 @@ describe('release script full workflow', () => {
     await writeFile(join(testDir, 'feat1.txt'), 'feat1');
     execSync('git add -A && git commit -m "feat(ui): add button"', {
       cwd: testDir,
+      env: cleanEnv,
       stdio: 'pipe',
     });
 
@@ -367,16 +394,18 @@ describe('release script full workflow', () => {
 
   it('should show no notable changes when all commits are noise', async () => {
     // Tag current state so only noise commits are in range
-    execSync('git tag "test-plugin@1.0.0"', { cwd: testDir, stdio: 'pipe' });
+    execSync('git tag "test-plugin@1.0.0"', { cwd: testDir, env: cleanEnv, stdio: 'pipe' });
 
     await writeFile(join(testDir, 'noise1.txt'), 'noise');
     execSync('git add -A && git commit -m "address review feedback"', {
       cwd: testDir,
+      env: cleanEnv,
       stdio: 'pipe',
     });
     await writeFile(join(testDir, 'noise2.txt'), 'noise');
     execSync('git add -A && git commit -m "mark CHORE-015 as completed"', {
       cwd: testDir,
+      env: cleanEnv,
       stdio: 'pipe',
     });
 
@@ -395,6 +424,7 @@ describe('release script full workflow', () => {
     await writeFile(join(testDir, 'another.txt'), 'change');
     execSync('git add -A && git commit -m "feat: another feature"', {
       cwd: testDir,
+      env: cleanEnv,
       stdio: 'pipe',
     });
 
@@ -437,6 +467,7 @@ describe('release script error handling', () => {
     await writeFile(marketplacePath, JSON.stringify(marketplace, null, 2) + '\n');
     execSync('git add -A && git commit -m "chore: remove plugin from marketplace"', {
       cwd: testDir,
+      env: cleanEnv,
       stdio: 'pipe',
     });
 

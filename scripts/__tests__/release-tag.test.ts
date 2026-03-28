@@ -1,3 +1,4 @@
+import { describe, it, expect, afterEach } from 'vitest';
 import { execSync } from 'node:child_process';
 import { mkdtemp, writeFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -5,10 +6,17 @@ import { tmpdir } from 'node:os';
 
 const RELEASE_TAG_SCRIPT = join(process.cwd(), 'scripts/release-tag.ts');
 
+// Strip GIT_* env vars so child git processes use their own repo, not the parent's
+// (e.g., when tests run inside a pre-commit hook that sets GIT_DIR/GIT_INDEX_FILE)
+const cleanEnv = Object.fromEntries(
+  Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
+);
+
 function runReleaseTag(args: string, cwd: string): { stdout: string; exitCode: number } {
   try {
     const stdout = execSync(`tsx ${RELEASE_TAG_SCRIPT} ${args}`, {
       cwd,
+      env: cleanEnv,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
     });
@@ -22,9 +30,9 @@ function runReleaseTag(args: string, cwd: string): { stdout: string; exitCode: n
 async function createTestRepo(branch = 'main'): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), 'release-tag-test-'));
 
-  execSync(`git init -b ${branch}`, { cwd: dir, stdio: 'pipe' });
-  execSync('git config user.email "test@test.com"', { cwd: dir, stdio: 'pipe' });
-  execSync('git config user.name "Test"', { cwd: dir, stdio: 'pipe' });
+  execSync(`git init -b ${branch}`, { cwd: dir, env: cleanEnv, stdio: 'pipe' });
+  execSync('git config user.email "test@test.com"', { cwd: dir, env: cleanEnv, stdio: 'pipe' });
+  execSync('git config user.name "Test"', { cwd: dir, env: cleanEnv, stdio: 'pipe' });
 
   // Create plugin structure
   const pluginDir = join(dir, 'plugins', 'test-plugin');
@@ -75,8 +83,8 @@ async function createTestRepo(branch = 'main'): Promise<string> {
     '---\nname: test-skill\ndescription: A test skill\n---\n\n# Test Skill\n'
   );
 
-  execSync('git add -A', { cwd: dir, stdio: 'pipe' });
-  execSync('git commit -m "initial commit"', { cwd: dir, stdio: 'pipe' });
+  execSync('git add -A', { cwd: dir, env: cleanEnv, stdio: 'pipe' });
+  execSync('git commit -m "initial commit"', { cwd: dir, env: cleanEnv, stdio: 'pipe' });
 
   return dir;
 }
@@ -112,7 +120,11 @@ describe('release:tag script', () => {
   it('should error when tag already exists', async () => {
     testDir = await createTestRepo('main');
 
-    execSync('git tag -a "test-plugin@1.2.0" -m "existing tag"', { cwd: testDir, stdio: 'pipe' });
+    execSync('git tag -a "test-plugin@1.2.0" -m "existing tag"', {
+      cwd: testDir,
+      env: cleanEnv,
+      stdio: 'pipe',
+    });
 
     const { stdout, exitCode } = runReleaseTag('', testDir);
     expect(exitCode).toBe(1);
@@ -136,12 +148,13 @@ describe('release:tag script', () => {
     expect(stdout).toContain('test-plugin@1.2.0');
 
     // Verify tag exists
-    const tags = execSync('git tag -l', { cwd: testDir, encoding: 'utf-8' }).trim();
+    const tags = execSync('git tag -l', { cwd: testDir, env: cleanEnv, encoding: 'utf-8' }).trim();
     expect(tags).toBe('test-plugin@1.2.0');
 
     // Verify annotation message
     const tagMessage = execSync('git tag -n1 "test-plugin@1.2.0"', {
       cwd: testDir,
+      env: cleanEnv,
       encoding: 'utf-8',
     }).trim();
     expect(tagMessage).toContain('Release test-plugin v1.2.0');
@@ -153,7 +166,7 @@ describe('release:tag script', () => {
     const { exitCode } = runReleaseTag('--plugin test-plugin', testDir);
     expect(exitCode).toBe(0);
 
-    const tags = execSync('git tag -l', { cwd: testDir, encoding: 'utf-8' }).trim();
+    const tags = execSync('git tag -l', { cwd: testDir, env: cleanEnv, encoding: 'utf-8' }).trim();
     expect(tags).toBe('test-plugin@1.2.0');
   });
 });

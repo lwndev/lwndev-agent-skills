@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { execSync } from 'node:child_process';
 import { access, rm, readFile } from 'node:fs/promises';
 import { join } from 'node:path';

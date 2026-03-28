@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { truncate } from '../lib/prompts.js';
 
 describe('prompts utilities', () => {

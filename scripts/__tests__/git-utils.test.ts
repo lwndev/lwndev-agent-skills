@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { filterNoiseCommits, type ParsedCommit } from '../lib/git-utils.js';
 
 function commit(raw: string, overrides?: Partial<ParsedCommit>): ParsedCommit {

@@ -3,9 +3,9 @@
   "scripts": {
     "scaffold": "tsx scripts/scaffold.ts",
     "validate": "tsx scripts/build.ts",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
-    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint scripts/",
     "lint:fix": "eslint scripts/ --fix",
     "format": "prettier --write scripts/",
@@ -28,7 +28,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
-    "@types/jest": "^30.0.0",
     "@types/node": "^22.0.0",
     "@types/semver": "^7.7.1",
     "ai-skills-manager": "^1.8.1",
@@ -36,11 +35,10 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
     "husky": "^9.1.7",
-    "jest": "^30.2.0",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",
-    "ts-jest": "^29.4.6",
     "tsx": "^4.7.0",
+    "vitest": "^3.2.3",
     "typescript": "^5.3.0",
     "typescript-eslint": "^8.52.0"
   }
