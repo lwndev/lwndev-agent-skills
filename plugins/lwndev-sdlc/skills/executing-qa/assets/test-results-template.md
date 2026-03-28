@@ -12,48 +12,43 @@
 | **Verdict** | PASS / FAIL |
 | **Verification Iterations** | N |
 
-## Test Suite Results
+## Per-Entry Verification Results
+
+Direct verification results for each test plan entry:
+
+| # | Test Plan Entry | Result | Notes |
+|---|----------------|--------|-------|
+| <!-- 1 --> | <!-- entry description --> | <!-- PASS / FAIL --> | <!-- what was found --> |
+
+### Failed Entries
+
+<!-- List entries that failed verification. Remove section if all passed. -->
+
+| # | Entry | Expected | Actual | Resolution |
+|---|-------|----------|--------|------------|
+| <!-- entry # --> | <!-- description --> | <!-- what was expected --> | <!-- what was found --> | <!-- how it was fixed --> |
+
+## Requirements Traceability
+
+Direct verification results per requirement:
+
+<!-- For FEAT: one row per FR-N -->
+<!-- For BUG: one row per RC-N -->
+<!-- For CHORE: one row per AC -->
+
+| Requirement | Description | Result | Verification Details |
+|-------------|-------------|--------|---------------------|
+| <!-- FR-N / RC-N / AC --> | <!-- what it requires --> | <!-- PASS / FAIL --> | <!-- how it was directly verified --> |
+
+## Automated Test Results
+
+<!-- Results from running npm test, if applicable. This is one input to verification, not the sole determinant. -->
 
 | Metric | Count |
 |--------|-------|
 | **Total Tests** | N |
 | **Passed** | N |
 | **Failed** | N |
-| **Errors** | N |
-
-### Failed Tests
-
-<!-- List any tests that failed during verification. Remove section if all passed. -->
-
-| Test | Failure Reason | Resolution |
-|------|---------------|------------|
-| <!-- test name --> | <!-- why it failed --> | <!-- how it was fixed --> |
-
-## Coverage Analysis
-
-### Gaps Identified
-
-<!-- Coverage gaps found during verification -->
-
-| Gap | Affected Code | Status |
-|-----|--------------|--------|
-| <!-- description --> | <!-- file:function --> | <!-- Resolved / Open --> |
-
-### Gaps Resolved
-
-<!-- Gaps that were fixed during verification iterations -->
-
-| Gap | Resolution | Test Added |
-|-----|-----------|------------|
-| <!-- description --> | <!-- what was done --> | <!-- path/to/test --> |
-
-## Code Path Verification Results
-
-<!-- Traceability from requirements to verified implementation -->
-
-| Requirement | Description | Verified | Notes |
-|-------------|-------------|----------|-------|
-| <!-- FR-N / RC-N / AC --> | <!-- what it requires --> | <!-- YES / NO --> | <!-- any notes --> |
 
 ## Reconciliation Summary
 

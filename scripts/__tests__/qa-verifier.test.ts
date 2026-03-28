@@ -41,12 +41,12 @@ describe('qa-verifier agent', () => {
   });
 
   describe('verification responsibilities', () => {
-    it('should document test suite execution', () => {
-      expect(agentMd).toContain('test suite');
+    it('should document direct test plan entry verification', () => {
+      expect(agentMd).toContain('directly verify');
     });
 
-    it('should document test coverage analysis', () => {
-      expect(agentMd).toContain('coverage');
+    it('should document per-entry PASS/FAIL results', () => {
+      expect(agentMd).toContain('PASS/FAIL result per entry');
     });
 
     it('should document acceptance criteria verification', () => {
@@ -65,9 +65,14 @@ describe('qa-verifier agent', () => {
       expect(agentMd).toMatch(/scope/i);
     });
 
-    it('should return structured pass/fail verdict', () => {
+    it('should return structured per-entry verdict', () => {
       expect(agentMd).toContain('PASS');
       expect(agentMd).toContain('FAIL');
+      expect(agentMd).toContain('Per-Entry Results');
+    });
+
+    it('should position npm test as one input, not primary mechanism', () => {
+      expect(agentMd).toContain('not as the primary verification mechanism');
     });
   });
 });

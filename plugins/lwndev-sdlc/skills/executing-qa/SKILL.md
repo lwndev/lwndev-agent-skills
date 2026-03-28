@@ -13,7 +13,7 @@ hooks:
   Stop:
     - hooks:
         - type: prompt
-          prompt: "You are evaluating whether Claude should stop. Context: $ARGUMENTS\n\nA prompt hook is a single-turn LLM call with no tool access — you can only evaluate based on the input fields provided, not by reading files.\n\nIf stop_hook_active is true in the input, respond {\"ok\": true} immediately to prevent infinite loops.\n\nOtherwise, examine last_assistant_message to determine the current phase:\n(1) If QA verification is in progress: does Claude's message indicate the qa-verifier returned a clean pass verdict with no remaining issues?\n(2) If verification passed and documentation reconciliation is in progress: does Claude's message indicate all reconciliation areas are covered (affected files updated, acceptance criteria modifications documented, implementation steps updated, deviation summary added where needed)?\n\nRespond {\"ok\": true} if the current phase is complete based on Claude's message, or {\"ok\": false, \"reason\": \"what appears to remain\"} if not."
+          prompt: "You are evaluating whether Claude should stop. Context: $ARGUMENTS\n\nA prompt hook is a single-turn LLM call with no tool access — you can only evaluate based on the input fields provided, not by reading files.\n\nIf stop_hook_active is true in the input, respond {\"ok\": true} immediately to prevent infinite loops.\n\nOtherwise, examine last_assistant_message to determine the current phase:\n(1) If QA verification is in progress: does Claude's message indicate the qa-verifier returned per-entry PASS/FAIL results for all test plan entries with no FAIL entries remaining?\n(2) If verification passed and documentation reconciliation is in progress: does Claude's message indicate all reconciliation areas are covered (affected files updated, acceptance criteria modifications documented, implementation steps updated, deviation summary added where needed)?\n\nRespond {\"ok\": true} if the current phase is complete based on Claude's message, or {\"ok\": false, \"reason\": \"what appears to remain\"} if not."
           model: haiku
 ---
 
@@ -32,7 +32,7 @@ Execute QA verification against a test plan, then reconcile requirements documen
 
 1. Accept a requirement ID as input
 2. Load the test plan produced by `documenting-qa`
-3. Run the verification ralph loop (test + fix until clean pass)
+3. Run the verification ralph loop (verify entries + fix until all pass)
 4. Run the reconciliation loop (update requirements docs to match implementation)
 5. Save results and present to user
 
@@ -65,48 +65,48 @@ Also load the source requirements document(s) for use during verification and re
 
 ## Step 2: Verification Ralph Loop
 
-This loop runs tests, identifies issues, fixes them, and re-verifies until the qa-verifier returns a clean pass.
+This loop directly verifies each test plan entry, fixes any failures, and re-verifies until all entries pass.
 
 ### Each Iteration
 
 1. **Delegate to qa-verifier subagent** using the Agent tool:
    - Provide the test plan content
    - Provide the source requirements document(s) content
-   - Instruct the subagent to run the full test suite, check coverage, and verify code paths against acceptance criteria
+   - Instruct the subagent to iterate through each test plan entry and directly verify the condition described (reading files, checking behavior, running commands)
 
-2. **Evaluate the verdict**:
-   - If **PASS** with no remaining issues → verification is complete, proceed to Step 3
-   - If **FAIL** with actionable issues → auto-fix them (see below)
+2. **Evaluate the per-entry results**:
+   - If all entries **PASS** with no remaining failures → verification is complete, proceed to Step 3
+   - If any entries **FAIL** with actionable issues → auto-fix them (see below)
 
 3. **Auto-fix issues** found by the verifier:
-   - Write missing tests for uncovered code paths
-   - Fix broken or failing tests
-   - Address coverage gaps for new/changed functionality
-   - Correct logic mismatches between code and acceptance criteria
+   - Fix code or content that doesn't meet the conditions described in failed test plan entries
+   - Correct mismatches between implementation and acceptance criteria
+   - Address missing deliverables or artifacts referenced in the test plan
+   - Run `npm test` to confirm fixes don't introduce regressions
 
 4. **After each fix-and-verify round, attempt to finish.** The Stop hook evaluates your last message:
-   - If verification passed cleanly → the hook allows stop (you proceed to reconciliation)
-   - If issues remain → the hook blocks with `{"ok": false, "reason": "..."}` and feeds remaining issues back to you
+   - If all test plan entries passed with per-entry PASS/FAIL results → the hook allows stop (you proceed to reconciliation)
+   - If entries remain with FAIL results → the hook blocks with `{"ok": false, "reason": "..."}` and feeds remaining failures back to you
    - Continue fixing and re-verifying until the hook allows completion of this phase
 
 ### Type-Specific Verification
 
 #### FEAT (Features)
-- Verify each functional requirement (FR-N) has corresponding test coverage
-- Validate acceptance criteria against implementation
-- Confirm phase deliverables from the implementation plan are present
+- Directly verify each functional requirement (FR-N) is implemented by reading the relevant code
+- Validate acceptance criteria by inspecting the implementing code or artifact
+- Confirm phase deliverables from the implementation plan exist at expected paths
 
 #### CHORE (Maintenance Tasks)
-- Verify acceptance criteria are met
+- Directly verify each acceptance criterion is met by inspecting code and artifacts
 - Confirm changes are minimal and correctly scoped
 - Validate no unrelated modifications were introduced
 
 #### BUG (Bug Fixes)
-- Verify each root cause (RC-N) has targeted regression tests
+- Directly verify each root cause (RC-N) fix by reading the changed code
 - Confirm reproduction steps no longer reproduce the bug
 - Validate fix addresses root causes, not just symptoms
 
-**Important**: State the verification results clearly in your message when attempting to finish — the Stop hook is a prompt-based evaluator with no tool access. It can only assess the phase from what you report.
+**Important**: State the per-entry verification results clearly in your message when attempting to finish — the Stop hook is a prompt-based evaluator with no tool access. It can only assess the phase from the per-entry PASS/FAIL results you report.
 
 ## Step 3: Reconciliation Loop
 
@@ -172,8 +172,8 @@ After each reconciliation pass, attempt to finish. The same Stop hook detects th
 Before finishing, verify:
 
 - [ ] Test plan was loaded successfully
-- [ ] QA verification loop ran until clean pass
-- [ ] All issues identified by qa-verifier were addressed
+- [ ] QA verification loop ran until all test plan entries pass
+- [ ] All FAIL entries identified by qa-verifier were addressed
 - [ ] Documentation reconciliation covered all areas
 - [ ] Affected files lists are accurate
 - [ ] Acceptance criteria modifications are documented

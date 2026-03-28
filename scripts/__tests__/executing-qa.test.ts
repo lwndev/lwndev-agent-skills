@@ -64,12 +64,17 @@ describe('executing-qa skill', () => {
       expect(skillMd).toContain('Verification Ralph Loop');
     });
 
+    it('should describe direct verification of test plan entries', () => {
+      expect(skillMd).toContain('directly verify the condition described');
+    });
+
     it('should document the reconciliation loop', () => {
       expect(skillMd).toContain('Reconciliation Loop');
     });
 
-    it('should document auto-fix behavior', () => {
+    it('should document auto-fix behavior for verification failures', () => {
       expect(skillMd).toContain('Auto-fix');
+      expect(skillMd).not.toContain('Write missing tests for uncovered code paths');
     });
 
     it('should document preservation rules for existing documents', () => {
@@ -119,6 +124,11 @@ describe('executing-qa skill', () => {
       expect(frontmatter).toContain('QA verification');
       expect(frontmatter).toContain('reconciliation');
     });
+
+    it('should evaluate per-entry PASS/FAIL results in stop hook', () => {
+      const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
+      expect(frontmatter).toContain('per-entry PASS/FAIL');
+    });
   });
 
   describe('test results template', () => {
@@ -131,16 +141,16 @@ describe('executing-qa skill', () => {
       expect(template).toContain('## Metadata');
     });
 
-    it('should contain Test Suite Results section', () => {
-      expect(template).toContain('## Test Suite Results');
+    it('should contain Per-Entry Verification Results section', () => {
+      expect(template).toContain('## Per-Entry Verification Results');
     });
 
-    it('should contain Coverage Analysis section', () => {
-      expect(template).toContain('## Coverage Analysis');
+    it('should contain Requirements Traceability section', () => {
+      expect(template).toContain('## Requirements Traceability');
     });
 
-    it('should contain Code Path Verification Results section', () => {
-      expect(template).toContain('## Code Path Verification Results');
+    it('should contain Automated Test Results section', () => {
+      expect(template).toContain('## Automated Test Results');
     });
 
     it('should contain Reconciliation Summary section', () => {
