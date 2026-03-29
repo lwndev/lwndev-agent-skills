@@ -121,7 +121,7 @@ describe('workflow-state.sh', () => {
       expect(err).toContain('Invalid ID format');
     });
 
-    it('rejects unsupported chain types', () => {
+    it('rejects bug chain type (not yet implemented)', () => {
       const err = run('init BUG-001 bug', { expectError: true });
       expect(err).toContain('not yet implemented');
     });
@@ -371,15 +371,19 @@ describe('workflow-state.sh', () => {
       expect(state.lastResumedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     });
 
-    it('clears previous error on resume', () => {
+    it('clears previous error and resets failed step status on resume', () => {
       runJSON('init FEAT-001 feature');
       run('fail FEAT-001 "something broke"');
       const failedState = runJSON('status FEAT-001');
       expect(failedState.error).toBe('something broke');
+      const failedSteps = failedState.steps as Array<Record<string, unknown>>;
+      expect(failedSteps[0].status).toBe('failed');
 
       const resumedState = runJSON('resume FEAT-001');
       expect(resumedState.error).toBeNull();
       expect(resumedState.status).toBe('in-progress');
+      const resumedSteps = resumedState.steps as Array<Record<string, unknown>>;
+      expect(resumedSteps[0].status).toBe('pending');
     });
   });
 

@@ -257,8 +257,12 @@ cmd_resume() {
   local now
   now=$(now_iso)
 
-  jq --arg now "$now" \
-    '.status = "in-progress" | .pauseReason = null | .error = null | .lastResumedAt = $now' \
+  local current_step
+  current_step=$(jq -r '.currentStep' "$file")
+
+  jq --arg now "$now" --argjson step "$current_step" \
+    '.status = "in-progress" | .pauseReason = null | .error = null | .lastResumedAt = $now
+     | if .steps[$step].status == "failed" then .steps[$step].status = "pending" else . end' \
     "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   cat "$file"
