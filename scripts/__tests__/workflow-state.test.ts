@@ -201,13 +201,16 @@ describe('workflow-state.sh', () => {
 
     it('is a no-op on already completed step (idempotent)', () => {
       runJSON('init FEAT-001 feature');
+      // Advance step 0 → now currentStep is 1, step 0 is complete
       runJSON('advance FEAT-001');
-      // Advance again on the same (now completed) step 0 — but currentStep is now 1
-      // The real idempotency case: advance when current step is already complete
-      // We need to manually set a step to complete first
-      const state1 = runJSON('advance FEAT-001'); // advances step 1
-      const state2 = runJSON('advance FEAT-001'); // advances step 2
-      expect(state2.currentStep).toBe((state1.currentStep as number) + 1);
+      // Manually set currentStep back to 0 to simulate re-advancing a completed step
+      const stateFile = join(testDir, '.sdlc/workflows/FEAT-001.json');
+      const raw = JSON.parse(readFileSync(stateFile, 'utf-8'));
+      raw.currentStep = 0;
+      writeFileSync(stateFile, JSON.stringify(raw));
+      // Advance again — step 0 is already complete, should be a no-op
+      const state = runJSON('advance FEAT-001');
+      expect(state.currentStep).toBe(0); // unchanged
     });
 
     it('advances through multiple steps sequentially', () => {
@@ -255,6 +258,17 @@ describe('workflow-state.sh', () => {
       run('pause FEAT-001 plan-approval');
       const state = runJSON('resume FEAT-001');
       expect(state.lastResumedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    });
+
+    it('clears previous error on resume', () => {
+      runJSON('init FEAT-001 feature');
+      run('fail FEAT-001 "something broke"');
+      const failedState = runJSON('status FEAT-001');
+      expect(failedState.error).toBe('something broke');
+
+      const resumedState = runJSON('resume FEAT-001');
+      expect(resumedState.error).toBeNull();
+      expect(resumedState.status).toBe('in-progress');
     });
   });
 
@@ -309,6 +323,50 @@ describe('workflow-state.sh', () => {
       createPlan('FEAT-001', 0);
       const err = run('phase-count FEAT-001', { expectError: true });
       expect(err).toContain('0 phases');
+    });
+  });
+
+  describe('populate-phases', () => {
+    it('inserts phase steps and post-phase steps after initial 6', () => {
+      runJSON('init FEAT-001 feature');
+      const state = runJSON('populate-phases FEAT-001 3');
+
+      const steps = state.steps as Array<Record<string, unknown>>;
+      // 6 initial + 3 phase + 5 post-phase = 14
+      expect(steps).toHaveLength(14);
+
+      // Phase steps at indices 6, 7, 8
+      expect(steps[6].name).toBe('Implement phase 1 of 3');
+      expect(steps[6].phaseNumber).toBe(1);
+      expect(steps[7].name).toBe('Implement phase 2 of 3');
+      expect(steps[7].phaseNumber).toBe(2);
+      expect(steps[8].name).toBe('Implement phase 3 of 3');
+      expect(steps[8].phaseNumber).toBe(3);
+
+      // Post-phase steps at indices 9-13
+      expect(steps[9].name).toBe('Create PR');
+      expect(steps[10].name).toBe('PR review');
+      expect(steps[11].name).toBe('Reconcile post-review');
+      expect(steps[12].name).toBe('Execute QA');
+      expect(steps[13].name).toBe('Finalize');
+    });
+
+    it('sets phases.total to the count', () => {
+      runJSON('init FEAT-001 feature');
+      const state = runJSON('populate-phases FEAT-001 2');
+      const phases = state.phases as { total: number; completed: number };
+      expect(phases.total).toBe(2);
+      expect(phases.completed).toBe(0);
+    });
+
+    it('is idempotent — returns current state if phases already populated', () => {
+      runJSON('init FEAT-001 feature');
+      runJSON('populate-phases FEAT-001 3');
+      // Second call should be a no-op
+      const state = runJSON('populate-phases FEAT-001 5');
+      const steps = state.steps as Array<Record<string, unknown>>;
+      // Should still have 14 steps (3 phases), not 16 (5 phases)
+      expect(steps).toHaveLength(14);
     });
   });
 

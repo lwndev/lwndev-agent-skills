@@ -18,7 +18,7 @@ if [[ ! -f "$ACTIVE_FILE" ]] || [[ ! -s "$ACTIVE_FILE" ]]; then
   exit 0
 fi
 
-WORKFLOW_ID="$(cat "$ACTIVE_FILE" | tr -d '[:space:]')"
+WORKFLOW_ID="$(tr -d '[:space:]' < "$ACTIVE_FILE")"
 
 # Empty after trimming — allow stop
 if [[ -z "$WORKFLOW_ID" ]]; then

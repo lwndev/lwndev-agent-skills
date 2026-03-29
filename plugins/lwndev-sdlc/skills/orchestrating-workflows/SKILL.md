@@ -197,10 +197,12 @@ Display the PR number, link, and branch. Halt execution.
 
 After step 6 (test-plan reconciliation) completes:
 
-1. Determine phase count:
+1. Determine phase count and populate steps:
    ```bash
    scripts/workflow-state.sh phase-count {ID}
+   scripts/workflow-state.sh populate-phases {ID} {count}
    ```
+   This inserts N phase steps and 5 post-phase steps (Create PR, PR review, Reconcile post-review, Execute QA, Finalize) into the state file after the initial 6 steps.
 
 2. For each phase 1 through N, fork `implementing-plan-phases` with the Agent tool. The prompt must include:
    - The SKILL.md content from `${CLAUDE_PLUGIN_ROOT}/skills/implementing-plan-phases/SKILL.md`

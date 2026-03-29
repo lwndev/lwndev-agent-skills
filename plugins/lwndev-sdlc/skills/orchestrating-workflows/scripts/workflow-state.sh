@@ -26,6 +26,7 @@ usage() {
   echo "  fail <ID> <message>           Set status to failed with error" >&2
   echo "  complete <ID>                 Mark workflow as complete" >&2
   echo "  set-pr <ID> <pr-num> <branch> Record PR metadata" >&2
+  echo "  populate-phases <ID> <count>  Insert phase steps and post-phase steps" >&2
   echo "  phase-count <ID>              Return number of implementation phases" >&2
   echo "  phase-status <ID>             Return per-phase completion status" >&2
   exit 1
@@ -237,7 +238,7 @@ cmd_resume() {
   now=$(now_iso)
 
   jq --arg now "$now" \
-    '.status = "in-progress" | .pauseReason = null | .lastResumedAt = $now' \
+    '.status = "in-progress" | .pauseReason = null | .error = null | .lastResumedAt = $now' \
     "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   cat "$file"
@@ -291,13 +292,48 @@ cmd_set_pr() {
   cat "$file"
 }
 
+cmd_populate_phases() {
+  local id="$1"
+  local count="$2"
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  # Idempotency: if phase steps already exist, return current state
+  local existing_phases
+  existing_phases=$(jq '[.steps[] | select(has("phaseNumber"))] | length' "$file")
+  if [[ "$existing_phases" -gt 0 ]]; then
+    cat "$file"
+    return 0
+  fi
+
+  # Generate phase steps
+  local phase_steps="[]"
+  for ((i = 1; i <= count; i++)); do
+    phase_steps=$(echo "$phase_steps" | jq --argjson n "$i" --argjson total "$count" \
+      '. + [{"name":"Implement phase \($n) of \($total)","skill":"implementing-plan-phases","context":"fork","status":"pending","artifact":null,"completedAt":null,"phaseNumber":$n}]')
+  done
+
+  local post_steps
+  post_steps=$(generate_post_phase_steps)
+
+  # Append phase steps + post-phase steps after the initial 6 steps, update phases.total
+  jq --argjson phase_steps "$phase_steps" \
+     --argjson post_steps "$post_steps" \
+     --argjson total "$count" \
+    '.steps = .steps[:6] + $phase_steps + $post_steps | .phases.total = $total' \
+    "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+
+  cat "$file"
+}
+
 cmd_phase_count() {
   local id="$1"
 
-  # Find the implementation plan
+  # Find the implementation plan using sorted glob for deterministic results
   local plan_file=""
   if [[ -d "requirements/implementation" ]]; then
-    plan_file=$(find requirements/implementation/ -name "${id}-*.md" 2>/dev/null | head -1 || true)
+    plan_file=$(ls requirements/implementation/${id}-*.md 2>/dev/null | sort | head -1 || true)
   fi
 
   if [[ -z "$plan_file" ]]; then
@@ -366,6 +402,10 @@ case "$command" in
   set-pr)
     [[ $# -ge 3 ]] || { echo "Error: set-pr requires <ID> <pr-number> <branch>" >&2; exit 1; }
     cmd_set_pr "$1" "$2" "$3"
+    ;;
+  populate-phases)
+    [[ $# -ge 2 ]] || { echo "Error: populate-phases requires <ID> <count>" >&2; exit 1; }
+    cmd_populate_phases "$1" "$2"
     ;;
   phase-count)
     [[ $# -ge 1 ]] || { echo "Error: phase-count requires <ID>" >&2; exit 1; }
