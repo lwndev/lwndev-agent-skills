@@ -44,6 +44,7 @@ The hook command `scripts/stop-hook.sh` resolves relative to the current working
 ## Affected Files
 
 - `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md`
+- `scripts/__tests__/orchestrating-workflows.test.ts`
 
 ## Acceptance Criteria
 
