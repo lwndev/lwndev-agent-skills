@@ -44,6 +44,7 @@ Bare relative paths like `scripts/workflow-state.sh init {ID} feature` are used 
 ## Affected Files
 
 - `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md`
+- `scripts/__tests__/orchestrating-workflows.test.ts`
 
 ## Acceptance Criteria
 
