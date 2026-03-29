@@ -33,9 +33,7 @@ describe('constants', () => {
     });
 
     it('should return correct plugin agents dir', () => {
-      expect(getPluginAgentsDir('lwndev-sdlc')).toBe(
-        join('plugins', 'lwndev-sdlc', 'agents')
-      );
+      expect(getPluginAgentsDir('lwndev-sdlc')).toBe(join('plugins', 'lwndev-sdlc', 'agents'));
     });
 
     it('should work with different plugin names', () => {
