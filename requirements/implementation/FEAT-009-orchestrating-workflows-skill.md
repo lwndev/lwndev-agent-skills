@@ -155,7 +155,7 @@ The implementation has three components: a shell-based state management script, 
 
 ### Phase 3: Stop Hook and End-to-End Verification
 **Feature:** [FEAT-009](../features/FEAT-009-orchestrating-workflows-skill.md) | [#89](https://github.com/lwndev/lwndev-marketplace/issues/89)
-**Status:** Pending
+**Status:** ✅ Complete
 **Depends on:** Phase 1, Phase 2
 
 #### Rationale
@@ -206,8 +206,8 @@ The implementation has three components: a shell-based state management script, 
    - Verify finalize completes and marks workflow as complete
 
 #### Deliverables
-- [ ] `scripts/workflow-stop-hook.sh` — executable Stop hook script
-- [ ] Updated `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — Stop hook in frontmatter + `.active` file tracking
+- [x] `scripts/workflow-stop-hook.sh` — executable Stop hook script
+- [x] Updated `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — Stop hook in frontmatter + `.active` file tracking
 
 ---
 

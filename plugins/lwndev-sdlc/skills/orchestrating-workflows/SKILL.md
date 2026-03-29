@@ -10,6 +10,11 @@ allowed-tools:
   - Grep
   - Agent
 argument-hint: '"feature title" | #issue-number | FEAT-XXX | CHORE-XXX | BUG-XXX'
+hooks:
+  Stop:
+    - hooks:
+        - type: command
+          command: "scripts/workflow-stop-hook.sh"
 ---
 
 # Orchestrating Workflows
