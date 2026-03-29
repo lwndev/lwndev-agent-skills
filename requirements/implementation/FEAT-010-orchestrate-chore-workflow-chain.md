@@ -105,7 +105,7 @@ Add chore workflow chain support to the existing `orchestrating-workflows` skill
 
 ### Phase 3: Integration Tests and Validation
 **Feature:** [FEAT-010](../features/FEAT-010-orchestrate-chore-workflow-chain.md) | [#90](https://github.com/lwndev/lwndev-marketplace/issues/90)
-**Status:** Pending
+**Status:** ✅ Complete
 **Depends on:** Phase 1 (state script chore support), Phase 2 (SKILL.md chore documentation)
 
 #### Rationale
@@ -131,8 +131,8 @@ Add chore workflow chain support to the existing `orchestrating-workflows` skill
 5. Run `npm test` to confirm all tests pass
 
 #### Deliverables
-- [ ] Updated `scripts/__tests__/orchestrating-workflows.test.ts` -- chore chain integration tests and SKILL.md validation
-- [ ] Updated `scripts/__tests__/workflow-state.test.ts` -- chore chain unit tests (if not fully covered in Phase 1)
+- [x] Updated `scripts/__tests__/orchestrating-workflows.test.ts` -- chore chain integration tests and SKILL.md validation
+- [x] Updated `scripts/__tests__/workflow-state.test.ts` -- chore chain unit tests (fully covered in Phase 1)
 
 ---
 

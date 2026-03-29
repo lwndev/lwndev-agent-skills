@@ -332,4 +332,227 @@ describe('integration tests', () => {
       expect(state.branch).toBe('feat/FEAT-001-test');
     });
   });
+
+  // --- Chore Chain Integration Tests ---
+
+  describe('chore chain lifecycle', () => {
+    it('init → advance through all 9 steps → pause at step 5 → resume → advance remaining → complete', () => {
+      // Init chore chain
+      const initState = stateJSON('init CHORE-001 chore');
+      expect(initState.status).toBe('in-progress');
+      expect(initState.currentStep).toBe(0);
+      expect(initState.type).toBe('chore');
+      const initSteps = initState.steps as Array<Record<string, unknown>>;
+      expect(initSteps).toHaveLength(9);
+
+      // Advance steps 0-4 (Document chore through Execute chore)
+      stateCmd('advance CHORE-001 "requirements/chores/CHORE-001-test.md"'); // step 0: Document chore
+      stateCmd('advance CHORE-001'); // step 1: Review requirements
+      stateCmd('advance CHORE-001'); // step 2: Document QA test plan
+      stateCmd('advance CHORE-001'); // step 3: Reconcile test plan
+      stateCmd('advance CHORE-001'); // step 4: Execute chore
+
+      // Now at step 5 (PR review pause point)
+      const prePause = stateJSON('status CHORE-001');
+      expect(prePause.currentStep).toBe(5);
+      const prePauseSteps = prePause.steps as Array<Record<string, unknown>>;
+      expect(prePauseSteps[5].name).toBe('PR review');
+      expect(prePauseSteps[5].context).toBe('pause');
+
+      // Pause at step 5 (PR review)
+      const pauseState = stateJSON('pause CHORE-001 pr-review');
+      expect(pauseState.status).toBe('paused');
+      expect(pauseState.pauseReason).toBe('pr-review');
+      expect(pauseState.currentStep).toBe(5);
+
+      // Resume
+      const resumeState = stateJSON('resume CHORE-001');
+      expect(resumeState.status).toBe('in-progress');
+      expect(resumeState.pauseReason).toBeNull();
+      expect(resumeState.lastResumedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+
+      // Advance steps 5-8 (PR review through Finalize)
+      stateCmd('advance CHORE-001'); // step 5: PR review
+      stateCmd('advance CHORE-001'); // step 6: Reconcile post-review
+      stateCmd('advance CHORE-001'); // step 7: Execute QA
+      stateCmd('advance CHORE-001'); // step 8: Finalize
+
+      // Complete
+      const completeState = stateJSON('complete CHORE-001');
+      expect(completeState.status).toBe('complete');
+      expect(completeState.completedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+
+      // Verify all steps are complete
+      const finalSteps = completeState.steps as Array<Record<string, unknown>>;
+      for (let i = 0; i < 9; i++) {
+        expect(finalSteps[i].status).toBe('complete');
+      }
+    });
+  });
+
+  describe('chore chain PR metadata', () => {
+    it('set-pr records metadata accessible via status for chore chain', () => {
+      stateJSON('init CHORE-001 chore');
+      stateCmd('set-pr CHORE-001 55 chore/CHORE-001-test');
+
+      const state = stateJSON('status CHORE-001');
+      expect(state.prNumber).toBe(55);
+      expect(state.branch).toBe('chore/CHORE-001-test');
+    });
+  });
+
+  describe('chore chain has no phase loop', () => {
+    it('state file has exactly 9 steps from init with no dynamic insertion needed', () => {
+      const state = stateJSON('init CHORE-001 chore');
+      const steps = state.steps as Array<Record<string, unknown>>;
+
+      // Exactly 9 steps — no populate-phases needed
+      expect(steps).toHaveLength(9);
+
+      // Verify no step has phaseNumber (no phase loop steps)
+      for (const step of steps) {
+        expect(step).not.toHaveProperty('phaseNumber');
+      }
+
+      // Verify step names match the fixed 9-step sequence
+      const expectedNames = [
+        'Document chore',
+        'Review requirements (standard)',
+        'Document QA test plan',
+        'Reconcile test plan',
+        'Execute chore',
+        'PR review',
+        'Reconcile post-review',
+        'Execute QA',
+        'Finalize',
+      ];
+      for (let i = 0; i < 9; i++) {
+        expect(steps[i].name).toBe(expectedNames[i]);
+      }
+    });
+  });
+
+  describe('chore chain has no plan-approval pause', () => {
+    it('chore chain has only pr-review pause step; no plan-approval step exists', () => {
+      const state = stateJSON('init CHORE-001 chore');
+      const steps = state.steps as Array<Record<string, unknown>>;
+
+      // Find all pause steps
+      const pauseSteps = steps.filter((s) => s.context === 'pause');
+      expect(pauseSteps).toHaveLength(1);
+      expect(pauseSteps[0].name).toBe('PR review');
+
+      // Verify no step is named plan-approval or Plan approval
+      const planApprovalSteps = steps.filter(
+        (s) =>
+          s.name === 'Plan approval' ||
+          s.name === 'plan-approval' ||
+          (s as Record<string, unknown>).skill === 'plan-approval'
+      );
+      expect(planApprovalSteps).toHaveLength(0);
+    });
+  });
+
+  describe('chore chain error recovery', () => {
+    it('fail at step 4 (executing-chores) → resume → retry → advance succeeds', () => {
+      stateJSON('init CHORE-001 chore');
+
+      // Advance to step 4 (Execute chore)
+      stateCmd('advance CHORE-001'); // step 0
+      stateCmd('advance CHORE-001'); // step 1
+      stateCmd('advance CHORE-001'); // step 2
+      stateCmd('advance CHORE-001'); // step 3
+
+      // Verify we're at step 4
+      const atStep4 = stateJSON('status CHORE-001');
+      expect(atStep4.currentStep).toBe(4);
+      const steps4 = atStep4.steps as Array<Record<string, unknown>>;
+      expect(steps4[4].name).toBe('Execute chore');
+      expect(steps4[4].skill).toBe('executing-chores');
+
+      // Fail at step 4
+      const failState = stateJSON('fail CHORE-001 "Chore execution crashed"');
+      expect(failState.status).toBe('failed');
+      expect(failState.error).toBe('Chore execution crashed');
+      const failSteps = failState.steps as Array<Record<string, unknown>>;
+      expect(failSteps[4].status).toBe('failed');
+
+      // Resume (retry)
+      const resumeState = stateJSON('resume CHORE-001');
+      expect(resumeState.status).toBe('in-progress');
+      expect(resumeState.lastResumedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+      expect(resumeState.error).toBeNull();
+
+      // Retry the step — advance succeeds this time
+      const retryState = stateJSON('advance CHORE-001');
+      expect(retryState.currentStep).toBe(5);
+      const retrySteps = retryState.steps as Array<Record<string, unknown>>;
+      expect(retrySteps[4].status).toBe('complete');
+    });
+  });
+
+  describe('chore chain stop hook behavior', () => {
+    it('exits 2 for in-progress chore chain', () => {
+      stateJSON('init CHORE-001 chore');
+      mkdirSync(join(testDir, '.sdlc/workflows'), { recursive: true });
+      writeFileSync(join(testDir, '.sdlc/workflows/.active'), 'CHORE-001');
+
+      const result = runHook();
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain('in-progress');
+    });
+
+    it('exits 0 for paused chore chain', () => {
+      stateJSON('init CHORE-001 chore');
+      stateCmd('pause CHORE-001 pr-review');
+      mkdirSync(join(testDir, '.sdlc/workflows'), { recursive: true });
+      writeFileSync(join(testDir, '.sdlc/workflows/.active'), 'CHORE-001');
+
+      const result = runHook();
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('exits 0 for complete chore chain', () => {
+      stateJSON('init CHORE-001 chore');
+      stateCmd('complete CHORE-001');
+      mkdirSync(join(testDir, '.sdlc/workflows'), { recursive: true });
+      writeFileSync(join(testDir, '.sdlc/workflows/.active'), 'CHORE-001');
+
+      const result = runHook();
+      expect(result.exitCode).toBe(0);
+    });
+  });
+});
+
+// --- Chore Chain SKILL.md Validation Tests ---
+
+describe('orchestrating-workflows SKILL.md chore chain content', () => {
+  let skillMd: string;
+
+  beforeAll(async () => {
+    skillMd = await readFile(SKILL_MD_PATH, 'utf-8');
+  });
+
+  it('should contain "Chore Chain Step Sequence" section', () => {
+    expect(skillMd).toContain('## Chore Chain Step Sequence');
+  });
+
+  it('should reference documenting-chores sub-skill', () => {
+    expect(skillMd).toContain('documenting-chores');
+  });
+
+  it('should reference executing-chores sub-skill', () => {
+    expect(skillMd).toContain('executing-chores');
+  });
+
+  it('should document chore chain in "Relationship to Other Skills" section', () => {
+    // Extract the Relationship section content
+    const relationshipIdx = skillMd.indexOf('## Relationship to Other Skills');
+    expect(relationshipIdx).toBeGreaterThan(-1);
+    const relationshipSection = skillMd.slice(relationshipIdx);
+
+    expect(relationshipSection).toContain('Chore chain');
+    expect(relationshipSection).toContain('documenting-chores');
+    expect(relationshipSection).toContain('executing-chores');
+  });
 });
