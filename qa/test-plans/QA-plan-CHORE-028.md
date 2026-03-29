@@ -18,7 +18,7 @@ All existing tests in `scripts/__tests__/` must continue to pass. This is a conf
 
 | Test File | Description | Status |
 |-----------|-------------|--------|
-| `scripts/__tests__/*.test.ts` (all 23 files) | Full test suite — regression baseline | PENDING |
+| `scripts/__tests__/*.test.ts` (all 23 files) | Full test suite — regression baseline | PASS |
 
 ## New Test Analysis
 
@@ -42,17 +42,17 @@ Traceability from requirements to implementation (one entry per AC):
 
 | Requirement | Description | Expected Code Path | Verification Method | Status |
 |-------------|-------------|-------------------|-------------------|--------|
-| AC1 | Pre-commit hook runs `npm run lint` in addition to `lint-staged` | `.husky/pre-commit` contains `npm run lint` line | Code review — inspect file for `npm run lint` line | -- |
-| AC2 | Pre-commit hook runs `npm run format:check` in addition to `lint-staged` | `.husky/pre-commit` contains `npm run format:check` line | Code review — inspect file for `npm run format:check` line | -- |
-| AC3 | Lint and format steps match CI | `.husky/pre-commit` lint/format commands match `.github/workflows/ci.yml` steps | Code review — compare pre-commit commands against CI workflow `Lint` and `Check formatting` steps | -- |
-| AC4 | All existing pre-commit steps preserved | `.husky/pre-commit` still contains `npx lint-staged`, `npm test`, `npm audit` | Code review — confirm all three original lines remain | -- |
-| AC5 | Pre-commit hook executes successfully on clean working tree | `.husky/pre-commit` runs without errors | Manual — run `bash .husky/pre-commit` on clean tree and verify exit code 0 | -- |
+| AC1 | Pre-commit hook runs `npm run lint` in addition to `lint-staged` | `.husky/pre-commit` contains `npm run lint` line | Code review — inspect file for `npm run lint` line | PASS |
+| AC2 | Pre-commit hook runs `npm run format:check` in addition to `lint-staged` | `.husky/pre-commit` contains `npm run format:check` line | Code review — inspect file for `npm run format:check` line | PASS |
+| AC3 | Lint and format steps match CI | `.husky/pre-commit` lint/format commands match `.github/workflows/ci.yml` steps | Code review — compare pre-commit commands against CI workflow `Lint` and `Check formatting` steps | PASS |
+| AC4 | All existing pre-commit steps preserved | `.husky/pre-commit` still contains `npx lint-staged`, `npm test`, `npm audit` | Code review — confirm all three original lines remain | PASS |
+| AC5 | Pre-commit hook executes successfully on clean working tree | `.husky/pre-commit` runs without errors | Manual — run `bash .husky/pre-commit` on clean tree and verify exit code 0 | PASS |
 
 ## Deliverable Verification
 
 | Deliverable | Source Phase | Expected Path | Status |
 |-------------|-------------|---------------|--------|
-| Updated pre-commit hook | CHORE-028 | `.husky/pre-commit` | -- |
+| Updated pre-commit hook | CHORE-028 | `.husky/pre-commit` | PASS |
 
 ## Scope Verification
 
