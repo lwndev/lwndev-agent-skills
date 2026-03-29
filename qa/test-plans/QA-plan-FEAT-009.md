@@ -30,32 +30,35 @@ New or modified tests that should be created or verified during QA execution:
 
 | Test Description | Target File(s) | Requirement Ref | Priority | Status |
 |-----------------|----------------|-----------------|----------|--------|
-| State script `init` creates valid JSON state file for feature type | `scripts/workflow-state.sh` | FR-1, AC-2 | High | -- |
-| State script `init` creates valid state for chore and bug types | `scripts/workflow-state.sh` | AC-2, #90, #91 | High | -- |
-| State script `init` is idempotent — returns existing state if file exists | `scripts/workflow-state.sh` | NFR-4, Edge Case 1 | High | -- |
-| State script `init` rejects malformed IDs (lowercase, missing dash, wrong prefix) | `scripts/workflow-state.sh` | Edge Case 10 | Medium | -- |
-| State script `status` validates required JSON fields on load | `scripts/workflow-state.sh` | NFR-5, AC-2 | High | -- |
-| State script `status` errors on malformed/corrupted state file | `scripts/workflow-state.sh` | NFR-5, Edge Case 7 | Medium | -- |
-| State script `advance` marks step complete and increments currentStep | `scripts/workflow-state.sh` | AC-2 | High | -- |
-| State script `advance` is idempotent on completed step | `scripts/workflow-state.sh` | NFR-4 | Medium | -- |
-| State script `advance` records artifact path when provided | `scripts/workflow-state.sh` | AC-2 | Medium | -- |
-| State script `pause` sets status and pauseReason correctly | `scripts/workflow-state.sh` | FR-5, FR-6, AC-2 | High | -- |
-| State script `resume` clears pauseReason and updates lastResumedAt | `scripts/workflow-state.sh` | FR-7, AC-2 | High | -- |
-| State script `fail` records error message | `scripts/workflow-state.sh` | NFR-2, AC-2 | High | -- |
-| State script `complete` marks workflow as complete | `scripts/workflow-state.sh` | AC-2 | Medium | -- |
-| State script `set-pr` records prNumber and branch | `scripts/workflow-state.sh` | FR-9, AC-2 | Medium | -- |
-| State script `phase-count` reads implementation plan and counts phases | `scripts/workflow-state.sh` | FR-4, AC-7 | High | -- |
-| State script `phase-count` populates phase steps and post-phase steps in state | `scripts/workflow-state.sh` | FR-4, AC-7 | High | -- |
-| State script `phase-status` returns per-phase completion info | `scripts/workflow-state.sh` | AC-2 | Medium | -- |
+| State script `init` creates valid JSON state file for feature type | `orchestrating-workflows/scripts/workflow-state.sh` | FR-1, AC-2 | High | -- |
+| State script `init` creates valid state for chore and bug types | `orchestrating-workflows/scripts/workflow-state.sh` | AC-2, #90, #91 | High | -- |
+| State script `init` is idempotent — returns existing state if file exists | `orchestrating-workflows/scripts/workflow-state.sh` | NFR-4, Edge Case 1 | High | -- |
+| State script `init` rejects malformed IDs (lowercase, missing dash, wrong prefix) | `orchestrating-workflows/scripts/workflow-state.sh` | Edge Case 10 | Medium | -- |
+| State script `status` validates required JSON fields on load | `orchestrating-workflows/scripts/workflow-state.sh` | NFR-5, AC-2 | High | -- |
+| State script `status` errors on malformed/corrupted state file | `orchestrating-workflows/scripts/workflow-state.sh` | NFR-5, Edge Case 7 | Medium | -- |
+| State script `advance` marks step complete and increments currentStep | `orchestrating-workflows/scripts/workflow-state.sh` | AC-2 | High | -- |
+| State script `advance` is idempotent on completed step | `orchestrating-workflows/scripts/workflow-state.sh` | NFR-4 | Medium | -- |
+| State script `advance` records artifact path when provided | `orchestrating-workflows/scripts/workflow-state.sh` | AC-2 | Medium | -- |
+| State script `pause` sets status and pauseReason correctly | `orchestrating-workflows/scripts/workflow-state.sh` | FR-5, FR-6, AC-2 | High | -- |
+| State script `resume` clears pauseReason and updates lastResumedAt | `orchestrating-workflows/scripts/workflow-state.sh` | FR-7, AC-2 | High | -- |
+| State script `fail` records error message | `orchestrating-workflows/scripts/workflow-state.sh` | NFR-2, AC-2 | High | -- |
+| State script `complete` marks workflow as complete | `orchestrating-workflows/scripts/workflow-state.sh` | AC-2 | Medium | -- |
+| State script `set-pr` records prNumber and branch | `orchestrating-workflows/scripts/workflow-state.sh` | FR-9, AC-2 | Medium | -- |
+| State script `phase-count` reads implementation plan and counts phases | `orchestrating-workflows/scripts/workflow-state.sh` | FR-4, AC-7 | High | -- |
+| State script `phase-count` populates phase steps and post-phase steps in state | `orchestrating-workflows/scripts/workflow-state.sh` | FR-4, AC-7 | High | -- |
+| State script `phase-status` returns per-phase completion info | `orchestrating-workflows/scripts/workflow-state.sh` | AC-2 | Medium | -- |
 | SKILL.md passes plugin validation (`npm run validate`) | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | AC-1 | High | -- |
-| Stop hook script exits 0 when workflow is paused | `scripts/workflow-stop-hook.sh` | AC-13 | High | -- |
-| Stop hook script exits 0 when workflow is complete | `scripts/workflow-stop-hook.sh` | AC-13 | High | -- |
-| Stop hook script exits 2 when workflow is in-progress with remaining steps | `scripts/workflow-stop-hook.sh` | AC-13 | High | -- |
-| Stop hook script exits 0 when no active workflow file exists | `scripts/workflow-stop-hook.sh` | AC-13 | Medium | -- |
-| Stop hook script exits 0 when workflow is failed | `scripts/workflow-stop-hook.sh` | AC-13 | Medium | -- |
-| State script `phase-count` errors with clear message when plan has 0 phases | `scripts/workflow-state.sh` | FR-4, Edge Case 2 | Medium | -- |
-| Concurrent workflows: `advance` on FEAT-001 does not alter FEAT-002 state | `scripts/workflow-state.sh` | Edge Case 9 | Medium | -- |
+| Stop hook script exits 0 when workflow is paused | `orchestrating-workflows/scripts/workflow-stop-hook.sh` | AC-13 | High | -- |
+| Stop hook script exits 0 when workflow is complete | `orchestrating-workflows/scripts/workflow-stop-hook.sh` | AC-13 | High | -- |
+| Stop hook script exits 2 when workflow is in-progress with remaining steps | `orchestrating-workflows/scripts/workflow-stop-hook.sh` | AC-13 | High | -- |
+| Stop hook script exits 0 when no active workflow file exists | `orchestrating-workflows/scripts/workflow-stop-hook.sh` | AC-13 | Medium | -- |
+| Stop hook script exits 0 when workflow is failed | `orchestrating-workflows/scripts/workflow-stop-hook.sh` | AC-13 | Medium | -- |
+| State script `phase-count` errors with clear message when plan has 0 phases | `orchestrating-workflows/scripts/workflow-state.sh` | FR-4, Edge Case 2 | Medium | -- |
+| Concurrent workflows: `advance` on FEAT-001 does not alter FEAT-002 state | `orchestrating-workflows/scripts/workflow-state.sh` | Edge Case 9 | Medium | -- |
 | Build test skill count updated from 11 to 12 | `scripts/__tests__/build.test.ts` | AC-1 | High | -- |
+| Scripts bundled in skill directory, not project root | `orchestrating-workflows/scripts/` | AC-2 | High | -- |
+| State script uses CWD for project paths (`.sdlc/`, `requirements/`) | `orchestrating-workflows/scripts/workflow-state.sh` | AC-2 | High | -- |
+| Old scripts removed from project-root `scripts/` | `scripts/workflow-state.sh`, `scripts/workflow-stop-hook.sh` | AC-2 | Medium | -- |
 
 ## Coverage Gap Analysis
 
@@ -82,6 +85,7 @@ Code paths and functionality that lack test coverage:
 | Edge case: Phase branch already exists — orchestrator continues committing | SKILL.md orchestration procedure | Edge Case 3 | Manual verify — create feature branch before running phase loop, confirm no failure |
 | Edge case: Sub-skill invoked standalone does not corrupt orchestrator state | `.sdlc/workflows/{ID}.json`, existing skills | Edge Case 8 | Automated — run standalone `/reviewing-requirements` while state file exists, verify state unchanged |
 | Edge case: Concurrent workflows — per-ID state isolation | `.sdlc/workflows/` | Edge Case 9 | Automated — create two state files, advance one, verify other unchanged |
+| Scripts resolve project paths from CWD, not script location | `orchestrating-workflows/scripts/workflow-state.sh` | AC-2 | Automated — invoke script from project root, verify `.sdlc/` created relative to CWD not script dir |
 
 ## Code Path Verification
 
@@ -106,7 +110,7 @@ Traceability from requirements to implementation:
 | NFR-4 | Idempotency — advance/init no-ops on completed/existing | `scripts/workflow-state.sh advance` on completed step; `init` on existing ID | Automated — run commands twice, compare output | -- |
 | NFR-5 | State file validation on load | `scripts/workflow-state.sh status {ID}` with corrupted JSON | Automated — provide malformed JSON and verify error | -- |
 | AC-1 | Skill exists with frontmatter, description, Stop hook | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | Automated — `npm run validate` + manual inspect frontmatter | -- |
-| AC-2 | State script handles all 10 commands | `scripts/workflow-state.sh` | Automated — invoke each command and verify output | -- |
+| AC-2 | State script handles all 10 commands | `orchestrating-workflows/scripts/workflow-state.sh` | Automated — invoke each command and verify output | -- |
 | AC-3 | State files at `.sdlc/workflows/{ID}.json`; gitignored | `.gitignore`, `.sdlc/workflows/` | Automated — check gitignore entry + file creation path | -- |
 | AC-4 | Steps 1, 5, 6+N+4 in main; others forked | SKILL.md procedure | Manual — observe context per step during execution | -- |
 | AC-5 | Forked steps read SKILL.md and delegate as subagent prompts | SKILL.md forking mechanism | Manual — verify Agent tool receives SKILL.md content | -- |
@@ -127,21 +131,24 @@ Traceability from requirements to implementation:
 | Deliverable | Source Phase | Expected Path | Status |
 |-------------|-------------|---------------|--------|
 | Updated `.gitignore` | Phase 1 | `.gitignore` (contains `.sdlc/` entry) | -- |
-| State management script | Phase 1 | `scripts/workflow-state.sh` (executable, 10 commands) | -- |
+| State management script | Phase 1 → 4 | `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` (executable, 10 commands) | -- |
 | Orchestrator skill | Phase 2 | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | -- |
-| Stop hook script | Phase 3 | `scripts/workflow-stop-hook.sh` (executable) | -- |
+| Stop hook script | Phase 3 → 4 | `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-stop-hook.sh` (executable) | -- |
 | Updated SKILL.md with Stop hook | Phase 3 | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` (frontmatter includes hooks.Stop) | -- |
 | Active workflow tracking | Phase 3 | `.sdlc/workflows/.active` (written by orchestrator, read by hook) | -- |
-| Updated build test skill count | Phase 2 or 3 | `scripts/__tests__/build.test.ts` (skill count = 12) | -- |
+| Updated build test skill count | Phase 2 | `scripts/__tests__/build.test.ts` (skill count = 12) | -- |
+| Old scripts removed from project root | Phase 4 | `scripts/workflow-state.sh` and `scripts/workflow-stop-hook.sh` must NOT exist | -- |
 
 > **Note:** The build test skill count update is not a formal phase deliverable — it is a regression fix implied by adding a new skill directory. It is also tracked in Existing Test Verification above.
+>
+> **Note:** Script paths in New Test Analysis and Coverage Gap Analysis use `orchestrating-workflows/scripts/` as shorthand for `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/`.
 
 ## Verification Checklist
 
 Summary of all acceptance criteria with verification approach:
 
 - [ ] **AC-1**: `orchestrating-workflows` skill exists — run `npm run validate`, inspect SKILL.md frontmatter for name, description, allowed-tools, hooks
-- [ ] **AC-2**: `workflow-state.sh` handles all commands — invoke each of: `init`, `status`, `advance`, `pause`, `resume`, `fail`, `complete`, `set-pr`, `phase-count`, `phase-status` and verify JSON output
+- [ ] **AC-2**: `workflow-state.sh` (bundled in skill `scripts/` dir) handles all commands — invoke each of: `init`, `status`, `advance`, `pause`, `resume`, `fail`, `complete`, `set-pr`, `phase-count`, `phase-status` and verify JSON output; confirm scripts use CWD for project paths
 - [ ] **AC-3**: State files at correct path and gitignored — run `init`, check `.sdlc/workflows/{ID}.json` exists, verify `.sdlc/` in `.gitignore`
 - [ ] **AC-4**: Context strategy correct — manual: run orchestrator, observe steps 1/5/6+N+4 inline and others forked
 - [ ] **AC-5**: Forking reads SKILL.md — manual: verify Agent tool prompt contains sub-skill SKILL.md content
