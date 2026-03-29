@@ -269,7 +269,7 @@ Based on the parsed counts, follow this flow:
    ```
    Halt execution. The user re-invokes with `/orchestrating-workflows {ID}` after addressing findings manually.
 
-3. **Errors present** → Display the full findings to the user. List the auto-fixable items from the "Fix Summary" / "Update Summary" section of the findings. Present three options:
+3. **Errors present** → Display the full findings to the user. List the auto-fixable items from the "Fix Summary" / "Update Summary" section of the findings. Errors always block progression — present two options:
    - **Apply fixes** → The orchestrator applies the auto-fixable corrections in main context using the Edit tool. Then spawn a **new** `reviewing-requirements` subagent fork to re-verify (this is the re-run, max 1). Parse the re-run findings:
      - If zero errors → advance state.
      - If errors persist → display remaining findings and pause:
@@ -277,7 +277,6 @@ Based on the parsed counts, follow this flow:
        ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} review-findings
        ```
        Halt execution.
-   - **Skip and continue** → Advance state despite errors (user accepts the risk).
    - **Pause for manual resolution** → Pause immediately:
      ```bash
      ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} review-findings
