@@ -261,7 +261,7 @@ Extract the error, warning, and info counts from this line. If the summary line 
 
 Based on the parsed counts, follow this flow:
 
-1. **Zero errors, zero warnings** → Advance state automatically. No user interaction needed.
+1. **Zero findings** (zero errors, zero warnings, zero info) → Advance state automatically. No user interaction needed.
 
 2. **Warnings/info only (zero errors)** → Display the full findings to the user. Prompt: "{N} warnings and {N} info found by reviewing-requirements. Review findings above and continue? (yes / no)". If the user confirms, advance state. If the user declines, pause the workflow:
    ```bash

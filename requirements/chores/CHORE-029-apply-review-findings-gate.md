@@ -49,7 +49,7 @@ The orchestrator handles findings parsing, fix application, and re-verification 
 
 1. Fork `reviewing-requirements` subagent as today
 2. Parse the subagent's return text for the summary line: `Found **N errors**, **N warnings**, **N info**`
-3. **Zero errors, zero warnings**: Advance automatically
+3. **Zero findings** (zero errors, zero warnings, zero info): Advance automatically
 4. **Warnings/info only**: Surface findings to user with inline confirmation prompt ("N warnings found. Review and continue?"). If user confirms, advance. If user declines, pause with `review-findings` reason.
 5. **Errors present**: Surface all findings to user. List auto-fixable items. Ask user: apply fixes / skip and pause / pause for manual resolution.
 6. If user opts to apply fixes: orchestrator applies corrections in main context (Edit tool), then spawns a **new** `reviewing-requirements` subagent fork to re-verify (max 1 re-run).
