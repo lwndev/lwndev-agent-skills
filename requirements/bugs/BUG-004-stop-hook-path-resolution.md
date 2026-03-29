@@ -57,7 +57,7 @@ The hook command `scripts/stop-hook.sh` resolves relative to the current working
 
 **Completed:** TBD
 
-**Pull Request:** TBD
+**Pull Request:** [#104](https://github.com/lwndev/lwndev-marketplace/pull/104)
 
 ## Notes
 
