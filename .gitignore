@@ -9,3 +9,6 @@ dist-scripts/
 
 # Don't include environment variable files
 *.env
+
+# Don't include SDLC workflow state (local per-developer)
+.sdlc/
