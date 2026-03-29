@@ -54,11 +54,11 @@ Bare relative paths like `scripts/workflow-state.sh init {ID} feature` are used 
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `In Progress`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-03-29
 
-**Pull Request:** [#N](https://github.com/lwndev/lwndev-marketplace/pull/N)
+**Pull Request:** [#106](https://github.com/lwndev/lwndev-marketplace/pull/106)
 
 ## Notes
 
