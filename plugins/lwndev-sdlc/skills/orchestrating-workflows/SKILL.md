@@ -7,7 +7,7 @@ hooks:
   Stop:
     - hooks:
         - type: command
-          command: scripts/stop-hook.sh
+          command: "${CLAUDE_PLUGIN_ROOT}/skills/orchestrating-workflows/scripts/stop-hook.sh"
 ---
 
 # Orchestrating Workflows

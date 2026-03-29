@@ -46,6 +46,12 @@ describe('orchestrating-workflows skill', () => {
       );
     });
 
+    it('should use ${CLAUDE_PLUGIN_ROOT} in Stop hook command path', () => {
+      expect(skillMd).toMatch(
+        /^---\s*\n[\s\S]*?command:\s*.*\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/orchestrating-workflows\/scripts\/stop-hook\.sh[\s\S]*?---/
+      );
+    });
+
     it('should include "When to Use This Skill" section', () => {
       expect(skillMd).toContain('## When to Use This Skill');
     });
