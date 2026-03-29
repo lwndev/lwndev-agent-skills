@@ -56,7 +56,7 @@ The merge command fails because `gh` requires `--merge`, `--rebase`, or `--squas
 
 **Completed:** 2026-03-29
 
-**Pull Request:** TBD
+**Pull Request:** [#108](https://github.com/lwndev/lwndev-marketplace/pull/108)
 
 ## Notes
 
