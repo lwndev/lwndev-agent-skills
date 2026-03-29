@@ -8,7 +8,7 @@ Build the `orchestrating-workflows` skill that drives SDLC workflow chains (feat
 
 | Feature ID | GitHub Issue | Feature Document | Priority | Complexity | Status |
 |------------|--------------|------------------|----------|------------|--------|
-| FEAT-009 | [#89](https://github.com/lwndev/lwndev-marketplace/issues/89) | [FEAT-009-orchestrating-workflows-skill.md](../features/FEAT-009-orchestrating-workflows-skill.md) | High | High | Pending |
+| FEAT-009 | [#89](https://github.com/lwndev/lwndev-marketplace/issues/89) | [FEAT-009-orchestrating-workflows-skill.md](../features/FEAT-009-orchestrating-workflows-skill.md) | High | High | ✅ Complete |
 
 ## Recommended Build Sequence
 

@@ -138,7 +138,8 @@ Bash script bundled within the skill directory at `plugins/lwndev-sdlc/skills/or
 | `fail {ID} {message}` | Set status to failed with error details |
 | `complete {ID}` | Mark workflow as complete |
 | `set-pr {ID} {pr-number} {branch}` | Record PR metadata in state |
-| `resume {ID}` | Set status to `in-progress`, clear `pauseReason`, update `lastResumedAt` to current timestamp |
+| `resume {ID}` | Set status to `in-progress`, clear `pauseReason` and `error`, update `lastResumedAt` to current timestamp |
+| `populate-phases {ID} {count}` | Insert N phase steps and 5 post-phase steps after the initial 6 steps; update `phases.total` |
 | `phase-count {ID}` | Read implementation plan, return number of phases |
 | `phase-status {ID}` | Return per-phase completion status |
 
@@ -292,7 +293,7 @@ On load, the state script validates JSON integrity and required fields (`id`, `t
 ## Acceptance Criteria
 
 - [ ] `orchestrating-workflows` skill exists with frontmatter, description, and Stop hook
-- [ ] `scripts/workflow-state.sh` (bundled in skill directory) handles all commands (`init`, `status`, `advance`, `pause`, `resume`, `fail`, `complete`, `set-pr`, `phase-count`, `phase-status`)
+- [ ] `scripts/workflow-state.sh` (bundled in skill directory) handles all commands (`init`, `status`, `advance`, `pause`, `resume`, `fail`, `complete`, `set-pr`, `populate-phases`, `phase-count`, `phase-status`)
 - [ ] State files written to `.sdlc/workflows/{ID}.json`; `.sdlc/` is gitignored
 - [ ] Step 1, `documenting-qa`, and `executing-qa` run in main context; all other steps forked via Agent tool
 - [ ] Forked steps read SKILL.md content and delegate as subagent task prompts
