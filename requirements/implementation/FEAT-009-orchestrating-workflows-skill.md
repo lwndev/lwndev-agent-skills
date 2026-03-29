@@ -81,7 +81,7 @@ Build the `orchestrating-workflows` skill that drives SDLC workflow chains (feat
 
 ### Phase 3: Stop Hook and Integration Testing
 **Feature:** [FEAT-009](../features/FEAT-009-orchestrating-workflows-skill.md) | [#89](https://github.com/lwndev/lwndev-marketplace/issues/89)
-**Status:** Pending
+**Status:** ✅ Complete
 **Depends on:** Phase 1 (stop hook calls `workflow-state.sh status`), Phase 2 (hook registered in SKILL.md frontmatter)
 
 #### Rationale
@@ -111,8 +111,8 @@ Build the `orchestrating-workflows` skill that drives SDLC workflow chains (feat
 5. Verify `npm run validate` and `npm test` pass
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/stop-hook.sh` — stop hook script
-- [ ] `scripts/__tests__/orchestrating-workflows.test.ts` — skill validation and integration tests
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/stop-hook.sh` — stop hook script
+- [x] `scripts/__tests__/orchestrating-workflows.test.ts` — skill validation and integration tests
 
 ---
 

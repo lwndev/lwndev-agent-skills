@@ -3,6 +3,11 @@ name: orchestrating-workflows
 description: Orchestrate full SDLC workflow chains (feature, chore, bug) end-to-end by sequencing sub-skill invocations, managing state across pause points, and isolating per-step context via Agent tool forking.
 argument-hint: "<title-or-issue> or <ID>"
 compatibility: Requires jq and a bash-compatible shell
+hooks:
+  Stop:
+    - hooks:
+        - type: command
+          command: scripts/stop-hook.sh
 ---
 
 # Orchestrating Workflows
