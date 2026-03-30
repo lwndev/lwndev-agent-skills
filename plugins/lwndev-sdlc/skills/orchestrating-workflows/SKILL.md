@@ -22,19 +22,22 @@ Drive an entire SDLC workflow chain through a single skill invocation. The orche
 
 ## Arguments
 
-- **When argument is provided**: If the argument matches an existing workflow ID pattern (`FEAT-NNN`, `CHORE-NNN`, `BUG-NNN`), check for an existing state file at `.sdlc/workflows/{ID}.json` and resume if found. A `FEAT-NNN` ID resumes a feature chain; a `CHORE-NNN` ID resumes a chore chain. If the argument is a `#N` GitHub issue reference, start a new feature workflow from that issue. Otherwise, treat the argument as a free-text title and start a new workflow (feature by default; ask the user if ambiguous).
+- **When argument is provided**: If the argument matches an existing workflow ID pattern (`FEAT-NNN`, `CHORE-NNN`, `BUG-NNN`), check for an existing state file at `.sdlc/workflows/{ID}.json` and resume if found. A `FEAT-NNN` ID resumes a feature chain; a `CHORE-NNN` ID resumes a chore chain; a `BUG-NNN` ID resumes a bug chain. If the argument is a `#N` GitHub issue reference, start a new feature workflow from that issue. Otherwise, treat the argument as a free-text title and start a new workflow (feature by default; ask the user if ambiguous).
 - **When no argument is provided**: Ask the user for a title, GitHub issue reference (`#N`), or existing workflow ID to resume.
 - **Chore workflows**: New chore workflows begin when `documenting-chores` (step 1) assigns the `CHORE-NNN` ID. The user may indicate a chore by saying "chore", "maintenance task", or similar.
+- **Bug workflows**: New bug workflows begin when `documenting-bugs` (step 1) assigns the `BUG-NNN` ID. The user may indicate a bug by saying "bug", "fix", "defect", "regression", or similar.
 
 ## Quick Start
 
-1. Parse argument — determine new workflow vs resume, and chain type (feature or chore)
+1. Parse argument — determine new workflow vs resume, and chain type (feature, chore, or bug)
 2. **New feature workflow**: Run step 1 (`documenting-features`) in main context, read allocated ID, initialize state with `init {ID} feature`
 3. **New chore workflow**: Run step 1 (`documenting-chores`) in main context, read allocated ID, initialize state with `init {ID} chore`
-4. **Resume**: Load state, handle pause/failure logic, continue from current step
-5. Execute steps sequentially using the step execution procedures below
-6. **Feature chain**: Pause at plan approval (step 4) and PR review (step 6+N+2)
-7. **Chore chain**: Pause at PR review only (step 6) — no plan-approval pause
+4. **New bug workflow**: Run step 1 (`documenting-bugs`) in main context, read allocated ID, initialize state with `init {ID} bug`
+5. **Resume**: Load state, handle pause/failure logic, continue from current step
+6. Execute steps sequentially using the step execution procedures below
+7. **Feature chain**: Pause at plan approval (step 4) and PR review (step 6+N+2)
+8. **Chore chain**: Pause at PR review only (step 6) — no plan-approval pause
+9. **Bug chain**: Pause at PR review only (step 6) — no plan-approval pause, same as chore chain
 8. On completion, mark workflow complete
 
 ## Feature Chain Step Sequence
@@ -67,6 +70,22 @@ The chore chain has a fixed 9 steps with no phase loop and no plan-approval paus
 | 3 | Document QA test plan | `documenting-qa` | **main** |
 | 4 | Reconcile test plan | `reviewing-requirements` | fork |
 | 5 | Execute chore | `executing-chores` | fork |
+| 6 | **PAUSE: PR review** | — | pause |
+| 7 | Reconcile post-review | `reviewing-requirements` | fork |
+| 8 | Execute QA | `executing-qa` | **main** |
+| 9 | Finalize | `finalizing-workflow` | fork |
+
+## Bug Chain Step Sequence
+
+The bug chain has a fixed 9 steps with no phase loop and no plan-approval pause, mirroring the chore chain structure with bug-specific skills:
+
+| # | Step | Skill | Context |
+|---|------|-------|---------|
+| 1 | Document bug | `documenting-bugs` | **main** |
+| 2 | Review requirements (standard) | `reviewing-requirements` | fork |
+| 3 | Document QA test plan | `documenting-qa` | **main** |
+| 4 | Reconcile test plan | `reviewing-requirements` | fork |
+| 5 | Execute bug fix | `executing-bug-fixes` | fork |
 | 6 | **PAUSE: PR review** | — | pause |
 | 7 | Reconcile post-review | `reviewing-requirements` | fork |
 | 8 | Execute QA | `executing-qa` | **main** |
@@ -162,24 +181,68 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "requirements/chores/
 
 Continue to execute remaining steps starting from step 2.
 
+## New Bug Workflow Procedure
+
+When starting a new bug workflow (argument indicates a bug fix, defect, or regression):
+
+### 1. Write Active Marker
+
+```bash
+mkdir -p .sdlc/workflows
+```
+
+### 2. Execute Step 1 — Document Bug (Main Context)
+
+Run `documenting-bugs` directly in this conversation (main context). Pass the argument as the bug description. This step may prompt the user interactively for details. Wait for it to complete and produce an artifact at `requirements/bugs/BUG-{ID}-*.md`.
+
+### 3. Read Allocated ID
+
+After step 1 completes, read the allocated ID from the artifact filename. Use Glob to find the newest file:
+
+```
+requirements/bugs/BUG-*-*.md
+```
+
+Extract the `BUG-NNN` portion from the filename. This ID is used for all subsequent state operations.
+
+### 4. Initialize State
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh init {ID} bug
+```
+
+Write the active workflow ID:
+
+```bash
+echo "{ID}" > .sdlc/workflows/.active
+```
+
+### 5. Advance Step 1 and Continue
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "requirements/bugs/{artifact-filename}"
+```
+
+Continue to execute remaining steps starting from step 2.
+
 ## Resume Procedure
 
 When the argument matches an existing ID (`FEAT-NNN`, `CHORE-NNN`, `BUG-NNN`):
 
 1. Read state: `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh status {ID}`
 2. Write active marker: `echo "{ID}" > .sdlc/workflows/.active`
-3. Determine chain type from the state file's `type` field (`feature` or `chore`)
+3. Determine chain type from the state file's `type` field (`feature`, `chore`, or `bug`)
 4. Check status:
-   - **paused** with `plan-approval` → (Feature chain only; chore chains have no plan-approval pause.) Ask "Ready to proceed with implementation?" If yes, call `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resume {ID}` and advance past the pause step, then continue.
-   - **paused** with `pr-review` → Check PR status via `gh pr view {prNumber} --json state,reviews,mergeStateStatus`. If approved/mergeable, call `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resume {ID}`, advance past the pause step, and continue. If changes requested, report the feedback and stay paused. If pending review, inform user and stay paused. (Applies to both feature and chore chains.)
+   - **paused** with `plan-approval` → (Feature chain only; chore and bug chains have no plan-approval pause.) Ask "Ready to proceed with implementation?" If yes, call `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resume {ID}` and advance past the pause step, then continue.
+   - **paused** with `pr-review` → Check PR status via `gh pr view {prNumber} --json state,reviews,mergeStateStatus`. If approved/mergeable, call `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resume {ID}`, advance past the pause step, and continue. If changes requested, report the feedback and stay paused. If pending review, inform user and stay paused. (Applies to all chain types: feature, chore, and bug.)
    - **paused** with `review-findings` → The previous `reviewing-requirements` step found unresolved errors. Call `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resume {ID}` and re-run the current `reviewing-requirements` fork step from scratch. If the re-run returns zero errors, advance and continue. If errors persist, surface findings and pause again with `review-findings`.
    - **failed** → Call `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resume {ID}`. Retry the failed step.
    - **in-progress** → Continue from the current step.
-5. Use the appropriate step sequence table (Feature Chain or Chore Chain) when determining the next step to execute.
+5. Use the appropriate step sequence table (Feature Chain, Chore Chain, or Bug Chain) when determining the next step to execute.
 
 ## Step Execution
 
-For each step, determine the context from the appropriate step sequence table (Feature Chain or Chore Chain) and execute accordingly. The forked step and main-context step patterns are shared across both chains.
+For each step, determine the context from the appropriate step sequence table (Feature Chain, Chore Chain, or Bug Chain) and execute accordingly. The forked step and main-context step patterns are shared across all chains.
 
 ### Main-Context Steps
 
@@ -245,7 +308,7 @@ For all steps marked **fork** in the step sequence, use the Agent tool to delega
 
 ### Reviewing-Requirements Findings Handling
 
-All `reviewing-requirements` fork steps (feature steps 2, 6, 6+N+3; chore steps 2, 4, 7) require findings handling after the subagent returns. The orchestrator parses the subagent's return text and acts on the findings before advancing.
+All `reviewing-requirements` fork steps (feature steps 2, 6, 6+N+3; chore steps 2, 4, 7; bug steps 2, 4, 7) require findings handling after the subagent returns. The orchestrator parses the subagent's return text and acts on the findings before advancing.
 
 #### Parsing Findings
 
@@ -329,6 +392,43 @@ Steps 2, 4, 7, and 9 follow the same fork pattern as the feature chain without c
 
 **Step 9 — `finalizing-workflow`**: No special argument needed. Same as feature chain step 6+N+5.
 
+### Bug Chain Main-Context Steps (Steps 1, 3, 8)
+
+**Step 1 — `documenting-bugs`**: See New Bug Workflow Procedure above.
+
+**Step 3 — `documenting-qa`**: Same pattern as chore chain step 3. Read `${CLAUDE_PLUGIN_ROOT}/skills/documenting-qa/SKILL.md`, follow its instructions in this conversation, passing the workflow ID as argument. Expected artifact: `qa/test-plans/QA-plan-{ID}.md`. On completion:
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-plans/QA-plan-{ID}.md"
+```
+
+**Step 8 — `executing-qa`**: Same pattern as chore chain step 8. Read `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/SKILL.md`, follow its instructions in this conversation, passing the workflow ID as argument. Expected artifact: `qa/test-results/QA-results-{ID}.md`. On completion:
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-results-{ID}.md"
+```
+
+### Bug Chain Step-Specific Fork Instructions
+
+Steps 2, 4, 7, and 9 follow the same fork pattern as the chore chain:
+
+**Step 2 — `reviewing-requirements` (standard review)**: Append `{ID}` as argument. Same as chore chain step 2.
+
+**Step 4 — `reviewing-requirements` (test-plan reconciliation)**: Append `{ID}` as argument. Same as chore chain step 4.
+
+**Step 5 — `executing-bug-fixes` (fork)**: Fork via Agent tool with `{ID}` as argument. After the subagent completes:
+1. Extract the PR number from the subagent output (the `executing-bug-fixes` skill creates a PR as its final step)
+2. If the PR number is not in the output, detect it via: `gh pr list --head {branch} --json number --jq '.[0].number'`
+3. Record the PR metadata:
+   ```bash
+   ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-pr {ID} {pr-number} {branch}
+   ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
+   ```
+
+**Step 7 — `reviewing-requirements` (code-review reconciliation)**: Append `{ID} --pr {prNumber}` as argument. Same as chore chain step 7.
+
+**Step 9 — `finalizing-workflow`**: No special argument needed. Same as chore chain step 9.
+
 ### Pause Steps
 
 #### Feature Chain Pause Steps
@@ -352,6 +452,15 @@ Display the PR number, link, and branch. Halt execution.
 #### Chore Chain Pause Steps
 
 **Step 6 — PR Review** (the only pause in the chore chain):
+```bash
+${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
+${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} pr-review
+```
+Display the PR number, link, and branch. Halt execution. The user re-invokes with `/orchestrating-workflows {ID}` to resume after review.
+
+#### Bug Chain Pause Steps
+
+**Step 6 — PR Review** (the only pause in the bug chain):
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} pr-review
@@ -435,6 +544,13 @@ Before marking the workflow complete:
 - [ ] PR number was extracted from `executing-chores` output or detected via `gh pr list` fallback
 - [ ] `set-pr` was called with the correct PR number and branch after step 5
 
+### Bug Chain Checks
+- [ ] No plan-approval pause occurred (bug chains skip this)
+- [ ] No phase loop was executed (bug chains have a fixed 9-step sequence)
+- [ ] PR number was extracted from `executing-bug-fixes` output or detected via `gh pr list` fallback
+- [ ] `set-pr` was called with the correct PR number and branch after step 5
+- [ ] RC-N traceability maintained through the chain (delegated to sub-skills)
+
 ## Relationship to Other Skills
 
 This skill orchestrates all other skills in the lwndev-sdlc plugin:
@@ -449,6 +565,11 @@ documenting-features → reviewing-requirements (standard) → creating-implemen
 Chore chain:
 documenting-chores → reviewing-requirements (standard) → documenting-qa
   → reviewing-requirements (test-plan) → executing-chores
+  → PAUSE → reviewing-requirements (code-review) → executing-qa → finalizing-workflow
+
+Bug chain:
+documenting-bugs → reviewing-requirements (standard) → documenting-qa
+  → reviewing-requirements (test-plan) → executing-bug-fixes
   → PAUSE → reviewing-requirements (code-review) → executing-qa → finalizing-workflow
 ```
 
@@ -472,5 +593,16 @@ documenting-chores → reviewing-requirements (standard) → documenting-qa
 | Review requirements | `reviewing-requirements` (steps 2/4/7, fork) |
 | Document QA test plan | `documenting-qa` (step 3, main) |
 | Execute chore implementation | `executing-chores` (step 5, fork) |
+| Execute QA verification | `executing-qa` (step 8, main) |
+| Merge and finalize | `finalizing-workflow` (step 9, fork) |
+
+### Bug Chain Skills
+
+| Task | Skill |
+|------|-------|
+| Document bug report | `documenting-bugs` (step 1, main) |
+| Review requirements | `reviewing-requirements` (steps 2/4/7, fork) |
+| Document QA test plan | `documenting-qa` (step 3, main) |
+| Execute bug fix | `executing-bug-fixes` (step 5, fork) |
 | Execute QA verification | `executing-qa` (step 8, main) |
 | Merge and finalize | `finalizing-workflow` (step 9, fork) |
