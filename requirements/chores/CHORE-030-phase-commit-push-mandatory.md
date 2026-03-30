@@ -33,11 +33,11 @@ Strengthen the commit-and-push instruction in the `implementing-plan-phases` ski
 
 ## Completion
 
-**Status:** `In Progress`
+**Status:** `Completed`
 
 **Completed:** 2026-03-29
 
-**Pull Request:** TBD
+**Pull Request:** [#110](https://github.com/lwndev/lwndev-marketplace/pull/110)
 
 ## Notes
 
