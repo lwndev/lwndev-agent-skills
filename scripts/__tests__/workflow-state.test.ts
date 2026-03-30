@@ -121,9 +121,10 @@ describe('workflow-state.sh', () => {
       expect(err).toContain('Invalid ID format');
     });
 
-    it('rejects bug chain type (not yet implemented)', () => {
-      const err = run('init BUG-001 bug', { expectError: true });
-      expect(err).toContain('not yet implemented');
+    it('accepts bug chain type', () => {
+      const state = runJSON('init BUG-001 bug');
+      expect(state.type).toBe('bug');
+      expect(state.steps).toHaveLength(9);
     });
 
     it('rejects unknown chain types', () => {
@@ -260,6 +261,117 @@ describe('workflow-state.sh', () => {
     it('CHORE- prefix IDs pass validate_id', () => {
       const state = runJSON('init CHORE-099 chore');
       expect(state.id).toBe('CHORE-099');
+    });
+  });
+
+  describe('bug chain', () => {
+    it('generate_bug_steps produces exactly 9 steps with correct names, skills, and contexts', () => {
+      const state = runJSON('init BUG-001 bug');
+      const steps = state.steps as Array<Record<string, unknown>>;
+
+      expect(steps).toHaveLength(9);
+
+      const expected = [
+        { name: 'Document bug', skill: 'documenting-bugs', context: 'main' },
+        {
+          name: 'Review requirements (standard)',
+          skill: 'reviewing-requirements',
+          context: 'fork',
+        },
+        { name: 'Document QA test plan', skill: 'documenting-qa', context: 'main' },
+        { name: 'Reconcile test plan', skill: 'reviewing-requirements', context: 'fork' },
+        { name: 'Execute bug fix', skill: 'executing-bug-fixes', context: 'fork' },
+        { name: 'PR review', skill: null, context: 'pause' },
+        { name: 'Reconcile post-review', skill: 'reviewing-requirements', context: 'fork' },
+        { name: 'Execute QA', skill: 'executing-qa', context: 'main' },
+        { name: 'Finalize', skill: 'finalizing-workflow', context: 'fork' },
+      ];
+
+      for (let i = 0; i < expected.length; i++) {
+        expect(steps[i].name).toBe(expected[i].name);
+        expect(steps[i].skill).toBe(expected[i].skill);
+        expect(steps[i].context).toBe(expected[i].context);
+        expect(steps[i].status).toBe('pending');
+        expect(steps[i].artifact).toBeNull();
+        expect(steps[i].completedAt).toBeNull();
+      }
+    });
+
+    it('init BUG-001 bug creates a valid state file with correct metadata', () => {
+      const state = runJSON('init BUG-001 bug');
+
+      expect(state.id).toBe('BUG-001');
+      expect(state.type).toBe('bug');
+      expect(state.currentStep).toBe(0);
+      expect(state.status).toBe('in-progress');
+      expect(state.pauseReason).toBeNull();
+      expect(state.prNumber).toBeNull();
+      expect(state.branch).toBeNull();
+      expect(state.startedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+      expect(state.lastResumedAt).toBeNull();
+      expect(state.phases).toEqual({ total: 0, completed: 0 });
+      expect(state.steps).toHaveLength(9);
+    });
+
+    it('all state commands work with bug chain state files', () => {
+      // init
+      runJSON('init BUG-001 bug');
+
+      // status
+      const statusState = runJSON('status BUG-001');
+      expect(statusState.id).toBe('BUG-001');
+      expect(statusState.type).toBe('bug');
+
+      // advance
+      const advancedState = runJSON('advance BUG-001');
+      expect(advancedState.currentStep).toBe(1);
+      const steps = advancedState.steps as Array<Record<string, unknown>>;
+      expect(steps[0].status).toBe('complete');
+
+      // pause
+      const pausedState = runJSON('pause BUG-001 pr-review');
+      expect(pausedState.status).toBe('paused');
+      expect(pausedState.pauseReason).toBe('pr-review');
+
+      // resume
+      const resumedState = runJSON('resume BUG-001');
+      expect(resumedState.status).toBe('in-progress');
+      expect(resumedState.pauseReason).toBeNull();
+
+      // fail
+      const failedState = runJSON('fail BUG-001 "test error"');
+      expect(failedState.status).toBe('failed');
+      expect(failedState.error).toBe('test error');
+
+      // resume from failure
+      const recoveredState = runJSON('resume BUG-001');
+      expect(recoveredState.status).toBe('in-progress');
+      expect(recoveredState.error).toBeNull();
+
+      // set-pr
+      const prState = runJSON('set-pr BUG-001 77 fix/BUG-001-test');
+      expect(prState.prNumber).toBe(77);
+      expect(prState.branch).toBe('fix/BUG-001-test');
+
+      // complete
+      const completedState = runJSON('complete BUG-001');
+      expect(completedState.status).toBe('complete');
+      expect(completedState.completedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    });
+
+    it('idempotency: init on an existing bug state file returns current state', () => {
+      runJSON('init BUG-001 bug');
+      // Advance to change state
+      run('advance BUG-001');
+      // Re-init should return current state, not overwrite
+      const state = runJSON('init BUG-001 bug');
+      expect(state.currentStep).toBe(1);
+      expect(state.type).toBe('bug');
+    });
+
+    it('BUG- prefix IDs pass validate_id', () => {
+      const state = runJSON('init BUG-099 bug');
+      expect(state.id).toBe('BUG-099');
     });
   });
 

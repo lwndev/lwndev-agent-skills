@@ -98,6 +98,24 @@ generate_chore_steps() {
 STEPS
 }
 
+# Generate the bug chain step sequence (FR-1)
+# Fixed 9-step sequence mirroring the chore chain but with bug-specific skills, no phase loop
+generate_bug_steps() {
+  cat <<'STEPS'
+[
+  {"name":"Document bug","skill":"documenting-bugs","context":"main","status":"pending","artifact":null,"completedAt":null},
+  {"name":"Review requirements (standard)","skill":"reviewing-requirements","context":"fork","status":"pending","artifact":null,"completedAt":null},
+  {"name":"Document QA test plan","skill":"documenting-qa","context":"main","status":"pending","artifact":null,"completedAt":null},
+  {"name":"Reconcile test plan","skill":"reviewing-requirements","context":"fork","status":"pending","artifact":null,"completedAt":null},
+  {"name":"Execute bug fix","skill":"executing-bug-fixes","context":"fork","status":"pending","artifact":null,"completedAt":null},
+  {"name":"PR review","skill":null,"context":"pause","status":"pending","artifact":null,"completedAt":null},
+  {"name":"Reconcile post-review","skill":"reviewing-requirements","context":"fork","status":"pending","artifact":null,"completedAt":null},
+  {"name":"Execute QA","skill":"executing-qa","context":"main","status":"pending","artifact":null,"completedAt":null},
+  {"name":"Finalize","skill":"finalizing-workflow","context":"fork","status":"pending","artifact":null,"completedAt":null}
+]
+STEPS
+}
+
 # Post-phase steps appended after phase steps are populated
 generate_post_phase_steps() {
   cat <<'STEPS'
@@ -137,8 +155,7 @@ cmd_init() {
       steps=$(generate_chore_steps)
       ;;
     bug)
-      echo "Error: Chain type 'bug' is not yet implemented." >&2
-      exit 1
+      steps=$(generate_bug_steps)
       ;;
     *)
       echo "Error: Unknown chain type '${type}'. Supported: feature, chore, bug." >&2
