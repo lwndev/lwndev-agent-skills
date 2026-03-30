@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.1] - 2026-03-30
+
+### Bug Fixes
+
+- **stop-hooks:** replace prompt-based Stop hooks with command-based hooks in `documenting-qa`, `executing-qa`, and `releasing-plugins` to eliminate intermittent JSON validation failures ([#114](https://github.com/lwndev/lwndev-marketplace/issues/114))
+- **stop-hooks:** use `${CLAUDE_PLUGIN_ROOT}` for command hook paths in plugin skills
+- **stop-hooks:** fix Phase 1/2 detection order in releasing-plugins stop hook
+
+[1.5.1]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.5.0...lwndev-sdlc@1.5.1
+
 ## [1.5.0] - 2026-03-30
 
 ### Features
