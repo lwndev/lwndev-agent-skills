@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.5.0] - 2026-03-30
+
+### Features
+
+- **orchestrating-workflows:** add orchestrating-workflows skill with workflow state engine, stop hook, and SKILL.md orchestration logic
+- **orchestrating-workflows:** add chore chain support with integration tests
+- **orchestrating-workflows:** add bug chain support with integration tests
+
+### Bug Fixes
+
+- **orchestrator:** handle closed PRs during resume procedure
+- **orchestrating-workflows:** reset failed step status on resume
+- **finalizing-workflow:** add --merge flag to gh pr merge
+- **orchestrating-workflows:** use `${CLAUDE_SKILL_DIR}` for workflow-state.sh paths in SKILL.md
+- **orchestrating-workflows:** use `${CLAUDE_PLUGIN_ROOT}` for stop hook command path
+
+### Chores
+
+- Make phase commit-push mandatory without prompting
+- Add review-findings gate to orchestrating-workflows
+- Add full lint and format check to pre-commit hook
+- Add test-skill utility script for local skill testing
+
+[1.5.0]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.4.0...lwndev-sdlc@1.5.0
+
 ## [1.4.0] - 2026-03-28
 
 ### Features
