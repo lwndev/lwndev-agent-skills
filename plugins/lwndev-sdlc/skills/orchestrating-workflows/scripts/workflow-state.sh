@@ -236,8 +236,8 @@ cmd_pause() {
   file=$(state_file "$id")
   validate_state_file "$file"
 
-  if [[ "$reason" != "plan-approval" && "$reason" != "pr-review" ]]; then
-    echo "Error: Invalid pause reason '${reason}'. Expected 'plan-approval' or 'pr-review'." >&2
+  if [[ "$reason" != "plan-approval" && "$reason" != "pr-review" && "$reason" != "review-findings" ]]; then
+    echo "Error: Invalid pause reason '${reason}'. Expected 'plan-approval', 'pr-review', or 'review-findings'." >&2
     exit 1
   fi
 

@@ -348,6 +348,13 @@ describe('workflow-state.sh', () => {
       expect(state.pauseReason).toBe('pr-review');
     });
 
+    it('sets status to paused with review-findings reason', () => {
+      runJSON('init FEAT-001 feature');
+      const state = runJSON('pause FEAT-001 review-findings');
+      expect(state.status).toBe('paused');
+      expect(state.pauseReason).toBe('review-findings');
+    });
+
     it('rejects invalid pause reasons', () => {
       runJSON('init FEAT-001 feature');
       const err = run('pause FEAT-001 invalid-reason', { expectError: true });
@@ -368,6 +375,15 @@ describe('workflow-state.sh', () => {
       runJSON('init FEAT-001 feature');
       run('pause FEAT-001 plan-approval');
       const state = runJSON('resume FEAT-001');
+      expect(state.lastResumedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    });
+
+    it('resumes from review-findings pause and clears pauseReason', () => {
+      runJSON('init FEAT-001 feature');
+      run('pause FEAT-001 review-findings');
+      const state = runJSON('resume FEAT-001');
+      expect(state.status).toBe('in-progress');
+      expect(state.pauseReason).toBeNull();
       expect(state.lastResumedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     });
 

@@ -172,6 +172,7 @@ When the argument matches an existing ID (`FEAT-NNN`, `CHORE-NNN`, `BUG-NNN`):
 4. Check status:
    - **paused** with `plan-approval` → (Feature chain only; chore chains have no plan-approval pause.) Ask "Ready to proceed with implementation?" If yes, call `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resume {ID}` and advance past the pause step, then continue.
    - **paused** with `pr-review` → Check PR status via `gh pr view {prNumber} --json state,reviews,mergeStateStatus`. If approved/mergeable, call `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resume {ID}`, advance past the pause step, and continue. If changes requested, report the feedback and stay paused. If pending review, inform user and stay paused. (Applies to both feature and chore chains.)
+   - **paused** with `review-findings` → The previous `reviewing-requirements` step found unresolved errors. Call `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resume {ID}` and re-run the current `reviewing-requirements` fork step from scratch. If the re-run returns zero errors, advance and continue. If errors persist, surface findings and pause again with `review-findings`.
    - **failed** → Call `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resume {ID}`. Retry the failed step.
    - **in-progress** → Continue from the current step.
 5. Use the appropriate step sequence table (Feature Chain or Chore Chain) when determining the next step to execute.
@@ -241,6 +242,55 @@ For all steps marked **fork** in the step sequence, use the Agent tool to delega
    ```bash
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "{artifact-path}"
    ```
+
+### Reviewing-Requirements Findings Handling
+
+All `reviewing-requirements` fork steps (feature steps 2, 6, 6+N+3; chore steps 2, 4, 7) require findings handling after the subagent returns. The orchestrator parses the subagent's return text and acts on the findings before advancing.
+
+#### Parsing Findings
+
+After the `reviewing-requirements` subagent returns its summary, parse the summary line for severity counts:
+
+```
+Found **N errors**, **N warnings**, **N info**
+```
+
+Extract the error, warning, and info counts from this line. If the summary line is not found (e.g., the subagent returned "No issues found"), treat as zero errors, zero warnings, zero info.
+
+#### Decision Flow
+
+Based on the parsed counts, follow this flow:
+
+1. **Zero findings** (zero errors, zero warnings, zero info) → Advance state automatically. No user interaction needed.
+
+2. **Warnings/info only (zero errors)** → Display the full findings to the user. Prompt: "{N} warnings and {N} info found by reviewing-requirements. Review findings above and continue? (yes / no)". If the user confirms, advance state. If the user declines, pause the workflow:
+   ```bash
+   ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} review-findings
+   ```
+   Halt execution. The user re-invokes with `/orchestrating-workflows {ID}` after addressing findings manually.
+
+3. **Errors present** → Display the full findings to the user. List the auto-fixable items from the "Fix Summary" / "Update Summary" section of the findings. Errors always block progression — present two options:
+   - **Apply fixes** → The orchestrator applies the auto-fixable corrections in main context using the Edit tool. Then spawn a **new** `reviewing-requirements` subagent fork to re-verify (this is the re-run, max 1). Parse the re-run findings:
+     - If zero errors → advance state.
+     - If errors persist → display remaining findings and pause:
+       ```bash
+       ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} review-findings
+       ```
+       Halt execution.
+   - **Pause for manual resolution** → Pause immediately:
+     ```bash
+     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} review-findings
+     ```
+     Halt execution.
+
+#### Applying Auto-Fixes
+
+When the user opts to apply fixes, the orchestrator (not a subagent) applies them:
+
+1. Read the auto-fixable items from the findings (listed under "Auto-fixable" or "Applicable updates" in the subagent's return text)
+2. For each fix, use the Edit tool to apply the correction to the target file
+3. After all fixes are applied, spawn a new `reviewing-requirements` subagent fork with the same arguments as the original step to re-verify
+4. This re-run counts as the single allowed retry — do not apply fixes or re-run again after this
 
 ### Feature Chain Step-Specific Fork Instructions
 
