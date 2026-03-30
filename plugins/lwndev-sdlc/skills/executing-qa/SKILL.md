@@ -13,7 +13,7 @@ hooks:
   Stop:
     - hooks:
         - type: command
-          command: "bash plugins/lwndev-sdlc/skills/executing-qa/scripts/stop-hook.sh"
+          command: "${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/stop-hook.sh"
 argument-hint: <requirement-id>
 ---
 

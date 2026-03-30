@@ -50,11 +50,9 @@ if [[ "$HAS_PLAN_REF" == "true" && "$HAS_COMPLETE_INDICATOR" == "true" ]]; then
   exit 0
 fi
 
-# If we only have a completion indicator without the plan ref, still allow
-# (the plan reference may have been mentioned in an earlier message)
-if [[ "$HAS_COMPLETE_INDICATOR" == "true" ]]; then
-  exit 0
-fi
+# Require both indicators — the plan reference and a completion signal.
+# The SKILL.md instructs Claude to mention the plan file path and confirm
+# completeness in the same message when attempting to finish.
 
 echo "Test plan documentation does not appear complete. Ensure the qa-verifier subagent has confirmed completeness and the test plan has been saved." >&2
 exit 2
