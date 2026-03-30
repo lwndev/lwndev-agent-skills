@@ -193,7 +193,7 @@ Confirm all files exist:
 
 ### 9. Commit and Push Changes
 
-Stage and commit all phase deliverables:
+Always commit and push immediately after verification — do not prompt the user. Stage and commit all phase deliverables:
 
 ```bash
 git add src/validators/file-exists.ts src/validators/required-fields.ts src/generators/validate.ts \
@@ -305,7 +305,7 @@ Phase 2 is complete when:
 - All 6 deliverables created
 - Tests pass with >80% coverage
 - Build succeeds
-- Changes committed and pushed to remote
+- Changes committed and pushed to remote (mandatory — always commit and push without prompting)
 - Plan status updated to "✅ Complete"
 - All deliverable checkboxes marked `[x]`
 - GitHub issue updated with completion comment

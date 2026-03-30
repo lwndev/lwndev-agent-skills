@@ -43,7 +43,7 @@ Execute implementation plan phases with systematic tracking and verification.
 6. Load implementation steps into todos
 7. Execute each step, **checking off each deliverable** in the implementation plan (`- [ ]` → `- [x]`) as it is completed
 8. Verify deliverables (tests pass, build succeeds)
-9. Commit and push changes to remote
+9. **Always** commit and push changes to remote — do not ask the user for confirmation
 10. Update plan status to "✅ Complete"
 11. Update GitHub issue with completion comment:
     ```bash
@@ -65,7 +65,7 @@ Phase Implementation:
 - [ ] Load steps into todos
 - [ ] Execute implementation steps, checking off deliverables (- [ ] → - [x]) as completed
 - [ ] Verify deliverables
-- [ ] Commit and push changes to remote
+- [ ] Always commit and push changes to remote (do not prompt — this is mandatory)
 - [ ] Update plan status to "✅ Complete"
 - [ ] Post GitHub issue completion comment
 - [ ] Create pull request after all phases complete (include "Closes #N" in body if issue exists)
@@ -116,7 +116,7 @@ Before marking a phase complete, verify:
 - Tests pass: `npm test`
 - Build succeeds: `npm run build`
 - Coverage meets threshold (if specified)
-- Changes committed and pushed to remote
+- Changes committed and pushed to remote (blocking — do not update plan status until push succeeds)
 - Plan status updated with checkmarks
 - GitHub issue updated
 - After all phases: create PR per Step 12
