@@ -53,13 +53,13 @@ Claude Code's JSON parser rejects all of these, causing the Stop hook to error.
 ## Affected Files
 
 - `.claude/skills/releasing-plugins/SKILL.md`
+- `.claude/skills/releasing-plugins/scripts/stop-hook.sh` (new)
 - `plugins/lwndev-sdlc/skills/documenting-qa/SKILL.md`
+- `plugins/lwndev-sdlc/skills/documenting-qa/scripts/stop-hook.sh` (new)
 - `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md`
-
-New files to create (command-based replacement hooks):
-- `plugins/lwndev-sdlc/skills/documenting-qa/scripts/stop-hook.sh`
-- `plugins/lwndev-sdlc/skills/executing-qa/scripts/stop-hook.sh`
-- `.claude/skills/releasing-plugins/scripts/stop-hook.sh`
+- `plugins/lwndev-sdlc/skills/executing-qa/scripts/stop-hook.sh` (new)
+- `scripts/__tests__/documenting-qa.test.ts`
+- `scripts/__tests__/executing-qa.test.ts`
 
 ## Acceptance Criteria
 
