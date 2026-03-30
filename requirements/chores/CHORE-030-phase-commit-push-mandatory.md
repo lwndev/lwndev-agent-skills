@@ -44,3 +44,4 @@ Strengthen the commit-and-push instruction in the `implementing-plan-phases` ski
 - Follows up on CHORE-017 which added the commit-and-push step; this chore strengthens the language to prevent Claude from treating it as optional.
 - The `orchestrating-workflows` skill was checked and contains no commit/push instructions, so no cleanup is needed there.
 - This is a wording/instruction change only — no code logic changes.
+- During code review, a prerequisite note was also added to Step 10 in step-details.md to reinforce the blocking relationship from the receiving side.
