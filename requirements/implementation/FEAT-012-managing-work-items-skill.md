@@ -71,7 +71,7 @@ This is a single feature (FEAT-012) divided into five phases that follow a found
 
 ### Phase 2: Add Jira Backend Support
 **Feature:** [FEAT-012](../features/FEAT-012-managing-work-items-skill.md) | [#119](https://github.com/lwndev/lwndev-marketplace/issues/119)
-**Status:** Pending
+**Status:** ✅ Complete
 **Depends on:** Phase 1 (skill structure, SKILL.md, backend detection)
 
 #### Rationale
@@ -102,9 +102,9 @@ This is a single feature (FEAT-012) divided into five phases that follow a found
 10. Run `npm run validate` and `npm test`
 
 #### Deliverables
-- [ ] Updated `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` -- Jira backend tiered fallback (Rovo MCP, `acli`, skip), Jira operations (fetch, comment), Jira error handling
-- [ ] Updated `plugins/lwndev-sdlc/skills/managing-work-items/references/jira-templates.md` -- complete Jira comment templates in ADF JSON format for all six types (FR-8)
-- [ ] Updated `scripts/__tests__/managing-work-items.test.ts` -- Jira backend validation tests
+- [x] Updated `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` -- Jira backend tiered fallback (Rovo MCP, `acli`, skip), Jira operations (fetch, comment), Jira error handling
+- [x] Updated `plugins/lwndev-sdlc/skills/managing-work-items/references/jira-templates.md` -- complete Jira comment templates in ADF JSON format for all six types (FR-8)
+- [x] Updated `scripts/__tests__/managing-work-items.test.ts` -- Jira backend validation tests
 
 ---
 

@@ -185,7 +185,7 @@ describe('managing-work-items skill', () => {
       );
     });
 
-    it('should contain placeholder templates for all six comment types', () => {
+    it('should contain all six comment type templates', () => {
       expect(jiraTemplates).toContain('### phase-start');
       expect(jiraTemplates).toContain('### phase-completion');
       expect(jiraTemplates).toContain('### work-start');
@@ -194,14 +194,143 @@ describe('managing-work-items skill', () => {
       expect(jiraTemplates).toContain('### bug-complete');
     });
 
-    it('should mark templates as Phase 2 TODO', () => {
-      expect(jiraTemplates).toContain('TODO: Phase 2');
+    it('should not contain Phase 2 TODO placeholders (templates are now complete)', () => {
+      expect(jiraTemplates).not.toContain('TODO: Phase 2');
     });
 
-    it('should contain ADF JSON structure in each template', () => {
+    it('should contain valid ADF JSON structure in templates', () => {
       expect(jiraTemplates).toContain('"version": 1');
       expect(jiraTemplates).toContain('"type": "doc"');
       expect(jiraTemplates).toContain('"content"');
+    });
+
+    it('should contain ADF heading nodes', () => {
+      expect(jiraTemplates).toContain('"type": "heading"');
+      expect(jiraTemplates).toContain('"level":');
+    });
+
+    it('should contain ADF marks for bold and italic', () => {
+      expect(jiraTemplates).toContain('"type": "strong"');
+      expect(jiraTemplates).toContain('"type": "em"');
+    });
+
+    it('should contain ADF bulletList and listItem nodes', () => {
+      expect(jiraTemplates).toContain('"type": "bulletList"');
+      expect(jiraTemplates).toContain('"type": "listItem"');
+    });
+
+    it('should contain ADF panel nodes for status callouts', () => {
+      expect(jiraTemplates).toContain('"type": "panel"');
+      expect(jiraTemplates).toContain('"panelType":');
+    });
+
+    it('should contain ADF code marks', () => {
+      expect(jiraTemplates).toContain('"type": "code"');
+    });
+
+    it('should contain ADF orderedList nodes', () => {
+      expect(jiraTemplates).toContain('"type": "orderedList"');
+    });
+
+    it('should have valid ADF structure for each comment type template', () => {
+      // Extract all JSON blocks from the jira-templates.md
+      const jsonBlocks = jiraTemplates.match(/```json\n([\s\S]*?)```/g) ?? [];
+      expect(jsonBlocks.length).toBeGreaterThanOrEqual(6);
+
+      for (const block of jsonBlocks) {
+        const jsonStr = block.replace(/```json\n/, '').replace(/```$/, '');
+        const parsed = JSON.parse(jsonStr);
+        expect(parsed).toHaveProperty('version', 1);
+        expect(parsed).toHaveProperty('type', 'doc');
+        expect(parsed).toHaveProperty('content');
+        expect(Array.isArray(parsed.content)).toBe(true);
+        expect(parsed.content.length).toBeGreaterThan(0);
+      }
+    });
+
+    it('should include work item ID traceability in phase templates', () => {
+      expect(jiraTemplates).toContain('{workItemId}');
+    });
+
+    it('should include work item ID traceability in work templates', () => {
+      expect(jiraTemplates).toContain('{choreId}');
+    });
+
+    it('should include work item ID traceability in bug templates', () => {
+      expect(jiraTemplates).toContain('{bugId}');
+    });
+
+    it('should preserve RC-N tagging in bug templates', () => {
+      expect(jiraTemplates).toContain('RC-1');
+      expect(jiraTemplates).toContain('RC-2');
+      expect(jiraTemplates).toContain('{rootCauses[');
+      expect(jiraTemplates).toContain('{rootCauseResolutions[');
+    });
+  });
+
+  describe('SKILL.md Jira backend content (Phase 2)', () => {
+    it('should document Jira tiered fallback with all three tiers', () => {
+      expect(skillMd).toContain('Tier 1 -- Rovo MCP');
+      expect(skillMd).toContain('Tier 2 -- Atlassian CLI');
+      expect(skillMd).toContain('Tier 3 -- Skip');
+    });
+
+    it('should document Rovo MCP tool names', () => {
+      expect(skillMd).toContain('getJiraIssue');
+      expect(skillMd).toContain('addCommentToJiraIssue');
+    });
+
+    it('should document acli CLI commands', () => {
+      expect(skillMd).toContain('acli jira workitem view');
+      expect(skillMd).toContain('acli jira workitem comment-create');
+    });
+
+    it('should document Jira fetch operation', () => {
+      expect(skillMd).toContain('Jira Fetch Operation');
+      expect(skillMd).toContain('getJiraIssue(cloudId, issueIdOrKey)');
+      expect(skillMd).toContain('acli jira workitem view --key PROJ-123');
+    });
+
+    it('should document Jira comment operation', () => {
+      expect(skillMd).toContain('Jira Comment Operation');
+      expect(skillMd).toContain('addCommentToJiraIssue(cloudId, issueIdOrKey, commentBody)');
+      expect(skillMd).toContain('acli jira workitem comment-create --key PROJ-123');
+    });
+
+    it('should document Jira PR body link generation', () => {
+      expect(skillMd).toContain('Jira PR Body Link Generation');
+      expect(skillMd).toContain('PROJ-123');
+    });
+
+    it('should document Jira-specific error handling', () => {
+      expect(skillMd).toContain('Jira-Specific Error Handling');
+      expect(skillMd).toContain('Rovo MCP authorization failed');
+      expect(skillMd).toContain('acli CLI not found on PATH');
+    });
+
+    it('should document MCP failure fallthrough to acli', () => {
+      expect(skillMd).toContain('Fall through to Tier 2');
+    });
+
+    it('should handle alphanumeric project keys (e.g., PROJ2-123)', () => {
+      expect(skillMd).toContain('Alphanumeric Project Keys');
+      expect(skillMd).toContain('PROJ2-');
+      expect(skillMd).toContain('[A-Z][A-Z0-9]*');
+    });
+
+    it('should no longer contain the Phase 1 Jira deferral note', () => {
+      expect(skillMd).not.toContain('Jira backend not yet implemented, skipping');
+    });
+
+    it('should document ADF format requirement for Rovo MCP comments', () => {
+      expect(skillMd).toContain('ADF JSON format');
+      expect(skillMd).toContain('commentBody');
+    });
+
+    it('should document that acli accepts markdown', () => {
+      expect(skillMd).toContain('acli');
+      expect(skillMd).toContain('markdown');
+      expect(skillMd).toContain('ADF conversion internally');
     });
   });
 

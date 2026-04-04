@@ -109,9 +109,12 @@ Map the `--type` argument to the correct template and populate it with context d
 
 ### Rendering Process
 
-1. Look up the template in [references/github-templates.md](references/github-templates.md) (for GitHub) or [references/jira-templates.md](references/jira-templates.md) (for Jira) based on the `--type` value.
+1. Look up the template in [references/github-templates.md](references/github-templates.md) (for GitHub) or [references/jira-templates.md](references/jira-templates.md) (for Jira/Rovo MCP) based on the `--type` value.
 2. Parse the `--context` JSON to extract template variables.
-3. Substitute variables into the template (replace `<PLACEHOLDER>` with actual values, expand list placeholders into formatted lists).
+3. Substitute variables into the template:
+   - **GitHub**: Replace `<PLACEHOLDER>` with actual values, expand list placeholders into formatted markdown lists.
+   - **Jira (Rovo MCP)**: Replace `{placeholder}` values in the ADF JSON structure. For list context variables (steps, deliverables, criteria, rootCauses), generate the appropriate ADF `listItem` nodes dynamically. The resulting JSON must be valid ADF.
+   - **Jira (acli)**: Use markdown format (same approach as GitHub). `acli` handles ADF conversion internally.
 4. Post the rendered comment via the appropriate backend.
 
 ## PR Body Issue Link Generation (FR-6)
@@ -151,11 +154,120 @@ Extract the issue reference from a requirement document by reading the `## GitHu
 
 Jira support uses a tiered fallback approach. The tiers are checked in order; the first available backend is used:
 
-1. **Tier 1 -- Rovo MCP**: Check if the `rovo` MCP server is available. If present, use Rovo MCP tools (`getJiraIssue`, `addCommentToJiraIssue`). Comments must be in Atlassian Document Format (ADF) JSON -- see [references/jira-templates.md](references/jira-templates.md).
+1. **Tier 1 -- Rovo MCP**: Check if the `rovo` MCP server is available. If present, use Rovo MCP tools for issue operations. Comments must be in Atlassian Document Format (ADF) JSON -- see [references/jira-templates.md](references/jira-templates.md).
 2. **Tier 2 -- Atlassian CLI (`acli`)**: Check if `acli` is on PATH (`which acli`). If present, use `acli jira workitem` subcommands. `acli` accepts markdown and handles ADF conversion internally.
 3. **Tier 3 -- Skip**: If neither backend is available, log a warning ("No Jira backend available (Rovo MCP not registered, acli not found). Skipping Jira operations.") and skip without failing.
 
-> **Note**: Jira backend operations are implemented in Phase 2. In Phase 1, detecting a Jira-format reference (`PROJ-123`) logs an info message ("Jira backend not yet implemented, skipping") and skips gracefully.
+### Tier Detection Logic
+
+```
+1. Check Tier 1 (Rovo MCP):
+   - Verify the `rovo` MCP server is registered and responsive
+   - If available → use Rovo MCP tools for all Jira operations
+   - If unavailable or registration check fails → log "Rovo MCP server not available, trying acli fallback" → proceed to Tier 2
+
+2. Check Tier 2 (acli CLI):
+   - Run: which acli
+   - If found on PATH → use acli for all Jira operations
+   - If not found → log "acli CLI not found on PATH" → proceed to Tier 3
+
+3. Tier 3 (Skip):
+   - Log warning: "No Jira backend available (Rovo MCP not registered, acli not found). Skipping Jira operations."
+   - Return without failing — workflow continues normally
+```
+
+### Jira Fetch Operation
+
+Retrieve Jira issue details (title/summary, description, labels/tags, status, assignees).
+
+**Via Rovo MCP (Tier 1):**
+
+Use the `getJiraIssue` MCP tool:
+
+```
+getJiraIssue(cloudId, issueIdOrKey)
+```
+
+- `cloudId`: The Atlassian Cloud ID for the Jira instance (obtained from MCP server configuration or environment)
+- `issueIdOrKey`: The issue key, e.g., `PROJ-123` or `PROJ2-456`
+
+The tool returns the issue object including `fields.summary`, `fields.description` (in ADF format), `fields.labels`, `fields.status.name`, and `fields.assignee`.
+
+**Via acli (Tier 2):**
+
+```bash
+acli jira workitem view --key PROJ-123
+```
+
+Returns issue details in a structured text format. Parse the output to extract title, description, status, assignee, and labels.
+
+**On failure**: Log the error with full output and skip. Example:
+
+```
+Warning: Jira fetch failed for PROJ-123 via [Rovo MCP|acli]. Output: <error details>. Skipping.
+```
+
+### Jira Comment Operation
+
+Post a formatted comment to a Jira issue using the appropriate template from [references/jira-templates.md](references/jira-templates.md).
+
+**Via Rovo MCP (Tier 1):**
+
+Use the `addCommentToJiraIssue` MCP tool:
+
+```
+addCommentToJiraIssue(cloudId, issueIdOrKey, commentBody)
+```
+
+- `cloudId`: The Atlassian Cloud ID
+- `issueIdOrKey`: The issue key, e.g., `PROJ-123`
+- `commentBody`: The comment in **ADF JSON format** (required by the Jira REST API)
+
+The `commentBody` must be a valid ADF document. Load the appropriate template from [references/jira-templates.md](references/jira-templates.md) based on the `--type` argument, substitute context variables into the ADF JSON structure, and pass the resulting ADF JSON as `commentBody`.
+
+**Via acli (Tier 2):**
+
+```bash
+acli jira workitem comment-create --key PROJ-123 --body "<markdown-comment>"
+```
+
+When using `acli`, format the comment as **markdown** (not ADF). The `acli` tool handles ADF conversion internally. Use the equivalent markdown format from [references/github-templates.md](references/github-templates.md) as a reference for the markdown content structure, adapting the GitHub-specific references (issue numbers, PR links) to Jira equivalents (issue keys, PR URLs).
+
+**On failure**: Log the error and skip. If Tier 1 (Rovo MCP) fails, fall through to Tier 2 (acli) before skipping entirely.
+
+### Jira PR Body Link Generation (FR-6)
+
+For Jira issues, the PR body link is the issue key itself:
+
+```
+PROJ-123
+```
+
+Jira auto-transition relies on the **branch name** containing the issue key (e.g., `feat/PROJ-123-feature-name`), not on a `Closes` keyword. Including the issue key in the PR body provides traceability but does not trigger auto-transition directly.
+
+### Jira-Specific Error Handling
+
+| Error Type | Tier | Response |
+|-----------|------|----------|
+| Rovo MCP server not registered | Tier 1 | Log: "Rovo MCP server not available, trying acli fallback." Fall through to Tier 2. |
+| Rovo MCP tool call timeout | Tier 1 | Log: "Rovo MCP tool `<toolName>` timed out. Falling through to acli." Fall through to Tier 2. |
+| Rovo MCP unexpected response | Tier 1 | Log: "Rovo MCP tool `<toolName>` returned unexpected response: <details>. Falling through to acli." Fall through to Tier 2. |
+| Rovo MCP authorization error | Tier 1 | Log: "Rovo MCP authorization failed -- check OAuth consent or API token configuration." Fall through to Tier 2. |
+| Rovo MCP server disconnection | Tier 1 | Log: "Rovo MCP server disconnected during `<toolName>`. Falling through to acli." Fall through to Tier 2. |
+| `acli` not on PATH | Tier 2 | Log: "acli CLI not found on PATH." Fall through to Tier 3 (skip). |
+| `acli` authentication error | Tier 2 | Log: "Atlassian CLI not authenticated -- check `acli` credentials configuration." Skip operation. |
+| `acli` command failure | Tier 2 | Log: "acli command failed: <full output>." Skip operation. |
+| `acli` network error | Tier 2 | Log: "acli network request failed. Skipping Jira operation." Skip operation. |
+| Issue not found (any tier) | Any | Log: "Jira issue PROJ-123 not found. Skipping." Skip operation. |
+
+### Alphanumeric Project Keys
+
+Jira project keys can contain numbers after the first character (e.g., `PROJ2-123`, `AB1-456`). The backend detection regex `^([A-Z][A-Z0-9]*)-(\d+)$` correctly handles these patterns. Examples of valid Jira references:
+
+- `PROJ-123` -- standard alphabetic key
+- `PROJ2-456` -- alphanumeric key (numbers allowed after first letter)
+- `AB1-789` -- short alphanumeric key
+- `MYTEAM-1` -- longer key with single digit issue number
 
 ## Graceful Degradation (NFR-1)
 
@@ -217,19 +329,30 @@ fi
 ```
 1. Receive invocation: <operation> <issue-ref> [--type <type>] [--context <json>]
 2. Detect backend from issue reference format (FR-1)
+   - #N → GitHub Issues
+   - PROJ-123 (including PROJ2-123 alphanumeric keys) → Jira
+   - Empty/absent → skip all operations
 3. If no reference provided → log info, return
 4. If GitHub (#N):
    a. Verify gh CLI available and authenticated
    b. Execute operation (fetch/comment) via gh CLI
    c. On failure → log warning, skip, return
 5. If Jira (PROJ-123):
-   a. Check Tier 1 (Rovo MCP) → if available, execute via MCP tools
-   b. Check Tier 2 (acli) → if available, execute via acli CLI
-   c. Tier 3 → log warning, skip, return
+   a. Check Tier 1 (Rovo MCP):
+      - If available → execute operation via MCP tools (getJiraIssue / addCommentToJiraIssue)
+      - For comment operations → load ADF template from jira-templates.md, substitute context variables, pass ADF JSON as commentBody
+      - On MCP failure (timeout, auth error, unexpected response, disconnection) → log error, fall through to Tier 2
+   b. Check Tier 2 (acli):
+      - If available → execute operation via acli CLI (acli jira workitem view / comment-create)
+      - For comment operations → use markdown format (acli converts to ADF internally)
+      - On acli failure → log error, fall through to Tier 3
+   c. Tier 3 (Skip):
+      - Log warning: "No Jira backend available. Skipping Jira operations."
+      - Return without failing
 6. Return result (fetch data, confirmation, or skip notice)
 ```
 
 ## References
 
-- **GitHub comment templates**: [github-templates.md](references/github-templates.md) - Consolidated templates for all six comment types, plus commit messages, PR body, and issue creation
-- **Jira comment templates**: [jira-templates.md](references/jira-templates.md) - Jira templates in ADF JSON format (Phase 2 content)
+- **GitHub comment templates**: [github-templates.md](references/github-templates.md) - Consolidated templates for all six comment types (markdown format), plus commit messages, PR body, and issue creation
+- **Jira comment templates**: [jira-templates.md](references/jira-templates.md) - Jira templates in ADF JSON format for all six comment types (used by Rovo MCP path; `acli` path uses markdown)
