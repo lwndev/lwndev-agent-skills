@@ -62,7 +62,7 @@ Two files are modified: the bash stop hook script and the SKILL.md instructions.
 
 ### Phase 2: SKILL.md Marker File Instructions
 **Feature:** [FEAT-013](../features/FEAT-013-releasing-stop-hook-state-file.md) | [#125](https://github.com/lwndev/lwndev-marketplace/issues/125)
-**Status:** Pending
+**Status:** 🔄 In Progress
 
 #### Rationale
 - SKILL.md is the instruction document that tells Claude *when* to write and clean up marker files

@@ -26,7 +26,18 @@ When this skill is invoked, determine which phase to run:
 
 Ask the user which plugin to release if not specified. If only one plugin exists, auto-select it.
 
-### 2. Review unreleased changes
+### 2. Signal release in progress
+
+Create the state directory and write the `.active` marker so the stop hook knows a release workflow is in progress:
+
+```bash
+mkdir -p .sdlc/releasing
+echo "<plugin-name>" > .sdlc/releasing/.active
+```
+
+Replace `<plugin-name>` with the actual plugin name identified in step 1 (e.g., `lwndev-sdlc`). This marker must be written before any release operations begin — the stop hook uses it to determine whether to enforce release criteria.
+
+### 3. Review unreleased changes
 
 Run `git log` since the last tag to see what's changed:
 
@@ -38,7 +49,7 @@ git tag -l "<plugin-name>@*" --sort=-version:refname | head -1
 git log <last-tag>..HEAD --oneline
 ```
 
-### 3. Suggest a bump type
+### 4. Suggest a bump type
 
 Analyze the conventional commit prefixes to suggest the appropriate bump:
 
@@ -48,7 +59,7 @@ Analyze the conventional commit prefixes to suggest the appropriate bump:
 
 Present the change summary and suggestion to the user for confirmation before proceeding.
 
-### 4. Run the release script
+### 5. Run the release script
 
 After the user confirms the bump type (the script will automatically create a `release/<plugin>-v<version>` branch when run from `main`):
 
@@ -62,7 +73,7 @@ Or with an explicit version if the user specified one:
 npm run release -- --plugin <name> --version <x.y.z>
 ```
 
-### 5. Refine the changelog
+### 6. Refine the changelog
 
 The release script filters noise commits and collapses same-scope entries automatically. After the script runs, review the generated changelog section in `plugins/<name>/CHANGELOG.md` and refine if needed:
 
@@ -77,7 +88,7 @@ git add plugins/<name>/CHANGELOG.md
 git commit --amend --no-edit --no-verify
 ```
 
-### 6. Review the release commit
+### 7. Review the release commit
 
 Check for the `code-review` plugin:
 - **If installed:** invoke it via the Skill tool to review the release diff.
@@ -88,7 +99,7 @@ Check for the `code-review` plugin:
     - README version line was updated
   - Include this note in the summary: *"Tip: Install the `code-review` plugin for richer release reviews: `claude plugin install code-review@claude-code-marketplace`"*
 
-### 7. Push and open PR
+### 8. Push and open PR
 
 Ask the user if they want to push the branch and open a PR. If yes:
 
@@ -98,13 +109,23 @@ git push -u origin <branch-name>
 
 Then offer to create the PR with `gh pr create`.
 
-### 8. Remind about Phase 2
+### 9. Remind about Phase 2
 
 After the PR is created, clearly tell the user:
 
 > After merging this PR, re-invoke `/releasing-plugins` to complete Phase 2 (tagging). Without the tag, plugin installations won't resolve to the new version.
 
 **Important**: State all completed steps clearly in your message — the Stop hook evaluates your last message to confirm Phase 1 is complete.
+
+### 10. Mark Phase 1 complete
+
+Write the `.phase1-complete` marker so the stop hook skips Phase 1 criteria checks. This prevents false positives when the user performs unrelated work between phases:
+
+```bash
+echo "<pr-number>" > .sdlc/releasing/.phase1-complete
+```
+
+Replace `<pr-number>` with the actual PR number created in step 8 (e.g., `126`).
 
 ## Phase 2: Tagging a Release (Post-Merge)
 
@@ -130,4 +151,24 @@ Ask the user if they want to push:
 git push --tags
 ```
 
+### 4. Clean up release markers
+
+Remove all marker files now that the release lifecycle is complete:
+
+```bash
+rm -rf .sdlc/releasing/
+```
+
+This prevents stale markers from interfering with future work. If the directory doesn't exist, `rm -rf` succeeds silently.
+
 **Important**: State all completed steps clearly in your message — the Stop hook evaluates your last message to confirm Phase 2 is complete.
+
+## Cancellation
+
+If the user explicitly cancels the release at any point during Phase 1 or Phase 2, clean up the marker files to restore the stop hook to its default pass-through behavior:
+
+```bash
+rm -rf .sdlc/releasing/
+```
+
+Without this cleanup, the `.active` marker would persist and the stop hook would continue enforcing release criteria in subsequent conversations.
