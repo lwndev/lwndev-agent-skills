@@ -30,6 +30,11 @@ fi
 # Normalize to lowercase for case-insensitive matching
 MSG_LOWER="$(echo "$MESSAGE" | tr '[:upper:]' '[:lower:]')"
 
+# If the message contains no release-related keywords, it's not from a release workflow — allow stop
+if ! echo "$MSG_LOWER" | grep -qE "(release|version|bump|changelog|tag the|phase 1|phase 2|plugin.*v[0-9])"; then
+  exit 0
+fi
+
 # Check Phase 1 completion first — a Phase 1 message may mention "Phase 2"
 # (e.g., "re-invoke for Phase 2") so we must detect Phase 1 before Phase 2.
 HAS_PR=false
