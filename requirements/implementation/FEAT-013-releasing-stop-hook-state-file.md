@@ -16,7 +16,7 @@ Two files are modified: the bash stop hook script and the SKILL.md instructions.
 
 ### Phase 1: Stop Hook State-File Logic
 **Feature:** [FEAT-013](../features/FEAT-013-releasing-stop-hook-state-file.md) | [#125](https://github.com/lwndev/lwndev-marketplace/issues/125)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 
 #### Rationale
 - The stop hook script is the enforcement mechanism -- it must be updated first so the state-file gates are in place before SKILL.md starts writing markers
