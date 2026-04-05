@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.6.0] - 2026-04-05
+
+### Features
+
+- **managing-work-items:** new skill centralizing all issue tracker operations (fetch, comment) with automatic backend detection (`#N` → GitHub Issues, `PROJ-123` → Jira) ([#119](https://github.com/lwndev/lwndev-marketplace/issues/119))
+- **managing-work-items:** Jira support via tiered fallback — Rovo MCP (primary), Atlassian CLI (fallback), skip (graceful degradation)
+- **managing-work-items:** Jira comment templates in Atlassian Document Format (ADF) JSON for Rovo MCP compatibility
+- **managing-work-items:** consolidated GitHub issue comment templates from three execution skills into single source of truth
+- **orchestrating-workflows:** integrated `managing-work-items` invocation points across feature, chore, and bug chains
+- **documenting-features:** delegated issue fetch to `managing-work-items` skill
+- **implementing-plan-phases:** removed inline `gh issue` operations; issue tracking delegated to orchestrator
+- **executing-chores:** removed inline `gh issue` operations; issue tracking delegated to orchestrator
+- **executing-bug-fixes:** removed inline `gh issue` operations; issue tracking delegated to orchestrator
+
+[1.6.0]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.5.1...lwndev-sdlc@1.6.0
+
 ## [1.5.1] - 2026-03-30
 
 ### Bug Fixes
