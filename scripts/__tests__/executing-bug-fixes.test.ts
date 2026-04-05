@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { readFile } from 'node:fs/promises';
+import { readFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import { validate, type DetailedValidateResult } from 'ai-skills-manager';
 
@@ -13,13 +13,11 @@ describe('executing-bug-fixes skill', () => {
   let skillMd: string;
   let prTemplate: string;
   let workflow: string;
-  let githubTemplates: string;
 
   beforeAll(async () => {
     skillMd = await readFile(SKILL_MD_PATH, 'utf-8');
     prTemplate = await readFile(PR_TEMPLATE_PATH, 'utf-8');
     workflow = await readFile(WORKFLOW_PATH, 'utf-8');
-    githubTemplates = await readFile(GITHUB_TEMPLATES_PATH, 'utf-8');
   });
 
   describe('SKILL.md', () => {
@@ -70,6 +68,13 @@ describe('executing-bug-fixes skill', () => {
 
     it('should document that PR body must include Closes #N when GitHub issue exists', () => {
       expect(skillMd).toContain('Closes #N');
+    });
+
+    it('should contain delegation note referencing managing-work-items', () => {
+      expect(skillMd).toContain('managing-work-items');
+      expect(skillMd).toContain(
+        'Issue tracking (start/completion comments) is handled by the orchestrator'
+      );
     });
   });
 
@@ -145,20 +150,13 @@ describe('executing-bug-fixes skill', () => {
     });
   });
 
-  describe('GitHub templates', () => {
-    it('should exist as references/github-templates.md', () => {
-      expect(githubTemplates).toBeDefined();
-      expect(githubTemplates.length).toBeGreaterThan(0);
+  describe('references', () => {
+    it('should no longer have github-templates.md', async () => {
+      await expect(access(GITHUB_TEMPLATES_PATH)).rejects.toThrow();
     });
 
-    it('should contain starting work comment template with root causes', () => {
-      expect(githubTemplates).toContain('Starting Work Comment');
-      expect(githubTemplates).toContain('Root Causes to Address');
-    });
-
-    it('should contain completion comment template with per-RC resolution status', () => {
-      expect(githubTemplates).toContain('Work Complete Comment');
-      expect(githubTemplates).toContain('Root Cause Resolution');
+    it('should not reference github-templates.md in SKILL.md', () => {
+      expect(skillMd).not.toContain('github-templates.md');
     });
   });
 

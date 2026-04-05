@@ -32,8 +32,10 @@ Adapt sections based on feature type:
 
 ## Arguments
 
-- **When argument is provided**: Use the argument as a pre-filled feature name or title. If the argument uses `#<number>` syntax (e.g., `#14`), fetch the corresponding GitHub issue and use its title and body to pre-fill the requirements template. If the GitHub API call fails (non-existent issue, network error, auth failure), warn the user and continue with manual input.
+- **When argument is provided**: Use the argument as a pre-filled feature name or title. If the argument uses `#<number>` syntax (e.g., `#14`) or Jira format (e.g., `PROJ-123`), delegate to the orchestrator or `managing-work-items fetch #N` (or `managing-work-items fetch PROJ-123`) to retrieve issue data, then use the returned title and body to pre-fill the requirements template. If the fetch fails (non-existent issue, network error, auth failure), warn the user and continue with manual input.
 - **When no argument is provided**: Prompt the user interactively for the feature scope, purpose, and details.
+
+> **Note:** Direct `gh` CLI usage for issue fetch has been replaced by the centralized `managing-work-items` skill, which handles both GitHub Issues (`#N`) and Jira (`PROJ-123`) backends with automatic detection and graceful degradation. This skill does not have Bash in its allowed-tools, so issue fetching must be delegated.
 
 ## Quick Start
 

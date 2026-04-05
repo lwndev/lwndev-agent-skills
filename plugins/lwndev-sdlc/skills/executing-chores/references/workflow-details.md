@@ -10,6 +10,8 @@ Detailed guidance for each phase of the chore execution workflow.
 - [Error Recovery](#error-recovery)
 - [Common Git Commands](#common-git-commands)
 
+> **Note:** Issue tracking (start/completion comments) is handled by the orchestrator via `managing-work-items`. This reference document focuses on chore execution steps only.
+
 ---
 
 ## Phase 1: Initialization
@@ -28,27 +30,10 @@ cat requirements/chores/CHORE-XXX-description.md
 
 Extract from the document:
 - **Chore ID**: Used for branch naming (e.g., `CHORE-001`)
-- **GitHub Issue**: Link to update with progress (optional)
 - **Category**: For commit message format
 - **Acceptance Criteria**: Load into todos
 
-### Step 2: Check GitHub Issue
-
-If the chore document links to a GitHub issue:
-
-```bash
-# View issue details
-gh issue view <ISSUE_NUM>
-
-# Post starting comment (see github-templates.md)
-gh issue comment <ISSUE_NUM> --body "..."
-```
-
-If no issue exists, you may:
-- Proceed without GitHub issue tracking
-- Create a new issue (with user confirmation)
-
-### Step 3: Create Git Branch
+### Step 2: Create Git Branch
 
 Ensure clean working directory:
 
@@ -74,7 +59,7 @@ git checkout -b chore/CHORE-001-update-dependencies
 
 ## Phase 2: Execution
 
-### Step 4: Load Acceptance Criteria
+### Step 3: Load Acceptance Criteria
 
 Convert acceptance criteria from the chore document into todos:
 
@@ -88,7 +73,7 @@ Example chore document criteria:
 
 Load these directly into the todo list and mark as in_progress as you work through each.
 
-### Step 5: Execute Changes
+### Step 4: Execute Changes
 
 Work through each acceptance criterion:
 
@@ -101,7 +86,7 @@ Work through each acceptance criterion:
 
 **Important:** Update the chore document checkbox at the point each criterion is verified, not in a batch at the end. This provides real-time progress visibility in the source document.
 
-### Step 6: Commit Changes
+### Step 5: Commit Changes
 
 Commit with proper format:
 
@@ -131,15 +116,15 @@ git commit -m "chore(category): brief description"
 
 ## Phase 3: Completion
 
-### Step 7: Verify Acceptance Criteria
+### Step 6: Verify Acceptance Criteria
 
-Confirm that all acceptance criteria in the chore document have been checked off (`- [x]`) during Step 5. Each checkbox should already be marked — this step is a final review to catch any that were missed.
+Confirm that all acceptance criteria in the chore document have been checked off (`- [x]`) during Step 4. Each checkbox should already be marked — this step is a final review to catch any that were missed.
 
 If any criteria cannot be met:
 - Document the blocker
 - Decide whether to proceed with partial completion or resolve first
 
-### Step 8: Run Tests/Build
+### Step 7: Run Tests/Build
 
 ```bash
 # Run tests (if applicable)
@@ -154,7 +139,7 @@ npm run lint
 
 All checks must pass before creating PR.
 
-### Step 9: Create Pull Request
+### Step 8: Create Pull Request
 
 Push branch and create PR:
 
@@ -162,23 +147,13 @@ Push branch and create PR:
 # Push branch to remote
 git push -u origin chore/CHORE-XXX-description
 
-# Create PR (see github-templates.md for body format)
+# Create PR
 gh pr create --title "chore(category): description" --body "..."
 ```
 
 Use the PR template from [assets/pr-template.md](../assets/pr-template.md).
 
-### Step 10: Update GitHub Issue
-
-If a GitHub issue is linked:
-
-```bash
-gh issue comment <ISSUE_NUM> --body "✅ Work complete for CHORE-XXX
-
-PR created: #<PR_NUM>
-
-All acceptance criteria met."
-```
+**Important:** The PR body MUST include `Closes #N` if the chore document links to a GitHub issue. This auto-closes the issue when the PR is merged.
 
 ---
 

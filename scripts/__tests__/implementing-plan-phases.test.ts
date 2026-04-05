@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { readFile } from 'node:fs/promises';
+import { readFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import { validate, type DetailedValidateResult } from 'ai-skills-manager';
 
@@ -13,14 +13,12 @@ const PR_TEMPLATE_PATH = join(SKILL_DIR, 'assets', 'pr-template.md');
 describe('implementing-plan-phases skill', () => {
   let skillMd: string;
   let workflowExample: string;
-  let githubTemplates: string;
   let stepDetails: string;
   let prTemplate: string;
 
   beforeAll(async () => {
     skillMd = await readFile(SKILL_MD_PATH, 'utf-8');
     workflowExample = await readFile(WORKFLOW_EXAMPLE_PATH, 'utf-8');
-    githubTemplates = await readFile(GITHUB_TEMPLATES_PATH, 'utf-8');
     stepDetails = await readFile(STEP_DETAILS_PATH, 'utf-8');
     prTemplate = await readFile(PR_TEMPLATE_PATH, 'utf-8');
   });
@@ -34,6 +32,11 @@ describe('implementing-plan-phases skill', () => {
       const match = skillMd.match(/^---\s*\n[\s\S]*?description:\s*(.+)[\s\S]*?---/);
       expect(match).not.toBeNull();
       expect(match![1].trim().length).toBeGreaterThan(0);
+    });
+
+    it('should not mention GitHub issue comments in description frontmatter', () => {
+      const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
+      expect(frontmatter).not.toContain('GitHub issue comments');
     });
 
     it('should include "When to Use" section', () => {
@@ -61,6 +64,17 @@ describe('implementing-plan-phases skill', () => {
       expect(skillMd).toContain('**After all phases complete:** Create pull request');
       expect(skillMd).toContain('Closes #N');
     });
+
+    it('should not contain inline gh issue comment instructions', () => {
+      expect(skillMd).not.toContain('gh issue comment');
+    });
+
+    it('should contain delegation note referencing managing-work-items', () => {
+      expect(skillMd).toContain('managing-work-items');
+      expect(skillMd).toContain(
+        'Issue tracking (start/completion comments) is handled by the orchestrator'
+      );
+    });
   });
 
   describe('allowed-tools', () => {
@@ -86,14 +100,17 @@ describe('implementing-plan-phases skill', () => {
       expect(workflowExample.length).toBeGreaterThan(0);
     });
 
-    it('should have github-templates.md', () => {
-      expect(githubTemplates).toBeDefined();
-      expect(githubTemplates.length).toBeGreaterThan(0);
+    it('should no longer have github-templates.md', async () => {
+      await expect(access(GITHUB_TEMPLATES_PATH)).rejects.toThrow();
     });
 
     it('should have step-details.md', () => {
       expect(stepDetails).toBeDefined();
       expect(stepDetails.length).toBeGreaterThan(0);
+    });
+
+    it('should not reference github-templates.md in SKILL.md', () => {
+      expect(skillMd).not.toContain('github-templates.md');
     });
   });
 

@@ -27,6 +27,35 @@ Drive an entire SDLC workflow chain through a single skill invocation. The orche
 - **Chore workflows**: New chore workflows begin when `documenting-chores` (step 1) assigns the `CHORE-NNN` ID. The user may indicate a chore by saying "chore", "maintenance task", or similar.
 - **Bug workflows**: New bug workflows begin when `documenting-bugs` (step 1) assigns the `BUG-NNN` ID. The user may indicate a bug by saying "bug", "fix", "defect", "regression", or similar.
 
+## Issue Tracking via `managing-work-items`
+
+The orchestrator integrates with issue trackers (GitHub Issues, Jira) through the `managing-work-items` skill. This is additive -- all existing workflow steps remain unchanged; issue tracking invocations are inserted between steps.
+
+### Issue Reference Extraction
+
+At the start of every workflow, after step 1 (documentation) completes and the requirements artifact exists, the orchestrator extracts the issue reference:
+
+1. Invoke `managing-work-items fetch <requirements-artifact-path>` using FR-7 (issue reference extraction from documents)
+2. The skill parses the `## GitHub Issue` section of the requirements document for `[#N](URL)` or `[PROJ-123](URL)` patterns
+3. Store the extracted reference (e.g., `#42` or `PROJ-123`) as `issueRef` for all subsequent invocations
+4. If no issue reference is found, set `issueRef` to empty
+
+### Skip Behavior
+
+When no issue reference is found in the requirements document (`issueRef` is empty), **all `managing-work-items` invocations are skipped** with an info-level message: "No issue reference found in requirements document -- skipping issue tracking." The workflow continues normally without any issue tracker operations.
+
+### Invocation Pattern
+
+All `managing-work-items` calls follow the same syntax (see `managing-work-items/SKILL.md` for full operation details):
+
+```
+managing-work-items <operation> <issueRef> [--type <comment-type>] [--context <json>]
+```
+
+- **fetch**: Retrieve issue data to pre-fill requirements
+- **comment**: Post a status update to the linked issue
+- **FR-6 (PR link)**: Generate `Closes #N` or `PROJ-123` for PR bodies
+
 ## Quick Start
 
 1. Parse argument — determine new workflow vs resume, and chain type (feature, chore, or bug)
@@ -107,7 +136,7 @@ Run `documenting-features` directly in this conversation (main context). If the 
 
 This step may prompt the user interactively for details. Wait for it to complete and produce an artifact at `requirements/features/FEAT-{ID}-*.md`.
 
-### 3. Read Allocated ID
+### 3. Read Allocated ID and Extract Issue Reference
 
 After step 1 completes, read the allocated ID from the artifact filename. The `documenting-features` skill assigns the next sequential ID by scanning existing files. Use Glob to find the newest file:
 
@@ -116,6 +145,8 @@ requirements/features/FEAT-*-*.md
 ```
 
 Extract the `FEAT-NNN` portion from the filename. This ID is used for all subsequent state operations.
+
+**Extract issue reference**: If the argument was a `#N` issue reference, invoke `managing-work-items fetch <issueRef>` to retrieve issue data (this was already used by `documenting-features` to pre-fill requirements via delegation). Use FR-7 to extract the issue reference from the requirements artifact and store it as `issueRef` for all subsequent `managing-work-items` invocations. If no issue reference is found, skip all future `managing-work-items` calls (see Skip Behavior above).
 
 ### 4. Initialize State
 
@@ -151,7 +182,7 @@ mkdir -p .sdlc/workflows
 
 Run `documenting-chores` directly in this conversation (main context). Pass the argument as the chore description. This step may prompt the user interactively for details. Wait for it to complete and produce an artifact at `requirements/chores/CHORE-{ID}-*.md`.
 
-### 3. Read Allocated ID
+### 3. Read Allocated ID and Extract Issue Reference
 
 After step 1 completes, read the allocated ID from the artifact filename. Use Glob to find the newest file:
 
@@ -160,6 +191,8 @@ requirements/chores/CHORE-*-*.md
 ```
 
 Extract the `CHORE-NNN` portion from the filename. This ID is used for all subsequent state operations.
+
+**Extract issue reference**: Use FR-7 from `managing-work-items` to extract the issue reference from the requirements artifact. Store it as `issueRef` for all subsequent `managing-work-items` invocations. If no issue reference is found, skip all future `managing-work-items` calls (see Skip Behavior above).
 
 ### 4. Initialize State
 
@@ -195,7 +228,7 @@ mkdir -p .sdlc/workflows
 
 Run `documenting-bugs` directly in this conversation (main context). Pass the argument as the bug description. This step may prompt the user interactively for details. Wait for it to complete and produce an artifact at `requirements/bugs/BUG-{ID}-*.md`.
 
-### 3. Read Allocated ID
+### 3. Read Allocated ID and Extract Issue Reference
 
 After step 1 completes, read the allocated ID from the artifact filename. Use Glob to find the newest file:
 
@@ -204,6 +237,8 @@ requirements/bugs/BUG-*-*.md
 ```
 
 Extract the `BUG-NNN` portion from the filename. This ID is used for all subsequent state operations.
+
+**Extract issue reference**: Use FR-7 from `managing-work-items` to extract the issue reference from the requirements artifact. Store it as `issueRef` for all subsequent `managing-work-items` invocations. If no issue reference is found, skip all future `managing-work-items` calls (see Skip Behavior above).
 
 ### 4. Initialize State
 
@@ -379,7 +414,11 @@ Steps 2, 4, 7, and 9 follow the same fork pattern as the feature chain without c
 
 **Step 4 — `reviewing-requirements` (test-plan reconciliation)**: Append `{ID}` as argument. Same as feature chain step 6.
 
-**Step 5 — `executing-chores` (fork)**: Fork via Agent tool with `{ID}` as argument. After the subagent completes:
+**Step 5 — `executing-chores` (fork)**:
+
+Before forking (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-start --context '{"workItemId": "{ID}"}'`
+
+Fork via Agent tool with `{ID}` as argument. If `issueRef` is set, include the FR-6 issue link instruction in the subagent prompt: "Include `Closes #N` (or `PROJ-123` for Jira) in the PR body." After the subagent completes:
 1. Extract the PR number from the subagent output (the `executing-chores` skill creates a PR as its final step)
 2. If the PR number is not in the output, detect it via: `gh pr list --head {branch} --json number --jq '.[0].number'`
 3. Record the PR metadata:
@@ -387,6 +426,8 @@ Steps 2, 4, 7, and 9 follow the same fork pattern as the feature chain without c
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-pr {ID} {pr-number} {branch}
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
    ```
+
+After step 5 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'`
 
 **Step 7 — `reviewing-requirements` (code-review reconciliation)**: Append `{ID} --pr {prNumber}` as argument. Same as feature chain step 6+N+3.
 
@@ -416,7 +457,11 @@ Steps 2, 4, 7, and 9 follow the same fork pattern as the chore chain:
 
 **Step 4 — `reviewing-requirements` (test-plan reconciliation)**: Append `{ID}` as argument. Same as chore chain step 4.
 
-**Step 5 — `executing-bug-fixes` (fork)**: Fork via Agent tool with `{ID}` as argument. After the subagent completes:
+**Step 5 — `executing-bug-fixes` (fork)**:
+
+Before forking (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-start --context '{"workItemId": "{ID}"}'`
+
+Fork via Agent tool with `{ID}` as argument. If `issueRef` is set, include the FR-6 issue link instruction in the subagent prompt: "Include `Closes #N` (or `PROJ-123` for Jira) in the PR body." After the subagent completes:
 1. Extract the PR number from the subagent output (the `executing-bug-fixes` skill creates a PR as its final step)
 2. If the PR number is not in the output, detect it via: `gh pr list --head {branch} --json number --jq '.[0].number'`
 3. Record the PR metadata:
@@ -424,6 +469,8 @@ Steps 2, 4, 7, and 9 follow the same fork pattern as the chore chain:
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-pr {ID} {pr-number} {branch}
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
    ```
+
+After step 5 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'`
 
 **Step 7 — `reviewing-requirements` (code-review reconciliation)**: Append `{ID} --pr {prNumber}` as argument. Same as chore chain step 7.
 
@@ -478,10 +525,16 @@ After step 6 (test-plan reconciliation) completes:
    ```
    This inserts N phase steps and 5 post-phase steps (Create PR, PR review, Reconcile post-review, Execute QA, Finalize) into the state file after the initial 6 steps.
 
-2. For each phase 1 through N, fork `implementing-plan-phases` with the Agent tool. The prompt must include:
+2. For each phase 1 through N:
+
+   **a. Before the phase** (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type phase-start --context '{"phase": <phase-number>, "totalPhases": <N>, "workItemId": "{ID}"}'`
+
+   **b. Fork `implementing-plan-phases`** with the Agent tool. The prompt must include:
    - The SKILL.md content from `${CLAUDE_PLUGIN_ROOT}/skills/implementing-plan-phases/SKILL.md`
    - Argument: `{ID} {phase-number}`
    - **Critical**: Append this instruction to the prompt: "Do NOT create a pull request at the end — the orchestrator handles PR creation separately. Skip Step 12 (Create Pull Request) entirely."
+
+   **c. After the phase completes** (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type phase-completion --context '{"phase": <phase-number>, "totalPhases": <N>, "workItemId": "{ID}"}'`
 
 3. After each phase completes, advance state:
    ```bash
@@ -502,7 +555,7 @@ After all phases complete (step 6+N+1):
 
 1. Fork a subagent to create the PR. The prompt should instruct:
    - Create a pull request from the current feature branch to main
-   - Include `Closes #N` in the body if a GitHub issue is linked (read it from the requirements document)
+   - If `issueRef` is set, use `managing-work-items` FR-6 to generate the issue link for the PR body: `Closes #N` for GitHub issues or `PROJ-123` for Jira issues. Include this link in the PR body
    - Return the PR number and branch name
 
 2. Record PR metadata:
@@ -551,25 +604,42 @@ Before marking the workflow complete:
 - [ ] `set-pr` was called with the correct PR number and branch after step 5
 - [ ] RC-N traceability maintained through the chain (delegated to sub-skills)
 
+### Managing Work Items Checks
+- [ ] Issue reference extracted from requirements document at workflow start (FR-7)
+- [ ] `phase-start` comment posted before each implementation phase (feature chain)
+- [ ] `phase-completion` comment posted after each implementation phase (feature chain)
+- [ ] `work-start` comment posted before executing-chores (chore chain)
+- [ ] `work-complete` comment posted after executing-chores (chore chain)
+- [ ] `bug-start` comment posted before executing-bug-fixes (bug chain)
+- [ ] `bug-complete` comment posted after executing-bug-fixes (bug chain)
+- [ ] PR body includes issue link via FR-6 (`Closes #N` or `PROJ-123`)
+- [ ] All `managing-work-items` invocations gracefully skipped when no issue reference found
+
 ## Relationship to Other Skills
 
 This skill orchestrates all other skills in the lwndev-sdlc plugin:
 
 ```
 Feature chain:
-documenting-features → reviewing-requirements (standard) → creating-implementation-plans
+documenting-features → [managing-work-items: extract issueRef]
+  → reviewing-requirements (standard) → creating-implementation-plans
   → PAUSE → documenting-qa → reviewing-requirements (test-plan)
-  → implementing-plan-phases (×N) → Create PR
+  → [managing-work-items: phase-start] → implementing-plan-phases (×N) → [managing-work-items: phase-completion]
+  → Create PR [managing-work-items: FR-6 issue link]
   → PAUSE → reviewing-requirements (code-review) → executing-qa → finalizing-workflow
 
 Chore chain:
-documenting-chores → reviewing-requirements (standard) → documenting-qa
-  → reviewing-requirements (test-plan) → executing-chores
+documenting-chores → [managing-work-items: extract issueRef]
+  → reviewing-requirements (standard) → documenting-qa
+  → reviewing-requirements (test-plan)
+  → [managing-work-items: work-start] → executing-chores [managing-work-items: FR-6 issue link] → [managing-work-items: work-complete]
   → PAUSE → reviewing-requirements (code-review) → executing-qa → finalizing-workflow
 
 Bug chain:
-documenting-bugs → reviewing-requirements (standard) → documenting-qa
-  → reviewing-requirements (test-plan) → executing-bug-fixes
+documenting-bugs → [managing-work-items: extract issueRef]
+  → reviewing-requirements (standard) → documenting-qa
+  → reviewing-requirements (test-plan)
+  → [managing-work-items: bug-start] → executing-bug-fixes [managing-work-items: FR-6 issue link] → [managing-work-items: bug-complete]
   → PAUSE → reviewing-requirements (code-review) → executing-qa → finalizing-workflow
 ```
 
@@ -578,6 +648,7 @@ documenting-bugs → reviewing-requirements (standard) → documenting-qa
 | Task | Skill |
 |------|-------|
 | Document feature requirements | `documenting-features` (step 1, main) |
+| Issue tracking (fetch, comments, PR link) | `managing-work-items` (after step 1, before/after phases, at PR creation) |
 | Review requirements | `reviewing-requirements` (steps 2/6/6+N+3, fork) |
 | Create implementation plan | `creating-implementation-plans` (step 3, fork) |
 | Document QA test plan | `documenting-qa` (step 5, main) |
@@ -590,6 +661,7 @@ documenting-bugs → reviewing-requirements (standard) → documenting-qa
 | Task | Skill |
 |------|-------|
 | Document chore requirements | `documenting-chores` (step 1, main) |
+| Issue tracking (comments, PR link) | `managing-work-items` (after step 1, before/after step 5) |
 | Review requirements | `reviewing-requirements` (steps 2/4/7, fork) |
 | Document QA test plan | `documenting-qa` (step 3, main) |
 | Execute chore implementation | `executing-chores` (step 5, fork) |
@@ -601,6 +673,7 @@ documenting-bugs → reviewing-requirements (standard) → documenting-qa
 | Task | Skill |
 |------|-------|
 | Document bug report | `documenting-bugs` (step 1, main) |
+| Issue tracking (comments, PR link) | `managing-work-items` (after step 1, before/after step 5) |
 | Review requirements | `reviewing-requirements` (steps 2/4/7, fork) |
 | Document QA test plan | `documenting-qa` (step 3, main) |
 | Execute bug fix | `executing-bug-fixes` (step 5, fork) |

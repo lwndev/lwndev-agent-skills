@@ -774,3 +774,85 @@ describe('orchestrating-workflows SKILL.md bug chain content', () => {
     expect(relationshipSection).toContain('executing-bug-fixes');
   });
 });
+
+// --- Managing Work Items Integration Tests ---
+
+describe('orchestrating-workflows SKILL.md managing-work-items integration', () => {
+  let skillMd: string;
+
+  beforeAll(async () => {
+    skillMd = await readFile(SKILL_MD_PATH, 'utf-8');
+  });
+
+  it('should reference managing-work-items skill', () => {
+    expect(skillMd).toContain('managing-work-items');
+  });
+
+  it('should document issue reference extraction via FR-7', () => {
+    expect(skillMd).toContain('Issue Reference Extraction');
+    expect(skillMd).toContain('FR-7');
+  });
+
+  it('should document skip behavior when no issue reference found', () => {
+    expect(skillMd).toContain('Skip Behavior');
+    expect(skillMd).toContain('skipped');
+  });
+
+  it('should contain managing-work-items invocation points for feature chain', () => {
+    // Phase start/completion comments around implementing-plan-phases
+    expect(skillMd).toContain('phase-start');
+    expect(skillMd).toContain('phase-completion');
+    // FR-6 issue link at PR creation
+    expect(skillMd).toContain('FR-6');
+  });
+
+  it('should contain managing-work-items invocation points for chore chain', () => {
+    expect(skillMd).toContain('work-start');
+    expect(skillMd).toContain('work-complete');
+  });
+
+  it('should contain managing-work-items invocation points for bug chain', () => {
+    expect(skillMd).toContain('bug-start');
+    expect(skillMd).toContain('bug-complete');
+  });
+
+  it('should document fetch operation for issue data retrieval', () => {
+    expect(skillMd).toContain('managing-work-items fetch');
+  });
+
+  it('should document comment operation at correct workflow points', () => {
+    expect(skillMd).toContain('managing-work-items comment');
+  });
+
+  it('should include managing-work-items in relationship chain diagrams', () => {
+    const relationshipIdx = skillMd.indexOf('## Relationship to Other Skills');
+    expect(relationshipIdx).toBeGreaterThan(-1);
+    const relationshipSection = skillMd.slice(relationshipIdx);
+
+    // All three chain diagrams should reference managing-work-items
+    expect(relationshipSection).toContain('managing-work-items');
+  });
+
+  it('should include managing-work-items in all three chain skill tables', () => {
+    const relationshipIdx = skillMd.indexOf('## Relationship to Other Skills');
+    expect(relationshipIdx).toBeGreaterThan(-1);
+    const relationshipSection = skillMd.slice(relationshipIdx);
+
+    // Count managing-work-items rows in the skill tables (one per chain)
+    const tableRowMatches = relationshipSection.match(
+      /\| Issue tracking.*\| `managing-work-items`/g
+    );
+    expect(tableRowMatches).not.toBeNull();
+    expect(tableRowMatches!.length).toBe(3);
+  });
+
+  it('should include managing-work-items checks in verification checklist', () => {
+    const checklistIdx = skillMd.indexOf('## Verification Checklist');
+    expect(checklistIdx).toBeGreaterThan(-1);
+    const checklistSection = skillMd.slice(checklistIdx);
+
+    expect(checklistSection).toContain('Managing Work Items Checks');
+    expect(checklistSection).toContain('Issue reference extracted');
+    expect(checklistSection).toContain('gracefully skipped');
+  });
+});

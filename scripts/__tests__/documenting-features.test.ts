@@ -68,6 +68,29 @@ describe('documenting-features skill', () => {
     });
   });
 
+  describe('issue fetch delegation', () => {
+    it('should accept #N argument format for issue references', () => {
+      expect(skillMd).toMatch(/#<number>/);
+      expect(skillMd).toContain('#14');
+    });
+
+    it('should delegate issue fetch to managing-work-items skill', () => {
+      expect(skillMd).toContain('managing-work-items');
+      expect(skillMd).toMatch(/managing-work-items fetch/);
+    });
+
+    it('should not reference direct gh CLI usage for issue fetch', () => {
+      // The skill does not have Bash in allowed-tools, so it cannot call gh directly.
+      // Issue fetch is delegated to managing-work-items which has Bash.
+      expect(skillMd).not.toMatch(/`gh issue view/);
+      expect(skillMd).not.toMatch(/`gh api/);
+    });
+
+    it('should maintain graceful degradation when fetch fails', () => {
+      expect(skillMd).toMatch(/warn.*continue with manual input/i);
+    });
+  });
+
   describe('validation API', () => {
     it('should pass ai-skills-manager validation', async () => {
       const result: DetailedValidateResult = await validate(SKILL_DIR, {

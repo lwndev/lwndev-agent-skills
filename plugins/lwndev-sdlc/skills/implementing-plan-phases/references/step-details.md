@@ -7,16 +7,16 @@ Detailed guidance for each step in the phase implementation workflow.
 - [Step 1: Locate the Implementation Plan](#step-1-locate-the-implementation-plan)
 - [Step 2: Identify Target Phase](#step-2-identify-target-phase)
 - [Step 3: Update Implementation Doc Status](#step-3-update-implementation-doc-status)
-- [Step 4: Update GitHub Issue (Start)](#step-4-update-github-issue-start)
-- [Step 5: Branch Strategy](#step-5-branch-strategy)
-- [Step 6: Load Steps into Todos](#step-6-load-steps-into-todos)
-- [Step 7: Execute Implementation](#step-7-execute-implementation)
-- [Step 8: Verify Deliverables](#step-8-verify-deliverables)
-- [Step 9: Commit and Push Changes](#step-9-commit-and-push-changes)
-- [Step 10: Update Plan Status](#step-10-update-plan-status)
-- [Step 11: Update GitHub Issue (Completion)](#step-11-update-github-issue-completion)
-- [Step 12: Create Pull Request (All Phases Complete)](#step-12-create-pull-request-all-phases-complete)
+- [Step 4: Branch Strategy](#step-4-branch-strategy)
+- [Step 5: Load Steps into Todos](#step-5-load-steps-into-todos)
+- [Step 6: Execute Implementation](#step-6-execute-implementation)
+- [Step 7: Verify Deliverables](#step-7-verify-deliverables)
+- [Step 8: Commit and Push Changes](#step-8-commit-and-push-changes)
+- [Step 9: Update Plan Status](#step-9-update-plan-status)
+- [Step 10: Create Pull Request (All Phases Complete)](#step-10-create-pull-request-all-phases-complete)
 - [Common Patterns](#common-patterns)
+
+> **Note:** Issue tracking (start/completion comments) is handled by the orchestrator via `managing-work-items`. This reference document focuses on the implementation steps only.
 
 ---
 
@@ -74,64 +74,7 @@ Update the phase status in the implementation plan to indicate work has started.
 
 This provides visibility into current work across the team.
 
-## Step 4: Update GitHub Issue (Start)
-
-Post a phase start comment to the GitHub issue.
-
-**Finding the Issue Number:**
-
-The GitHub issue number is referenced in the phase header:
-
-```markdown
-### Phase N: [Phase Name]
-**Feature:** [FEAT-XXX](../features/...) | [#2](https://github.com/...)
-```
-
-Extract the number from `[#N]` notation.
-
-**Command Template:**
-
-```bash
-gh issue comment <ISSUE_NUM> --body "🔄 Starting Phase <N>: <Phase Name>
-
-**Implementation Steps:**
-1. <Step 1>
-2. <Step 2>
-...
-
-**Expected Deliverables:**
-- <Deliverable 1>
-- <Deliverable 2>
-...
-
-**Status:** 🔄 In Progress"
-```
-
-**Example:**
-
-```bash
-gh issue comment 2 --body "🔄 Starting Phase 2: Validation Engine
-
-**Implementation Steps:**
-1. Create file-exists validator
-2. Create required-fields validator
-3. Create validation orchestrator
-4. Write file-exists tests
-5. Write required-fields tests
-6. Write orchestrator tests
-
-**Expected Deliverables:**
-- src/validators/file-exists.ts
-- src/validators/required-fields.ts
-- src/generators/validate.ts
-- tests/unit/validators/file-exists.test.ts
-- tests/unit/validators/required-fields.test.ts
-- tests/unit/generators/validate.test.ts
-
-**Status:** 🔄 In Progress"
-```
-
-## Step 5: Branch Strategy
+## Step 4: Branch Strategy
 
 Create a feature branch following the naming convention:
 
@@ -150,7 +93,7 @@ git checkout -b feat/{Feature ID}-{2-3-word-summary}
 
 **If already on a feature branch:** Stay on current branch if it's the correct one for this phase sequence.
 
-## Step 6: Load Steps into Todos
+## Step 5: Load Steps into Todos
 
 Use TodoWrite to create trackable tasks for each implementation step.
 
@@ -171,7 +114,7 @@ Use TodoWrite to create trackable tasks for each implementation step.
 ]
 ```
 
-## Step 7: Execute Implementation
+## Step 6: Execute Implementation
 
 For each implementation step:
 
@@ -226,7 +169,7 @@ Write tests alongside implementation:
 
 Reference the plan's test organization structure for file placement.
 
-## Step 8: Verify Deliverables
+## Step 7: Verify Deliverables
 
 Before marking phase complete, verify all requirements:
 
@@ -264,7 +207,7 @@ ls -la tests/unit/validators/file-exists.test.ts
 # ... etc for all deliverables
 ```
 
-## Step 9: Commit and Push Changes
+## Step 8: Commit and Push Changes
 
 **Always commit and push after verification — do not ask the user for confirmation.** This is a mandatory step, not an optional one. Commit all changes and push to the remote. This preserves a per-phase audit trail in git and ensures work is not lost between phases.
 
@@ -344,9 +287,9 @@ git push
 
 ---
 
-## Step 10: Update Plan Status
+## Step 9: Update Plan Status
 
-**Prerequisite:** Step 9 commit and push must have succeeded before updating status. Do not mark a phase complete if changes are uncommitted or unpushed.
+**Prerequisite:** Step 8 commit and push must have succeeded before updating status. Do not mark a phase complete if changes are uncommitted or unpushed.
 
 Edit the implementation plan file to mark the phase complete:
 
@@ -360,76 +303,9 @@ Edit the implementation plan file to mark the phase complete:
 **Status:** ✅ Complete
 ```
 
-Confirm that all deliverable checkboxes have already been checked off (`- [x]`) during Step 7. If any were missed, check them off now as a final catch.
+Confirm that all deliverable checkboxes have already been checked off (`- [x]`) during Step 6. If any were missed, check them off now as a final catch.
 
-## Step 11: Update GitHub Issue (Completion)
-
-Post a completion comment to the GitHub issue.
-
-**Command Template:**
-
-```bash
-gh issue comment <ISSUE_NUM> --body "✅ Completed Phase <N>: <Phase Name>
-
-**Deliverables Verified:**
-- [x] <Deliverable 1>
-- [x] <Deliverable 2>
-...
-
-**Verification:**
-- ✅ Tests passing
-- ✅ Build successful
-- ✅ Coverage: <X>%
-
-**Commit:** \`<short SHA>\` — \`feat(FEAT-XXX): complete phase N - <phase name>\`
-
-**Status:** ✅ Complete"
-```
-
-**Example:**
-
-```bash
-gh issue comment 2 --body "✅ Completed Phase 2: Validation Engine
-
-**Deliverables Verified:**
-- [x] src/validators/file-exists.ts - File/directory existence validation
-- [x] src/validators/required-fields.ts - Required fields validation
-- [x] src/generators/validate.ts - Validation orchestration
-- [x] tests/unit/validators/file-exists.test.ts - File existence tests
-- [x] tests/unit/validators/required-fields.test.ts - Required fields tests
-- [x] tests/unit/generators/validate.test.ts - Orchestrator tests
-
-**Verification:**
-- ✅ Tests passing
-- ✅ Build successful
-- ✅ Coverage: 85%
-
-**Commit:** \`a1b2c3d\` — \`feat(FEAT-002): complete phase 2 - validation engine\`
-
-**Status:** ✅ Complete"
-```
-
-**Closing Issue (Final Phase):**
-
-When all phases are complete, close the issue:
-
-```bash
-gh issue close <ISSUE_NUM> --comment "✅ All phases complete
-
-**Feature Summary:**
-- Phase 1: <Name> ✅
-- Phase 2: <Name> ✅
-- Phase 3: <Name> ✅
-...
-
-All deliverables implemented, tested, and verified.
-
-Implementation complete."
-```
-
----
-
-## Step 12: Create Pull Request (All Phases Complete)
+## Step 10: Create Pull Request (All Phases Complete)
 
 After all phases in the implementation plan are marked **✅ Complete**, create a pull request to merge the feature branch.
 

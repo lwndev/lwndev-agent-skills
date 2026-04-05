@@ -33,16 +33,16 @@ Execute bug fix workflows with root cause driven execution from branch creation 
 1. Locate bug document in `requirements/bugs/`
 2. Extract Bug ID, severity, root cause(s), and review acceptance criteria
 3. Redeclare root causes from the bug document into the workflow context
-4. **Note GitHub issue number if linked** (needed for PR to auto-close issue)
-5. Post start comment on GitHub issue (if exists) — include root causes
-6. Create git branch: `fix/BUG-XXX-description`
-7. Address each root cause systematically, implementing fixes and tracking with todos
-8. **Check off each acceptance criterion** in the bug document (`- [ ]` → `- [x]`) as it is verified
-9. Commit changes with `fix(category): description` messages
-10. Verify reproduction steps no longer trigger the bug
-11. Run tests/build verification
-12. Create pull request **(MUST include `Closes #N` if issue exists)**
-13. Update bug document completion section (status, date, PR link)
+4. Create git branch: `fix/BUG-XXX-description`
+5. Address each root cause systematically, implementing fixes and tracking with todos
+6. **Check off each acceptance criterion** in the bug document (`- [ ]` → `- [x]`) as it is verified
+7. Commit changes with `fix(category): description` messages
+8. Verify reproduction steps no longer trigger the bug
+9. Run tests/build verification
+10. Create pull request **(MUST include `Closes #N` if issue exists)**
+11. Update bug document completion section (status, date, PR link)
+
+> **Note:** Issue tracking (start/completion comments) is handled by the orchestrator via `managing-work-items`. This skill focuses on root cause driven execution and verification.
 
 ## Workflow Checklist
 
@@ -53,8 +53,6 @@ Bug Fix Execution:
 - [ ] Locate bug document (get Bug ID)
 - [ ] Extract severity, root causes, and acceptance criteria
 - [ ] Redeclare root causes as trackable work items
-- [ ] Note GitHub issue number from bug document (if linked)
-- [ ] Post GitHub issue start comment with root causes (if issue exists)
 - [ ] Create git branch: fix/BUG-XXX-description
 - [ ] Address each root cause systematically (RC-1, RC-2, ...)
 - [ ] Check off each acceptance criterion in bug document (- [ ] → - [x]) as verified
@@ -134,7 +132,6 @@ Before creating the PR, verify:
 ## References
 
 - **Detailed workflow guidance**: [workflow-details.md](references/workflow-details.md) - Step-by-step instructions for each phase
-- **GitHub templates**: [github-templates.md](references/github-templates.md) - Issue comments, commit messages, PR format
 - **PR template**: [assets/pr-template.md](assets/pr-template.md) - Pull request format for bug fixes
 
 ## Relationship to Other Skills

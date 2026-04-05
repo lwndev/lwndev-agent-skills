@@ -10,6 +10,8 @@ Detailed guidance for each phase of the bug fix execution workflow.
 - [Error Recovery](#error-recovery)
 - [Common Git Commands](#common-git-commands)
 
+> **Note:** Issue tracking (start/completion comments) is handled by the orchestrator via `managing-work-items`. This reference document focuses on bug fix execution steps only.
+
 ---
 
 ## Phase 1: Initialization
@@ -33,7 +35,6 @@ Extract from the document:
 - **Reproduction Steps**: Must verify these no longer trigger the bug after fix
 - **Root Causes**: Numbered list (RC-1, RC-2, ...) — the core of the execution workflow
 - **Acceptance Criteria**: Tagged with `(RC-N)` to link back to root causes
-- **GitHub Issue**: Link to update with progress (optional)
 
 ### Step 2: Redeclare Root Causes
 
@@ -51,23 +52,7 @@ Redeclare as work items:
 
 This ensures every root cause is explicitly tracked and none are missed during execution.
 
-### Step 3: Check GitHub Issue
-
-If the bug document links to a GitHub issue:
-
-```bash
-# View issue details
-gh issue view <ISSUE_NUM>
-
-# Post starting comment (see github-templates.md)
-gh issue comment <ISSUE_NUM> --body "..."
-```
-
-If no issue exists, you may:
-- Proceed without GitHub issue tracking
-- Create a new issue (with user confirmation)
-
-### Step 4: Create Git Branch
+### Step 3: Create Git Branch
 
 Ensure clean working directory:
 
@@ -93,7 +78,7 @@ git checkout -b fix/BUG-001-null-pointer-crash
 
 ## Phase 2: Execution
 
-### Step 5: Load Acceptance Criteria
+### Step 4: Load Acceptance Criteria
 
 Convert acceptance criteria from the bug document into todos, grouped by root cause:
 
@@ -108,7 +93,7 @@ Example bug document criteria:
 
 Load these into the todo list grouped by root cause, and work through each RC sequentially.
 
-### Step 6: Address Each Root Cause
+### Step 5: Address Each Root Cause
 
 For each root cause (RC-1, RC-2, ...):
 
@@ -122,7 +107,7 @@ For each root cause (RC-1, RC-2, ...):
 
 **Important:** Address root causes one at a time. Complete and verify each before moving to the next to maintain traceability. Update the bug document checkbox at the point each criterion is verified, not in a batch at the end.
 
-### Step 7: Verify Reproduction Steps
+### Step 6: Verify Reproduction Steps
 
 After all root causes are addressed, verify the reproduction steps from the bug document no longer trigger the bug:
 
@@ -130,7 +115,7 @@ After all root causes are addressed, verify the reproduction steps from the bug 
 2. Confirm the bug behavior no longer occurs
 3. If the bug can still be reproduced, investigate whether a root cause was missed
 
-### Step 8: Commit Changes
+### Step 7: Commit Changes
 
 Commit with proper format:
 
@@ -161,16 +146,16 @@ git commit -m "fix(category): brief description"
 
 ## Phase 3: Completion
 
-### Step 9: Verify All Root Causes Addressed
+### Step 8: Verify All Root Causes Addressed
 
-Confirm that all acceptance criteria in the bug document have been checked off (`- [x]`) during Step 6. Each checkbox should already be marked — this step is a final review to catch any that were missed.
+Confirm that all acceptance criteria in the bug document have been checked off (`- [x]`) during Step 5. Each checkbox should already be marked — this step is a final review to catch any that were missed.
 
 If any root cause cannot be fully addressed:
 - Document the blocker
 - Decide whether to proceed with partial fix or resolve first
 - If proceeding partially, note this in the PR description
 
-### Step 10: Run Tests/Build
+### Step 9: Run Tests/Build
 
 ```bash
 # Run tests (if applicable)
@@ -185,7 +170,7 @@ npm run lint
 
 All checks must pass before creating PR.
 
-### Step 11: Create Pull Request
+### Step 10: Create Pull Request
 
 Push branch and create PR:
 
@@ -193,7 +178,7 @@ Push branch and create PR:
 # Push branch to remote
 git push -u origin fix/BUG-XXX-description
 
-# Create PR (see github-templates.md for body format)
+# Create PR
 gh pr create --title "fix(category): description" --body "..."
 ```
 
@@ -201,7 +186,7 @@ Use the PR template from [assets/pr-template.md](../assets/pr-template.md).
 
 **Important:** The PR body MUST include `Closes #N` if the bug document links to a GitHub issue. This auto-closes the issue when the PR is merged.
 
-### Step 12: Update Bug Document
+### Step 11: Update Bug Document
 
 Update the bug document's completion section:
 
@@ -210,18 +195,6 @@ Update the bug document's completion section:
 - **Status:** Completed
 - **Date:** YYYY-MM-DD
 - **PR:** #<PR_NUM>
-```
-
-### Step 13: Update GitHub Issue
-
-If a GitHub issue is linked:
-
-```bash
-gh issue comment <ISSUE_NUM> --body "✅ Work complete for BUG-XXX
-
-PR created: #<PR_NUM>
-
-All root causes addressed and verified."
 ```
 
 ---

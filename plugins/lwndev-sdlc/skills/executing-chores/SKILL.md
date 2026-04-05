@@ -32,15 +32,15 @@ Execute chore task workflows with systematic tracking from branch creation throu
 
 1. Locate chore document in `requirements/chores/`
 2. Extract Chore ID and review acceptance criteria
-3. **Note GitHub issue number if linked** (needed for PR to auto-close issue)
-4. Post start comment on GitHub issue (if exists)
-5. Create git branch: `chore/CHORE-XXX-description`
-6. Execute the defined changes, tracking with todos
-7. **Check off each acceptance criterion** in the chore document (`- [ ]` → `- [x]`) as it is verified
-8. Commit changes with descriptive messages
-9. Run tests/build verification
-10. Create pull request **(MUST include `Closes #N` if issue exists)**
-11. Update chore document completion section (status, date, PR link)
+3. Create git branch: `chore/CHORE-XXX-description`
+4. Execute the defined changes, tracking with todos
+5. **Check off each acceptance criterion** in the chore document (`- [ ]` → `- [x]`) as it is verified
+6. Commit changes with descriptive messages
+7. Run tests/build verification
+8. Create pull request **(MUST include `Closes #N` if issue exists)**
+9. Update chore document completion section (status, date, PR link)
+
+> **Note:** Issue tracking (start/completion comments) is handled by the orchestrator via `managing-work-items`. This skill focuses on chore execution and verification.
 
 ## Workflow Checklist
 
@@ -49,8 +49,6 @@ Copy this checklist to track progress:
 ```
 Chore Execution:
 - [ ] Locate chore document (get Chore ID)
-- [ ] Note GitHub issue number from chore document (if linked)
-- [ ] Post GitHub issue start comment (if issue exists)
 - [ ] Create git branch: chore/CHORE-XXX-description
 - [ ] Load acceptance criteria into todos
 - [ ] Execute defined changes
@@ -102,7 +100,6 @@ Before creating the PR, verify:
 ## References
 
 - **Detailed workflow guidance**: [workflow-details.md](references/workflow-details.md) - Step-by-step instructions for each phase
-- **GitHub templates**: [github-templates.md](references/github-templates.md) - Issue comments, commit messages, PR format
 - **PR template**: [assets/pr-template.md](assets/pr-template.md) - Pull request format for chores
 
 ## Relationship to Other Skills
