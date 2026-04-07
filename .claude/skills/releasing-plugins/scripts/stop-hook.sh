@@ -5,9 +5,15 @@ set -euo pipefail
 # Reads JSON from stdin, checks completion criteria via pattern matching.
 # Two phases: Phase 1 (pre-merge: PR opened), Phase 2 (post-merge: tag pushed).
 #
+# State-file approach: marker files in .sdlc/releasing/ determine whether a
+# release workflow is active, replacing the previous keyword-based guard.
+#
 # Exit codes:
 #   0 — allow stop (current phase complete or stop_hook_active is set)
 #   2 — block stop (phase criteria not yet met)
+
+# State directory for release workflow markers
+STATE_DIR=".sdlc/releasing"
 
 # Read stdin JSON; if empty or malformed, allow stop to avoid trapping the user
 INPUT="$(cat)" || exit 0
@@ -21,6 +27,18 @@ if [[ "$STOP_HOOK_ACTIVE" == "true" ]]; then
   exit 0
 fi
 
+# State-file gate: if no .active marker exists, no release workflow is in progress — allow stop
+# Fail open on I/O errors to avoid trapping the user
+if ! [[ -f "$STATE_DIR/.active" ]] 2>/dev/null; then
+  exit 0
+fi
+
+# Phase 1 complete gate: if .phase1-complete exists, Phase 1 is done — skip Phase 1 criteria checks
+# Fail open on I/O errors
+if [[ -f "$STATE_DIR/.phase1-complete" ]] 2>/dev/null; then
+  exit 0
+fi
+
 # Extract last_assistant_message
 MESSAGE="$(echo "$INPUT" | jq -r '.last_assistant_message // ""' 2>/dev/null)" || exit 0
 if [[ -z "$MESSAGE" ]]; then
@@ -29,11 +47,6 @@ fi
 
 # Normalize to lowercase for case-insensitive matching
 MSG_LOWER="$(echo "$MESSAGE" | tr '[:upper:]' '[:lower:]')"
-
-# If the message contains no release-related keywords, it's not from a release workflow — allow stop
-if ! echo "$MSG_LOWER" | grep -qE "(release|version|bump|changelog|tag the|phase 1|phase 2|plugin.*v[0-9])"; then
-  exit 0
-fi
 
 # Check Phase 1 completion first — a Phase 1 message may mention "Phase 2"
 # (e.g., "re-invoke for Phase 2") so we must detect Phase 1 before Phase 2.
@@ -62,6 +75,9 @@ fi
 if [[ "$IS_PHASE_2" == "true" ]]; then
   # Phase 2: tag must be pushed
   if echo "$MSG_LOWER" | grep -qE "(tag.*push)|(push.*tag)|(tag.*created.*push)|(pushed.*tag)"; then
+    # Clean up state-file markers now that the release is complete
+    rm -f "$STATE_DIR/.active" "$STATE_DIR/.phase1-complete" 2>/dev/null \
+      || echo "Warning: cleanup of $STATE_DIR markers failed" >&2
     exit 0
   fi
   echo "Phase 2 is not complete. The git tag must be pushed." >&2
