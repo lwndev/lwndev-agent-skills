@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.0] - 2026-04-07
+
+### Features
+
+- **stop-hook:** replace keyword-based pattern exclusion with state-file scoping in releasing-plugins stop hook — uses `.sdlc/releasing/.active` and `.phase1-complete` marker files to eliminate false positives ([#125](https://github.com/lwndev/lwndev-marketplace/issues/125))
+
+### Bug Fixes
+
+- **stop-hook:** skip release validation for non-release messages (BUG-008) ([#124](https://github.com/lwndev/lwndev-marketplace/pull/124))
+
+[1.7.0]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.6.0...lwndev-sdlc@1.7.0
+
 ## [1.6.0] - 2026-04-05
 
 ### Features
