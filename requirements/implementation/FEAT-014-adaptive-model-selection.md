@@ -161,7 +161,7 @@ Work spans three artifacts: the orchestrator `SKILL.md` (fork call sites, classi
 
 ### Phase 5: Documentation
 **Feature:** [FEAT-014](../features/FEAT-014-adaptive-model-selection.md) | [#130](https://github.com/lwndev/lwndev-marketplace/issues/130)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - Documentation runs last so NFR-1's "Model Selection" SKILL.md section reflects the shipped behavior rather than the planned behavior. Writing it alongside Phase 2 or 3 risks doc drift as the algorithm is tuned.
@@ -186,10 +186,11 @@ Work spans three artifacts: the orchestrator `SKILL.md` (fork call sites, classi
 4. Run `npm run validate` — ensures the new references file and the edited SKILL.md still pass schema validation and that the plugin's assets are consistent.
 
 #### Deliverables
-- [ ] "Model Selection" section added to `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` between "Step Execution" and "Error Handling"
-- [ ] New `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/` subdirectory
-- [ ] New `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/model-selection.md` per NFR-2
-- [ ] `npm run validate` passes
+- [x] "Model Selection" section added to `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` between "Step Execution" and "Error Handling" (positioned immediately before "Error Handling"; consolidates the Phase 2 prose section and adds the Axis 1 / Axis 2 / Axis 3 matrices, baseline-locked exceptions, and condensed worked Examples A–D)
+- [x] New `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/` subdirectory
+- [x] New `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/model-selection.md` per NFR-2 (full FR-3 pseudocode, full signal-extractor pseudocode, tuning guidance, audit-trail field reference with `jq` recipes, known limitations, migration guidance, and FR-5 cross-reference)
+- [x] `npm run validate` passes (13/13 checks)
+- [x] 16 new Phase 5 vitest cases in `scripts/__tests__/orchestrating-workflows.test.ts` asserting the references file exists and contains the required content, and that the SKILL.md "## Model Selection" section is positioned between "## Step Execution" and "## Error Handling" with the required matrices and worked examples
 
 #### Depends on Phases 1–4
 

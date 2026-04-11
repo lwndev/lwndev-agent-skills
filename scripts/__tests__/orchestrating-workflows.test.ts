@@ -11,6 +11,8 @@ const SKILL_MD_PATH = join(SKILL_DIR, 'SKILL.md');
 const SCRIPTS_DIR = join(SKILL_DIR, 'scripts');
 const STATE_SCRIPT = join(SCRIPTS_DIR, 'workflow-state.sh');
 const STOP_HOOK = join(SCRIPTS_DIR, 'stop-hook.sh');
+const REFERENCES_DIR = join(SKILL_DIR, 'references');
+const MODEL_SELECTION_REF = join(REFERENCES_DIR, 'model-selection.md');
 
 // --- Skill Validation Tests ---
 
@@ -65,7 +67,7 @@ describe('orchestrating-workflows skill', () => {
       // All references should use ${CLAUDE_SKILL_DIR}/ prefix
       const prefixedRefs = body.match(/\$\{CLAUDE_SKILL_DIR\}\/scripts\/workflow-state\.sh/g);
       expect(prefixedRefs).not.toBeNull();
-      expect(prefixedRefs!.length).toBe(75);
+      expect(prefixedRefs!.length).toBe(62);
     });
 
     it('should include "When to Use This Skill" section', () => {
@@ -138,6 +140,154 @@ describe('orchestrating-workflows skill', () => {
 
     it('should have stop-hook.sh', () => {
       expect(existsSync(STOP_HOOK)).toBe(true);
+    });
+  });
+
+  describe('FEAT-014 Phase 5 Model Selection documentation', () => {
+    let refMd: string;
+
+    beforeAll(async () => {
+      refMd = await readFile(MODEL_SELECTION_REF, 'utf-8');
+    });
+
+    describe('references/model-selection.md', () => {
+      it('should exist as a file under references/', () => {
+        expect(existsSync(REFERENCES_DIR)).toBe(true);
+        expect(existsSync(MODEL_SELECTION_REF)).toBe(true);
+      });
+
+      it('should contain the FR-3 classification algorithm pseudocode', () => {
+        expect(refMd).toContain('FR-3');
+        expect(refMd).toContain('resolve-tier');
+        expect(refMd).toContain('walk the override chain');
+        expect(refMd).toContain('step_baseline(step_name)');
+        expect(refMd).toContain('complexity_to_tier');
+        expect(refMd).toContain('first non-null wins');
+      });
+
+      it('should contain tuning guidance for per-step baselines', () => {
+        expect(refMd).toContain('Tuning per-step baselines');
+        expect(refMd).toContain('Raising a baseline');
+        expect(refMd).toContain('Lowering a baseline');
+      });
+
+      it('should explain how to read the modelSelections audit trail field-by-field', () => {
+        expect(refMd).toContain('Reading the `modelSelections` audit trail');
+        expect(refMd).toContain('`stepIndex`');
+        expect(refMd).toContain('`skill`');
+        expect(refMd).toContain('`mode`');
+        expect(refMd).toContain('`phase`');
+        expect(refMd).toContain('`tier`');
+        expect(refMd).toContain('`complexityStage`');
+        expect(refMd).toContain('`startedAt`');
+      });
+
+      it('should document known limitations', () => {
+        expect(refMd).toContain('Known limitations');
+        expect(refMd).toContain('Haiku is never selected for `implementing-plan-phases`');
+      });
+
+      it('should provide migration guidance for the old inherit-parent behavior', () => {
+        expect(refMd).toContain('Migration guidance');
+        expect(refMd).toContain('--model opus');
+        expect(refMd).toContain('wrapper');
+      });
+
+      it('should cross-reference FR-5 for why requirement docs have no complexity/model-override frontmatter', () => {
+        expect(refMd).toContain('FR-5');
+        expect(refMd).toContain('frontmatter');
+        expect(refMd).toContain('requirement doc');
+      });
+    });
+
+    describe('SKILL.md "Model Selection" section', () => {
+      it('should have "## Model Selection" as a top-level section', () => {
+        expect(skillMd).toMatch(/^## Model Selection$/m);
+      });
+
+      it('should be positioned between "## Step Execution" and "## Error Handling"', () => {
+        const stepExecIdx = skillMd.indexOf('\n## Step Execution\n');
+        const modelSelIdx = skillMd.indexOf('\n## Model Selection\n');
+        const errorIdx = skillMd.indexOf('\n## Error Handling\n');
+        expect(stepExecIdx).toBeGreaterThan(-1);
+        expect(modelSelIdx).toBeGreaterThan(-1);
+        expect(errorIdx).toBeGreaterThan(-1);
+        expect(modelSelIdx).toBeGreaterThan(stepExecIdx);
+        expect(modelSelIdx).toBeLessThan(errorIdx);
+      });
+
+      it('should not retain the temporary "Phase 2 prose" heading', () => {
+        expect(skillMd).not.toContain('Model Selection — Algorithm Reference (Phase 2 prose)');
+        expect(skillMd).not.toContain('Phase-5 move note');
+      });
+
+      it('should contain the step baseline matrix (Axis 1)', () => {
+        // Extract the Model Selection section to avoid matching other places
+        const start = skillMd.indexOf('\n## Model Selection\n');
+        const end = skillMd.indexOf('\n## Error Handling\n', start);
+        const section = skillMd.slice(start, end);
+        expect(section).toContain('Axis 1');
+        expect(section).toContain('Step baseline');
+        expect(section).toContain('`finalizing-workflow`');
+        expect(section).toContain('`reviewing-requirements`');
+        expect(section).toContain('`implementing-plan-phases`');
+        expect(section).toContain('haiku');
+        expect(section).toContain('sonnet');
+      });
+
+      it('should contain the work-item complexity signal matrix (Axis 2)', () => {
+        const start = skillMd.indexOf('\n## Model Selection\n');
+        const end = skillMd.indexOf('\n## Error Handling\n', start);
+        const section = skillMd.slice(start, end);
+        expect(section).toContain('Axis 2');
+        expect(section).toContain('Acceptance criteria count');
+        expect(section).toContain('Severity field');
+        expect(section).toContain('Root-cause count');
+        expect(section).toContain('Category');
+        expect(section).toContain('FR count');
+        expect(section).toContain('Phase count');
+        expect(section).toContain('post-plan');
+      });
+
+      it('should document override precedence (Axis 3) with hard vs soft distinction', () => {
+        const start = skillMd.indexOf('\n## Model Selection\n');
+        const end = skillMd.indexOf('\n## Error Handling\n', start);
+        const section = skillMd.slice(start, end);
+        expect(section).toContain('Axis 3');
+        expect(section).toContain('`--model-for');
+        expect(section).toContain('`--model <tier>`');
+        expect(section).toContain('`--complexity');
+        expect(section).toContain('modelOverride');
+        expect(section).toContain('hard');
+        expect(section).toContain('soft');
+      });
+
+      it('should document baseline-locked step exceptions', () => {
+        const start = skillMd.indexOf('\n## Model Selection\n');
+        const end = skillMd.indexOf('\n## Error Handling\n', start);
+        const section = skillMd.slice(start, end);
+        expect(section).toContain('Baseline-locked');
+        expect(section).toContain('finalizing-workflow');
+        expect(section).toContain('PR-creation');
+      });
+
+      it('should contain worked examples A, B, C, D', () => {
+        const start = skillMd.indexOf('\n## Model Selection\n');
+        const end = skillMd.indexOf('\n## Error Handling\n', start);
+        const section = skillMd.slice(start, end);
+        expect(section).toContain('Example A');
+        expect(section).toContain('Example B');
+        expect(section).toContain('Example C');
+        expect(section).toContain('Example D');
+        expect(section).toContain('zero Opus');
+      });
+
+      it('should link to references/model-selection.md for deep detail', () => {
+        const start = skillMd.indexOf('\n## Model Selection\n');
+        const end = skillMd.indexOf('\n## Error Handling\n', start);
+        const section = skillMd.slice(start, end);
+        expect(section).toContain('references/model-selection.md');
+      });
     });
   });
 });
