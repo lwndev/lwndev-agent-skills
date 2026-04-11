@@ -84,7 +84,7 @@ Net effect: no `phase-start` comment, no `phase-completion` comment, no record o
 
 **Status:** `Completed`
 **Completed:** 2026-04-11
-**Pull Request:** TBD (will be set after `gh pr create`)
+**Pull Request:** [#134](https://github.com/lwndev/lwndev-marketplace/pull/134)
 
 ## Notes
 
