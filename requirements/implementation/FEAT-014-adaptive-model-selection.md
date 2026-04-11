@@ -16,7 +16,7 @@ Work spans three artifacts: the orchestrator `SKILL.md` (fork call sites, classi
 
 ### Phase 1: State Schema and Script Helpers
 **Feature:** [FEAT-014](../features/FEAT-014-adaptive-model-selection.md) | [#130](https://github.com/lwndev/lwndev-marketplace/issues/130)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 
 #### Rationale
 - Establishes the persistence contract (`complexity`, `complexityStage`, `modelOverride`, `modelSelections`) that every subsequent phase reads and writes. Getting the schema right up front prevents churn when the classification algorithm and fork mutations start depending on it.
