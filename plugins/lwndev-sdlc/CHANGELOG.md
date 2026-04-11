@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.8.0] - 2026-04-11
+
+### Features
+
+- **orchestrating-workflows:** adaptive model selection for forked subagents ([#130](https://github.com/lwndev/lwndev-marketplace/issues/130), [#132](https://github.com/lwndev/lwndev-marketplace/pull/132)). Each fork now picks its model from a two-axis policy — step baseline (`finalizing-workflow`/PR-creation on `haiku`; `reviewing-requirements`/`creating-implementation-plans`/`implementing-plan-phases`/`executing-chores`/`executing-bug-fixes` on `sonnet`) × work-item complexity (`low`/`medium`/`high` derived from chore AC count, bug severity/RC/category, or feature FR/NFR/phase counts). Routine chores and low-severity bugs run entirely on Sonnet + Haiku; only high-complexity features (many FRs, security/auth/perf NFRs, or ≥4 phases) bump to Opus. Eliminates silent Opus over-provisioning on mechanical work.
+- **orchestrating-workflows:** override precedence chain with hard/soft distinction. New CLI flags `--model <tier>` (hard), `--complexity <tier>` (soft), `--model-for <step>:<tier>` (hard, per-step) plus a `.modelOverride` state field (soft) compose through the FR-5 walker: first non-null wins. Hard overrides replace the tier and can downgrade below baseline (with a warning); soft overrides are upgrade-only and respect baseline locks. `finalizing-workflow` and inline PR creation are **baseline-locked** — only hard overrides can bump them off `haiku`.
+- **orchestrating-workflows:** two-stage feature classification. Feature chains compute an initial tier after step 1 (from FR/NFR signals) and re-compute after step 3 (`creating-implementation-plans`) to factor in phase count. Transition is upgrade-only and logged in the audit trail via per-entry `complexityStage: "init"|"post-plan"`. Chore and bug chains use a single init-stage classification.
+- **orchestrating-workflows:** per-fork audit trail via `modelSelections` array in `.sdlc/workflows/{ID}.json`. Every fork records `{stepIndex, skill, mode, phase, tier, complexityStage, startedAt}` before invocation. Operators can answer "why did this run on Opus?" without reading orchestrator source. A one-line console echo (`[model] step N (skill, mode/phase) → tier (baseline=, wi-complexity=, override=)`) is emitted before each fork.
+- **orchestrating-workflows:** retry-with-tier-upgrade on fork failure (FR-11). If a fork returns an empty artifact or hits a tool-use loop limit, the orchestrator retries once at the next tier up (`haiku → sonnet → opus`). Structured findings from `reviewing-requirements` are not treated as failures. Retry budget is 1 per fork, independent across phases.
+- **orchestrating-workflows:** stage-aware, upgrade-only resume re-computation (FR-12). When resuming a paused workflow, signals are re-read and `new_tier = max(persisted, newly_computed)` — never silently downgrades. `complexityStage` never regresses.
+- **workflow-state.sh:** new subcommands `set-complexity`, `get-model`, `record-model-selection`, `classify-init`, `classify-post-plan`, `resolve-tier`, `next-tier-up`, `resume-recompute`, `check-claude-version`. All mutations use atomic temp-file-and-rename. Chain walker uses dynamic length so the FR-5 precedence chain can grow without silent breakage.
+- **workflow-state.sh:** silent backward-compatibility migration on read (FR-13). Pre-existing state files gain the four new fields (`complexity`, `complexityStage`, `modelOverride`, `modelSelections`) without clobbering existing data.
+
+### Compatibility
+
+- **Minimum Claude Code 2.1.72** required for adaptive selection. Older versions log a warning at orchestrator init and fall back to parent-model inheritance. Every fork call site has a per-call-site fallback wrapper that retries without the `model` parameter if the Agent tool rejects it.
+- Tier values are always passed as aliases (`sonnet`/`opus`/`haiku`), never as full model IDs, because aliases are version-stable. Known limitation: the `[1m]` long-context Opus variant is not selectable via this mechanism.
+- Sub-skill SKILL.md files are unchanged — no `context: fork` added. Requirement document templates are unchanged — no YAML frontmatter added.
+
+### Documentation
+
+- **orchestrating-workflows:** new `## Model Selection` section in SKILL.md documenting the step baseline matrix, work-item complexity signals, override precedence, baseline-locked exceptions, and four worked examples (low chore, low bug, medium feature with post-plan upgrade, high feature from init).
+- **orchestrating-workflows:** new `references/model-selection.md` with full classification algorithm pseudocode, per-step baseline tuning guidance, `modelSelections` audit trail reading guide, migration guidance, and FR-5 rationale for why requirement docs do not gain frontmatter.
+
+[1.8.0]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.7.0...lwndev-sdlc@1.8.0
+
 ## [1.7.0] - 2026-04-07
 
 ### Features
