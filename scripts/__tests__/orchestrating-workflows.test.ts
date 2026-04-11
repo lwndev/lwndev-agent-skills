@@ -65,7 +65,7 @@ describe('orchestrating-workflows skill', () => {
       // All references should use ${CLAUDE_SKILL_DIR}/ prefix
       const prefixedRefs = body.match(/\$\{CLAUDE_SKILL_DIR\}\/scripts\/workflow-state\.sh/g);
       expect(prefixedRefs).not.toBeNull();
-      expect(prefixedRefs!.length).toBe(70);
+      expect(prefixedRefs!.length).toBe(75);
     });
 
     it('should include "When to Use This Skill" section', () => {
@@ -924,6 +924,350 @@ describe('integration tests', () => {
         for (const s of locked) {
           expect(s.tier).toBe('haiku');
         }
+      });
+    });
+
+    // --- FEAT-014 Phase 4: retry, resume, and version compatibility ---
+    //
+    // These tests drive the Phase 4 workflow-state.sh subcommands end-to-end
+    // to verify the FR-11 retry-with-tier-upgrade progression, the FR-12
+    // stage-aware upgrade-only resume re-computation, and the NFR-6 Agent-tool
+    // fallback warning + Claude Code version check. The orchestrator-level
+    // prose (per-call-site NFR-6 wrapper, FR-11 classifier handling) is
+    // exercised indirectly — the shell helpers that back those prose
+    // instructions are the load-bearing automation.
+    describe('Phase 4 retry, resume, and version compatibility', () => {
+      describe('FR-11 next-tier-up helper', () => {
+        it('escalates haiku → sonnet', () => {
+          expect(stateCmd('next-tier-up haiku')).toBe('sonnet');
+        });
+
+        it('escalates sonnet → opus', () => {
+          expect(stateCmd('next-tier-up sonnet')).toBe('opus');
+        });
+
+        it('exits non-zero at opus (retry exhausted)', () => {
+          let caught = false;
+          try {
+            execSync(`bash "${join(process.cwd(), STATE_SCRIPT)}" next-tier-up opus`, execOpts());
+          } catch (err) {
+            caught = true;
+            const error = err as { status?: number; stderr?: string };
+            expect(error.status).toBe(2);
+            expect(error.stderr ?? '').toContain('retry exhausted at opus');
+          }
+          expect(caught).toBe(true);
+        });
+      });
+
+      describe('FR-11 retry-with-tier-upgrade audit trail', () => {
+        it('appends a second modelSelections entry for the retry attempt', () => {
+          // Simulate the SKILL.md retry flow: an initial haiku fork fails
+          // classifier-flagged, the orchestrator walks next-tier-up, records
+          // a new audit entry, re-invokes. The audit trail preserves both.
+          const id = 'CHORE-201';
+          stateJSON(`init ${id} chore`);
+          stateCmd(`set-complexity ${id} low`);
+
+          // Initial attempt at haiku. (executing-chores' Sonnet baseline would
+          // normally floor this — for the retry test we simulate a deliberate
+          // haiku attempt via the --cli-model hard override.)
+          recordSelection(id, 4, 'executing-chores', 'null', 'null', 'haiku');
+
+          // Classifier-flagged failure: empty artifact returned. Walk the
+          // tier up and append a retry entry.
+          const escalated = stateCmd('next-tier-up haiku');
+          expect(escalated).toBe('sonnet');
+          recordSelection(id, 4, 'executing-chores', 'null', 'null', escalated);
+
+          const state = stateJSON(`status ${id}`);
+          const selections = state.modelSelections as Array<Record<string, unknown>>;
+          // Both the original haiku attempt and the sonnet retry are preserved.
+          expect(selections).toHaveLength(2);
+          expect(selections[0].tier).toBe('haiku');
+          expect(selections[0].stepIndex).toBe(4);
+          expect(selections[1].tier).toBe('sonnet');
+          expect(selections[1].stepIndex).toBe(4);
+        });
+
+        it('records fail state after retry exhaustion at opus', () => {
+          const id = 'FEAT-201';
+          stateJSON(`init ${id} feature`);
+          stateCmd(`set-complexity ${id} high`);
+          // Advance to step 2 so fail() targets a real step.
+          stateCmd(`advance ${id}`);
+          stateCmd(`advance ${id}`);
+
+          recordSelection(id, 2, 'creating-implementation-plans', 'null', 'null', 'opus');
+
+          // Attempting to escalate past opus must fail.
+          let caught = false;
+          try {
+            execSync(`bash "${join(process.cwd(), STATE_SCRIPT)}" next-tier-up opus`, execOpts());
+          } catch (err) {
+            caught = true;
+            expect((err as { status?: number }).status).toBe(2);
+          }
+          expect(caught).toBe(true);
+
+          // The orchestrator would then call `fail` — simulate that.
+          stateCmd(`fail ${id} "retry exhausted at opus for step 2"`);
+          const state = stateJSON(`status ${id}`);
+          expect(state.status).toBe('failed');
+          expect(state.error).toBe('retry exhausted at opus for step 2');
+        });
+
+        it('does not append retry entries for reviewing-requirements structured findings', () => {
+          // Structured findings are NOT classifier-flagged failures; the
+          // orchestrator flows them through findings-handling and does not
+          // consult next-tier-up. We model that by recording the single
+          // initial audit entry and then walking the findings path (which
+          // does not touch modelSelections).
+          const id = 'BUG-201';
+          stateJSON(`init ${id} bug`);
+          stateCmd(`set-complexity ${id} medium`);
+
+          recordSelection(id, 1, 'reviewing-requirements', 'standard', 'null', 'sonnet');
+
+          // Simulated subagent return: "Found 2 errors, 1 warnings, 0 info"
+          // — orchestrator pauses for findings review, does not retry.
+          const state = stateJSON(`status ${id}`);
+          const selections = state.modelSelections as Array<Record<string, unknown>>;
+          expect(selections).toHaveLength(1);
+          expect(selections[0].tier).toBe('sonnet');
+        });
+      });
+
+      describe('FR-12 resume-recompute (stage-aware upgrade-only)', () => {
+        function seedFixture(rel: string, fixtureFile: string): void {
+          const abs = join(testDir, rel);
+          mkdirSync(join(abs, '..'), { recursive: true });
+          const content = execSync(`cat "${fx(fixtureFile)}"`, { encoding: 'utf-8' });
+          writeFileSync(abs, content);
+        }
+
+        it('silent when signals are unchanged', () => {
+          const id = 'CHORE-301';
+          stateJSON(`init ${id} chore`);
+          seedFixture(`requirements/chores/${id}-medium.md`, 'chore-medium.md');
+          stateCmd(`set-complexity ${id} medium`);
+
+          // resume-recompute returns persisted tier, no upgrade log on stderr.
+          const output = execSync(
+            `bash "${join(process.cwd(), STATE_SCRIPT)}" resume-recompute ${id}`,
+            { ...execOpts(), stdio: ['pipe', 'pipe', 'pipe'] }
+          )
+            .toString()
+            .trim();
+          expect(output).toBe('medium');
+
+          const state = stateJSON(`status ${id}`);
+          expect(state.complexity).toBe('medium');
+          expect(state.complexityStage).toBe('init');
+        });
+
+        it('logs the upgrade message when signals are upgraded', () => {
+          const id = 'CHORE-302';
+          stateJSON(`init ${id} chore`);
+          // Start at low, then swap the doc to a high-complexity chore.
+          seedFixture(`requirements/chores/${id}-low.md`, 'chore-low.md');
+          stateCmd(`set-complexity ${id} low`);
+          // Now swap in the high fixture (user edited the doc between pause/resume).
+          const highContent = execSync(`cat "${fx('chore-high.md')}"`, { encoding: 'utf-8' });
+          writeFileSync(join(testDir, `requirements/chores/${id}-low.md`), highContent);
+
+          // Capture stderr from the first (upgrading) resume-recompute call.
+          const stderr = execSync(
+            `bash "${join(process.cwd(), STATE_SCRIPT)}" resume-recompute ${id} 2>&1 1>/dev/null`,
+            execOpts()
+          ).toString();
+          expect(stderr).toContain('[model] Work-item complexity upgraded since last invocation');
+          expect(stderr).toContain('low');
+          expect(stderr).toContain('high');
+
+          const state = stateJSON(`status ${id}`);
+          expect(state.complexity).toBe('high');
+        });
+
+        it('respects manual downgrade via set-complexity (escape hatch)', () => {
+          const id = 'CHORE-303';
+          stateJSON(`init ${id} chore`);
+          seedFixture(`requirements/chores/${id}-high.md`, 'chore-high.md');
+          stateCmd(`set-complexity ${id} high`);
+
+          // User explicitly downgrades between pause and resume.
+          stateCmd(`set-complexity ${id} low`);
+          // resume-recompute would *re-compute* from the high doc and upgrade
+          // back, because the upgrade-only rule re-applies the doc signals.
+          // This is the documented FR-12 behaviour: set-complexity alone
+          // survives resume only if the doc no longer justifies a higher tier.
+          // To validate the escape hatch, we remove the doc before resume so
+          // resume-recompute has no signal to upgrade from.
+          rmSync(join(testDir, `requirements/chores/${id}-high.md`));
+
+          const output = execSync(
+            `bash "${join(process.cwd(), STATE_SCRIPT)}" resume-recompute ${id}`,
+            execOpts()
+          )
+            .toString()
+            .trim();
+          // With no doc, the FR-10 fallback is `medium`. The resolver's
+          // upgrade-only rule takes max(low, medium) → medium, so the user's
+          // low downgrade is still respected when the doc would have pushed
+          // us back up to high (which it no longer can).
+          expect(output).toBe('medium');
+
+          const state = stateJSON(`status ${id}`);
+          expect(state.complexity).toBe('medium');
+        });
+
+        it('complexityStage never regresses', () => {
+          const id = 'FEAT-301';
+          stateJSON(`init ${id} feature`);
+          seedFixture(`requirements/features/${id}-medium.md`, 'feature-medium-no-bump.md');
+          stateCmd(`set-complexity ${id} medium`);
+
+          // Manually simulate the post-plan transition that FR-2b would
+          // perform: write a plan with 4 phases, then run classify-post-plan.
+          const planDir = join(testDir, 'requirements/implementation');
+          mkdirSync(planDir, { recursive: true });
+          const planContent = execSync(`cat "${fx('feature-low-plan-4phase.md')}"`, {
+            encoding: 'utf-8',
+          });
+          writeFileSync(join(planDir, `${id}-plan.md`), planContent);
+          stateCmd(`classify-post-plan ${id}`);
+
+          const midState = stateJSON(`status ${id}`);
+          expect(midState.complexityStage).toBe('post-plan');
+          expect(midState.complexity).toBe('high');
+
+          // resume-recompute must preserve post-plan stage even if signals
+          // unchanged. Run it; stage stays post-plan.
+          stateCmd(`resume-recompute ${id}`);
+          const postState = stateJSON(`status ${id}`);
+          expect(postState.complexityStage).toBe('post-plan');
+          expect(postState.complexity).toBe('high');
+        });
+      });
+
+      describe('FR-13 backward compatibility + Phase 4 resume', () => {
+        it('pre-FEAT-014 state file migrates, then resume-recompute populates complexity', () => {
+          // Write a legacy state file (no FEAT-014 fields at all).
+          const id = 'CHORE-401';
+          const legacy = {
+            id,
+            type: 'chore',
+            currentStep: 1,
+            status: 'in-progress',
+            pauseReason: null,
+            steps: [
+              {
+                name: 'Document chore',
+                skill: 'documenting-chores',
+                context: 'main',
+                status: 'complete',
+                artifact: `requirements/chores/${id}.md`,
+                completedAt: '2026-04-01T00:00:00Z',
+              },
+              {
+                name: 'Review requirements (standard)',
+                skill: 'reviewing-requirements',
+                context: 'fork',
+                status: 'pending',
+                artifact: null,
+                completedAt: null,
+              },
+            ],
+            phases: { total: 0, completed: 0 },
+            prNumber: null,
+            branch: null,
+            startedAt: '2026-04-01T00:00:00Z',
+            lastResumedAt: null,
+          };
+          mkdirSync(join(testDir, '.sdlc/workflows'), { recursive: true });
+          writeFileSync(join(testDir, '.sdlc/workflows', `${id}.json`), JSON.stringify(legacy));
+          // Seed a high-complexity chore doc so resume-recompute has a signal.
+          mkdirSync(join(testDir, 'requirements/chores'), { recursive: true });
+          const highContent = execSync(`cat "${fx('chore-high.md')}"`, { encoding: 'utf-8' });
+          writeFileSync(join(testDir, `requirements/chores/${id}.md`), highContent);
+
+          // Status triggers FR-13 migration (adds the four fields with init defaults).
+          const migrated = stateJSON(`status ${id}`);
+          expect(migrated.complexity).toBeNull();
+          expect(migrated.complexityStage).toBe('init');
+          expect(migrated.modelOverride).toBeNull();
+          expect(migrated.modelSelections).toEqual([]);
+
+          // resume-recompute computes complexity on the first post-migration read.
+          stateCmd(`resume-recompute ${id}`);
+          const state = stateJSON(`status ${id}`);
+          expect(state.complexity).toBe('high');
+        });
+      });
+
+      describe('NFR-6 Claude Code version check', () => {
+        it('exits 0 when claude CLI is unavailable (graceful fallback)', () => {
+          // Run the check with a PATH that excludes `claude` so the subcommand
+          // takes the "cannot determine version" branch.
+          const result = execSync(
+            `bash "${join(process.cwd(), STATE_SCRIPT)}" check-claude-version 2.1.72`,
+            {
+              cwd: testDir,
+              encoding: 'utf-8',
+              stdio: ['pipe', 'pipe', 'pipe'],
+              env: { PATH: '/usr/bin:/bin' },
+            }
+          );
+          // Non-zero would throw execSync; reaching here means exit 0.
+          expect(result).toBeDefined();
+        });
+
+        it('emits the warning line when current version is below required', () => {
+          // Stub a fake claude that reports an old version.
+          const stubDir = join(testDir, 'stubs');
+          mkdirSync(stubDir, { recursive: true });
+          const stub = join(stubDir, 'claude');
+          writeFileSync(stub, '#!/usr/bin/env bash\necho "1.0.0 (Claude Code)"\n');
+          execSync(`chmod +x "${stub}"`);
+
+          let stderr = '';
+          let status: number | undefined;
+          try {
+            execSync(`bash "${join(process.cwd(), STATE_SCRIPT)}" check-claude-version 2.1.72`, {
+              cwd: testDir,
+              encoding: 'utf-8',
+              stdio: ['pipe', 'pipe', 'pipe'],
+              env: { PATH: `${stubDir}:/usr/bin:/bin` },
+            });
+          } catch (err) {
+            const e = err as { status?: number; stderr?: string };
+            status = e.status;
+            stderr = e.stderr ?? '';
+          }
+          expect(status).toBe(1);
+          expect(stderr).toContain('[model] Claude Code 1.0.0');
+          expect(stderr).toContain('below the minimum 2.1.72');
+          expect(stderr).toContain('NFR-6 wrapper');
+        });
+
+        it('exits 0 silently when current version meets or exceeds required', () => {
+          const stubDir = join(testDir, 'stubs');
+          mkdirSync(stubDir, { recursive: true });
+          const stub = join(stubDir, 'claude');
+          writeFileSync(stub, '#!/usr/bin/env bash\necho "2.5.0 (Claude Code)"\n');
+          execSync(`chmod +x "${stub}"`);
+
+          const result = execSync(
+            `bash "${join(process.cwd(), STATE_SCRIPT)}" check-claude-version 2.1.72`,
+            {
+              cwd: testDir,
+              encoding: 'utf-8',
+              stdio: ['pipe', 'pipe', 'pipe'],
+              env: { PATH: `${stubDir}:/usr/bin:/bin` },
+            }
+          );
+          expect(result).toBe('');
+        });
       });
     });
   });

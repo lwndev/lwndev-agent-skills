@@ -69,15 +69,16 @@ managing-work-items <operation> <issueRef> [--type <comment-type>] [--context <j
 ## Quick Start
 
 1. Parse argument — determine new workflow vs resume, and chain type (feature, chore, or bug)
-2. **New feature workflow**: Run step 1 (`documenting-features`) in main context, read allocated ID, initialize state with `init {ID} feature`
-3. **New chore workflow**: Run step 1 (`documenting-chores`) in main context, read allocated ID, initialize state with `init {ID} chore`
-4. **New bug workflow**: Run step 1 (`documenting-bugs`) in main context, read allocated ID, initialize state with `init {ID} bug`
-5. **Resume**: Load state, handle pause/failure logic, continue from current step
-6. Execute steps sequentially using the step execution procedures below
-7. **Feature chain**: Pause at plan approval (step 4) and PR review (step 6+N+2)
-8. **Chore chain**: Pause at PR review only (step 6) — no plan-approval pause
-9. **Bug chain**: Pause at PR review only (step 6) — no plan-approval pause, same as chore chain
-10. On completion, mark workflow complete
+2. **Check Claude Code version (FEAT-014 NFR-6)**: run `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh check-claude-version 2.1.72` once at the entry point. The subcommand exits `0` silently when current ≥ required (or when the version cannot be determined), and exits `1` with a one-line warning on stderr when the installed Claude Code is older than the minimum. Treat the warning as advisory — continue the workflow; the per-fork NFR-6 fallback wrapper (see "Forked Steps") will catch any Agent-tool `model`-parameter rejection and retry without the parameter.
+3. **New feature workflow**: Run step 1 (`documenting-features`) in main context, read allocated ID, initialize state with `init {ID} feature`
+4. **New chore workflow**: Run step 1 (`documenting-chores`) in main context, read allocated ID, initialize state with `init {ID} chore`
+5. **New bug workflow**: Run step 1 (`documenting-bugs`) in main context, read allocated ID, initialize state with `init {ID} bug`
+6. **Resume**: Load state, handle pause/failure logic, continue from current step
+7. Execute steps sequentially using the step execution procedures below
+8. **Feature chain**: Pause at plan approval (step 4) and PR review (step 6+N+2)
+9. **Chore chain**: Pause at PR review only (step 6) — no plan-approval pause
+10. **Bug chain**: Pause at PR review only (step 6) — no plan-approval pause, same as chore chain
+11. On completion, mark workflow complete
 
 ## Feature Chain Step Sequence
 
@@ -295,16 +296,22 @@ Continue to execute remaining steps starting from step 2.
 
 When the argument matches an existing ID (`FEAT-NNN`, `CHORE-NNN`, `BUG-NNN`):
 
-1. Read state: `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh status {ID}`
-2. Write active marker: `echo "{ID}" > .sdlc/workflows/.active`
-3. Determine chain type from the state file's `type` field (`feature`, `chore`, or `bug`)
-4. Check status:
+1. Read state: `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh status {ID}` — the read path also migrates pre-FEAT-014 state files in place (FR-13): missing `complexity`, `complexityStage`, `modelOverride`, and `modelSelections` are silently added with their init defaults, so the rest of the resume procedure can treat the four fields as present.
+2. **Re-compute work-item complexity (FEAT-014 FR-12)**. Before deciding status, run `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resume-recompute {ID}`. The subcommand is stage-aware and upgrade-only:
+   - It re-reads the requirement document and re-runs the init-stage classifier **always**.
+   - If `complexityStage` is already `post-plan`, it also re-reads the implementation plan and re-runs the post-plan classifier.
+   - It computes `new_tier = max(persisted_complexity, newly_computed_tier)` and persists the new value **only if** it strictly upgrades. If the tier is unchanged or would be a downgrade, the subcommand proceeds silently and keeps the persisted value (complexityStage never regresses).
+   - On an upgrade, the subcommand writes a one-line info message to stderr in the documented format (`[model] Work-item complexity upgraded since last invocation: <old> → <new>. Audit trail continues.`) and updates the state file.
+   - **Escape hatch for explicit downgrades** (FR-12): if the user genuinely wants to lower the tier between pause and resume, they must run `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-complexity {ID} <lower-tier>` before re-invoking the orchestrator. That is the only recorded user-authored path to a downgrade; doc edits alone never downgrade on resume.
+3. Write active marker: `echo "{ID}" > .sdlc/workflows/.active`
+4. Determine chain type from the state file's `type` field (`feature`, `chore`, or `bug`)
+5. Check status:
    - **paused** with `plan-approval` → (Feature chain only; chore and bug chains have no plan-approval pause.) Ask "Ready to proceed with implementation?" If yes, call `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resume {ID}` and advance past the pause step, then continue.
    - **paused** with `pr-review` → Check PR status via `gh pr view {prNumber} --json state,reviews,mergeStateStatus`. If approved/mergeable, call `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resume {ID}`, advance past the pause step, and continue. If changes requested, report the feedback and stay paused. If pending review, inform user and stay paused. If the PR is closed, report the state and suggest re-opening the PR or restarting from the execution step (feature: phase loop; chore: step 5; bug: step 5). (Applies to all chain types: feature, chore, and bug.)
    - **paused** with `review-findings` → The previous `reviewing-requirements` step found unresolved errors. Call `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resume {ID}` and re-run the current `reviewing-requirements` fork step from scratch. If the re-run returns zero errors, advance and continue. If errors persist, surface findings and pause again with `review-findings`.
    - **failed** → Call `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resume {ID}`. Retry the failed step.
    - **in-progress** → Continue from the current step.
-5. Use the appropriate step sequence table (Feature Chain, Chore Chain, or Bug Chain) when determining the next step to execute.
+6. Use the appropriate step sequence table (Feature Chain, Chore Chain, or Bug Chain) when determining the next step to execute.
 
 ## Step Execution
 
@@ -394,15 +401,30 @@ For all steps marked **fork** in the step sequence, use the Agent tool to delega
 
 6. Wait for the subagent to return a summary.
 
-7. Validate the expected artifact exists (use Glob to check). If the artifact is missing, record failure:
+7. **NFR-6 Agent-tool-rejection fallback (per call site)**. If the Agent tool call in step 6 errors with an "unknown parameter" error on `model` (Claude Code older than 2.1.72), the orchestrator must **retry the same fork exactly once without the `model` parameter** and emit the documented warning line to the console: `[model] Agent tool rejected model parameter — falling back to parent-model inheritance for this fork. Upgrade to Claude Code 2.1.72+ for adaptive selection.` The retry uses the same prompt and the same subagent identity; it does not append a new `modelSelections` entry (the initial audit-trail write from step 3 already captured the intended tier). This wrapper is **per call site** so it composes cleanly with the FR-11 retry classifier below — both can fire for the same fork, but the NFR-6 fallback triggers on tool-parameter errors whereas FR-11 triggers on classifier-flagged output failures.
+
+8. **FR-11 retry-with-tier-upgrade (per call site)**. After the subagent returns, classify its output:
+   - **Classifier-flagged failure**: the subagent returned an empty artifact, or its run hit the tool-use loop limit. These are the only two failure modes that count as "possibly under-provisioned".
+   - **NOT a failure**: a `reviewing-requirements` fork that returns structured findings (the `Found **N errors**, **N warnings**, **N info**` summary line, or the `No issues found` sentinel). Those are legitimate results and must flow through the Reviewing-Requirements Findings Handling path — do **not** retry with an upgraded tier.
+   - **NOT a failure**: any subagent error that originated from user-authored content (bad input, missing doc, malformed plan). Those surface through the normal `fail` path.
+
+   When a classifier-flagged failure occurs, retry the fork **once** at the next tier up using the pure helper `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh next-tier-up <current-tier>`. Tier escalation is `haiku → sonnet → opus → fail`; each fork's retry budget is `1` (independent per-fork — one failing step does not reduce the budget for subsequent steps). The retry **must**:
+   1. Compute the escalated tier via `next-tier-up`. If the current tier is already `opus`, call `fail {ID} "retry exhausted at opus for step N"` and halt. Do not emit a second retry.
+   2. Write a new `modelSelections` audit-trail entry for the retry via `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh record-model-selection` before re-invoking the Agent tool — the original entry is preserved so the audit trail shows both attempts.
+   3. Emit a fresh FR-14 console echo line for the retry attempt, tagged with the new tier.
+   4. Re-invoke the Agent tool with the escalated `model` parameter. If that attempt also classifies as a failure, call `fail {ID} "retry exhausted at <escalated-tier> for step N"` (unless the escalated tier itself was already `opus`, in which case retry is exhausted after this second attempt) and halt.
+
+   The NFR-6 wrapper from step 7 still applies to the retry call — if the escalated-tier fork is rejected by an older Claude Code, the parent-model fallback kicks in on that retry too.
+
+9. Validate the expected artifact exists (use Glob to check). If the artifact is missing after both the NFR-6 fallback and FR-11 retry paths have had their chance, record failure:
    ```bash
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh fail {ID} "Step N: expected artifact not found"
    ```
 
-8. On success, advance state:
-   ```bash
-   ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "{artifact-path}"
-   ```
+10. On success, advance state:
+    ```bash
+    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "{artifact-path}"
+    ```
 
 #### Fork Step-Name Map
 

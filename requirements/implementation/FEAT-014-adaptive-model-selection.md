@@ -118,7 +118,7 @@ Work spans three artifacts: the orchestrator `SKILL.md` (fork call sites, classi
 
 ### Phase 4: Retry, Resume, and Version Compatibility
 **Feature:** [FEAT-014](../features/FEAT-014-adaptive-model-selection.md) | [#130](https://github.com/lwndev/lwndev-marketplace/issues/130)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - These three concerns (FR-11 retry, FR-12 resume, NFR-6 version compat) all wrap the fork call sites mutated in Phase 3 — they are safest to build on top of a working happy path rather than interleaved with it.
@@ -149,11 +149,11 @@ Work spans three artifacts: the orchestrator `SKILL.md` (fork call sites, classi
    - Pre-existing state file without the four new fields (FR-13) resumes cleanly via Phase 1's migration path, then computes complexity on first post-migration fork.
 
 #### Deliverables
-- [ ] Claude Code version check in orchestrator init path (NFR-6)
-- [ ] NFR-6 Agent-tool-rejection fallback wrapper around every fork call site
-- [ ] FR-11 retry-with-tier-upgrade logic with failure classifier
-- [ ] FR-12 stage-aware, upgrade-only resume re-computation
-- [ ] Integration tests for retry paths, resume paths, and version compatibility
+- [x] Claude Code version check in orchestrator init path (NFR-6) — `workflow-state.sh check-claude-version` subcommand wired into the Quick Start entry point
+- [x] NFR-6 Agent-tool-rejection fallback wrapper around every fork call site — per-call-site prose in the shared Forked Steps procedure (step 7), composes with the FR-11 retry wrapper
+- [x] FR-11 retry-with-tier-upgrade logic with failure classifier — `workflow-state.sh next-tier-up` helper + prose in the shared Forked Steps procedure (step 8) defining the classifier (empty artifact, tool-use loop limit) and the `haiku → sonnet → opus → fail` progression
+- [x] FR-12 stage-aware, upgrade-only resume re-computation — `workflow-state.sh resume-recompute` subcommand + prose at the top of the Resume Procedure section (step 2), including the `set-complexity` escape hatch
+- [x] Integration tests for retry paths, resume paths, and version compatibility — 27 new tests across `scripts/__tests__/workflow-state.test.ts` and `scripts/__tests__/orchestrating-workflows.test.ts` covering `next-tier-up` escalation, retry audit trail, retry exhaustion, reviewing-requirements non-retry, `resume-recompute` silent/upgrade/downgrade-blocked/stage-preserving paths, FR-13 legacy migration + first-post-migration compute, and NFR-6 version check happy/sad/graceful paths
 
 #### Depends on Phase 3
 

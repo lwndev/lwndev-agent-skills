@@ -1308,6 +1308,244 @@ describe('workflow-state.sh', () => {
         });
       });
     });
+
+    // --- FEAT-014 Phase 4: retry, resume, version compatibility helpers ---
+    describe('Phase 4 shell helpers', () => {
+      describe('next-tier-up', () => {
+        it('escalates haiku → sonnet', () => {
+          expect(run('next-tier-up haiku')).toBe('sonnet');
+        });
+
+        it('escalates sonnet → opus', () => {
+          expect(run('next-tier-up sonnet')).toBe('opus');
+        });
+
+        it('exits 2 at opus', () => {
+          const err = run('next-tier-up opus', { expectError: true });
+          expect(err).toContain('retry exhausted at opus');
+        });
+
+        it('rejects unknown tiers', () => {
+          const err = run('next-tier-up banana', { expectError: true });
+          expect(err).toContain('requires a known tier');
+        });
+      });
+
+      describe('resume-recompute', () => {
+        it('returns persisted tier silently when signals unchanged', () => {
+          runJSON('init CHORE-701 chore');
+          // Seed a medium-complexity chore fixture at the canonical path.
+          mkdirSync(join(testDir, 'requirements/chores'), { recursive: true });
+          const content = execSync(`cat "${fixturePath('chore-medium.md')}"`, {
+            encoding: 'utf-8',
+          });
+          writeFileSync(join(testDir, 'requirements/chores/CHORE-701.md'), content);
+          run('set-complexity CHORE-701 medium');
+
+          const tier = run('resume-recompute CHORE-701');
+          expect(tier).toBe('medium');
+          const state = readState('CHORE-701');
+          expect(state.complexity).toBe('medium');
+          expect(state.complexityStage).toBe('init');
+        });
+
+        it('upgrades persisted tier and logs when signals upgraded', () => {
+          runJSON('init CHORE-702 chore');
+          mkdirSync(join(testDir, 'requirements/chores'), { recursive: true });
+          const lowContent = execSync(`cat "${fixturePath('chore-low.md')}"`, {
+            encoding: 'utf-8',
+          });
+          writeFileSync(join(testDir, 'requirements/chores/CHORE-702.md'), lowContent);
+          run('set-complexity CHORE-702 low');
+          // Now swap in a high-complexity doc (simulating edits between pause/resume).
+          const highContent = execSync(`cat "${fixturePath('chore-high.md')}"`, {
+            encoding: 'utf-8',
+          });
+          writeFileSync(join(testDir, 'requirements/chores/CHORE-702.md'), highContent);
+
+          // Capture stderr via 2>&1 1>/dev/null trick.
+          const stderr = execSync(`bash "${SCRIPT}" resume-recompute CHORE-702 2>&1 1>/dev/null`, {
+            cwd: testDir,
+            encoding: 'utf-8',
+          }).toString();
+          expect(stderr).toContain('Work-item complexity upgraded since last invocation');
+          expect(stderr).toContain('low');
+          expect(stderr).toContain('high');
+
+          const state = readState('CHORE-702');
+          expect(state.complexity).toBe('high');
+        });
+
+        it('does not downgrade even when the doc signal drops', () => {
+          runJSON('init CHORE-703 chore');
+          mkdirSync(join(testDir, 'requirements/chores'), { recursive: true });
+          const highContent = execSync(`cat "${fixturePath('chore-high.md')}"`, {
+            encoding: 'utf-8',
+          });
+          writeFileSync(join(testDir, 'requirements/chores/CHORE-703.md'), highContent);
+          run('set-complexity CHORE-703 high');
+          // Swap in a low-complexity doc — resume must NOT downgrade.
+          const lowContent = execSync(`cat "${fixturePath('chore-low.md')}"`, {
+            encoding: 'utf-8',
+          });
+          writeFileSync(join(testDir, 'requirements/chores/CHORE-703.md'), lowContent);
+
+          const tier = run('resume-recompute CHORE-703');
+          expect(tier).toBe('high');
+          const state = readState('CHORE-703');
+          expect(state.complexity).toBe('high');
+        });
+
+        it('preserves complexityStage=post-plan across resume', () => {
+          runJSON('init FEAT-701 feature');
+          mkdirSync(join(testDir, 'requirements/features'), { recursive: true });
+          const featContent = execSync(`cat "${fixturePath('feature-medium-no-bump.md')}"`, {
+            encoding: 'utf-8',
+          });
+          writeFileSync(join(testDir, 'requirements/features/FEAT-701.md'), featContent);
+          run('set-complexity FEAT-701 medium');
+
+          // Post-plan transition via classify-post-plan.
+          mkdirSync(join(testDir, 'requirements/implementation'), { recursive: true });
+          const planContent = execSync(`cat "${fixturePath('feature-low-plan-4phase.md')}"`, {
+            encoding: 'utf-8',
+          });
+          writeFileSync(join(testDir, 'requirements/implementation/FEAT-701-plan.md'), planContent);
+          run('classify-post-plan FEAT-701');
+
+          const mid = readState('FEAT-701');
+          expect(mid.complexityStage).toBe('post-plan');
+
+          // resume-recompute must keep post-plan stage.
+          run('resume-recompute FEAT-701');
+          const post = readState('FEAT-701');
+          expect(post.complexityStage).toBe('post-plan');
+          expect(post.complexity).toBe('high');
+        });
+
+        it('populates complexity on a freshly-migrated legacy state file', () => {
+          // Write a legacy state file (FR-13) with no FEAT-014 fields at all.
+          mkdirSync(join(testDir, '.sdlc/workflows'), { recursive: true });
+          const legacy = {
+            id: 'CHORE-704',
+            type: 'chore',
+            currentStep: 0,
+            status: 'in-progress',
+            pauseReason: null,
+            steps: [
+              {
+                name: 'Document chore',
+                skill: 'documenting-chores',
+                context: 'main',
+                status: 'pending',
+                artifact: null,
+                completedAt: null,
+              },
+            ],
+            phases: { total: 0, completed: 0 },
+            prNumber: null,
+            branch: null,
+            startedAt: '2026-04-01T00:00:00Z',
+            lastResumedAt: null,
+          };
+          writeFileSync(join(testDir, '.sdlc/workflows/CHORE-704.json'), JSON.stringify(legacy));
+          mkdirSync(join(testDir, 'requirements/chores'), { recursive: true });
+          const highContent = execSync(`cat "${fixturePath('chore-high.md')}"`, {
+            encoding: 'utf-8',
+          });
+          writeFileSync(join(testDir, 'requirements/chores/CHORE-704.md'), highContent);
+
+          // resume-recompute runs the first-time population path (no log).
+          run('resume-recompute CHORE-704');
+          const state = readState('CHORE-704');
+          expect(state.complexity).toBe('high');
+          expect(state.complexityStage).toBe('init');
+          expect(state.modelSelections).toEqual([]);
+        });
+      });
+
+      describe('check-claude-version', () => {
+        it('exits 0 when claude CLI is unavailable', () => {
+          // Strip claude from PATH.
+          execSync(`bash "${SCRIPT}" check-claude-version 2.1.72`, {
+            cwd: testDir,
+            encoding: 'utf-8',
+            env: { PATH: '/usr/bin:/bin' },
+          });
+          // Reaching here means exit 0.
+          expect(true).toBe(true);
+        });
+
+        it('warns and exits 1 when current < required', () => {
+          const stubDir = join(testDir, 'stubs');
+          mkdirSync(stubDir, { recursive: true });
+          const stub = join(stubDir, 'claude');
+          writeFileSync(stub, '#!/usr/bin/env bash\necho "1.0.0 (Claude Code)"\n');
+          execSync(`chmod +x "${stub}"`);
+
+          let stderr = '';
+          let status: number | undefined;
+          try {
+            execSync(`bash "${SCRIPT}" check-claude-version 2.1.72`, {
+              cwd: testDir,
+              encoding: 'utf-8',
+              stdio: ['pipe', 'pipe', 'pipe'],
+              env: { PATH: `${stubDir}:/usr/bin:/bin` },
+            });
+          } catch (err) {
+            const e = err as { status?: number; stderr?: string };
+            status = e.status;
+            stderr = e.stderr ?? '';
+          }
+          expect(status).toBe(1);
+          expect(stderr).toContain('[model] Claude Code 1.0.0');
+          expect(stderr).toContain('below the minimum 2.1.72');
+        });
+
+        it('exits 0 silently when current >= required', () => {
+          const stubDir = join(testDir, 'stubs');
+          mkdirSync(stubDir, { recursive: true });
+          const stub = join(stubDir, 'claude');
+          writeFileSync(stub, '#!/usr/bin/env bash\necho "3.0.5 (Claude Code)"\n');
+          execSync(`chmod +x "${stub}"`);
+
+          const result = execSync(`bash "${SCRIPT}" check-claude-version 2.1.72`, {
+            cwd: testDir,
+            encoding: 'utf-8',
+            env: { PATH: `${stubDir}:/usr/bin:/bin` },
+          }).toString();
+          expect(result).toBe('');
+        });
+
+        it('accepts a custom required version', () => {
+          const stubDir = join(testDir, 'stubs');
+          mkdirSync(stubDir, { recursive: true });
+          const stub = join(stubDir, 'claude');
+          writeFileSync(stub, '#!/usr/bin/env bash\necho "2.0.0 (Claude Code)"\n');
+          execSync(`chmod +x "${stub}"`);
+
+          // 2.0.0 meets 1.5.0 but not 3.0.0.
+          execSync(`bash "${SCRIPT}" check-claude-version 1.5.0`, {
+            cwd: testDir,
+            encoding: 'utf-8',
+            env: { PATH: `${stubDir}:/usr/bin:/bin` },
+          });
+
+          let status: number | undefined;
+          try {
+            execSync(`bash "${SCRIPT}" check-claude-version 3.0.0`, {
+              cwd: testDir,
+              encoding: 'utf-8',
+              stdio: ['pipe', 'pipe', 'pipe'],
+              env: { PATH: `${stubDir}:/usr/bin:/bin` },
+            });
+          } catch (err) {
+            status = (err as { status?: number }).status;
+          }
+          expect(status).toBe(1);
+        });
+      });
+    });
   });
 
   describe('error handling', () => {

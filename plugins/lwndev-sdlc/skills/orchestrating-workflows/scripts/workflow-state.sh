@@ -48,6 +48,19 @@ usage() {
   echo "                                In real orchestrator runs, CLI flags are parsed in the orchestrator" >&2
   echo "                                layer and passed through; this subcommand exists so the resolver can" >&2
   echo "                                be exercised from unit tests and by humans running dry-run checks." >&2
+  echo "  resume-recompute <ID> [--doc <path>] [--plan <path>]" >&2
+  echo "                                FEAT-014 FR-12. Stage-aware, upgrade-only re-computation on resume." >&2
+  echo "                                Reads complexityStage, re-runs classify-init (and classify-post-plan" >&2
+  echo "                                when stage is post-plan), applies max(persisted, new). Persists when" >&2
+  echo "                                upgraded, logs a one-line info message, and echoes the resolved tier." >&2
+  echo "  next-tier-up <tier>           FEAT-014 FR-11. Pure helper. Echoes the next tier up in the" >&2
+  echo "                                haiku → sonnet → opus → fail progression. Exits 2 when already" >&2
+  echo "                                at opus (retry exhausted)." >&2
+  echo "  check-claude-version [required]" >&2
+  echo "                                FEAT-014 NFR-6. Compare 'claude --version' against required minimum" >&2
+  echo "                                (default 2.1.72). Exits 0 if current >= required or if version" >&2
+  echo "                                cannot be determined (graceful). Exits 1 if current < required" >&2
+  echo "                                and emits the documented warning line to stderr." >&2
   exit 1
 }
 
@@ -1193,6 +1206,189 @@ cmd_record_model_selection() {
   cat "$file"
 }
 
+# --- FEAT-014 Phase 4: Retry, Resume, Version Compatibility ---
+
+# FR-11 retry-with-tier-upgrade escalator. Given the current fork tier, emit the
+# next tier up in the haiku → sonnet → opus progression. Exits 2 at opus (the
+# caller is expected to record `fail` state after that, per FR-11).
+cmd_next_tier_up() {
+  local current="$1"
+  case "$current" in
+    haiku)
+      echo "sonnet"
+      ;;
+    sonnet)
+      echo "opus"
+      ;;
+    opus)
+      echo "Error: retry exhausted at opus — no higher tier available" >&2
+      exit 2
+      ;;
+    *)
+      echo "Error: next-tier-up requires a known tier (haiku|sonnet|opus); got '${current}'" >&2
+      exit 1
+      ;;
+  esac
+}
+
+# FR-12 stage-aware, upgrade-only re-computation on resume. Reads the persisted
+# complexityStage, re-runs the init-stage classifier (always) and the post-plan
+# classifier (only when stage is already post-plan), applies upgrade-only
+# max(persisted, new), and persists the new tier when it strictly increased.
+# Echoes the resolved tier on stdout and the FR-12 upgrade log line on stderr
+# when an upgrade occurred. Proceeds silently otherwise. complexityStage is
+# never regressed — `init` stays `init`, `post-plan` stays `post-plan`.
+cmd_resume_recompute() {
+  local id="$1"
+  shift || true
+
+  local doc_override=""
+  local plan_override=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --doc)
+        doc_override="${2:-}"; shift 2 ;;
+      --plan)
+        plan_override="${2:-}"; shift 2 ;;
+      *)
+        echo "Error: Unknown resume-recompute flag '$1'." >&2
+        exit 1
+        ;;
+    esac
+  done
+
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  local chain_type persisted stage
+  chain_type=$(jq -r '.type' "$file")
+  persisted=$(jq -r '.complexity // ""' "$file")
+  stage=$(jq -r '.complexityStage // "init"' "$file")
+
+  # Re-compute init-stage signals (always, per FR-12).
+  local doc="$doc_override"
+  if [[ -z "$doc" ]]; then
+    doc=$(_default_doc_path "$id" "$chain_type")
+  fi
+
+  local init_tier=""
+  if [[ -n "$doc" && -f "$doc" ]]; then
+    case "$chain_type" in
+      chore)   init_tier=$(_classify_chore "$doc") ;;
+      bug)     init_tier=$(_classify_bug "$doc") ;;
+      feature) init_tier=$(_classify_feature_init "$doc") ;;
+    esac
+  fi
+  if [[ -z "$init_tier" ]]; then
+    # Unparseable / missing → FR-10 fallback.
+    init_tier="medium"
+  fi
+
+  # If already in post-plan stage and chain is a feature, also re-read phases.
+  local post_plan_tier=""
+  if [[ "$stage" == "post-plan" && "$chain_type" == "feature" ]]; then
+    local plan="$plan_override"
+    if [[ -z "$plan" ]]; then
+      plan=$(_default_plan_path "$id")
+    fi
+    if [[ -n "$plan" && -f "$plan" ]]; then
+      post_plan_tier=$(_classify_feature_post_plan "$plan")
+    fi
+  fi
+
+  # Compute the upgrade-only candidate: max(persisted, init_tier, post_plan_tier).
+  local candidate="$init_tier"
+  if [[ -n "$post_plan_tier" ]]; then
+    candidate=$(_max_complexity "$candidate" "$post_plan_tier")
+  fi
+
+  local resolved="$persisted"
+  if [[ -z "$resolved" ]]; then
+    resolved="$candidate"
+  else
+    resolved=$(_max_complexity "$resolved" "$candidate")
+    if [[ -z "$resolved" ]]; then
+      resolved="$candidate"
+    fi
+  fi
+
+  # Persist when the state file has no complexity yet (FR-13 first-run after
+  # migration) OR when the tier strictly upgraded. Never downgrade.
+  if [[ -z "$persisted" ]]; then
+    # No prior value — write the computed tier. No upgrade log (this is the
+    # initial population, not a resume upgrade).
+    if [[ -n "$resolved" ]]; then
+      jq --arg tier "$resolved" '.complexity = $tier' \
+        "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+    fi
+  elif [[ "$resolved" != "$persisted" ]]; then
+    # Sanity: the upgrade-only rule should already guarantee this, but assert.
+    local ordered
+    ordered=$(_max_complexity "$persisted" "$resolved")
+    if [[ "$ordered" != "$resolved" ]]; then
+      # Downgrade blocked — retain persisted tier silently.
+      echo "$persisted"
+      return
+    fi
+    jq --arg tier "$resolved" '.complexity = $tier' \
+      "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+    echo "[model] Work-item complexity upgraded since last invocation: ${persisted} → ${resolved}. Audit trail continues." >&2
+  fi
+
+  echo "$resolved"
+}
+
+# NFR-6 Claude Code minimum-version check. Graceful on all failure modes:
+#   - `claude` command not on PATH  → exit 0 (assume compatible, skip check)
+#   - `claude --version` parse fails → exit 0 (same rationale)
+#   - current >= required            → exit 0 silently
+#   - current <  required            → exit 1 and emit the documented warning
+# Intentionally additive: the orchestrator logs the warning and continues; the
+# per-call-site NFR-6 fallback wrapper still kicks in on an Agent-tool rejection
+# regardless of what this check decides.
+cmd_check_claude_version() {
+  local required="${1:-2.1.72}"
+
+  local raw=""
+  if command -v claude >/dev/null 2>&1; then
+    raw=$(claude --version 2>/dev/null || true)
+  fi
+
+  # Parse the first N.N.N sequence out of the output (version strings sometimes
+  # include a build suffix or a leading prefix like "Claude Code").
+  local current=""
+  if [[ -n "$raw" ]]; then
+    current=$(echo "$raw" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+  fi
+
+  if [[ -z "$current" ]]; then
+    # Cannot determine — skip silently (graceful fallback).
+    return 0
+  fi
+
+  # Compare semver: split into fields and compare numerically.
+  local cur_major cur_minor cur_patch req_major req_minor req_patch
+  IFS='.' read -r cur_major cur_minor cur_patch <<< "$current"
+  IFS='.' read -r req_major req_minor req_patch <<< "$required"
+
+  if (( cur_major > req_major )); then
+    return 0
+  elif (( cur_major == req_major )); then
+    if (( cur_minor > req_minor )); then
+      return 0
+    elif (( cur_minor == req_minor )); then
+      if (( cur_patch >= req_patch )); then
+        return 0
+      fi
+    fi
+  fi
+
+  # Current < required — emit warning and signal the caller.
+  echo "[model] Claude Code ${current} is below the minimum ${required} required for adaptive model selection. Forks will fall back to parent-model inheritance via the NFR-6 wrapper." >&2
+  return 1
+}
+
 # --- Main ---
 
 if [[ $# -lt 1 ]]; then
@@ -1270,6 +1466,17 @@ case "$command" in
   resolve-tier)
     [[ $# -ge 2 ]] || { echo "Error: resolve-tier requires <ID> <step-name> [flags...]" >&2; exit 1; }
     cmd_resolve_tier "$@"
+    ;;
+  resume-recompute)
+    [[ $# -ge 1 ]] || { echo "Error: resume-recompute requires <ID> [--doc <path>] [--plan <path>]" >&2; exit 1; }
+    cmd_resume_recompute "$@"
+    ;;
+  next-tier-up)
+    [[ $# -ge 1 ]] || { echo "Error: next-tier-up requires <tier>" >&2; exit 1; }
+    cmd_next_tier_up "$1"
+    ;;
+  check-claude-version)
+    cmd_check_claude_version "${1:-}"
     ;;
   *)
     echo "Error: Unknown command '${command}'" >&2
