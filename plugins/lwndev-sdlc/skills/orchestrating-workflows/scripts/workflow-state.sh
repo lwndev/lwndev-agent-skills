@@ -734,10 +734,13 @@ cmd_resolve_tier() {
   fi
 
   # Chain entries: (value, kind). Walk in order; first non-empty wins.
+  # Both arrays MUST stay the same length — the walker below uses
+  # ${#chain_values[@]} as the loop bound so adding a new precedence level
+  # only requires appending to both arrays (no loop-bound bump needed).
   local chain_values=("$per_step_value" "$cli_model" "$cli_complexity" "$effective_state_override")
   local chain_kinds=("hard" "hard" "soft" "soft")
   local i=0
-  while (( i < 4 )); do
+  while (( i < ${#chain_values[@]} )); do
     local value="${chain_values[$i]}"
     local kind="${chain_kinds[$i]}"
     if [[ -n "$value" ]]; then
