@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.8.1] - Unreleased
+
+### Bug Fixes
+
+- **orchestrating-workflows:** define the `managing-work-items` invocation mechanism so the v1.7.0 integration actually runs (BUG-009) ([#131](https://github.com/lwndev/lwndev-marketplace/issues/131)). Previously the orchestrator silently skipped all 11 `managing-work-items` call sites (4 operations: `fetch`, `extract-ref`, `comment`, `pr-link`) because `orchestrating-workflows/SKILL.md` prescribed the calls but never specified *how* to invoke them, and the Forked Steps recipe explicitly scoped itself to chain-table steps. The orchestrator now reads `managing-work-items/SKILL.md` once at workflow start and executes the documented `gh` / `acli` / Rovo MCP commands **inline from its main context** — no Agent-tool fork, no Skill-tool call. A new "How to Invoke `managing-work-items`" subsection documents the mechanism with runnable examples for all four operations, the Forked Steps section now explicitly excludes cross-cutting skills, `managing-work-items/SKILL.md:25` no longer carries the misleading "not directly by users" framing, mechanism-missing failures emit WARNING-level log lines distinguishable from the legitimate INFO-level empty-`issueRef` skip, and a new "Issue Tracking Verification" checklist distinguishes invocation-succeeded from gracefully-skipped from mechanism-failed states. Users should now see `phase-start` / `phase-completion` / `work-start` / `work-complete` / `bug-start` / `bug-complete` comments appear on linked GitHub issues (and Jira issues where a backend is available) on future workflows.
+
 ## [1.8.0] - 2026-04-11
 
 ### Features
