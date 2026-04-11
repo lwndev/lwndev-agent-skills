@@ -80,7 +80,7 @@ Work spans three artifacts: the orchestrator `SKILL.md` (fork call sites, classi
 
 ### Phase 3: Fork Call Site Mutations, Console Echo, and Audit Trail
 **Feature:** [FEAT-014](../features/FEAT-014-adaptive-model-selection.md) | [#130](https://github.com/lwndev/lwndev-marketplace/issues/130)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - Runs after Phase 2 because every fork call site needs the resolution algorithm to hand it a concrete tier. Mutating call sites before the classifier exists would leave the orchestrator in a half-state where some forks have `model` and some don't.
@@ -105,12 +105,12 @@ Work spans three artifacts: the orchestrator `SKILL.md` (fork call sites, classi
 7. Integration tests: drive the orchestrator end-to-end against synthetic chore, bug, and feature work items (fixtures from Phase 2). Assertions cover tier assignment per step, audit trail entries per step, and console echo content per fork. Verify Example A (low chore) produces zero Opus forks, Example B (low bug) produces zero Opus forks, Example C (two-stage feature) shows the stage transition in the audit trail.
 
 #### Deliverables
-- [ ] Updated CLI argument parser in `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` supporting `--model`, `--complexity`, `--model-for`
-- [ ] Every Agent-tool fork call site in the orchestrator SKILL.md passes an explicit `model` parameter
-- [ ] `workflow-state.sh record-model-selection` invoked before every fork (audit trail write precedes fork execution)
-- [ ] FR-14 console echo line emitted before every fork
-- [ ] Post-plan re-classification (FR-2b) wired between step 3 and step 4
-- [ ] Integration tests covering Examples A, B, C from the requirement doc
+- [x] Updated CLI argument parser in `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` supporting `--model`, `--complexity`, `--model-for`
+- [x] Every Agent-tool fork call site in the orchestrator SKILL.md passes an explicit `model` parameter
+- [x] `workflow-state.sh record-model-selection` invoked before every fork (audit trail write precedes fork execution)
+- [x] FR-14 console echo line emitted before every fork
+- [x] Post-plan re-classification (FR-2b) wired between step 3 and step 4
+- [x] Integration tests covering Examples A, B, C from the requirement doc
 
 #### Depends on Phases 1 and 2
 

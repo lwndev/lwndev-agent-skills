@@ -65,7 +65,7 @@ describe('orchestrating-workflows skill', () => {
       // All references should use ${CLAUDE_SKILL_DIR}/ prefix
       const prefixedRefs = body.match(/\$\{CLAUDE_SKILL_DIR\}\/scripts\/workflow-state\.sh/g);
       expect(prefixedRefs).not.toBeNull();
-      expect(prefixedRefs!.length).toBe(56);
+      expect(prefixedRefs!.length).toBe(70);
     });
 
     it('should include "When to Use This Skill" section', () => {
@@ -706,6 +706,225 @@ describe('integration tests', () => {
 
       const result = runHook();
       expect(result.exitCode).toBe(0);
+    });
+  });
+
+  // --- FEAT-014 Phase 3 Adaptive Model Selection Integration Tests ---
+  //
+  // These tests drive workflow-state.sh end-to-end against the synthetic
+  // fixtures from Phase 2 to verify the tier-resolution, audit-trail write,
+  // and post-plan re-classification pathways wired into the orchestrator
+  // SKILL.md call sites. They map directly onto Worked Examples A, B, C from
+  // requirements/features/FEAT-014-adaptive-model-selection.md lines 449-527.
+  describe('FEAT-014 adaptive model selection', () => {
+    const FIXTURES_DIR = join(process.cwd(), 'scripts/__tests__/fixtures/feat-014');
+    const fx = (name: string): string => join(FIXTURES_DIR, name);
+
+    // Seed a synthetic requirement artifact at the canonical location so
+    // classify-init can read it. For this test it's enough to copy the
+    // fixture contents into the expected path.
+    function seedArtifact(rel: string, fixtureFile: string): void {
+      const abs = join(testDir, rel);
+      mkdirSync(join(abs, '..'), { recursive: true });
+      // Use Node fs since the fixture may be outside testDir.
+      const content = execSync(`cat "${fx(fixtureFile)}"`, { encoding: 'utf-8' });
+      writeFileSync(abs, content);
+    }
+
+    function seedPlan(id: string, fixtureFile: string): void {
+      const dir = join(testDir, 'requirements/implementation');
+      mkdirSync(dir, { recursive: true });
+      const content = execSync(`cat "${fx(fixtureFile)}"`, { encoding: 'utf-8' });
+      writeFileSync(join(dir, `${id}-test-plan.md`), content);
+    }
+
+    function resolveTier(id: string, step: string): string {
+      return stateCmd(`resolve-tier ${id} ${step}`);
+    }
+
+    function recordSelection(
+      id: string,
+      stepIndex: number,
+      skill: string,
+      mode: string,
+      phase: string,
+      tier: string
+    ): void {
+      const stage = (stateJSON(`status ${id}`).complexityStage as string) || 'init';
+      stateCmd(
+        `record-model-selection ${id} ${stepIndex} ${skill} ${mode} ${phase} ${tier} ${stage} 2026-04-11T00:00:00Z`
+      );
+    }
+
+    describe('Example A — low-complexity chore (zero Opus)', () => {
+      it('medium chore → every fork resolves sonnet or haiku; no opus', () => {
+        const id = 'CHORE-101';
+        stateJSON(`init ${id} chore`);
+        seedArtifact(`requirements/chores/${id}-example-a.md`, 'chore-medium.md');
+
+        const initTier = stateCmd(`classify-init ${id} requirements/chores/${id}-example-a.md`);
+        expect(initTier).toBe('medium');
+        stateCmd(`set-complexity ${id} ${initTier}`);
+
+        // Every chore-chain fork step and its expected tier per Example A.
+        const forkSteps: Array<[number, string, string, string]> = [
+          // [stepIndex, step-name, mode, expected tier]
+          [1, 'reviewing-requirements', 'standard', 'sonnet'],
+          [3, 'reviewing-requirements', 'test-plan', 'sonnet'],
+          [4, 'executing-chores', 'null', 'sonnet'],
+          [6, 'reviewing-requirements', 'code-review', 'sonnet'],
+          [8, 'finalizing-workflow', 'null', 'haiku'],
+        ];
+
+        for (const [stepIndex, step, mode, expected] of forkSteps) {
+          const tier = resolveTier(id, step);
+          expect(tier).toBe(expected);
+          recordSelection(id, stepIndex, step, mode, 'null', tier);
+        }
+
+        const finalState = stateJSON(`status ${id}`);
+        const selections = finalState.modelSelections as Array<Record<string, unknown>>;
+        expect(selections).toHaveLength(5);
+
+        // Zero Opus tier invocations.
+        const opusCount = selections.filter((s) => s.tier === 'opus').length;
+        expect(opusCount).toBe(0);
+
+        // All non-final forks at sonnet; finalizing at haiku.
+        expect(selections.filter((s) => s.tier === 'sonnet')).toHaveLength(4);
+        expect(selections.filter((s) => s.tier === 'haiku')).toHaveLength(1);
+
+        // Every audit entry is stamped with init stage (chore chains never upgrade).
+        for (const sel of selections) {
+          expect(sel.complexityStage).toBe('init');
+        }
+      });
+    });
+
+    describe('Example B — low-severity bug (zero Opus; Sonnet baseline floor)', () => {
+      it('low bug → every non-final fork is sonnet via baseline floor; finalize is haiku', () => {
+        const id = 'BUG-101';
+        stateJSON(`init ${id} bug`);
+        seedArtifact(`requirements/bugs/${id}-example-b.md`, 'bug-low.md');
+
+        const initTier = stateCmd(`classify-init ${id} requirements/bugs/${id}-example-b.md`);
+        expect(initTier).toBe('low');
+        stateCmd(`set-complexity ${id} ${initTier}`);
+
+        // Bug-chain fork steps per Example B.
+        const forkSteps: Array<[number, string, string, string]> = [
+          [1, 'reviewing-requirements', 'standard', 'sonnet'],
+          [3, 'reviewing-requirements', 'test-plan', 'sonnet'],
+          [4, 'executing-bug-fixes', 'null', 'sonnet'],
+          [6, 'reviewing-requirements', 'code-review', 'sonnet'],
+          [8, 'finalizing-workflow', 'null', 'haiku'],
+        ];
+
+        for (const [stepIndex, step, mode, expected] of forkSteps) {
+          const tier = resolveTier(id, step);
+          expect(tier).toBe(expected);
+          recordSelection(id, stepIndex, step, mode, 'null', tier);
+        }
+
+        const finalState = stateJSON(`status ${id}`);
+        const selections = finalState.modelSelections as Array<Record<string, unknown>>;
+        expect(selections).toHaveLength(5);
+        expect(selections.filter((s) => s.tier === 'opus')).toHaveLength(0);
+        expect(selections.filter((s) => s.tier === 'sonnet')).toHaveLength(4);
+        expect(selections.filter((s) => s.tier === 'haiku')).toHaveLength(1);
+      });
+    });
+
+    describe('Example C — two-stage feature (init sonnet → post-plan opus)', () => {
+      it('feature with init medium + 4-phase plan upgrades to high; audit trail shows stage transition', () => {
+        const id = 'FEAT-101';
+        stateJSON(`init ${id} feature`);
+        seedArtifact(`requirements/features/${id}-example-c.md`, 'feature-medium-no-bump.md');
+
+        // Init classification (8 FRs without a perf/security/auth NFR → medium).
+        const initTier = stateCmd(`classify-init ${id} requirements/features/${id}-example-c.md`);
+        expect(initTier).toBe('medium');
+        stateCmd(`set-complexity ${id} ${initTier}`);
+
+        // Steps 2 and 3 resolve on init stage → sonnet (baseline) + medium → sonnet.
+        const t2 = resolveTier(id, 'reviewing-requirements');
+        expect(t2).toBe('sonnet');
+        recordSelection(id, 1, 'reviewing-requirements', 'standard', 'null', t2);
+
+        const t3 = resolveTier(id, 'creating-implementation-plans');
+        expect(t3).toBe('sonnet');
+        recordSelection(id, 2, 'creating-implementation-plans', 'null', 'null', t3);
+
+        // Post-plan re-classification (FR-2b): 4-phase plan → high → opus.
+        seedPlan(id, 'feature-low-plan-4phase.md');
+        const postPlanTier = stateCmd(`classify-post-plan ${id}`);
+        expect(postPlanTier).toBe('high');
+
+        // Verify complexityStage transitioned.
+        const midState = stateJSON(`status ${id}`);
+        expect(midState.complexity).toBe('high');
+        expect(midState.complexityStage).toBe('post-plan');
+
+        // Downstream forks (step 6 onward) resolve on post-plan stage → opus.
+        const t6 = resolveTier(id, 'reviewing-requirements');
+        expect(t6).toBe('opus');
+        recordSelection(id, 5, 'reviewing-requirements', 'test-plan', 'null', t6);
+
+        // Phase loop: 4 phases of implementing-plan-phases → opus.
+        for (let phase = 1; phase <= 4; phase++) {
+          const tPhase = resolveTier(id, 'implementing-plan-phases');
+          expect(tPhase).toBe('opus');
+          recordSelection(id, 5 + phase, 'implementing-plan-phases', 'null', String(phase), tPhase);
+        }
+
+        // PR creation (baseline-locked haiku) and code-review reconcile (opus post-plan).
+        const tPr = resolveTier(id, 'pr-creation');
+        expect(tPr).toBe('haiku');
+        recordSelection(id, 10, 'pr-creation', 'null', 'null', tPr);
+
+        const tReconcile = resolveTier(id, 'reviewing-requirements');
+        expect(tReconcile).toBe('opus');
+        recordSelection(id, 12, 'reviewing-requirements', 'code-review', 'null', tReconcile);
+
+        // Finalize (baseline-locked haiku).
+        const tFinal = resolveTier(id, 'finalizing-workflow');
+        expect(tFinal).toBe('haiku');
+        recordSelection(id, 14, 'finalizing-workflow', 'null', 'null', tFinal);
+
+        // Audit trail assertions.
+        const finalState = stateJSON(`status ${id}`);
+        const selections = finalState.modelSelections as Array<Record<string, unknown>>;
+        expect(selections).toHaveLength(10);
+
+        // Steps 2 and 3 are init-stage; everything after post-plan recomputation is post-plan.
+        const initEntries = selections.filter((s) => s.complexityStage === 'init');
+        const postPlanEntries = selections.filter((s) => s.complexityStage === 'post-plan');
+        expect(initEntries).toHaveLength(2);
+        expect(postPlanEntries).toHaveLength(8);
+
+        // Init entries are sonnet (baseline floor).
+        for (const s of initEntries) {
+          expect(s.tier).toBe('sonnet');
+        }
+
+        // Post-plan non-locked entries are opus (review, plan phases × 4, code-review).
+        const nonLockedPostPlan = postPlanEntries.filter(
+          (s) => s.skill !== 'finalizing-workflow' && s.skill !== 'pr-creation'
+        );
+        expect(nonLockedPostPlan).toHaveLength(6);
+        for (const s of nonLockedPostPlan) {
+          expect(s.tier).toBe('opus');
+        }
+
+        // Baseline-locked post-plan entries stay at haiku.
+        const locked = postPlanEntries.filter(
+          (s) => s.skill === 'finalizing-workflow' || s.skill === 'pr-creation'
+        );
+        expect(locked).toHaveLength(2);
+        for (const s of locked) {
+          expect(s.tier).toBe('haiku');
+        }
+      });
     });
   });
 });

@@ -27,6 +27,16 @@ Drive an entire SDLC workflow chain through a single skill invocation. The orche
 - **Chore workflows**: New chore workflows begin when `documenting-chores` (step 1) assigns the `CHORE-NNN` ID. The user may indicate a chore by saying "chore", "maintenance task", or similar.
 - **Bug workflows**: New bug workflows begin when `documenting-bugs` (step 1) assigns the `BUG-NNN` ID. The user may indicate a bug by saying "bug", "fix", "defect", "regression", or similar.
 
+### Model-Selection Flags (FEAT-014 FR-8)
+
+Three additive, positional-independent flags tune per-workflow model selection. They may appear before or after the ID / `#N` / title argument and do not change the existing argument shapes.
+
+- `--model <tier>` — **hard blanket** override. Replaces every non-locked fork's tier with `<tier>` (`haiku`, `sonnet`, or `opus`). May downgrade below baseline; the orchestrator emits a one-line baseline-bypass warning when it does (Edge Case 11). Baseline-locked forks are still pushed by a hard override.
+- `--complexity <tier>` — **soft blanket** override. Treated as a `low|medium|high` (or equivalent tier string) floor for work-item complexity. Upgrade-only; respects baseline locks.
+- `--model-for <step>:<tier>` — **hard per-step** override. Replaces the tier for a single named step (e.g. `--model-for reviewing-requirements:opus`). Per-step hard beats blanket hard (FR-5 #1 > #2). May be repeated for multiple steps.
+
+Parsing rules: strip each recognised flag and its argument from the argv list before interpreting the remaining positional token as the ID / `#N` / title. Unknown flags are a usage error. Pass the surviving flag values into every `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resolve-tier` call so the FR-3 chain sees them.
+
 ## Issue Tracking via `managing-work-items`
 
 The orchestrator integrates with issue trackers (GitHub Issues, Jira) through the `managing-work-items` skill. This is additive -- all existing workflow steps remain unchanged; issue tracking invocations are inserted between steps.
@@ -160,6 +170,13 @@ Write the active workflow ID:
 echo "{ID}" > .sdlc/workflows/.active
 ```
 
+Immediately classify work-item complexity (FEAT-014 FR-2a) by shelling out to the classifier and persisting the result via `set-complexity`. `complexityStage` stays at `init` (the default written by `init`):
+
+```bash
+tier=$("${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" classify-init {ID} "requirements/features/{artifact-filename}")
+"${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" set-complexity {ID} "${tier}"
+```
+
 ### 5. Advance Step 1 and Continue
 
 ```bash
@@ -206,6 +223,13 @@ Write the active workflow ID:
 echo "{ID}" > .sdlc/workflows/.active
 ```
 
+Classify work-item complexity (FEAT-014 FR-2a) — chore chains only run the init-stage classifier (no post-plan stage):
+
+```bash
+tier=$("${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" classify-init {ID} "requirements/chores/{artifact-filename}")
+"${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" set-complexity {ID} "${tier}"
+```
+
 ### 5. Advance Step 1 and Continue
 
 ```bash
@@ -250,6 +274,13 @@ Write the active workflow ID:
 
 ```bash
 echo "{ID}" > .sdlc/workflows/.active
+```
+
+Classify work-item complexity (FEAT-014 FR-2a) — bug chains, like chores, only run the init-stage classifier:
+
+```bash
+tier=$("${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" classify-init {ID} "requirements/bugs/{artifact-filename}")
+"${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" set-complexity {ID} "${tier}"
 ```
 
 ### 5. Advance Step 1 and Continue
@@ -317,29 +348,77 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-r
 
 ### Forked Steps
 
-For all steps marked **fork** in the step sequence, use the Agent tool to delegate:
+For all steps marked **fork** in the step sequence, use the Agent tool to delegate. Every fork site must execute the FEAT-014 pre-fork sequence **before** spawning the subagent — the audit trail write must precede fork execution (NFR-3) so a crashed fork still leaves a trace:
 
 1. Read the sub-skill's SKILL.md content:
    ```
    ${CLAUDE_PLUGIN_ROOT}/skills/{skill-name}/SKILL.md
    ```
 
-2. Spawn a general-purpose subagent via the Agent tool. The prompt must include:
+2. **Resolve the tier (FEAT-014 FR-3)**. Call `resolve-tier` with the canonical step-name (see "Fork Step-Name Map" below) and forward any CLI model-selection flags received from the orchestrator invocation:
+
+   ```bash
+   tier=$("${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" resolve-tier {ID} {step-name} \
+     ${cli_model:+--cli-model $cli_model} \
+     ${cli_complexity:+--cli-complexity $cli_complexity} \
+     ${cli_model_for:+--cli-model-for $cli_model_for})
+   ```
+
+3. **Write the audit trail entry (FEAT-014 FR-7, NFR-3)**. The write happens BEFORE the fork so a crashed subagent still leaves a trace:
+
+   ```bash
+   stage=$(jq -r '.complexityStage // "init"' ".sdlc/workflows/{ID}.json")
+   "${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" record-model-selection \
+     {ID} {stepIndex} {skill-name} {mode-or-null} {phase-or-null} "${tier}" "${stage}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+   ```
+
+4. **Emit the FR-14 console echo line** in the documented format. Non-locked forks use `wi-complexity=`; baseline-locked forks (`finalizing-workflow`, `pr-creation`) use the literal `baseline-locked` tag instead:
+
+   ```
+   [model] step {N} ({skill}, {mode-or-phase}) → {tier} (baseline={baseline}, wi-complexity={complexity}, override={override-or-none})
+   ```
+
+   Baseline-locked example:
+   ```
+   [model] step 11 (finalizing-workflow) → haiku (baseline=haiku, baseline-locked)
+   ```
+
+   If the resolved tier is a hard-override-below-baseline downgrade (Edge Case 11), also emit the warning line: `[model] Hard override --model {tier} bypassed baseline {baseline} for {skill}. Proceeding at user request.`
+
+5. Spawn a general-purpose subagent via the Agent tool. The prompt must include:
    - The full SKILL.md content
    - The work item ID as argument (e.g., `FEAT-003` or `CHORE-001`)
    - Any step-specific instructions (see below)
 
-3. Wait for the subagent to return a summary.
+   **Pass the resolved `${tier}` as the `model` parameter to the Agent tool on every fork** (FEAT-014 FR-9). No fork inherits the parent conversation's model by default.
 
-4. Validate the expected artifact exists (use Glob to check). If the artifact is missing, record failure:
+6. Wait for the subagent to return a summary.
+
+7. Validate the expected artifact exists (use Glob to check). If the artifact is missing, record failure:
    ```bash
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh fail {ID} "Step N: expected artifact not found"
    ```
 
-5. On success, advance state:
+8. On success, advance state:
    ```bash
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "{artifact-path}"
    ```
+
+#### Fork Step-Name Map
+
+The `resolve-tier` and `record-model-selection` subcommands key off canonical step-names (not the human-readable table names). Use these exact strings:
+
+| Fork site | Step-name | Baseline | Baseline-locked? |
+|-----------|-----------|----------|------------------|
+| Review requirements (standard / test-plan / code-review) | `reviewing-requirements` | sonnet | no |
+| Create implementation plan | `creating-implementation-plans` | sonnet | no |
+| Implement phases (per-phase) | `implementing-plan-phases` | sonnet | no |
+| Execute chore | `executing-chores` | sonnet | no |
+| Execute bug fix | `executing-bug-fixes` | sonnet | no |
+| Finalize workflow | `finalizing-workflow` | haiku | **yes** |
+| PR creation (inline fork) | `pr-creation` | haiku | **yes** |
+
+For `reviewing-requirements` call sites, pass the mode (`standard`, `test-plan`, `code-review`) as the `mode` argument of `record-model-selection`. For `implementing-plan-phases`, pass the phase number as the `phase` argument. All other sites pass `null` for both.
 
 ### Reviewing-Requirements Findings Handling
 
@@ -392,33 +471,43 @@ When the user opts to apply fixes, the orchestrator (not a subagent) applies the
 
 ### Feature Chain Step-Specific Fork Instructions
 
-**Step 2 — `reviewing-requirements` (standard review)**: Append `{ID}` as argument. The skill auto-detects standard review mode.
+**Step 2 — `reviewing-requirements` (standard review)**: Append `{ID}` as argument. The skill auto-detects standard review mode. Run the FEAT-014 pre-fork sequence with step-name `reviewing-requirements` and mode `standard`.
 
-**Step 3 — `creating-implementation-plans`**: Append `{ID}` as argument. Expected artifact: `requirements/implementation/{ID}-*.md`.
+**Step 3 — `creating-implementation-plans`**: Append `{ID}` as argument. Expected artifact: `requirements/implementation/{ID}-*.md`. Run the FEAT-014 pre-fork sequence with step-name `creating-implementation-plans`.
 
-**Step 6 — `reviewing-requirements` (test-plan reconciliation)**: Append `{ID}` as argument. The skill auto-detects test-plan reconciliation mode because `qa/test-plans/QA-plan-{ID}.md` exists.
+**Post-step-3 re-classification (FEAT-014 FR-2b)**: Immediately after step 3's artifact is validated and before `advance` returns control to the next fork, trigger the post-plan re-classification. This runs exactly once per feature chain and must precede any fork that resolves a tier:
+
+```bash
+tier=$("${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" classify-post-plan {ID})
+# classify-post-plan applies upgrade-only max(persisted, phase_count_tier) and persists
+# the result plus complexityStage="post-plan" when an upgrade occurs; silent otherwise.
+```
+
+If the plan file is missing or malformed, `classify-post-plan` retains the init-stage tier per NFR-5 and emits a one-line warning. Chore and bug chains have no post-plan stage.
+
+**Step 6 — `reviewing-requirements` (test-plan reconciliation)**: Append `{ID}` as argument. The skill auto-detects test-plan reconciliation mode because `qa/test-plans/QA-plan-{ID}.md` exists. Run the FEAT-014 pre-fork sequence with step-name `reviewing-requirements` and mode `test-plan`. This fork is the first to see the post-plan stage transition (if one occurred).
 
 **Steps 7…6+N — `implementing-plan-phases`**: See Phase Loop below.
 
 **Step 6+N+1 — Create PR**: See PR Creation below.
 
-**Step 6+N+3 — `reviewing-requirements` (code-review reconciliation)**: Append `{ID} --pr {prNumber}` as argument. The skill auto-detects code-review reconciliation mode.
+**Step 6+N+3 — `reviewing-requirements` (code-review reconciliation)**: Append `{ID} --pr {prNumber}` as argument. The skill auto-detects code-review reconciliation mode. Run the FEAT-014 pre-fork sequence with step-name `reviewing-requirements` and mode `code-review`.
 
-**Step 6+N+5 — `finalizing-workflow`**: No special argument needed. The skill merges the current PR and resets to main.
+**Step 6+N+5 — `finalizing-workflow`**: No special argument needed. The skill merges the current PR and resets to main. Run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow`. This step is **baseline-locked** at `haiku` — the pre-fork echo uses the `baseline-locked` tag, and only a hard override (`--model`, `--model-for`) can push it off its baseline.
 
 ### Chore Chain Step-Specific Fork Instructions
 
-Steps 2, 4, 7, and 9 follow the same fork pattern as the feature chain without chore-specific overrides:
+Steps 2, 4, 7, and 9 follow the same fork pattern as the feature chain without chore-specific overrides. Every fork runs the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) with the appropriate step-name and mode before spawning the subagent, and passes the resolved tier as the Agent tool's `model` parameter:
 
-**Step 2 — `reviewing-requirements` (standard review)**: Append `{ID}` as argument. Same as feature chain step 2.
+**Step 2 — `reviewing-requirements` (standard review)**: Append `{ID}` as argument. Pre-fork step-name `reviewing-requirements`, mode `standard`.
 
-**Step 4 — `reviewing-requirements` (test-plan reconciliation)**: Append `{ID}` as argument. Same as feature chain step 6.
+**Step 4 — `reviewing-requirements` (test-plan reconciliation)**: Append `{ID}` as argument. Pre-fork step-name `reviewing-requirements`, mode `test-plan`.
 
 **Step 5 — `executing-chores` (fork)**:
 
 Before forking (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-start --context '{"workItemId": "{ID}"}'`
 
-Fork via Agent tool with `{ID}` as argument. If `issueRef` is set, include the FR-6 issue link instruction in the subagent prompt: "Include `Closes #N` (or `PROJ-123` for Jira) in the PR body." After the subagent completes:
+Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) using step-name `executing-chores`, then fork via the Agent tool with `{ID}` as argument and the resolved tier passed as the `model` parameter. If `issueRef` is set, include the FR-6 issue link instruction in the subagent prompt: "Include `Closes #N` (or `PROJ-123` for Jira) in the PR body." After the subagent completes:
 1. Extract the PR number from the subagent output (the `executing-chores` skill creates a PR as its final step)
 2. If the PR number is not in the output, detect it via: `gh pr list --head {branch} --json number --jq '.[0].number'`
 3. Record the PR metadata:
@@ -429,9 +518,9 @@ Fork via Agent tool with `{ID}` as argument. If `issueRef` is set, include the F
 
 After step 5 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'`
 
-**Step 7 — `reviewing-requirements` (code-review reconciliation)**: Append `{ID} --pr {prNumber}` as argument. Same as feature chain step 6+N+3.
+**Step 7 — `reviewing-requirements` (code-review reconciliation)**: Append `{ID} --pr {prNumber}` as argument. Pre-fork step-name `reviewing-requirements`, mode `code-review`.
 
-**Step 9 — `finalizing-workflow`**: No special argument needed. Same as feature chain step 6+N+5.
+**Step 9 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag).
 
 ### Bug Chain Main-Context Steps (Steps 1, 3, 8)
 
@@ -451,17 +540,17 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-r
 
 ### Bug Chain Step-Specific Fork Instructions
 
-Steps 2, 4, 7, and 9 follow the same fork pattern as the chore chain:
+Steps 2, 4, 7, and 9 follow the same fork pattern as the chore chain. Every fork runs the FEAT-014 pre-fork sequence before spawning the subagent and passes the resolved tier as the Agent tool's `model` parameter:
 
-**Step 2 — `reviewing-requirements` (standard review)**: Append `{ID}` as argument. Same as chore chain step 2.
+**Step 2 — `reviewing-requirements` (standard review)**: Append `{ID}` as argument. Pre-fork step-name `reviewing-requirements`, mode `standard`.
 
-**Step 4 — `reviewing-requirements` (test-plan reconciliation)**: Append `{ID}` as argument. Same as chore chain step 4.
+**Step 4 — `reviewing-requirements` (test-plan reconciliation)**: Append `{ID}` as argument. Pre-fork step-name `reviewing-requirements`, mode `test-plan`.
 
 **Step 5 — `executing-bug-fixes` (fork)**:
 
 Before forking (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-start --context '{"workItemId": "{ID}"}'`
 
-Fork via Agent tool with `{ID}` as argument. If `issueRef` is set, include the FR-6 issue link instruction in the subagent prompt: "Include `Closes #N` (or `PROJ-123` for Jira) in the PR body." After the subagent completes:
+Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) using step-name `executing-bug-fixes`, then fork via the Agent tool with `{ID}` as argument and the resolved tier passed as the `model` parameter. If `issueRef` is set, include the FR-6 issue link instruction in the subagent prompt: "Include `Closes #N` (or `PROJ-123` for Jira) in the PR body." After the subagent completes:
 1. Extract the PR number from the subagent output (the `executing-bug-fixes` skill creates a PR as its final step)
 2. If the PR number is not in the output, detect it via: `gh pr list --head {branch} --json number --jq '.[0].number'`
 3. Record the PR metadata:
@@ -472,9 +561,9 @@ Fork via Agent tool with `{ID}` as argument. If `issueRef` is set, include the F
 
 After step 5 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'`
 
-**Step 7 — `reviewing-requirements` (code-review reconciliation)**: Append `{ID} --pr {prNumber}` as argument. Same as chore chain step 7.
+**Step 7 — `reviewing-requirements` (code-review reconciliation)**: Append `{ID} --pr {prNumber}` as argument. Pre-fork step-name `reviewing-requirements`, mode `code-review`.
 
-**Step 9 — `finalizing-workflow`**: No special argument needed. Same as chore chain step 9.
+**Step 9 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag).
 
 ### Pause Steps
 
@@ -529,12 +618,28 @@ After step 6 (test-plan reconciliation) completes:
 
    **a. Before the phase** (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type phase-start --context '{"phase": <phase-number>, "totalPhases": <N>, "workItemId": "{ID}"}'`
 
-   **b. Fork `implementing-plan-phases`** with the Agent tool. The prompt must include:
+   **b. Run the FEAT-014 pre-fork sequence**. Resolve the tier per phase (the `complexityStage` — `init` or `post-plan` — is captured per entry so the audit trail shows the upgrade transition when one occurred):
+
+   ```bash
+   tier=$("${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" resolve-tier {ID} implementing-plan-phases \
+     ${cli_model:+--cli-model $cli_model} \
+     ${cli_complexity:+--cli-complexity $cli_complexity} \
+     ${cli_model_for:+--cli-model-for $cli_model_for})
+   stage=$(jq -r '.complexityStage // "init"' ".sdlc/workflows/{ID}.json")
+   "${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" record-model-selection \
+     {ID} {stepIndex} implementing-plan-phases null {phase-number} "${tier}" "${stage}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+   ```
+
+   Then emit the FR-14 echo line: `[model] step {stepIndex} (implementing-plan-phases, phase {phase-number}) → {tier} (baseline=sonnet, wi-complexity={complexity}, override={override-or-none})`.
+
+   **c. Fork `implementing-plan-phases`** with the Agent tool. The prompt must include:
    - The SKILL.md content from `${CLAUDE_PLUGIN_ROOT}/skills/implementing-plan-phases/SKILL.md`
    - Argument: `{ID} {phase-number}`
    - **Critical**: Append this instruction to the prompt: "Do NOT create a pull request at the end — the orchestrator handles PR creation separately. Skip Step 12 (Create Pull Request) entirely."
 
-   **c. After the phase completes** (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type phase-completion --context '{"phase": <phase-number>, "totalPhases": <N>, "workItemId": "{ID}"}'`
+   Pass the resolved `${tier}` as the Agent tool's `model` parameter (FEAT-014 FR-9).
+
+   **d. After the phase completes** (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type phase-completion --context '{"phase": <phase-number>, "totalPhases": <N>, "workItemId": "{ID}"}'`
 
 3. After each phase completes, advance state:
    ```bash
@@ -553,18 +658,32 @@ After step 6 (test-plan reconciliation) completes:
 
 After all phases complete (step 6+N+1):
 
-1. Fork a subagent to create the PR. The prompt should instruct:
+1. Run the FEAT-014 pre-fork sequence for the PR-creation inline fork. This site is **baseline-locked** at `haiku` — work-item complexity and soft overrides are ignored; only a hard `--model` / `--model-for pr-creation:<tier>` override can push it off baseline.
+
+   ```bash
+   tier=$("${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" resolve-tier {ID} pr-creation \
+     ${cli_model:+--cli-model $cli_model} \
+     ${cli_complexity:+--cli-complexity $cli_complexity} \
+     ${cli_model_for:+--cli-model-for $cli_model_for})
+   stage=$(jq -r '.complexityStage // "init"' ".sdlc/workflows/{ID}.json")
+   "${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" record-model-selection \
+     {ID} {stepIndex} pr-creation null null "${tier}" "${stage}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+   ```
+
+   Emit the FR-14 echo line with the `baseline-locked` tag: `[model] step {stepIndex} (pr-creation) → haiku (baseline=haiku, baseline-locked)`.
+
+2. Fork a subagent to create the PR. Pass the resolved `${tier}` as the Agent tool's `model` parameter. The prompt should instruct:
    - Create a pull request from the current feature branch to main
    - If `issueRef` is set, use `managing-work-items` FR-6 to generate the issue link for the PR body: `Closes #N` for GitHub issues or `PROJ-123` for Jira issues. Include this link in the PR body
    - Return the PR number and branch name
 
-2. Record PR metadata:
+3. Record PR metadata:
    ```bash
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-pr {ID} {pr-number} {branch}
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
    ```
 
-3. Continue to step 6+N+2 (PR review pause).
+4. Continue to step 6+N+2 (PR review pause).
 
 ## Error Handling
 
@@ -576,7 +695,7 @@ After all phases complete (step 6+N+1):
 
 ## Model Selection — Algorithm Reference (Phase 2 prose)
 
-> **Phase-5 move note**: This section is documented here temporarily. Phase 5 will relocate it to its final position between "Step Execution" and "Error Handling" alongside the full "Model Selection" section (step baseline matrix, complexity signal matrix, worked examples). The algorithm prose itself is the Phase 2 deliverable and is not yet wired into the fork call sites — Phase 3 handles the wiring.
+> **Phase-5 move note**: This section is documented here temporarily. Phase 5 will relocate it to its final position between "Step Execution" and "Error Handling" alongside the full "Model Selection" section (step baseline matrix, complexity signal matrix, worked examples). The algorithm is wired into every fork call site as of Phase 3 — see the "Forked Steps" procedure, the chain-specific step instructions, the Phase Loop, and the PR Creation section for the pre-fork mutation pattern (`resolve-tier` → `record-model-selection` → FR-14 echo → Agent tool with explicit `model`).
 
 This section documents the classification algorithm the orchestrator runs at workflow init, after step 3 (feature chains only), and before every fork invocation. The shell implementation lives in `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` as the `classify-init`, `classify-post-plan`, and `resolve-tier` subcommands; the prose below is the canonical reference and the shell implementation mirrors it verbatim.
 

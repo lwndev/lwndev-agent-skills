@@ -605,6 +605,17 @@ cmd_classify_post_plan() {
       resolved="$new_tier"
     fi
   fi
+
+  # FEAT-014 FR-2b: persist the result and flip complexityStage to "post-plan"
+  # when an actual upgrade occurred (the whole point of the post-plan stage is
+  # to mark the transition for audit-trail purposes). When nothing changed we
+  # leave the state file alone so the caller can grep for "no-op" semantics.
+  if [[ "$resolved" != "$persisted" ]]; then
+    jq --arg tier "$resolved" \
+      '.complexity = $tier | .complexityStage = "post-plan"' \
+      "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+  fi
+
   echo "$resolved"
 }
 
