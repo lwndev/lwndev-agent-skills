@@ -574,6 +574,230 @@ After all phases complete (step 6+N+1):
 - **Sub-skill SKILL.md not found**: Display "Error: Skill '{skill-name}' not found at `${CLAUDE_PLUGIN_ROOT}/skills/{skill-name}/SKILL.md`. Check that the lwndev-sdlc plugin is installed." Call `fail`.
 - **State file not found on resume**: Display "Error: No workflow state found for {ID}. Start a new workflow with `/orchestrating-workflows \"feature title\"`."
 
+## Model Selection — Algorithm Reference (Phase 2 prose)
+
+> **Phase-5 move note**: This section is documented here temporarily. Phase 5 will relocate it to its final position between "Step Execution" and "Error Handling" alongside the full "Model Selection" section (step baseline matrix, complexity signal matrix, worked examples). The algorithm prose itself is the Phase 2 deliverable and is not yet wired into the fork call sites — Phase 3 handles the wiring.
+
+This section documents the classification algorithm the orchestrator runs at workflow init, after step 3 (feature chains only), and before every fork invocation. The shell implementation lives in `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` as the `classify-init`, `classify-post-plan`, and `resolve-tier` subcommands; the prose below is the canonical reference and the shell implementation mirrors it verbatim.
+
+### Tier Ordering
+
+Tiers are ordered `haiku < sonnet < opus`. The `max` tier helper compares two tier strings and returns whichever is higher in this ordering. Unknown tier values are treated as less-than-known so a recognised value always wins against an unrecognised one.
+
+```
+max("haiku", "sonnet") → "sonnet"
+max("sonnet", "opus")  → "opus"
+max("haiku", "opus")   → "opus"
+max("sonnet", "haiku") → "sonnet"
+```
+
+The same ordering applies to the complexity labels `low < medium < high`, which map to tiers via `low → haiku`, `medium → sonnet`, `high → opus`.
+
+### Work-Item Signal Extractors
+
+At workflow init (FR-2a) and, for feature chains, after step 3 completes (FR-2b), the orchestrator parses the requirement document (and optionally the implementation plan) to compute a work-item complexity label. Parsing is strictly local: no network calls, no LLM invocations, just markdown regex and section walking.
+
+#### Chore signal extractor
+
+```
+read the requirement document at requirements/chores/{ID}-*.md
+locate the `## Acceptance Criteria` heading
+count list items matching `- [ ]` or `- [x]` until the next `## ` heading or EOF
+→ ≤3 items     → low
+→ 4–8 items    → medium
+→ 9+ items     → high
+→ heading absent → unparseable → FR-10 fallback → medium
+```
+
+Only the acceptance criteria count is used. Chore docs do not enforce a parseable file-list schema, so "affected files count" is intentionally not a signal (E2 fix in the requirement doc).
+
+#### Bug signal extractor
+
+```
+read the requirement document at requirements/bugs/{ID}-*.md
+
+severity_tier:
+  read the first non-empty line under `## Severity`, strip backticks, lowercase
+  → "low"               → low
+  → "medium"            → medium
+  → "high" or "critical" → high
+  → anything else        → unset
+
+rc_count_tier:
+  count numbered list items (`1.`, `2.`, …) under `## Root Cause(s)`
+  if the heading is absent, fall back to counting distinct `RC-N` mentions in the whole doc
+  → 1 item   → low
+  → 2–3 items → medium
+  → 4+ items → high
+  → 0 items   → unset
+
+if severity_tier is unset and rc_count_tier is unset:
+  → unparseable → FR-10 fallback → medium
+else:
+  base = max(severity_tier, rc_count_tier)   # unknown sides are ignored
+
+category:
+  read the first non-empty line under `## Category`, strip backticks, lowercase
+  if category in {"security", "performance"}:
+    base = bump_one_tier(base)                # low→medium, medium→high, high→high
+
+return base
+```
+
+#### Feature init-stage signal extractor (FR-2a)
+
+```
+read the requirement document at requirements/features/{ID}-*.md
+
+fr_count:
+  locate the `## Functional Requirements` heading
+  count `### FR-N:` sub-headings until the next `## ` heading or EOF
+  SKIP any heading line whose text contains the literal "removed" (case-insensitive)
+  → ≤5 items   → low
+  → 6–12 items → medium
+  → 13+ items  → high
+
+nfr_bump:
+  locate the `## Non-Functional Requirements` heading
+  scan the section body (case-insensitive) for the substrings
+    "security", "auth", "perf"
+  → any match  → true
+  → no match   → false
+  → section absent → unset
+
+if fr_count is unset and nfr_bump is unset:
+  → unparseable → FR-10 fallback → medium
+
+base = fr_count (or medium if fr_count is unset)
+if nfr_bump == true:
+  base = bump_one_tier(base)
+return base
+```
+
+#### Feature post-plan signal extractor (FR-2b)
+
+This stage runs exactly once in a feature chain, after step 3 (`creating-implementation-plans`) completes and before any subsequent fork resolves its tier. It is **upgrade-only**: it can never downgrade the tier computed at init.
+
+```
+read the implementation plan at requirements/implementation/{ID}-*.md
+count `### Phase N:` headings
+→ 1 phase   → low
+→ 2–3 phases → medium
+→ 4+ phases → high
+→ plan absent or 0 phases → NFR-5: retain persisted init-stage tier, log warning, do not upgrade
+
+new_tier = max(persisted_complexity, phase_count_tier)   # upgrade-only
+if new_tier != persisted_complexity:
+  persist new_tier, set complexityStage = "post-plan", emit one-line upgrade log
+else:
+  proceed silently with persisted tier
+```
+
+Chore and bug chains have no post-plan stage — all their signals are init-stage.
+
+### FR-10 Unparseable-Signal Fallback
+
+When a signal extractor cannot produce a value (missing section, zero matches, empty document, missing file), the classifier falls back to the complexity label `medium`, which maps to the `sonnet` tier. It **never** falls back to `opus` — silently reintroducing over-provisioning is exactly the behavior FEAT-014 exists to prevent.
+
+Edge Case 5 (empty requirement document): the classifier returns `medium` unconditionally. Edge Case 9 (chore with only a title and no Acceptance Criteria section): same.
+
+### FR-3 Override Precedence Chain (`resolve-tier`)
+
+The orchestrator runs this algorithm fresh before every `Agent` tool fork call. The FR-5 precedence order is mirrored below verbatim. Hard overrides replace the tier entirely (and may downgrade below baseline); soft overrides are upgrade-only and respect baseline locks.
+
+```
+# Inputs:
+#   step_name           — name of the step being forked (e.g. "reviewing-requirements")
+#   cli_model           — --model flag from CLI (hard, blanket)
+#   cli_complexity      — --complexity flag from CLI (soft, blanket)
+#   cli_model_for       — --model-for flag from CLI (hard, per-step)
+#   state_complexity    — persisted .complexity (low/medium/high) from state file
+#   state_model_override — persisted .modelOverride from state file (soft)
+
+baseline        = step_baseline(step_name)                 # Axis 1, sonnet or haiku
+locked          = step_baseline_locked(step_name)          # true for finalizing-workflow, pr-creation
+
+# Step 1: start at baseline
+tier = baseline
+
+# Step 2: apply work-item complexity axis (skipped for baseline-locked steps)
+if not locked:
+    wi_tier = complexity_to_tier(state_complexity)         # low→haiku, medium→sonnet, high→opus
+    if wi_tier is not None:
+        tier = max(tier, wi_tier)
+
+# Step 3: walk the override chain in FR-5 precedence order.
+# The FIRST non-null entry wins — break out of the loop on match.
+chain = [
+    (cli_model_for.get(step_name),           "hard"),   # FR-5 #1 (per-step replace)
+    (cli_model,                              "hard"),   # FR-5 #2 (blanket replace)
+    (cli_complexity,                         "soft"),   # FR-5 #3 (upgrade-only max)
+    (state_model_override,                   "soft"),   # FR-5 #4 (upgrade-only max)
+]
+
+for (value, kind) in chain:
+    if value is None:
+        continue
+    if kind == "hard":
+        # Hard override: replace tier entirely. May downgrade below baseline.
+        # May bypass baseline lock (finalizing-workflow on --model opus is legal).
+        tier = value
+    else:
+        # Soft override: upgrade-only. Respects baseline lock.
+        if locked:
+            pass   # baseline-locked steps reject soft overrides
+        else:
+            soft_tier = value
+            if soft_tier is a complexity label (low/medium/high):
+                soft_tier = complexity_to_tier(soft_tier)
+            tier = max(tier, soft_tier)
+    break   # first non-null wins
+
+return tier
+```
+
+### Hard vs Soft Override Rules
+
+| Rule | Hard overrides (`--model`, `--model-for`) | Soft overrides (`--complexity`, `modelOverride`) |
+|------|-------------------------------------------|-------------------------------------------------|
+| Replace vs upgrade | Replace the tier entirely | `max(current, override)` — upgrade-only |
+| Baseline lock | Bypass the lock (can push baseline-locked steps off their baseline) | Respect the lock (baseline-locked steps ignore soft overrides) |
+| Can downgrade below baseline? | Yes, with a one-line warning (Edge Case 11) | No — never downgrades below baseline |
+| Per-step vs blanket | Both forms supported (`--model-for` per-step beats `--model` blanket) | Blanket only |
+
+Concrete examples:
+
+- `--model haiku` on a default feature chain forces `reviewing-requirements` to `haiku`, even though the baseline is `sonnet`. Emit the Edge Case 11 baseline-bypass warning.
+- `--model opus` on any chain forces `finalizing-workflow` to `opus`, even though it is baseline-locked at `haiku`. Hard overrides bypass locks.
+- `--complexity low` on a work item already classified `high` has no effect because `max(opus, haiku) = opus`. Soft overrides are strictly upgrade-only.
+- `modelOverride: "opus"` in state on `finalizing-workflow` is ignored because `finalizing-workflow` is baseline-locked and soft overrides respect the lock.
+- `--model-for reviewing-requirements:opus --model haiku` resolves to `opus` for `reviewing-requirements` (per-step hard beats blanket hard, FR-5 #1 > #2) and `haiku` for every other fork (blanket hard wins there).
+
+### Baseline Floor (FR-10)
+
+Step baselines are a floor for computed and soft-overridden tiers. Even when work-item complexity is `low` (would map to `haiku`), a step whose baseline is `sonnet` still runs on `sonnet`. This protects validation and edit work from quality regression on trivial inputs. Hard overrides are the only path that can push below the floor, and they do so with a visible warning.
+
+### Signal Extractor Implementation Cross-Reference
+
+| Algorithm step | Shell helper | File / line |
+|----------------|--------------|-------------|
+| Chore AC count | `_count_acceptance_criteria` | `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` |
+| Bug severity | `_extract_severity` | `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` |
+| Bug category | `_extract_category` | `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` |
+| Bug RC count | `_count_root_causes` | `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` |
+| Feature FR count | `_count_functional_requirements` | `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` |
+| Feature NFR bump check | `_check_security_auth_perf` | `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` |
+| Feature phase count | `_count_phases` | `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` |
+| Chore classifier | `_classify_chore` | `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` |
+| Bug classifier | `_classify_bug` | `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` |
+| Feature init classifier | `_classify_feature_init` | `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` |
+| Feature post-plan classifier | `_classify_feature_post_plan` | `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` |
+| `classify-init` subcommand | `cmd_classify_init` | `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` |
+| `classify-post-plan` subcommand | `cmd_classify_post_plan` | `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` |
+| `resolve-tier` subcommand (FR-3 walker) | `cmd_resolve_tier` | `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh` |
+
+Test fixtures for every bucket boundary and every override precedence level live under `scripts/__tests__/fixtures/feat-014/`. Unit tests in `scripts/__tests__/workflow-state.test.ts` (the `classifier (FEAT-014 Phase 2)` describe block) cover chore/bug/feature signal extraction, the two-stage feature upgrade path, baseline-lock interactions for hard and soft overrides, the FR-10 unparseable-signal fallback, and every precedence level in the FR-3 chain.
+
 ## Verification Checklist
 
 Before marking the workflow complete:

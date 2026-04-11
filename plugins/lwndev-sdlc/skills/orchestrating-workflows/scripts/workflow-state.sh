@@ -33,6 +33,21 @@ usage() {
   echo "  get-model <ID> <step-name>    Resolve model tier for a step (baseline + complexity + modelOverride)" >&2
   echo "  record-model-selection <ID> <stepIndex> <skill> <mode> <phase> <tier> <complexityStage> <startedAt>" >&2
   echo "                                Append an entry to the modelSelections audit trail" >&2
+  echo "  classify-init <ID> [doc-path]" >&2
+  echo "                                Compute init-stage work-item complexity (low|medium|high) from the" >&2
+  echo "                                requirement document. Dispatches by chain type read from state." >&2
+  echo "                                doc-path is optional; if omitted the default location for the chain" >&2
+  echo "                                type is used (requirements/features/{ID}-*.md, etc.)." >&2
+  echo "  classify-post-plan <ID> [plan-path]" >&2
+  echo "                                Feature-only. Re-compute complexity including phase count from the" >&2
+  echo "                                implementation plan and apply upgrade-only max(persisted, new)." >&2
+  echo "  resolve-tier <ID> <step-name> [flags...]" >&2
+  echo "                                Debug helper. Walk the FR-3 precedence chain and echo the resolved" >&2
+  echo "                                tier. Flags: --cli-model <tier>, --cli-complexity <tier>," >&2
+  echo "                                --cli-model-for <step>:<tier>, --state-override <tier>." >&2
+  echo "                                In real orchestrator runs, CLI flags are parsed in the orchestrator" >&2
+  echo "                                layer and passed through; this subcommand exists so the resolver can" >&2
+  echo "                                be exercised from unit tests and by humans running dry-run checks." >&2
   exit 1
 }
 
@@ -176,6 +191,533 @@ _migrate_state_file() {
     | (if has("modelOverride") | not then .modelOverride = null else . end)
     | (if has("modelSelections") | not then .modelSelections = [] else . end)
   ' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+}
+
+# --- Classifier signal extractors (FEAT-014 Phase 2) ---
+#
+# These helpers parse synthetic and real requirement documents to drive the
+# FR-2a / FR-2b two-stage classifier. Each extractor is deliberately pure
+# (reads one file, echoes one value) so the unit tests can exercise them in
+# isolation against synthetic fixtures. All extractors return an empty string
+# when the signal cannot be computed — the caller is responsible for applying
+# the FR-10 fallback (`sonnet` work-item complexity, never `opus`).
+
+# Count unchecked/checked acceptance-criteria list items under the
+# `## Acceptance Criteria` heading. The heading terminator is either the next
+# top-level `## ` heading or end-of-file. Returns the count (possibly 0) or
+# empty string if the heading is absent altogether.
+_count_acceptance_criteria() {
+  local doc="$1"
+  [[ -f "$doc" ]] || { echo ""; return; }
+
+  awk '
+    BEGIN { in_ac = 0; count = 0; found = 0 }
+    /^## Acceptance Criteria[[:space:]]*$/ { in_ac = 1; found = 1; next }
+    in_ac && /^## / { in_ac = 0 }
+    in_ac && /^[[:space:]]*-[[:space:]]*\[[ xX]\]/ { count++ }
+    END { if (found) print count; else print "" }
+  ' "$doc"
+}
+
+# Count the distinct root-cause references (RC-N). Prefer the ordered list
+# under `## Root Cause(s)` — this maps 1:1 with the RC-N convention used by
+# bug docs authored from the `documenting-bugs` template. Falls back to
+# scraping `RC-N` mentions across the whole file if the heading is absent.
+_count_root_causes() {
+  local doc="$1"
+  [[ -f "$doc" ]] || { echo ""; return; }
+
+  # Preferred path: count the numbered list items under ## Root Cause(s).
+  local list_count
+  list_count=$(awk '
+    BEGIN { in_rc = 0; count = 0 }
+    /^## Root Cause\(s\)[[:space:]]*$/ { in_rc = 1; next }
+    in_rc && /^## / { in_rc = 0 }
+    in_rc && /^[[:space:]]*[0-9]+\.[[:space:]]/ { count++ }
+    END { print count }
+  ' "$doc")
+
+  if [[ -n "$list_count" && "$list_count" != "0" ]]; then
+    echo "$list_count"
+    return
+  fi
+
+  # Fallback: count distinct RC-N references anywhere in the doc.
+  local rc_count
+  rc_count=$(grep -oE 'RC-[0-9]+' "$doc" 2>/dev/null | sort -u | wc -l | tr -d ' ')
+  if [[ "$rc_count" -gt 0 ]]; then
+    echo "$rc_count"
+  else
+    echo ""
+  fi
+}
+
+# Count the functional-requirement headings under the
+# `## Functional Requirements` section. Headings matching the form
+# `### FR-N:` are counted except when the heading line contains the literal
+# token `removed` (case-insensitive) — see the FEAT-014 self-classification
+# sanity check which excludes removed requirements from the count.
+# Returns empty string if the section is absent.
+_count_functional_requirements() {
+  local doc="$1"
+  [[ -f "$doc" ]] || { echo ""; return; }
+
+  awk '
+    BEGIN { in_fr = 0; count = 0; found = 0 }
+    /^## Functional Requirements[[:space:]]*$/ { in_fr = 1; found = 1; next }
+    in_fr && /^## / { in_fr = 0 }
+    in_fr && /^### FR-[0-9]+/ {
+      line = tolower($0)
+      if (index(line, "removed") == 0) count++
+    }
+    END { if (found) print count; else print "" }
+  ' "$doc"
+}
+
+# Extract the severity field from a bug document. Looks for `## Severity`
+# followed by a value line (either inline backticks or plain text on the
+# first non-empty body line). Returns the lowercased value, or empty string
+# when absent. Recognised values: low, medium, high, critical.
+_extract_severity() {
+  local doc="$1"
+  [[ -f "$doc" ]] || { echo ""; return; }
+
+  local raw
+  raw=$(awk '
+    BEGIN { in_sev = 0 }
+    /^## Severity[[:space:]]*$/ { in_sev = 1; next }
+    in_sev && /^## / { exit }
+    in_sev && NF > 0 { print; exit }
+  ' "$doc")
+
+  # Strip surrounding backticks and whitespace.
+  raw=$(echo "$raw" | tr -d '`' | tr '[:upper:]' '[:lower:]' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+  echo "$raw"
+}
+
+# Extract the category field from a bug document. Same shape as severity.
+_extract_category() {
+  local doc="$1"
+  [[ -f "$doc" ]] || { echo ""; return; }
+
+  local raw
+  raw=$(awk '
+    BEGIN { in_cat = 0 }
+    /^## Category[[:space:]]*$/ { in_cat = 1; next }
+    in_cat && /^## / { exit }
+    in_cat && NF > 0 { print; exit }
+  ' "$doc")
+
+  raw=$(echo "$raw" | tr -d '`' | tr '[:upper:]' '[:lower:]' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+  echo "$raw"
+}
+
+# Count implementation-plan phases. Plan files use `### Phase N:` headings.
+# Returns empty string if the plan file is absent or has zero phases.
+_count_phases() {
+  local plan="$1"
+  [[ -f "$plan" ]] || { echo ""; return; }
+
+  local count
+  count=$(grep -cE '^### Phase [0-9]+' "$plan" 2>/dev/null || true)
+  if [[ "$count" -gt 0 ]]; then
+    echo "$count"
+  else
+    echo ""
+  fi
+}
+
+# Check whether the Non-Functional Requirements section mentions any of
+# security / auth / perf (case-insensitive, matches "authentication",
+# "performance", etc. as substrings). Echoes "true" if any match is found,
+# "false" if the section exists but has no match, and empty string if the
+# section is absent.
+_check_security_auth_perf() {
+  local doc="$1"
+  [[ -f "$doc" ]] || { echo ""; return; }
+
+  awk '
+    BEGIN { in_nfr = 0; found = 0; matched = 0 }
+    /^## Non-Functional Requirements[[:space:]]*$/ { in_nfr = 1; found = 1; next }
+    in_nfr && /^## / { in_nfr = 0 }
+    in_nfr {
+      line = tolower($0)
+      if (index(line, "security") > 0 || index(line, "auth") > 0 || index(line, "perf") > 0) {
+        matched = 1
+      }
+    }
+    END {
+      if (!found) { print ""; exit }
+      if (matched) print "true"; else print "false"
+    }
+  ' "$doc"
+}
+
+# Bucket a numeric count into a complexity tier using the supplied edges.
+# Usage: _bucket_count <n> <low-max> <medium-max>
+# Returns "low" if n <= low-max, "medium" if n <= medium-max, else "high".
+# Returns empty string if n is empty.
+_bucket_count() {
+  local n="$1"
+  local low_max="$2"
+  local medium_max="$3"
+  [[ -n "$n" ]] || { echo ""; return; }
+  if (( n <= low_max )); then
+    echo "low"
+  elif (( n <= medium_max )); then
+    echo "medium"
+  else
+    echo "high"
+  fi
+}
+
+# Bump a complexity label by one tier. low → medium, medium → high, high → high.
+# Empty / unknown values pass through unchanged.
+_bump_complexity() {
+  case "$1" in
+    low) echo "medium" ;;
+    medium) echo "high" ;;
+    high) echo "high" ;;
+    *) echo "$1" ;;
+  esac
+}
+
+# Max of two complexity labels under the low < medium < high ordering.
+# Returns whichever of the two labels is higher. Unknown values are
+# treated as rank 0, so the known value always wins against them.
+_max_complexity() {
+  local a="$1"
+  local b="$2"
+  local ra=0 rb=0
+  case "$a" in low) ra=1 ;; medium) ra=2 ;; high) ra=3 ;; esac
+  case "$b" in low) rb=1 ;; medium) rb=2 ;; high) rb=3 ;; esac
+  if (( ra == 0 && rb == 0 )); then
+    echo ""
+    return
+  fi
+  if (( ra >= rb )); then
+    echo "$a"
+  else
+    echo "$b"
+  fi
+}
+
+# Resolve the default requirement-doc path for a given ID and chain type.
+_default_doc_path() {
+  local id="$1"
+  local type="$2"
+  local dir
+  case "$type" in
+    feature) dir="requirements/features" ;;
+    chore)   dir="requirements/chores" ;;
+    bug)     dir="requirements/bugs" ;;
+    *) echo ""; return ;;
+  esac
+
+  [[ -d "$dir" ]] || { echo ""; return; }
+  local found
+  found=$(ls ${dir}/${id}-*.md 2>/dev/null | sort | head -1 || true)
+  if [[ -z "$found" ]]; then
+    # Also accept the bare {ID}.md form used in a handful of older docs.
+    [[ -f "${dir}/${id}.md" ]] && found="${dir}/${id}.md"
+  fi
+  echo "$found"
+}
+
+# Resolve the default implementation-plan path for a given feature ID.
+_default_plan_path() {
+  local id="$1"
+  [[ -d "requirements/implementation" ]] || { echo ""; return; }
+  ls requirements/implementation/${id}-*.md 2>/dev/null | sort | head -1 || true
+}
+
+# --- Signal classifiers per chain type (FEAT-014 FR-2a) ---
+#
+# Each classifier parses the signals relevant to its chain and returns a
+# work-item complexity label (low|medium|high). On unparseable input (no
+# signals extracted at all) they fall back to "medium" so the caller's
+# final mapping produces `sonnet` — honouring FR-10 which mandates sonnet
+# as the unparseable-signal floor, never opus.
+
+_classify_chore() {
+  local doc="$1"
+  local ac_count
+  ac_count=$(_count_acceptance_criteria "$doc")
+  if [[ -z "$ac_count" ]]; then
+    echo "medium"  # FR-10 fallback → sonnet
+    return
+  fi
+  # Chore thresholds: ≤3 low, 4–8 medium, 9+ high.
+  _bucket_count "$ac_count" 3 8
+}
+
+_classify_bug() {
+  local doc="$1"
+  local severity category rc_count
+  severity=$(_extract_severity "$doc")
+  category=$(_extract_category "$doc")
+  rc_count=$(_count_root_causes "$doc")
+
+  local sev_tier=""
+  case "$severity" in
+    low) sev_tier="low" ;;
+    medium) sev_tier="medium" ;;
+    high|critical) sev_tier="high" ;;
+  esac
+
+  local rc_tier=""
+  if [[ -n "$rc_count" ]]; then
+    # RC thresholds: 1 low, 2–3 medium, 4+ high.
+    rc_tier=$(_bucket_count "$rc_count" 1 3)
+  fi
+
+  # If both signals are missing, fall back to medium (FR-10).
+  if [[ -z "$sev_tier" && -z "$rc_tier" ]]; then
+    echo "medium"
+    return
+  fi
+
+  local base
+  base=$(_max_complexity "$sev_tier" "$rc_tier")
+  if [[ -z "$base" ]]; then
+    base="medium"
+  fi
+
+  # Category bump (security or performance → bump one tier).
+  case "$category" in
+    security|performance)
+      base=$(_bump_complexity "$base")
+      ;;
+  esac
+
+  echo "$base"
+}
+
+_classify_feature_init() {
+  local doc="$1"
+  local fr_count sec
+  fr_count=$(_count_functional_requirements "$doc")
+  sec=$(_check_security_auth_perf "$doc")
+
+  if [[ -z "$fr_count" && -z "$sec" ]]; then
+    echo "medium"  # FR-10 fallback → sonnet
+    return
+  fi
+
+  local base=""
+  if [[ -n "$fr_count" ]]; then
+    # Feature thresholds: ≤5 low, 6–12 medium, 13+ high.
+    base=$(_bucket_count "$fr_count" 5 12)
+  fi
+  if [[ -z "$base" ]]; then
+    base="medium"
+  fi
+
+  if [[ "$sec" == "true" ]]; then
+    base=$(_bump_complexity "$base")
+  fi
+
+  echo "$base"
+}
+
+_classify_feature_post_plan() {
+  local plan="$1"
+  local phases
+  phases=$(_count_phases "$plan")
+  if [[ -z "$phases" ]]; then
+    echo ""  # caller preserves persisted tier (NFR-5)
+    return
+  fi
+  # Feature phase thresholds: 1 low, 2–3 medium, 4+ high.
+  _bucket_count "$phases" 1 3
+}
+
+cmd_classify_init() {
+  local id="$1"
+  local doc="${2:-}"
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  local chain_type
+  chain_type=$(jq -r '.type' "$file")
+
+  if [[ -z "$doc" ]]; then
+    doc=$(_default_doc_path "$id" "$chain_type")
+  fi
+
+  if [[ -z "$doc" || ! -f "$doc" ]]; then
+    # No doc to parse — FR-10 fallback to medium → sonnet.
+    echo "medium"
+    return
+  fi
+
+  case "$chain_type" in
+    chore)   _classify_chore "$doc" ;;
+    bug)     _classify_bug "$doc" ;;
+    feature) _classify_feature_init "$doc" ;;
+    *)
+      echo "Error: Unsupported chain type '${chain_type}' for classify-init." >&2
+      exit 1
+      ;;
+  esac
+}
+
+cmd_classify_post_plan() {
+  local id="$1"
+  local plan="${2:-}"
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  local chain_type
+  chain_type=$(jq -r '.type' "$file")
+  if [[ "$chain_type" != "feature" ]]; then
+    echo "Error: classify-post-plan is only valid for feature chains (got '${chain_type}')." >&2
+    exit 1
+  fi
+
+  if [[ -z "$plan" ]]; then
+    plan=$(_default_plan_path "$id")
+  fi
+
+  local persisted
+  persisted=$(jq -r '.complexity // ""' "$file")
+
+  local new_tier=""
+  if [[ -n "$plan" && -f "$plan" ]]; then
+    new_tier=$(_classify_feature_post_plan "$plan")
+  fi
+
+  if [[ -z "$new_tier" ]]; then
+    # NFR-5: no plan / unparseable → retain persisted tier, no upgrade.
+    echo "${persisted:-medium}"
+    return
+  fi
+
+  # Upgrade-only max(persisted, new_tier). If persisted is unset, use new.
+  local resolved
+  if [[ -z "$persisted" ]]; then
+    resolved="$new_tier"
+  else
+    resolved=$(_max_complexity "$persisted" "$new_tier")
+    if [[ -z "$resolved" ]]; then
+      resolved="$new_tier"
+    fi
+  fi
+  echo "$resolved"
+}
+
+# Resolve the final tier per the FR-3 precedence chain. This is a debug
+# helper — the canonical walker lives in the orchestrator SKILL.md as
+# markdown prose (Phase 2 deliverable). The shell implementation here
+# mirrors that prose verbatim so unit tests can exercise every precedence
+# level, the baseline-lock interaction, and the hard-vs-soft distinction.
+cmd_resolve_tier() {
+  local id="$1"
+  shift || true
+  local step_name="$1"
+  shift || true
+
+  local cli_model=""
+  local cli_complexity=""
+  local cli_model_for=""
+  local state_override_flag=""
+  local state_override_value=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --cli-model)
+        cli_model="${2:-}"; shift 2 ;;
+      --cli-complexity)
+        cli_complexity="${2:-}"; shift 2 ;;
+      --cli-model-for)
+        cli_model_for="${2:-}"; shift 2 ;;
+      --state-override)
+        state_override_flag="set"
+        state_override_value="${2:-}"; shift 2 ;;
+      *)
+        echo "Error: Unknown resolve-tier flag '$1'." >&2
+        exit 1
+        ;;
+    esac
+  done
+
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  local baseline locked complexity_label
+  baseline=$(_step_baseline "$step_name")
+  locked=$(_step_baseline_locked "$step_name")
+  complexity_label=$(jq -r '.complexity // ""' "$file")
+
+  # Step 1: start at baseline.
+  local tier="$baseline"
+
+  # Step 2: apply work-item complexity unless baseline-locked.
+  if [[ "$locked" != "true" ]]; then
+    local wi_tier
+    wi_tier=$(_complexity_to_tier "$complexity_label")
+    if [[ -n "$wi_tier" ]]; then
+      tier=$(_max_tier "$tier" "$wi_tier")
+    fi
+  fi
+
+  # Step 3: walk the override chain in FR-5 precedence order. The first
+  # non-null entry wins; hard overrides replace, soft overrides upgrade-only.
+  # The `--state-override` flag lets unit tests inject a state.modelOverride
+  # value without having to round-trip through `set-complexity`; when not
+  # supplied, the flag falls back to the persisted value.
+  local effective_state_override
+  if [[ "$state_override_flag" == "set" ]]; then
+    effective_state_override="$state_override_value"
+  else
+    effective_state_override=$(jq -r '.modelOverride // ""' "$file")
+  fi
+
+  # Resolve the per-step value for --cli-model-for. Format: step:tier.
+  local per_step_value=""
+  if [[ -n "$cli_model_for" ]]; then
+    local mf_step="${cli_model_for%%:*}"
+    local mf_tier="${cli_model_for##*:}"
+    if [[ "$mf_step" == "$step_name" ]]; then
+      per_step_value="$mf_tier"
+    fi
+  fi
+
+  # Chain entries: (value, kind). Walk in order; first non-empty wins.
+  local chain_values=("$per_step_value" "$cli_model" "$cli_complexity" "$effective_state_override")
+  local chain_kinds=("hard" "hard" "soft" "soft")
+  local i=0
+  while (( i < 4 )); do
+    local value="${chain_values[$i]}"
+    local kind="${chain_kinds[$i]}"
+    if [[ -n "$value" ]]; then
+      if [[ "$kind" == "hard" ]]; then
+        # Hard override: replace tier entirely (can go below baseline).
+        tier="$value"
+      else
+        # Soft override: upgrade-only, respects baseline lock.
+        if [[ "$locked" == "true" ]]; then
+          : # baseline-locked steps reject soft overrides
+        else
+          # For --cli-complexity, translate low/medium/high → tier first.
+          local soft_tier="$value"
+          local translated
+          translated=$(_complexity_to_tier "$value")
+          if [[ -n "$translated" ]]; then
+            soft_tier="$translated"
+          fi
+          tier=$(_max_tier "$tier" "$soft_tier")
+        fi
+      fi
+      break
+    fi
+    i=$((i + 1))
+  done
+
+  echo "$tier"
 }
 
 # Generate the feature chain step sequence (FR-1)
@@ -705,6 +1247,18 @@ case "$command" in
   record-model-selection)
     [[ $# -ge 8 ]] || { echo "Error: record-model-selection requires <ID> <stepIndex> <skill> <mode> <phase> <tier> <complexityStage> <startedAt>" >&2; exit 1; }
     cmd_record_model_selection "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8"
+    ;;
+  classify-init)
+    [[ $# -ge 1 ]] || { echo "Error: classify-init requires <ID> [doc-path]" >&2; exit 1; }
+    cmd_classify_init "$1" "${2:-}"
+    ;;
+  classify-post-plan)
+    [[ $# -ge 1 ]] || { echo "Error: classify-post-plan requires <ID> [plan-path]" >&2; exit 1; }
+    cmd_classify_post_plan "$1" "${2:-}"
+    ;;
+  resolve-tier)
+    [[ $# -ge 2 ]] || { echo "Error: resolve-tier requires <ID> <step-name> [flags...]" >&2; exit 1; }
+    cmd_resolve_tier "$@"
     ;;
   *)
     echo "Error: Unknown command '${command}'" >&2

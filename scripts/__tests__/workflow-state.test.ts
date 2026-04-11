@@ -9,6 +9,12 @@ const SCRIPT = join(
   'plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh'
 );
 
+const FIXTURES_DIR = join(process.cwd(), 'scripts/__tests__/fixtures/feat-014');
+
+function fixturePath(name: string): string {
+  return join(FIXTURES_DIR, name);
+}
+
 // Each test gets a fresh temp directory as the working directory
 let testDir: string;
 
@@ -989,6 +995,317 @@ describe('workflow-state.sh', () => {
           expectError: true,
         });
         expect(err).toContain('record-model-selection requires');
+      });
+    });
+
+    describe('classifier (FEAT-014 Phase 2)', () => {
+      // --- chore signal extractor tests ---
+      describe('chore classifier', () => {
+        it('buckets 3 ACs as low (≤3)', () => {
+          runJSON('init CHORE-001 chore');
+          expect(run(`classify-init CHORE-001 ${fixturePath('chore-low.md')}`)).toBe('low');
+        });
+
+        it('buckets 4 ACs as medium (first item in 4–8)', () => {
+          runJSON('init CHORE-001 chore');
+          expect(run(`classify-init CHORE-001 ${fixturePath('chore-boundary-4.md')}`)).toBe(
+            'medium'
+          );
+        });
+
+        it('buckets 5 ACs as medium', () => {
+          runJSON('init CHORE-001 chore');
+          expect(run(`classify-init CHORE-001 ${fixturePath('chore-medium.md')}`)).toBe('medium');
+        });
+
+        it('buckets 8 ACs as medium (last item in 4–8)', () => {
+          runJSON('init CHORE-001 chore');
+          expect(run(`classify-init CHORE-001 ${fixturePath('chore-boundary-8.md')}`)).toBe(
+            'medium'
+          );
+        });
+
+        it('buckets 9 ACs as high (first item in 9+)', () => {
+          runJSON('init CHORE-001 chore');
+          expect(run(`classify-init CHORE-001 ${fixturePath('chore-boundary-9.md')}`)).toBe('high');
+        });
+
+        it('buckets 10 ACs as high', () => {
+          runJSON('init CHORE-001 chore');
+          expect(run(`classify-init CHORE-001 ${fixturePath('chore-high.md')}`)).toBe('high');
+        });
+      });
+
+      // --- bug signal extractor tests ---
+      describe('bug classifier', () => {
+        it('low severity + 1 RC + logic-error → low', () => {
+          runJSON('init BUG-001 bug');
+          expect(run(`classify-init BUG-001 ${fixturePath('bug-low.md')}`)).toBe('low');
+        });
+
+        it('medium severity + 2 RCs + logic-error → medium', () => {
+          runJSON('init BUG-001 bug');
+          expect(run(`classify-init BUG-001 ${fixturePath('bug-medium.md')}`)).toBe('medium');
+        });
+
+        it('high severity + 3 RCs + security category → high (bump ceils)', () => {
+          runJSON('init BUG-001 bug');
+          expect(run(`classify-init BUG-001 ${fixturePath('bug-high.md')}`)).toBe('high');
+        });
+
+        it('critical severity alias maps to high even with 1 RC', () => {
+          runJSON('init BUG-001 bug');
+          expect(run(`classify-init BUG-001 ${fixturePath('bug-critical-severity.md')}`)).toBe(
+            'high'
+          );
+        });
+
+        it('performance category bumps low base → medium', () => {
+          runJSON('init BUG-001 bug');
+          expect(run(`classify-init BUG-001 ${fixturePath('bug-perf-bump.md')}`)).toBe('medium');
+        });
+
+        it('max(severity low, RC count 4 → high) = high', () => {
+          runJSON('init BUG-001 bug');
+          expect(run(`classify-init BUG-001 ${fixturePath('bug-max-severity-rc.md')}`)).toBe(
+            'high'
+          );
+        });
+      });
+
+      // --- feature init-stage extractor tests ---
+      describe('feature init classifier', () => {
+        it('3 FRs, no NFR bump → low', () => {
+          runJSON('init FEAT-001 feature');
+          expect(run(`classify-init FEAT-001 ${fixturePath('feature-low.md')}`)).toBe('low');
+        });
+
+        it('8 FRs, no NFR bump → medium', () => {
+          runJSON('init FEAT-001 feature');
+          expect(run(`classify-init FEAT-001 ${fixturePath('feature-medium-no-bump.md')}`)).toBe(
+            'medium'
+          );
+        });
+
+        it('8 FRs with perf NFR → bumped to high', () => {
+          runJSON('init FEAT-001 feature');
+          expect(run(`classify-init FEAT-001 ${fixturePath('feature-medium.md')}`)).toBe('high');
+        });
+
+        it('14 FRs with security NFR → high (bump ceils)', () => {
+          runJSON('init FEAT-001 feature');
+          expect(run(`classify-init FEAT-001 ${fixturePath('feature-high.md')}`)).toBe('high');
+        });
+      });
+
+      // --- feature post-plan upgrade tests ---
+      describe('feature post-plan upgrade', () => {
+        it('init medium + 4 phases → upgraded to high (sonnet → opus)', () => {
+          runJSON('init FEAT-001 feature');
+          runJSON('set-complexity FEAT-001 medium');
+          expect(
+            run(`classify-post-plan FEAT-001 ${fixturePath('feature-low-plan-4phase.md')}`)
+          ).toBe('high');
+        });
+
+        it('init high + 1 phase → stays high (upgrade-only, never downgrade)', () => {
+          runJSON('init FEAT-001 feature');
+          runJSON('set-complexity FEAT-001 high');
+          expect(
+            run(`classify-post-plan FEAT-001 ${fixturePath('feature-low-plan-1phase.md')}`)
+          ).toBe('high');
+        });
+
+        it('init low + 4 phases → upgraded to high', () => {
+          runJSON('init FEAT-001 feature');
+          runJSON('set-complexity FEAT-001 low');
+          expect(
+            run(`classify-post-plan FEAT-001 ${fixturePath('feature-low-plan-4phase.md')}`)
+          ).toBe('high');
+        });
+
+        it('init medium + 1 phase → stays medium (low ≤ medium)', () => {
+          runJSON('init FEAT-001 feature');
+          runJSON('set-complexity FEAT-001 medium');
+          expect(
+            run(`classify-post-plan FEAT-001 ${fixturePath('feature-low-plan-1phase.md')}`)
+          ).toBe('medium');
+        });
+
+        it('missing plan → retain persisted tier (NFR-5)', () => {
+          runJSON('init FEAT-001 feature');
+          runJSON('set-complexity FEAT-001 medium');
+          expect(run('classify-post-plan FEAT-001 /nonexistent/plan.md')).toBe('medium');
+        });
+
+        it('rejects non-feature chains', () => {
+          runJSON('init CHORE-001 chore');
+          const err = run('classify-post-plan CHORE-001', { expectError: true });
+          expect(err).toContain('only valid for feature chains');
+        });
+      });
+
+      // --- unparseable / fallback tests (FR-10) ---
+      describe('unparseable signal fallback (FR-10)', () => {
+        it('empty doc on chore chain → medium (sonnet, never opus)', () => {
+          runJSON('init CHORE-001 chore');
+          expect(run(`classify-init CHORE-001 ${fixturePath('empty-doc.md')}`)).toBe('medium');
+        });
+
+        it('empty doc on bug chain → medium (sonnet, never opus)', () => {
+          runJSON('init BUG-001 bug');
+          expect(run(`classify-init BUG-001 ${fixturePath('empty-doc.md')}`)).toBe('medium');
+        });
+
+        it('empty doc on feature chain → medium (sonnet, never opus)', () => {
+          runJSON('init FEAT-001 feature');
+          expect(run(`classify-init FEAT-001 ${fixturePath('empty-doc.md')}`)).toBe('medium');
+        });
+
+        it('missing doc path on feature chain → medium (sonnet, never opus)', () => {
+          runJSON('init FEAT-001 feature');
+          expect(run('classify-init FEAT-001 /nonexistent/doc.md')).toBe('medium');
+        });
+
+        it('falls back to medium, NEVER to opus', () => {
+          runJSON('init FEAT-001 feature');
+          // Explicitly verify no path produces 'high' (which would map to opus).
+          const emptyResult = run(`classify-init FEAT-001 ${fixturePath('empty-doc.md')}`);
+          expect(emptyResult).not.toBe('high');
+          expect(emptyResult).toBe('medium');
+        });
+      });
+
+      // --- FR-3 override precedence chain (resolve-tier) tests ---
+      describe('resolve-tier FR-3 precedence chain', () => {
+        it('default: baseline floor when no complexity and no overrides', () => {
+          runJSON('init FEAT-001 feature');
+          expect(run('resolve-tier FEAT-001 reviewing-requirements')).toBe('sonnet');
+          expect(run('resolve-tier FEAT-001 creating-implementation-plans')).toBe('sonnet');
+          expect(run('resolve-tier FEAT-001 implementing-plan-phases')).toBe('sonnet');
+        });
+
+        it('baseline-locked steps default to haiku', () => {
+          runJSON('init FEAT-001 feature');
+          expect(run('resolve-tier FEAT-001 finalizing-workflow')).toBe('haiku');
+          expect(run('resolve-tier FEAT-001 pr-creation')).toBe('haiku');
+        });
+
+        it('work-item complexity high upgrades non-locked step to opus', () => {
+          runJSON('init FEAT-001 feature');
+          runJSON('set-complexity FEAT-001 high');
+          expect(run('resolve-tier FEAT-001 reviewing-requirements')).toBe('opus');
+          expect(run('resolve-tier FEAT-001 implementing-plan-phases')).toBe('opus');
+        });
+
+        it('baseline-locked step ignores work-item complexity high', () => {
+          runJSON('init FEAT-001 feature');
+          runJSON('set-complexity FEAT-001 high');
+          expect(run('resolve-tier FEAT-001 finalizing-workflow')).toBe('haiku');
+          expect(run('resolve-tier FEAT-001 pr-creation')).toBe('haiku');
+        });
+
+        it('baseline floor is sonnet for reviewing-requirements even when wi-complexity=low', () => {
+          runJSON('init FEAT-001 feature');
+          runJSON('set-complexity FEAT-001 low');
+          // max(sonnet-baseline, haiku-from-low) = sonnet
+          expect(run('resolve-tier FEAT-001 reviewing-requirements')).toBe('sonnet');
+        });
+
+        // --- Hard overrides (FR-5 #1 and #2) ---
+        it('hard --cli-model haiku REPLACES tier — downgrades below sonnet baseline', () => {
+          runJSON('init FEAT-001 feature');
+          // Feature chain in main: sonnet baseline. Hard haiku must win.
+          expect(run('resolve-tier FEAT-001 reviewing-requirements --cli-model haiku')).toBe(
+            'haiku'
+          );
+        });
+
+        it('hard --cli-model opus BYPASSES baseline lock on finalizing-workflow', () => {
+          runJSON('init FEAT-001 feature');
+          expect(run('resolve-tier FEAT-001 finalizing-workflow --cli-model opus')).toBe('opus');
+        });
+
+        it('hard --cli-model-for <step>:<tier> beats blanket hard --cli-model (FR-5 #1 > #2)', () => {
+          runJSON('init FEAT-001 feature');
+          // Per-step hard=opus should beat blanket hard=haiku for the matching step.
+          expect(
+            run(
+              'resolve-tier FEAT-001 reviewing-requirements --cli-model haiku --cli-model-for reviewing-requirements:opus'
+            )
+          ).toBe('opus');
+        });
+
+        it('hard --cli-model-for does not affect non-matching steps', () => {
+          runJSON('init FEAT-001 feature');
+          // --cli-model-for reviewing-requirements:opus should not alter implementing-plan-phases
+          // when a blanket hard --cli-model haiku is also passed (haiku wins for that step).
+          expect(
+            run(
+              'resolve-tier FEAT-001 implementing-plan-phases --cli-model haiku --cli-model-for reviewing-requirements:opus'
+            )
+          ).toBe('haiku');
+        });
+
+        // --- Soft overrides (FR-5 #3 and #4) ---
+        it('soft --cli-complexity low on computed opus tier is a no-op (upgrade-only)', () => {
+          runJSON('init FEAT-001 feature');
+          runJSON('set-complexity FEAT-001 high');
+          expect(run('resolve-tier FEAT-001 reviewing-requirements --cli-complexity low')).toBe(
+            'opus'
+          );
+        });
+
+        it('soft --cli-complexity high on a default sonnet-baseline step → opus', () => {
+          runJSON('init FEAT-001 feature');
+          expect(run('resolve-tier FEAT-001 reviewing-requirements --cli-complexity high')).toBe(
+            'opus'
+          );
+        });
+
+        it('soft --state-override opus on finalizing-workflow is rejected (baseline-locked)', () => {
+          runJSON('init FEAT-001 feature');
+          expect(run('resolve-tier FEAT-001 finalizing-workflow --state-override opus')).toBe(
+            'haiku'
+          );
+        });
+
+        it('soft --state-override opus on reviewing-requirements upgrades non-locked step', () => {
+          runJSON('init FEAT-001 feature');
+          expect(run('resolve-tier FEAT-001 reviewing-requirements --state-override opus')).toBe(
+            'opus'
+          );
+        });
+
+        it('soft --cli-complexity high on baseline-locked finalizing-workflow stays haiku', () => {
+          runJSON('init FEAT-001 feature');
+          expect(run('resolve-tier FEAT-001 finalizing-workflow --cli-complexity high')).toBe(
+            'haiku'
+          );
+        });
+
+        it('hard --cli-model beats soft --cli-complexity even when soft would upgrade', () => {
+          runJSON('init FEAT-001 feature');
+          // --cli-model haiku is hard (FR-5 #2) and wins over --cli-complexity high (FR-5 #3).
+          expect(
+            run(
+              'resolve-tier FEAT-001 reviewing-requirements --cli-model haiku --cli-complexity high'
+            )
+          ).toBe('haiku');
+        });
+
+        it('soft --cli-complexity wins over soft --state-override when set first (precedence #3 > #4)', () => {
+          runJSON('init FEAT-001 feature');
+          // Both soft; --cli-complexity is higher precedence so it applies first. Because the chain
+          // breaks on the first non-null, --state-override is never consulted.
+          // --cli-complexity low on sonnet baseline is a no-op (max(sonnet, haiku) = sonnet).
+          // --state-override opus would upgrade to opus if it were consulted. Verify it is NOT.
+          expect(
+            run(
+              'resolve-tier FEAT-001 reviewing-requirements --cli-complexity low --state-override opus'
+            )
+          ).toBe('sonnet');
+        });
       });
     });
   });

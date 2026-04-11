@@ -41,7 +41,7 @@ Work spans three artifacts: the orchestrator `SKILL.md` (fork call sites, classi
 
 ### Phase 2: Classification Algorithm
 **Feature:** [FEAT-014](../features/FEAT-014-adaptive-model-selection.md) | [#130](https://github.com/lwndev/lwndev-marketplace/issues/130)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - Depends on Phase 1 because every signal extractor needs somewhere to persist its result. Running second (not first) keeps the persistence contract stable while the algorithm logic churns.
@@ -69,10 +69,10 @@ Work spans three artifacts: the orchestrator `SKILL.md` (fork call sites, classi
    - Unparseable-signal fallback returns `sonnet`.
 
 #### Deliverables
-- [ ] Work-item signal extractor pseudocode in `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` (documented, not yet wired to fork sites)
-- [ ] FR-3 tier-resolution algorithm pseudocode in the same SKILL.md
-- [ ] Synthetic requirement-doc test fixtures (chore, bug, feature × low/medium/high)
-- [ ] Unit tests covering every precedence level, both baseline-lock behaviors, two-stage upgrade, and unparseable-signal fallback
+- [x] Work-item signal extractor pseudocode in `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` (documented, not yet wired to fork sites)
+- [x] FR-3 tier-resolution algorithm pseudocode in the same SKILL.md
+- [x] Synthetic requirement-doc test fixtures (chore, bug, feature × low/medium/high)
+- [x] Unit tests covering every precedence level, both baseline-lock behaviors, two-stage upgrade, and unparseable-signal fallback
 
 #### Depends on Phase 1
 
