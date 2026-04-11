@@ -426,7 +426,7 @@ Both the console echo (FR-14) and the `modelSelections` array (FR-7) must be pre
 
 - **Claude Code ≥ 2.1.72** — Agent tool must support the per-invocation `model` parameter (see NFR-6 and `docs/shared/docs/anthropic/docs/en/changelog.md:129`). Older versions degrade gracefully via the NFR-6 fallback path.
 - **Agent tool `model` parameter** — accepts aliases (`sonnet`/`opus`/`haiku`) or `inherit`; see `docs/shared/docs/anthropic/docs/en/sub-agents.md:219,234`
-- Existing `orchestrating-workflows` skill and its `workflow-state.sh` script (fork call sites at `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md:320`, `:327`, `:421`, `:464`, `:532` — all to be mutated to pass explicit `model`)
+- Existing `orchestrating-workflows` skill and its `workflow-state.sh` script — fork call sites are documented per-chain in SKILL.md (Feature Chain §§ Forked Steps, Chore Chain §§ Forked Steps, Bug Chain §§ Forked Steps, Phase Loop, and the inline PR-creation fork); all call sites were mutated to pass an explicit `model` parameter via the shared pre-fork sequence
 - Existing requirement document templates (feature, chore, bug) — **unchanged**; no frontmatter is added (see FR-5 rationale)
 - A new `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/` directory (does not exist yet — must be created by the implementation plan alongside `model-selection.md`)
 
@@ -611,3 +611,36 @@ FEAT-014 itself classifies as high-complexity under its own rules: 14 FRs (FR-1 
 - [ ] Acceptance test: orchestrator invoked from a cron-scheduled agent running on Haiku still classifies correctly from signals (does not floor on parent model)
 - [ ] Backward compatibility: workflows initialized before this change (existing `.json` state files without the new fields) continue to run, defaulting to parent-model inheritance with a one-line info message per fork until complexity is computed on next resume (FR-13)
 - [ ] All skills pass `npm run validate`
+
+## Implementation Deviations
+
+Documented during `executing-qa` reconciliation (PR #132, merged into `main`).
+
+### Self-review follow-ups addressed in commits `a421fa9` + `54d4a78`
+
+After the initial 5-phase implementation landed (`8992021` → `8d5a5b6`), a self-review on PR #132 flagged 5 findings that were addressed in follow-up commits:
+
+1. **`cmd_get_model` resolver divergence** — The initial implementation treated `modelOverride` as a hard replacement in `cmd_get_model`, contradicting FR-5 #4 (upgrade-only, respects baseline lock). `a421fa9` rewrites `cmd_get_model` as a flag-less wrapper around `cmd_resolve_tier`, eliminating divergence between the two resolvers. A cross-walker agreement test (`workflow-state.test.ts`) was added to guard against regression.
+2. **`references/model-selection.md` Option 4 example conflated commands** — The migration guide Option 4 described the `modelOverride` state field but showed `set-complexity` as the example command (which writes `.complexity`, not `.modelOverride`). `a421fa9` splits Option 4 into two paths (4a: `set-complexity` → `.complexity`, 4b: direct `jq` edit → `.modelOverride`).
+3. **`_check_security_auth_perf` false positives** — The initial substring match bumped on words like `author`/`performer` and inside fenced code blocks. `a421fa9` switches to word-boundary regex and tracks fence state. Two new negative-path fixtures (`feature-nfr-false-positive.md`, `feature-nfr-fenced-code.md`) and tests were added.
+4. **`cmd_record_model_selection` missing numeric guard** — `a421fa9` adds `[[ "$step_index" =~ ^[0-9]+$ ]]` validation so non-numeric stepIndex produces a clear error instead of a cryptic `jq` failure.
+5. **`cmd_resume_recompute` subtle empty-tier logic** — `a421fa9` adds an inline comment explaining the empty `post_plan_tier` + `_max_complexity` interaction for future readers.
+
+Additionally, `54d4a78` replaces a hard-coded `while (( i < 4 ))` chain walker bound in `cmd_resolve_tier` with `${#chain_values[@]}` to prevent silent breakage if the FR-5 precedence chain grows.
+
+### Divergences from GitHub issue #130 (design decisions made during implementation)
+
+Six material design decisions were made between issue filing and implementation that differ from the original issue's design:
+
+- **Chore signal count: 2 → 1.** Issue #130 proposed two chore signals (acceptance criteria count AND affected files count); the PR drops the affected-files signal because chore templates have no parseable file-list schema. FR-2a and Example A document the single-signal design.
+- **YAML frontmatter overrides removed (FR-6).** Issue #130 proposed `complexity:` and `model-override:` fields in requirement document frontmatter; the PR removes this because (a) requirement docs have no existing frontmatter convention, and (b) neither field is valid in any Claude Code schema (subagents, skills, plugin manifests). Overrides are instead available via CLI flags and state-file edits. FR-5 documents the rationale.
+- **`modelSelections` schema: flat object → array.** Issue #130 showed a flat object keyed by skill name; the PR ships an array of entries because `reviewing-requirements` runs at up to 3 steps per chain, `implementing-plan-phases` runs N times, and FR-11 retries produce multiple rows — all of which a flat object would silently overwrite. FR-7 documents the schema.
+- **Two-stage feature classification added.** Issue #130 listed phase count as a feature signal without acknowledging that the plan is produced by step 3. The PR introduces `complexityStage: "init"|"post-plan"` with upgrade-only transition after `creating-implementation-plans` completes. FR-2a/FR-2b and Example C document the two-stage path.
+- **Hard vs soft override distinction added to FR-5.** Issue #130 described override precedence as a simple "highest wins" list. The PR splits overrides into hard (replace, can downgrade below baseline, bypass baseline lock) and soft (upgrade-only, respect baseline lock). FR-3 walker implements the distinction; Edge Case 11 documents the hard-downgrade warning path.
+- **NFR-6 added (Claude Code 2.1.72 floor + Agent fallback).** Issue #130 did not mention version compatibility. The PR adds a soft version floor (warning at init on older versions) plus a per-fork-call-site fallback that retries without the `model` parameter if the Agent tool rejects it. Tier aliases (`sonnet`/`opus`/`haiku`) are passed verbatim, never full model IDs.
+
+Issue #130's Open Question 3 (baseline-locked steps) is resolved in the PR as first-class FR-4.
+
+### Stale reference fix
+
+The Dependencies section previously cited SKILL.md line numbers (`:320`, `:327`, `:421`, `:464`, `:532`) as fork call sites. These were valid in the pre-Phase-3 SKILL.md but no longer map after Phase 3's mutations grew the file to ~950 lines. Reconciliation replaced the line list with symbolic per-chain references pointing at the Forked Steps sections, which are now the authoritative fork-site inventory.
