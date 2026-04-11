@@ -508,21 +508,43 @@ This lets you adopt the adaptive policy for most steps while selectively
 forcing tier for the ones where you have empirical evidence that Sonnet
 is insufficient.
 
-### Option 4: State file `modelOverride` (sticky across resumes)
+### Option 4: Sticky per-workflow overrides (persisted in state file)
 
-Between a `pause` and a `resume`, edit the workflow's state file to set
-`modelOverride`:
+Between a `pause` and a `resume`, there are two **distinct** state-file
+knobs, and they set **different** fields:
+
+**4a — Upgrade the work-item complexity axis via `set-complexity`.**
+This writes `.complexity` (the work-item axis input, FR-2a/FR-2b) and is
+itself upgrade-only — if you raise complexity from `medium` to `high`,
+all subsequent forks see the higher tier through the FR-3 walker:
 
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-complexity FEAT-001 high
-# or directly:
+```
+
+Use this when you want to re-classify the work item's difficulty, e.g.
+because you discovered the scope is larger than the requirement doc
+signals suggested.
+
+**4b — Force a sticky soft override via `.modelOverride`.**
+This writes the `.modelOverride` state field directly — a **soft**
+override per FR-5 #4, so it is upgrade-only and respects baseline locks.
+There is no `set-model-override` subcommand today; edit the JSON
+directly with `jq`:
+
+```bash
 jq '.modelOverride = "opus"' .sdlc/workflows/FEAT-001.json > /tmp/s.json \
     && mv /tmp/s.json .sdlc/workflows/FEAT-001.json
 ```
 
-Remember that `modelOverride` is a **soft** override — it is upgrade-only
-and respects baseline locks. If you need to downgrade below baseline or
-to force a baseline-locked step above its floor, use `--model` instead.
+Use this when you want to force the whole workflow to a specific tier
+without re-classifying the complexity signal.
+
+Remember that both `.complexity` and `.modelOverride` are **soft** inputs
+— they are upgrade-only and respect baseline locks (so neither can push
+`finalizing-workflow` or the PR-creation fork above `haiku`). If you need
+to downgrade below baseline or force a baseline-locked step above its
+floor, use a **hard** override via `--model` at invocation time instead.
 
 ## Why requirement docs have no complexity/model-override frontmatter
 

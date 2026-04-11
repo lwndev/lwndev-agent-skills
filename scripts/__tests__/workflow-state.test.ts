@@ -869,16 +869,58 @@ describe('workflow-state.sh', () => {
         expect(run('get-model FEAT-001 pr-creation')).toBe('haiku');
       });
 
-      it('modelOverride takes precedence over complexity for non-locked steps', () => {
+      it('modelOverride is soft and upgrade-only — cannot downgrade below computed tier', () => {
         runJSON('init FEAT-001 feature');
         runJSON('set-complexity FEAT-001 high');
-        // Manually set modelOverride = sonnet (soft-override semantics).
+        // Manually set modelOverride = sonnet (soft-override, FR-5 #4).
         const stateFile = join(testDir, '.sdlc/workflows/FEAT-001.json');
         const raw = JSON.parse(readFileSync(stateFile, 'utf-8'));
         raw.modelOverride = 'sonnet';
         writeFileSync(stateFile, JSON.stringify(raw));
-        // Override replaces the computed tier.
-        expect(run('get-model FEAT-001 reviewing-requirements')).toBe('sonnet');
+        // FR-5 #4: upgrade-only. complexity=high → opus, soft override=sonnet
+        // is LOWER, so max(opus, sonnet) = opus. Override cannot downgrade.
+        expect(run('get-model FEAT-001 reviewing-requirements')).toBe('opus');
+      });
+
+      it('modelOverride upgrades non-locked steps when higher than computed tier', () => {
+        runJSON('init FEAT-001 feature');
+        runJSON('set-complexity FEAT-001 low');
+        // complexity=low → haiku, baseline=sonnet, so computed = sonnet.
+        // Set modelOverride = opus — soft upgrade above the computed tier.
+        const stateFile = join(testDir, '.sdlc/workflows/FEAT-001.json');
+        const raw = JSON.parse(readFileSync(stateFile, 'utf-8'));
+        raw.modelOverride = 'opus';
+        writeFileSync(stateFile, JSON.stringify(raw));
+        // max(sonnet, opus) = opus.
+        expect(run('get-model FEAT-001 reviewing-requirements')).toBe('opus');
+      });
+
+      it('get-model and resolve-tier agree on identical inputs (no divergence)', () => {
+        // Regression guard for the FR-5 #4 violation fixed after code review:
+        // both resolvers must return the same tier when given the same state
+        // and no CLI-flag overrides. cmd_get_model is a flag-less wrapper
+        // around cmd_resolve_tier, so any future divergence is a bug.
+        runJSON('init FEAT-001 feature');
+        runJSON('set-complexity FEAT-001 high');
+        const stateFile = join(testDir, '.sdlc/workflows/FEAT-001.json');
+        const raw = JSON.parse(readFileSync(stateFile, 'utf-8'));
+        raw.modelOverride = 'sonnet';
+        writeFileSync(stateFile, JSON.stringify(raw));
+
+        const steps = [
+          'reviewing-requirements',
+          'creating-implementation-plans',
+          'implementing-plan-phases',
+          'executing-chores',
+          'executing-bug-fixes',
+          'finalizing-workflow',
+          'pr-creation',
+        ];
+        for (const step of steps) {
+          const getModel = run(`get-model FEAT-001 ${step}`);
+          const resolveTier = run(`resolve-tier FEAT-001 ${step}`);
+          expect(getModel).toBe(resolveTier);
+        }
       });
 
       it('baseline-locked steps ignore modelOverride (soft override)', () => {
@@ -996,6 +1038,24 @@ describe('workflow-state.sh', () => {
         });
         expect(err).toContain('record-model-selection requires');
       });
+
+      it('rejects non-numeric stepIndex with a clear error (not a cryptic jq failure)', () => {
+        runJSON('init FEAT-001 feature');
+        const err = run(
+          'record-model-selection FEAT-001 notanumber reviewing-requirements standard null sonnet init 2026-04-11T00:00:00Z',
+          { expectError: true }
+        );
+        expect(err).toContain('requires a numeric');
+      });
+
+      it('rejects empty stepIndex with a clear error', () => {
+        runJSON('init FEAT-001 feature');
+        const err = run(
+          'record-model-selection FEAT-001 "" reviewing-requirements standard null sonnet init 2026-04-11T00:00:00Z',
+          { expectError: true }
+        );
+        expect(err).toContain('requires a numeric');
+      });
     });
 
     describe('classifier (FEAT-014 Phase 2)', () => {
@@ -1095,6 +1155,33 @@ describe('workflow-state.sh', () => {
         it('14 FRs with security NFR → high (bump ceils)', () => {
           runJSON('init FEAT-001 feature');
           expect(run(`classify-init FEAT-001 ${fixturePath('feature-high.md')}`)).toBe('high');
+        });
+
+        it('NFR section with benign "author"/"performer" text does NOT trigger a bump', () => {
+          // Code review Issue 3: _check_security_auth_perf used substring
+          // matching, so "author metadata", "performer", and similar false
+          // positives incorrectly bumped the tier. Word-boundary matching
+          // must reject these.
+          runJSON('init FEAT-901 feature');
+          // feature-nfr-false-positive.md has 2 FRs → low bucket. Without
+          // the bump, classifier returns "low". If the substring bug were
+          // still present, it would bump to "medium".
+          expect(
+            run(`classify-init FEAT-901 ${fixturePath('feature-nfr-false-positive.md')}`)
+          ).toBe('low');
+        });
+
+        it('keywords inside fenced code blocks in NFR prose do NOT trigger a bump', () => {
+          // Code review Issue 3: fenced YAML/JSON examples inside the NFR
+          // section were counted as real signal. The fence-aware extractor
+          // must skip content between ``` markers.
+          runJSON('init FEAT-902 feature');
+          // feature-nfr-fenced-code.md has 2 FRs → low bucket. The NFR
+          // section only mentions security/auth/perf INSIDE a fenced YAML
+          // example; the prose itself is benign. Expected: low.
+          expect(run(`classify-init FEAT-902 ${fixturePath('feature-nfr-fenced-code.md')}`)).toBe(
+            'low'
+          );
         });
       });
 

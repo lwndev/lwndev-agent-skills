@@ -340,22 +340,45 @@ _count_phases() {
   fi
 }
 
-# Check whether the Non-Functional Requirements section mentions any of
-# security / auth / perf (case-insensitive, matches "authentication",
-# "performance", etc. as substrings). Echoes "true" if any match is found,
-# "false" if the section exists but has no match, and empty string if the
-# section is absent.
+# Check whether the Non-Functional Requirements section mentions any
+# security / authentication / performance concern. Uses word-boundary
+# matching (delimited by non-letter characters) rather than substring
+# matching so "author metadata", "performer", and similar false positives
+# do NOT trigger a bump. Also skips lines inside fenced code blocks
+# (```...```) so example YAML/JSON inside NFR prose cannot distort counts.
+#
+# Matched keywords (case-insensitive, whole-word):
+#   security, secure
+#   authentication, authorization
+#   performance, latency, throughput
+#
+# Echoes "true" if any whole-word keyword is found in NFR prose outside
+# fenced blocks, "false" if the section exists but has no match, and
+# empty string if the section is absent entirely.
 _check_security_auth_perf() {
   local doc="$1"
   [[ -f "$doc" ]] || { echo ""; return; }
 
   awk '
-    BEGIN { in_nfr = 0; found = 0; matched = 0 }
+    BEGIN {
+      in_nfr = 0
+      found = 0
+      matched = 0
+      in_fence = 0
+      # Whole-word keyword pattern. Anchored with (^|[^a-z]) / ([^a-z]|$)
+      # to prevent substring matches ("author" ⊄ "authored", "perf" ⊄
+      # "performer"). Expand by adding new keywords here; keep the set
+      # aligned with the NFR bump spec in FR-2a.
+      pattern = "(^|[^a-z])(security|secure|authentication|authorization|performance|latency|throughput)([^a-z]|$)"
+    }
+    # Track fence state before any NFR-section logic so fenced code inside
+    # the NFR section is excluded from matching.
+    /^```/ { in_fence = !in_fence; next }
     /^## Non-Functional Requirements[[:space:]]*$/ { in_nfr = 1; found = 1; next }
     in_nfr && /^## / { in_nfr = 0 }
-    in_nfr {
+    in_nfr && !in_fence {
       line = tolower($0)
-      if (index(line, "security") > 0 || index(line, "auth") > 0 || index(line, "perf") > 0) {
+      if (match(line, pattern)) {
         matched = 1
       }
     }
@@ -1108,49 +1131,30 @@ cmd_set_complexity() {
 
 # Resolve model tier for a named step (FEAT-014 FR-15).
 #
-# Pure-bash lookup using the hardcoded step baselines table plus the persisted
-# .complexity and .modelOverride fields. Intentionally does NOT implement the
-# full FR-3 precedence chain — CLI flags (--model, --complexity, --model-for)
-# live in the orchestrator, not here. Use this subcommand only for the
-# baseline + work-item complexity + modelOverride subset of the chain.
+# Thin wrapper around cmd_resolve_tier that omits CLI-flag handling. The full
+# FR-3 precedence chain (including --model, --complexity, --model-for) lives in
+# cmd_resolve_tier — this helper is the state-scope subset for dry-run
+# inspection via the debug/get-model path.
 #
-# Resolution order:
-#   1. If the step is baseline-locked (finalizing-workflow, pr-creation),
-#      return its baseline regardless of complexity. modelOverride (soft)
-#      respects the lock; hard overrides live in the orchestrator.
-#   2. Otherwise start from baseline, then max(baseline, complexity_tier).
-#   3. If .modelOverride is non-null, that replaces the computed tier
-#      (soft-override semantics — orchestrator handles hard overrides).
+# Semantics mirror FR-5 exactly:
+#   1. Baseline-locked steps (finalizing-workflow, pr-creation) stay at
+#      baseline regardless of .complexity and .modelOverride. Only hard
+#      overrides (orchestrator-scope) bypass the lock.
+#   2. For non-locked steps, resolved = max(baseline, complexity_tier,
+#      modelOverride) — upgrade-only. .modelOverride is a soft override per
+#      FR-5 #4 and cannot downgrade below the baseline floor or the computed
+#      tier.
+#
+# Any divergence from cmd_resolve_tier would be a latent bug: this helper
+# delegates to the same walker to guarantee both resolvers agree on identical
+# inputs.
 cmd_get_model() {
   local id="$1"
   local step_name="$2"
-  local file
-  file=$(state_file "$id")
-  validate_state_file "$file"
-
-  local baseline locked complexity override complexity_tier resolved
-  baseline=$(_step_baseline "$step_name")
-  locked=$(_step_baseline_locked "$step_name")
-  complexity=$(jq -r '.complexity // ""' "$file")
-  override=$(jq -r '.modelOverride // ""' "$file")
-
-  if [[ "$locked" == "true" ]]; then
-    # Baseline-locked: ignore work-item complexity. Soft override (modelOverride)
-    # is only applied for non-locked steps; hard override is orchestrator-scope.
-    resolved="$baseline"
-  else
-    complexity_tier=$(_complexity_to_tier "$complexity")
-    if [[ -n "$complexity_tier" ]]; then
-      resolved=$(_max_tier "$baseline" "$complexity_tier")
-    else
-      resolved="$baseline"
-    fi
-    if [[ -n "$override" ]]; then
-      resolved="$override"
-    fi
-  fi
-
-  echo "$resolved"
+  # Delegate to the FR-3 walker without any CLI-flag overrides. This keeps
+  # the state-scope semantics (baseline + work-item complexity + soft state
+  # override) in lockstep with the full resolver.
+  cmd_resolve_tier "$id" "$step_name"
 }
 
 # Append an entry to the modelSelections audit trail (FEAT-014 FR-7, NFR-3).
@@ -1165,6 +1169,15 @@ cmd_record_model_selection() {
   local tier="$6"
   local complexity_stage="$7"
   local started_at="$8"
+
+  # Guard: stepIndex must be a non-negative integer — jq --argjson on a
+  # non-numeric value produces a cryptic parser error instead of a clear
+  # usage message. Match the guard style used elsewhere in this file.
+  if [[ -z "$step_index" ]] || ! [[ "$step_index" =~ ^[0-9]+$ ]]; then
+    echo "Error: record-model-selection requires a numeric <stepIndex>; got '${step_index}'." >&2
+    exit 1
+  fi
+
   local file
   file=$(state_file "$id")
   validate_state_file "$file"
@@ -1298,6 +1311,15 @@ cmd_resume_recompute() {
   fi
 
   # Compute the upgrade-only candidate: max(persisted, init_tier, post_plan_tier).
+  #
+  # init_tier is never empty at this point: the FR-10 fallback above defaults
+  # it to "medium" when the doc is missing or unparseable. post_plan_tier CAN
+  # be empty (e.g., plan file absent while stage=post-plan — NFR-5 says we
+  # retain the init-stage tier and do NOT upgrade in that case). _max_complexity
+  # treats an empty operand as rank 0, so passing "" on one side returns the
+  # non-empty side unchanged — that's exactly the "retain init-stage" semantic
+  # we want. The subsequent max(persisted, candidate) preserves upgrade-only
+  # behavior even when persisted is itself empty (first-run after migration).
   local candidate="$init_tier"
   if [[ -n "$post_plan_tier" ]]; then
     candidate=$(_max_complexity "$candidate" "$post_plan_tier")
