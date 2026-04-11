@@ -121,21 +121,20 @@ For a phase-start comment on a GitHub issue:
 
 1. `Read` the appropriate template from `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/references/github-templates.md` — select the `phase-start` section.
 2. Substitute context variables (`phase`, `totalPhases`, `workItemId`, phase name, steps, deliverables) into the template to produce the rendered markdown body.
-3. Run:
+3. Run the following command. Use the plain multi-line double-quoted string form (matching the canonical templates in `github-templates.md`); do **not** wrap the body in a `$(cat <<'EOF' ... EOF)"` heredoc — the closing `EOF` delimiter must be at column 0, which conflicts with markdown list-continuation indentation and breaks copy-paste from raw source:
 
    ```bash
-   gh issue comment 131 --body "$(cat <<'EOF'
-   ## Phase 1 Started: GitHub Backend
+   gh issue comment 131 --body "## Phase 1 Started: GitHub Backend
 
    **FEAT-014** — Phase 1 of 4
 
    ### Steps
    - Implement classifier script
    - Wire up state-file fields
-   ...
-   EOF
-   )"
+   ..."
    ```
+
+   If the rendered body contains literal `$`, backticks, or backslashes that you do not want bash to interpret, use single quotes instead: `gh issue comment 131 --body '...'`. For dynamic substitution, build the body in a shell variable first (`body="..."; gh issue comment 131 --body "$body"`).
 
 4. On failure (non-zero exit), emit a warning-level skip message (see "Mechanism-Failure Logging" below) and continue the workflow.
 
