@@ -622,6 +622,377 @@ describe('workflow-state.sh', () => {
     });
   });
 
+  describe('model selection (FEAT-014)', () => {
+    describe('init defaults', () => {
+      it('writes complexity, complexityStage, modelOverride, and modelSelections on fresh init', () => {
+        const state = runJSON('init FEAT-001 feature');
+        expect(state.complexity).toBeNull();
+        expect(state.complexityStage).toBe('init');
+        expect(state.modelOverride).toBeNull();
+        expect(state.modelSelections).toEqual([]);
+      });
+
+      it('includes all four model-selection fields on chore init', () => {
+        const state = runJSON('init CHORE-001 chore');
+        expect(state).toHaveProperty('complexity', null);
+        expect(state).toHaveProperty('complexityStage', 'init');
+        expect(state).toHaveProperty('modelOverride', null);
+        expect(state).toHaveProperty('modelSelections');
+        expect(state.modelSelections).toEqual([]);
+      });
+
+      it('includes all four model-selection fields on bug init', () => {
+        const state = runJSON('init BUG-001 bug');
+        expect(state).toHaveProperty('complexity', null);
+        expect(state).toHaveProperty('complexityStage', 'init');
+        expect(state).toHaveProperty('modelOverride', null);
+        expect(state).toHaveProperty('modelSelections');
+      });
+    });
+
+    describe('migration (FR-13)', () => {
+      // Helper to write a pre-FEAT-014 state file (lacking the four new fields).
+      function writeLegacyState(id: string): void {
+        mkdirSync(join(testDir, '.sdlc/workflows'), { recursive: true });
+        const legacy = {
+          id,
+          type: 'feature',
+          currentStep: 2,
+          status: 'in-progress',
+          pauseReason: null,
+          steps: [
+            {
+              name: 'Document feature requirements',
+              skill: 'documenting-features',
+              context: 'main',
+              status: 'complete',
+              artifact: 'requirements/features/FEAT-050.md',
+              completedAt: '2026-04-01T00:00:00Z',
+            },
+            {
+              name: 'Review requirements (standard)',
+              skill: 'reviewing-requirements',
+              context: 'fork',
+              status: 'complete',
+              artifact: null,
+              completedAt: '2026-04-01T00:05:00Z',
+            },
+            {
+              name: 'Create implementation plan',
+              skill: 'creating-implementation-plans',
+              context: 'fork',
+              status: 'pending',
+              artifact: null,
+              completedAt: null,
+            },
+          ],
+          phases: { total: 0, completed: 0 },
+          prNumber: null,
+          branch: null,
+          startedAt: '2026-04-01T00:00:00Z',
+          lastResumedAt: null,
+        };
+        writeFileSync(join(testDir, '.sdlc/workflows', `${id}.json`), JSON.stringify(legacy));
+      }
+
+      it('adds missing complexity/complexityStage/modelOverride/modelSelections without clobbering existing data', () => {
+        writeLegacyState('FEAT-050');
+        const state = runJSON('status FEAT-050');
+
+        // New fields populated with init defaults.
+        expect(state.complexity).toBeNull();
+        expect(state.complexityStage).toBe('init');
+        expect(state.modelOverride).toBeNull();
+        expect(state.modelSelections).toEqual([]);
+
+        // Existing data preserved.
+        expect(state.currentStep).toBe(2);
+        expect(state.status).toBe('in-progress');
+        const steps = state.steps as Array<Record<string, unknown>>;
+        expect(steps).toHaveLength(3);
+        expect(steps[0].status).toBe('complete');
+        expect(steps[0].artifact).toBe('requirements/features/FEAT-050.md');
+        expect(steps[1].status).toBe('complete');
+        expect(steps[2].status).toBe('pending');
+      });
+
+      it('migration persists to disk so subsequent reads are already-migrated', () => {
+        writeLegacyState('FEAT-051');
+        // First read triggers migration.
+        runJSON('status FEAT-051');
+        // Second read should see already-migrated file (no double-migration, no data loss).
+        const state = readState('FEAT-051');
+        expect(state.complexity).toBeNull();
+        expect(state.complexityStage).toBe('init');
+        expect(state.modelOverride).toBeNull();
+        expect(state.modelSelections).toEqual([]);
+        expect(state.currentStep).toBe(2);
+      });
+
+      it('migration does not overwrite a partially-populated complexity value', () => {
+        mkdirSync(join(testDir, '.sdlc/workflows'), { recursive: true });
+        // Partial legacy file: has complexity but missing the rest.
+        const partial = {
+          id: 'FEAT-052',
+          type: 'feature',
+          currentStep: 0,
+          status: 'in-progress',
+          pauseReason: null,
+          steps: [
+            {
+              name: 'Document feature requirements',
+              skill: 'documenting-features',
+              context: 'main',
+              status: 'pending',
+              artifact: null,
+              completedAt: null,
+            },
+          ],
+          phases: { total: 0, completed: 0 },
+          prNumber: null,
+          branch: null,
+          startedAt: '2026-04-01T00:00:00Z',
+          lastResumedAt: null,
+          complexity: 'high',
+        };
+        writeFileSync(join(testDir, '.sdlc/workflows/FEAT-052.json'), JSON.stringify(partial));
+
+        const state = runJSON('status FEAT-052');
+        expect(state.complexity).toBe('high'); // preserved
+        expect(state.complexityStage).toBe('init'); // added
+        expect(state.modelOverride).toBeNull(); // added
+        expect(state.modelSelections).toEqual([]); // added
+      });
+    });
+
+    describe('set-complexity', () => {
+      it('writes complexity value and round-trips through status', () => {
+        runJSON('init FEAT-001 feature');
+        const state = runJSON('set-complexity FEAT-001 high');
+        expect(state.complexity).toBe('high');
+
+        const rereadState = runJSON('status FEAT-001');
+        expect(rereadState.complexity).toBe('high');
+      });
+
+      it('accepts low, medium, and high tiers', () => {
+        runJSON('init FEAT-001 feature');
+
+        const lowState = runJSON('set-complexity FEAT-001 low');
+        expect(lowState.complexity).toBe('low');
+
+        const medState = runJSON('set-complexity FEAT-001 medium');
+        expect(medState.complexity).toBe('medium');
+
+        const highState = runJSON('set-complexity FEAT-001 high');
+        expect(highState.complexity).toBe('high');
+      });
+
+      it('leaves complexityStage untouched (manual override is not a stage transition)', () => {
+        runJSON('init FEAT-001 feature');
+        const state = runJSON('set-complexity FEAT-001 high');
+        expect(state.complexityStage).toBe('init');
+      });
+
+      it('rejects invalid tier values with non-zero exit code', () => {
+        runJSON('init FEAT-001 feature');
+        const err = run('set-complexity FEAT-001 huge', { expectError: true });
+        expect(err).toContain('Invalid complexity tier');
+      });
+
+      it('rejects empty tier', () => {
+        runJSON('init FEAT-001 feature');
+        const err = run('set-complexity FEAT-001', { expectError: true });
+        expect(err).toContain('set-complexity requires');
+      });
+
+      it('does not clobber modelOverride when setting complexity', () => {
+        runJSON('init FEAT-001 feature');
+        // Manually set modelOverride via direct file edit (set-complexity should not touch it).
+        const stateFile = join(testDir, '.sdlc/workflows/FEAT-001.json');
+        const raw = JSON.parse(readFileSync(stateFile, 'utf-8'));
+        raw.modelOverride = 'opus';
+        writeFileSync(stateFile, JSON.stringify(raw));
+
+        const state = runJSON('set-complexity FEAT-001 low');
+        expect(state.complexity).toBe('low');
+        expect(state.modelOverride).toBe('opus');
+      });
+    });
+
+    describe('get-model', () => {
+      it('returns the step baseline floor when complexity is null', () => {
+        runJSON('init FEAT-001 feature');
+        // Sonnet-baseline steps
+        expect(run('get-model FEAT-001 reviewing-requirements')).toBe('sonnet');
+        expect(run('get-model FEAT-001 creating-implementation-plans')).toBe('sonnet');
+        expect(run('get-model FEAT-001 implementing-plan-phases')).toBe('sonnet');
+        expect(run('get-model FEAT-001 executing-chores')).toBe('sonnet');
+        expect(run('get-model FEAT-001 executing-bug-fixes')).toBe('sonnet');
+        // Baseline-locked steps
+        expect(run('get-model FEAT-001 finalizing-workflow')).toBe('haiku');
+        expect(run('get-model FEAT-001 pr-creation')).toBe('haiku');
+      });
+
+      it('honours complexity upgrade for non-baseline-locked steps', () => {
+        runJSON('init FEAT-001 feature');
+        runJSON('set-complexity FEAT-001 high');
+        // max(sonnet, opus) = opus
+        expect(run('get-model FEAT-001 reviewing-requirements')).toBe('opus');
+        expect(run('get-model FEAT-001 implementing-plan-phases')).toBe('opus');
+      });
+
+      it('does not downgrade below baseline when complexity is low', () => {
+        runJSON('init FEAT-001 feature');
+        runJSON('set-complexity FEAT-001 low');
+        // max(sonnet, haiku) = sonnet — Sonnet baseline floor protects us.
+        expect(run('get-model FEAT-001 reviewing-requirements')).toBe('sonnet');
+        expect(run('get-model FEAT-001 implementing-plan-phases')).toBe('sonnet');
+      });
+
+      it('returns medium→sonnet complexity as a no-op upgrade on sonnet-baseline steps', () => {
+        runJSON('init FEAT-001 feature');
+        runJSON('set-complexity FEAT-001 medium');
+        expect(run('get-model FEAT-001 reviewing-requirements')).toBe('sonnet');
+      });
+
+      it('baseline-locked steps ignore complexity upgrades', () => {
+        runJSON('init FEAT-001 feature');
+        runJSON('set-complexity FEAT-001 high');
+        expect(run('get-model FEAT-001 finalizing-workflow')).toBe('haiku');
+        expect(run('get-model FEAT-001 pr-creation')).toBe('haiku');
+      });
+
+      it('modelOverride takes precedence over complexity for non-locked steps', () => {
+        runJSON('init FEAT-001 feature');
+        runJSON('set-complexity FEAT-001 high');
+        // Manually set modelOverride = sonnet (soft-override semantics).
+        const stateFile = join(testDir, '.sdlc/workflows/FEAT-001.json');
+        const raw = JSON.parse(readFileSync(stateFile, 'utf-8'));
+        raw.modelOverride = 'sonnet';
+        writeFileSync(stateFile, JSON.stringify(raw));
+        // Override replaces the computed tier.
+        expect(run('get-model FEAT-001 reviewing-requirements')).toBe('sonnet');
+      });
+
+      it('baseline-locked steps ignore modelOverride (soft override)', () => {
+        runJSON('init FEAT-001 feature');
+        const stateFile = join(testDir, '.sdlc/workflows/FEAT-001.json');
+        const raw = JSON.parse(readFileSync(stateFile, 'utf-8'));
+        raw.modelOverride = 'opus';
+        writeFileSync(stateFile, JSON.stringify(raw));
+        expect(run('get-model FEAT-001 finalizing-workflow')).toBe('haiku');
+        expect(run('get-model FEAT-001 pr-creation')).toBe('haiku');
+      });
+
+      it('unknown step names default to sonnet (safe floor)', () => {
+        runJSON('init FEAT-001 feature');
+        expect(run('get-model FEAT-001 totally-made-up-skill')).toBe('sonnet');
+      });
+
+      it('errors when state file does not exist', () => {
+        const err = run('get-model FEAT-999 reviewing-requirements', { expectError: true });
+        expect(err).toContain('State file not found');
+      });
+    });
+
+    describe('record-model-selection', () => {
+      it('appends the first entry to modelSelections', () => {
+        runJSON('init FEAT-001 feature');
+        const state = runJSON(
+          'record-model-selection FEAT-001 1 reviewing-requirements standard null sonnet init 2026-04-11T00:00:00Z'
+        );
+        const selections = state.modelSelections as Array<Record<string, unknown>>;
+        expect(selections).toHaveLength(1);
+        expect(selections[0]).toEqual({
+          stepIndex: 1,
+          skill: 'reviewing-requirements',
+          mode: 'standard',
+          phase: null,
+          tier: 'sonnet',
+          complexityStage: 'init',
+          startedAt: '2026-04-11T00:00:00Z',
+        });
+      });
+
+      it('appends subsequent entries without overwriting earlier ones', () => {
+        runJSON('init FEAT-001 feature');
+        runJSON(
+          'record-model-selection FEAT-001 1 reviewing-requirements standard null sonnet init 2026-04-11T00:00:00Z'
+        );
+        runJSON(
+          'record-model-selection FEAT-001 2 creating-implementation-plans null null opus init 2026-04-11T00:05:00Z'
+        );
+        const state = runJSON(
+          'record-model-selection FEAT-001 3 implementing-plan-phases null 1 opus post-plan 2026-04-11T00:10:00Z'
+        );
+        const selections = state.modelSelections as Array<Record<string, unknown>>;
+        expect(selections).toHaveLength(3);
+        expect(selections[0].skill).toBe('reviewing-requirements');
+        expect(selections[0].tier).toBe('sonnet');
+        expect(selections[1].skill).toBe('creating-implementation-plans');
+        expect(selections[1].tier).toBe('opus');
+        expect(selections[1].complexityStage).toBe('init');
+        expect(selections[2].skill).toBe('implementing-plan-phases');
+        expect(selections[2].phase).toBe(1);
+        expect(selections[2].complexityStage).toBe('post-plan');
+      });
+
+      it('supports null mode and null phase via "null" literal', () => {
+        runJSON('init FEAT-001 feature');
+        const state = runJSON(
+          'record-model-selection FEAT-001 5 finalizing-workflow null null haiku init 2026-04-11T01:00:00Z'
+        );
+        const selections = state.modelSelections as Array<Record<string, unknown>>;
+        expect(selections[0].mode).toBeNull();
+        expect(selections[0].phase).toBeNull();
+      });
+
+      it('preserves existing modelSelections when appending after a migration', () => {
+        // Write a legacy state file, then append without clobbering.
+        mkdirSync(join(testDir, '.sdlc/workflows'), { recursive: true });
+        const legacy = {
+          id: 'FEAT-060',
+          type: 'feature',
+          currentStep: 0,
+          status: 'in-progress',
+          pauseReason: null,
+          steps: [
+            {
+              name: 'Document feature requirements',
+              skill: 'documenting-features',
+              context: 'main',
+              status: 'pending',
+              artifact: null,
+              completedAt: null,
+            },
+          ],
+          phases: { total: 0, completed: 0 },
+          prNumber: null,
+          branch: null,
+          startedAt: '2026-04-01T00:00:00Z',
+          lastResumedAt: null,
+        };
+        writeFileSync(join(testDir, '.sdlc/workflows/FEAT-060.json'), JSON.stringify(legacy));
+
+        const state = runJSON(
+          'record-model-selection FEAT-060 0 documenting-features null null sonnet init 2026-04-11T00:00:00Z'
+        );
+        const selections = state.modelSelections as Array<Record<string, unknown>>;
+        expect(selections).toHaveLength(1);
+        expect(selections[0].skill).toBe('documenting-features');
+      });
+
+      it('errors when missing arguments', () => {
+        runJSON('init FEAT-001 feature');
+        const err = run('record-model-selection FEAT-001 1 reviewing-requirements', {
+          expectError: true,
+        });
+        expect(err).toContain('record-model-selection requires');
+      });
+    });
+  });
+
   describe('error handling', () => {
     it('shows usage when no command provided', () => {
       const err = run('', { expectError: true });
