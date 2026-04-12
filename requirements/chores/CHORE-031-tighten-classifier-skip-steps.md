@@ -35,7 +35,7 @@ Refactor `_classify_bug` in `workflow-state.sh` so that severity alone or RC cou
 
 **Completed:** 2026-04-12
 
-**Pull Request:** TBD
+**Pull Request:** [#141](https://github.com/lwndev/lwndev-marketplace/pull/141)
 
 ## Notes
 
