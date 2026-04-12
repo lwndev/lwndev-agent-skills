@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { execSync } from 'node:child_process';
 import { readFile, access } from 'node:fs/promises';
-import { constants } from 'node:fs';
+import { constants, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { validate, type DetailedValidateResult } from 'ai-skills-manager';
 
@@ -124,6 +124,8 @@ describe('documenting-qa skill', () => {
   });
 
   describe('stop hook behavior', () => {
+    const STATE_FILE = '.sdlc/qa/.documenting-active';
+
     function runHook(stdinJson: string): { exitCode: number; stderr: string } {
       try {
         execSync(`echo '${stdinJson.replace(/'/g, "'\\''")}' | bash ${STOP_HOOK_PATH}`, {
@@ -137,14 +139,69 @@ describe('documenting-qa skill', () => {
       }
     }
 
-    it('exits 0 when stop_hook_active is true', () => {
+    function createStateFile(): void {
+      mkdirSync('.sdlc/qa', { recursive: true });
+      writeFileSync(STATE_FILE, '');
+    }
+
+    function removeStateFile(): void {
+      try {
+        rmSync(STATE_FILE);
+      } catch {
+        // ignore if not present
+      }
+    }
+
+    afterEach(() => {
+      removeStateFile();
+    });
+
+    it('exits 0 immediately when state file does not exist (skill not active)', () => {
+      removeStateFile();
       const result = runHook(
-        JSON.stringify({ stop_hook_active: true, last_assistant_message: '' })
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'I am analyzing the requirements document.',
+        })
       );
       expect(result.exitCode).toBe(0);
     });
 
+    it('exits 2 when state file is present and keywords are absent', () => {
+      createStateFile();
+      const result = runHook(
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'I am analyzing the requirements document.',
+        })
+      );
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('exits 0 and removes state file when state file is present and keywords match', () => {
+      createStateFile();
+      const result = runHook(
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message:
+            'Test plan saved to qa/test-plans/QA-plan-FEAT-003.md. The qa-verifier subagent confirmed completeness.',
+        })
+      );
+      expect(result.exitCode).toBe(0);
+      expect(existsSync(STATE_FILE)).toBe(false);
+    });
+
+    it('exits 0 and removes state file when stop_hook_active is true', () => {
+      createStateFile();
+      const result = runHook(
+        JSON.stringify({ stop_hook_active: true, last_assistant_message: '' })
+      );
+      expect(result.exitCode).toBe(0);
+      expect(existsSync(STATE_FILE)).toBe(false);
+    });
+
     it('exits 0 when plan reference and completion indicator are both present', () => {
+      createStateFile();
       const result = runHook(
         JSON.stringify({
           stop_hook_active: false,
@@ -156,6 +213,7 @@ describe('documenting-qa skill', () => {
     });
 
     it('exits 2 when only plan reference is present without completion indicator', () => {
+      createStateFile();
       const result = runHook(
         JSON.stringify({
           stop_hook_active: false,
@@ -166,6 +224,7 @@ describe('documenting-qa skill', () => {
     });
 
     it('exits 2 when neither plan reference nor completion indicator is present', () => {
+      createStateFile();
       const result = runHook(
         JSON.stringify({
           stop_hook_active: false,
@@ -176,11 +235,13 @@ describe('documenting-qa skill', () => {
     });
 
     it('exits 0 on empty stdin', () => {
+      createStateFile();
       const result = runHook('');
       expect(result.exitCode).toBe(0);
     });
 
     it('exits 0 on malformed JSON', () => {
+      createStateFile();
       const result = runHook('not json at all');
       expect(result.exitCode).toBe(0);
     });

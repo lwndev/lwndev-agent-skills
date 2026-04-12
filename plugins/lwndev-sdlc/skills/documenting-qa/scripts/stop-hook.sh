@@ -8,6 +8,13 @@ set -euo pipefail
 #   0 — allow stop (plan is complete or stop_hook_active is set)
 #   2 — block stop (plan not yet verified/saved)
 
+ACTIVE_FILE=".sdlc/qa/.documenting-active"
+
+# If the documenting-qa skill is not active, allow stop immediately
+if [[ ! -f "$ACTIVE_FILE" ]]; then
+  exit 0
+fi
+
 # Read stdin JSON; if empty or malformed, allow stop to avoid trapping the user
 INPUT="$(cat)" || exit 0
 if [[ -z "$INPUT" ]]; then
@@ -17,6 +24,7 @@ fi
 # Check stop_hook_active bypass — exit 0 immediately if true
 STOP_HOOK_ACTIVE="$(echo "$INPUT" | jq -r '.stop_hook_active // false' 2>/dev/null)" || exit 0
 if [[ "$STOP_HOOK_ACTIVE" == "true" ]]; then
+  rm -f "$ACTIVE_FILE"
   exit 0
 fi
 
@@ -47,6 +55,7 @@ if echo "$MSG_LOWER" | grep -qE "(test plan.*(complete|saved|verified|written|cr
 fi
 
 if [[ "$HAS_PLAN_REF" == "true" && "$HAS_COMPLETE_INDICATOR" == "true" ]]; then
+  rm -f "$ACTIVE_FILE"
   exit 0
 fi
 
