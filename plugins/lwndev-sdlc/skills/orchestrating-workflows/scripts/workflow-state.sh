@@ -61,6 +61,9 @@ usage() {
   echo "                                (default 2.1.72). Exits 0 if current >= required or if version" >&2
   echo "                                cannot be determined (graceful). Exits 1 if current < required" >&2
   echo "                                and emits the documented warning line to stderr." >&2
+  echo "  set-gate <ID> <gate-type>     Signal that the orchestrator is waiting for user input within an" >&2
+  echo "                                in-progress step. Valid gate types: findings-decision." >&2
+  echo "  clear-gate <ID>               Remove the active gate (sets gate to null)." >&2
   exit 1
 }
 
@@ -175,10 +178,10 @@ _step_baseline_locked() {
   esac
 }
 
-# Defensive migration for pre-existing state files missing FEAT-014 fields (FR-13).
-# Adds complexity, complexityStage, modelOverride, and modelSelections with their init
-# defaults when any of them are missing. Silent except for a single stderr debug line
-# the first time a file is actually rewritten.
+# Defensive migration for pre-existing state files missing required fields.
+# Adds complexity, complexityStage, modelOverride, modelSelections (FEAT-014 FR-13),
+# and gate (BUG-011) with their init defaults when any are missing. Silent except for
+# a single stderr debug line the first time a file is actually rewritten.
 _migrate_state_file() {
   local file="$1"
   [[ -f "$file" ]] || return 0
@@ -189,20 +192,22 @@ _migrate_state_file() {
     (has("complexity") | not) or
     (has("complexityStage") | not) or
     (has("modelOverride") | not) or
-    (has("modelSelections") | not)
+    (has("modelSelections") | not) or
+    (has("gate") | not)
   ' "$file" 2>/dev/null || echo "false")
 
   if [[ "$needs_migration" != "true" ]]; then
     return 0
   fi
 
-  echo "[workflow-state] debug: migrating ${file} to add FEAT-014 model-selection fields" >&2
+  echo "[workflow-state] debug: migrating ${file} to add missing state fields (model-selection and gate)" >&2
 
   jq '
     (if has("complexity") | not then .complexity = null else . end)
     | (if has("complexityStage") | not then .complexityStage = "init" else . end)
     | (if has("modelOverride") | not then .modelOverride = null else . end)
     | (if has("modelSelections") | not then .modelSelections = [] else . end)
+    | (if has("gate") | not then .gate = null else . end)
   ' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 }
 
@@ -895,6 +900,7 @@ cmd_init() {
       currentStep: 0,
       status: "in-progress",
       pauseReason: null,
+      gate: null,
       steps: $steps,
       phases: { total: 0, completed: 0 },
       prNumber: null,
@@ -954,7 +960,8 @@ cmd_advance() {
     '.steps[$step].status = "complete"
      | .steps[$step].completedAt = $now
      | (if $artifact != null then .steps[$step].artifact = $artifact else . end)
-     | .currentStep = $next' \
+     | .currentStep = $next
+     | .gate = null' \
     "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   # Update phase completion count if the completed step had a phaseNumber
@@ -981,7 +988,7 @@ cmd_pause() {
   fi
 
   jq --arg reason "$reason" \
-    '.status = "paused" | .pauseReason = $reason' \
+    '.status = "paused" | .pauseReason = $reason | .gate = null' \
     "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   cat "$file"
@@ -1000,8 +1007,46 @@ cmd_resume() {
   current_step=$(jq -r '.currentStep' "$file")
 
   jq --arg now "$now" --argjson step "$current_step" \
-    '.status = "in-progress" | .pauseReason = null | .error = null | .lastResumedAt = $now
+    '.status = "in-progress" | .pauseReason = null | .gate = null | .error = null | .lastResumedAt = $now
      | if .steps[$step].status == "failed" then .steps[$step].status = "pending" else . end' \
+    "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+
+  cat "$file"
+}
+
+cmd_set_gate() {
+  local id="$1"
+  local gate_type="$2"
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  local current_status
+  current_status=$(jq -r '.status' "$file")
+  if [[ "$current_status" != "in-progress" ]]; then
+    echo "Error: Cannot set gate on a ${current_status} workflow. Gate is only valid for in-progress workflows." >&2
+    exit 1
+  fi
+
+  if [[ "$gate_type" != "findings-decision" ]]; then
+    echo "Error: Invalid gate type '${gate_type}'. Expected 'findings-decision'." >&2
+    exit 1
+  fi
+
+  jq --arg gate "$gate_type" \
+    '.gate = $gate' \
+    "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+
+  cat "$file"
+}
+
+cmd_clear_gate() {
+  local id="$1"
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  jq '.gate = null' \
     "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   cat "$file"
@@ -1018,7 +1063,7 @@ cmd_fail() {
   current_step=$(jq -r '.currentStep' "$file")
 
   jq --arg msg "$message" --argjson step "$current_step" \
-    '.status = "failed" | .error = $msg | .steps[$step].status = "failed"' \
+    '.status = "failed" | .error = $msg | .steps[$step].status = "failed" | .gate = null' \
     "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   cat "$file"
@@ -1515,6 +1560,14 @@ case "$command" in
     ;;
   check-claude-version)
     cmd_check_claude_version "${1:-}"
+    ;;
+  set-gate)
+    [[ $# -ge 2 ]] || { echo "Error: set-gate requires <ID> <gate-type>" >&2; exit 1; }
+    cmd_set_gate "$1" "$2"
+    ;;
+  clear-gate)
+    [[ $# -ge 1 ]] || { echo "Error: clear-gate requires <ID>" >&2; exit 1; }
+    cmd_clear_gate "$1"
     ;;
   *)
     echo "Error: Unknown command '${command}'" >&2

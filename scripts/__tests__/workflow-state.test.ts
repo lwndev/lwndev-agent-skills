@@ -521,6 +521,121 @@ describe('workflow-state.sh', () => {
     });
   });
 
+  describe('set-gate', () => {
+    it('sets gate to findings-decision on an in-progress workflow', () => {
+      runJSON('init FEAT-001 feature');
+      const state = runJSON('set-gate FEAT-001 findings-decision');
+      expect(state.gate).toBe('findings-decision');
+      expect(state.status).toBe('in-progress');
+    });
+
+    it('rejects invalid gate types', () => {
+      runJSON('init FEAT-001 feature');
+      const err = run('set-gate FEAT-001 invalid-gate', { expectError: true });
+      expect(err).toContain('Invalid gate type');
+    });
+
+    it('errors when state file not found', () => {
+      const err = run('set-gate FEAT-999 findings-decision', { expectError: true });
+      expect(err).toContain('State file not found');
+    });
+
+    it('rejects set-gate on a paused workflow', () => {
+      runJSON('init FEAT-001 feature');
+      run('pause FEAT-001 plan-approval');
+      const err = run('set-gate FEAT-001 findings-decision', { expectError: true });
+      expect(err).toContain('Cannot set gate on a paused workflow');
+    });
+
+    it('rejects set-gate on a failed workflow', () => {
+      runJSON('init FEAT-001 feature');
+      run('fail FEAT-001 "step broke"');
+      const err = run('set-gate FEAT-001 findings-decision', { expectError: true });
+      expect(err).toContain('Cannot set gate on a failed workflow');
+    });
+
+    it('rejects set-gate on a complete workflow', () => {
+      runJSON('init FEAT-001 feature');
+      run('complete FEAT-001');
+      const err = run('set-gate FEAT-001 findings-decision', { expectError: true });
+      expect(err).toContain('Cannot set gate on a complete workflow');
+    });
+  });
+
+  describe('clear-gate', () => {
+    it('clears an active gate back to null', () => {
+      runJSON('init FEAT-001 feature');
+      run('set-gate FEAT-001 findings-decision');
+      const state = runJSON('clear-gate FEAT-001');
+      expect(state.gate).toBeNull();
+    });
+
+    it('is a no-op when gate is already null', () => {
+      runJSON('init FEAT-001 feature');
+      const state = runJSON('clear-gate FEAT-001');
+      expect(state.gate).toBeNull();
+    });
+
+    it('errors when state file not found', () => {
+      const err = run('clear-gate FEAT-999', { expectError: true });
+      expect(err).toContain('State file not found');
+    });
+  });
+
+  describe('gate cleared by state transitions', () => {
+    it('advance clears an active gate', () => {
+      runJSON('init FEAT-001 feature');
+      run('set-gate FEAT-001 findings-decision');
+      const state = runJSON('advance FEAT-001');
+      expect(state.gate).toBeNull();
+    });
+
+    it('pause clears an active gate', () => {
+      runJSON('init FEAT-001 feature');
+      run('set-gate FEAT-001 findings-decision');
+      const state = runJSON('pause FEAT-001 review-findings');
+      expect(state.gate).toBeNull();
+    });
+
+    it('resume clears an active gate', () => {
+      runJSON('init FEAT-001 feature');
+      run('pause FEAT-001 review-findings');
+      // Manually set gate on the state file to simulate an abnormal state
+      run('resume FEAT-001');
+      run('set-gate FEAT-001 findings-decision');
+      const state = runJSON('resume FEAT-001');
+      expect(state.gate).toBeNull();
+    });
+
+    it('fail clears an active gate', () => {
+      runJSON('init FEAT-001 feature');
+      run('set-gate FEAT-001 findings-decision');
+      const state = runJSON('fail FEAT-001 "step broke"');
+      expect(state.gate).toBeNull();
+      expect(state.status).toBe('failed');
+    });
+  });
+
+  describe('init includes gate field', () => {
+    it('new workflow state includes gate: null', () => {
+      const state = runJSON('init FEAT-001 feature');
+      expect(Object.prototype.hasOwnProperty.call(state, 'gate')).toBe(true);
+      expect(state.gate).toBeNull();
+    });
+
+    it('new chore workflow includes gate: null', () => {
+      const state = runJSON('init CHORE-001 chore');
+      expect(Object.prototype.hasOwnProperty.call(state, 'gate')).toBe(true);
+      expect(state.gate).toBeNull();
+    });
+
+    it('new bug workflow includes gate: null', () => {
+      const state = runJSON('init BUG-001 bug');
+      expect(Object.prototype.hasOwnProperty.call(state, 'gate')).toBe(true);
+      expect(state.gate).toBeNull();
+    });
+  });
+
   describe('fail', () => {
     it('sets status to failed with error message', () => {
       runJSON('init FEAT-001 feature');
@@ -1661,5 +1776,141 @@ describe('workflow-state.sh', () => {
       const err = run('fail FEAT-001', { expectError: true });
       expect(err).toContain('fail requires');
     });
+
+    it('errors when set-gate has missing gate-type', () => {
+      runJSON('init FEAT-001 feature');
+      const err = run('set-gate FEAT-001', { expectError: true });
+      expect(err).toContain('set-gate requires');
+    });
+
+    it('errors when clear-gate has missing ID', () => {
+      const err = run('clear-gate', { expectError: true });
+      expect(err).toContain('clear-gate requires');
+    });
+  });
+});
+
+// Stop hook tests
+const STOP_HOOK = join(
+  process.cwd(),
+  'plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/stop-hook.sh'
+);
+
+const WORKFLOW_STATE = join(
+  process.cwd(),
+  'plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh'
+);
+
+// Both runHook and runState use cwd: testDir so that relative paths in
+// stop-hook.sh (e.g. ACTIVE_FILE=".sdlc/workflows/.active") resolve inside
+// the isolated temp directory, matching real-world behavior where scripts
+// run from the project root.
+function runHook(): {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+} {
+  try {
+    const stdout = execSync(`bash "${STOP_HOOK}"`, {
+      cwd: testDir,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, PATH: process.env.PATH },
+    });
+    return { stdout: stdout.trim(), stderr: '', exitCode: 0 };
+  } catch (err) {
+    const e = err as { status?: number; stderr?: Buffer | string; stdout?: Buffer | string };
+    return {
+      stdout: (e.stdout?.toString() ?? '').trim(),
+      stderr: (e.stderr?.toString() ?? '').trim(),
+      exitCode: e.status ?? 1,
+    };
+  }
+}
+
+function runState(args: string): void {
+  execSync(`bash "${WORKFLOW_STATE}" ${args}`, {
+    cwd: testDir,
+    encoding: 'utf-8',
+    stdio: ['pipe', 'pipe', 'pipe'],
+    env: { ...process.env, PATH: process.env.PATH },
+  });
+}
+
+function writeActiveFile(id: string): void {
+  mkdirSync(join(testDir, '.sdlc/workflows'), { recursive: true });
+  writeFileSync(join(testDir, '.sdlc/workflows/.active'), id, 'utf-8');
+}
+
+describe('stop-hook.sh', () => {
+  beforeEach(() => {
+    testDir = mkdtempSync(join(tmpdir(), 'stop-hook-'));
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it('allows stop when .active file does not exist', () => {
+    const result = runHook();
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('allows stop when .active file is empty', () => {
+    mkdirSync(join(testDir, '.sdlc/workflows'), { recursive: true });
+    writeFileSync(join(testDir, '.sdlc/workflows/.active'), '', 'utf-8');
+    const result = runHook();
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('allows stop when workflow is paused', () => {
+    runState('init FEAT-001 feature');
+    runState('pause FEAT-001 review-findings');
+    writeActiveFile('FEAT-001');
+    const result = runHook();
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('allows stop when workflow is complete', () => {
+    runState('init FEAT-001 feature');
+    runState('complete FEAT-001');
+    writeActiveFile('FEAT-001');
+    const result = runHook();
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('blocks stop when workflow is in-progress with remaining steps', () => {
+    runState('init FEAT-001 feature');
+    writeActiveFile('FEAT-001');
+    const result = runHook();
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('FEAT-001');
+    expect(result.stderr).toContain('in-progress');
+  });
+
+  it('allows stop when gate is active (findings-decision gate suppresses nudge)', () => {
+    runState('init FEAT-001 feature');
+    runState('set-gate FEAT-001 findings-decision');
+    writeActiveFile('FEAT-001');
+    const result = runHook();
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe('');
+  });
+
+  it('blocks stop again after gate is cleared', () => {
+    runState('init FEAT-001 feature');
+    runState('set-gate FEAT-001 findings-decision');
+    runState('clear-gate FEAT-001');
+    writeActiveFile('FEAT-001');
+    const result = runHook();
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('in-progress');
+  });
+
+  it('allows stop when .active file references stale/missing state', () => {
+    mkdirSync(join(testDir, '.sdlc/workflows'), { recursive: true });
+    writeFileSync(join(testDir, '.sdlc/workflows/.active'), 'FEAT-999', 'utf-8');
+    const result = runHook();
+    expect(result.exitCode).toBe(0);
   });
 });

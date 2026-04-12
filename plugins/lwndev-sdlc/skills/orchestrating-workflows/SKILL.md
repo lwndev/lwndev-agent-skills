@@ -276,15 +276,27 @@ Based on the parsed counts, follow this flow:
      [info] {N} warnings, {N} info from reviewing-requirements ({mode}) — auto-advancing (chain={type}, complexity={complexity})
      ```
      Display the full findings to the user (for visibility), emit the `[info]` line above, then advance state. Do not prompt.
-   - **Bug or chore chain with `complexity == high`**, or **any feature chain** → Display the full findings to the user. Prompt: "{N} warnings and {N} info found by reviewing-requirements. Review findings above and continue? (yes / no)". If the user confirms, advance state. If the user declines, pause the workflow:
+   - **Bug or chore chain with `complexity == high`**, or **any feature chain** → Display the full findings to the user. Set the gate before prompting so the stop hook does not nudge while waiting for input:
+     ```bash
+     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-gate {ID} findings-decision
+     ```
+     Prompt: "{N} warnings and {N} info found by reviewing-requirements. Review findings above and continue? (yes / no)". After the user responds, clear the gate:
+     ```bash
+     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh clear-gate {ID}
+     ```
+     If the user confirms, advance state. If the user declines, pause the workflow:
      ```bash
      ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} review-findings
      ```
      Halt execution. The user re-invokes with `/orchestrating-workflows {ID}` after addressing findings manually.
 
-3. **Errors present** → Display the full findings to the user. List the auto-fixable items from the "Fix Summary" / "Update Summary" section of the findings. Errors always block progression — present two options:
-   - **Apply fixes** → The orchestrator applies the auto-fixable corrections in main context using the Edit tool. Then spawn a **new** `reviewing-requirements` subagent fork to re-verify (this is the re-run, max 1). Parse the re-run findings per the rules in "Applying Auto-Fixes" below.
-   - **Pause for manual resolution** → Pause immediately:
+3. **Errors present** → Display the full findings to the user. List the auto-fixable items from the "Fix Summary" / "Update Summary" section of the findings. Errors always block progression — set the gate before presenting options so the stop hook does not nudge while waiting for input:
+   ```bash
+   ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-gate {ID} findings-decision
+   ```
+   Present two options:
+   - **Apply fixes** → Keep the gate active during fix application and re-verification (the gate suppresses stop-hook nudges for the entire fix+re-run cycle). Apply the auto-fixable corrections in main context using the Edit tool. Then spawn a **new** `reviewing-requirements` subagent fork to re-verify (this is the re-run, max 1). The gate is cleared after the re-run completes and the outcome is determined — see "Applying Auto-Fixes" below.
+   - **Pause for manual resolution** → Pause immediately (the `pause` command clears the gate automatically):
      ```bash
      ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} review-findings
      ```
@@ -292,15 +304,21 @@ Based on the parsed counts, follow this flow:
 
 #### Applying Auto-Fixes
 
-When the user opts to apply fixes, the orchestrator (not a subagent) applies them:
+When the user opts to apply fixes, the orchestrator (not a subagent) applies them. The gate remains active throughout this entire sequence to suppress stop-hook nudges:
 
 1. Read the auto-fixable items from the findings (listed under "Auto-fixable" or "Applicable updates" in the subagent's return text)
 2. For each fix, use the Edit tool to apply the correction to the target file
 3. After all fixes are applied, spawn a new `reviewing-requirements` subagent fork with the same arguments as the original step to re-verify
-4. This re-run is the single allowed retry. After the re-run completes, **do not apply any further edits regardless of what the re-run findings contain**:
-   - If the re-run returns zero errors → advance state.
-   - If the re-run returns warnings/info only (zero errors) → advance state unconditionally. Zero errors after a fix pass means the fixes succeeded; residual warnings are accepted.
-   - If the re-run returns errors → display the remaining findings and pause with `review-findings`. Do not attempt to fix the errors.
+4. This re-run is the single allowed retry. After the re-run completes, clear the gate and act on the outcome — **do not apply any further edits regardless of what the re-run findings contain**:
+   - If the re-run returns zero errors → clear the gate, then advance state.
+     ```bash
+     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh clear-gate {ID}
+     ```
+   - If the re-run returns warnings/info only (zero errors) → clear the gate, then advance state unconditionally. Zero errors after a fix pass means the fixes succeeded; residual warnings are accepted.
+     ```bash
+     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh clear-gate {ID}
+     ```
+   - If the re-run returns errors → display the remaining findings, then pause with `review-findings` (the `pause` command clears the gate automatically). Do not attempt to fix the errors.
      ```bash
      ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} review-findings
      ```
