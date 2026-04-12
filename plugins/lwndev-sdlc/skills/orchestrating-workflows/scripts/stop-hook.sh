@@ -48,6 +48,12 @@ case "$STATUS" in
       exit 0
     fi
 
+    # If a gate is active, the orchestrator is waiting for user input — allow stop
+    GATE="$(echo "$STATE_JSON" | jq -r '.gate // empty')"
+    if [[ -n "$GATE" ]]; then
+      exit 0
+    fi
+
     echo "Workflow ${WORKFLOW_ID} is ${STATUS}. Continue to step $((CURRENT_STEP + 1)): ${NEXT_DESC}" >&2
     exit 2
     ;;
