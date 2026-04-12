@@ -13,6 +13,10 @@ const STATE_SCRIPT = join(SCRIPTS_DIR, 'workflow-state.sh');
 const STOP_HOOK = join(SCRIPTS_DIR, 'stop-hook.sh');
 const REFERENCES_DIR = join(SKILL_DIR, 'references');
 const MODEL_SELECTION_REF = join(REFERENCES_DIR, 'model-selection.md');
+const ISSUE_TRACKING_REF = join(REFERENCES_DIR, 'issue-tracking.md');
+const CHAIN_PROCEDURES_REF = join(REFERENCES_DIR, 'chain-procedures.md');
+const STEP_EXECUTION_DETAILS_REF = join(REFERENCES_DIR, 'step-execution-details.md');
+const VERIFICATION_REF = join(REFERENCES_DIR, 'verification-and-relationships.md');
 
 // --- Skill Validation Tests ---
 
@@ -67,7 +71,7 @@ describe('orchestrating-workflows skill', () => {
       // All references should use ${CLAUDE_SKILL_DIR}/ prefix
       const prefixedRefs = body.match(/\$\{CLAUDE_SKILL_DIR\}\/scripts\/workflow-state\.sh/g);
       expect(prefixedRefs).not.toBeNull();
-      expect(prefixedRefs!.length).toBe(66);
+      expect(prefixedRefs!.length).toBe(18);
     });
 
     it('should include "When to Use This Skill" section', () => {
@@ -78,15 +82,12 @@ describe('orchestrating-workflows skill', () => {
       expect(skillMd).toContain('## Quick Start');
     });
 
-    it('should include "Verification Checklist" section', () => {
-      expect(skillMd).toContain('## Verification Checklist');
+    it('should include "Verification Checklist and Skill Relationships" section with link to reference', () => {
+      expect(skillMd).toContain('## Verification Checklist and Skill Relationships');
+      expect(skillMd).toContain('references/verification-and-relationships.md');
     });
 
-    it('should include "Relationship to Other Skills" section', () => {
-      expect(skillMd).toContain('## Relationship to Other Skills');
-    });
-
-    it('should reference all sub-skills in relationship section', () => {
+    it('should reference all sub-skills in step sequence tables', () => {
       expect(skillMd).toContain('documenting-features');
       expect(skillMd).toContain('reviewing-requirements');
       expect(skillMd).toContain('creating-implementation-plans');
@@ -106,14 +107,18 @@ describe('orchestrating-workflows skill', () => {
       expect(skillMd).toContain('Agent tool');
     });
 
-    it('should document pause points', () => {
-      expect(skillMd).toContain('Plan Approval');
-      expect(skillMd).toContain('PR Review');
+    it('should document pause points in step sequence tables', () => {
+      expect(skillMd).toContain('Plan approval');
+      expect(skillMd).toContain('PR review');
       expect(skillMd).toContain('pause');
     });
 
-    it('should document PR suppression instruction for implementing-plan-phases', () => {
-      expect(skillMd).toContain('Do NOT create a pull request at the end');
+    it('should document PR suppression instruction in step execution details reference', async () => {
+      const refContent = await readFile(
+        join(SKILL_DIR, 'references/step-execution-details.md'),
+        'utf-8'
+      );
+      expect(refContent).toContain('Do NOT create a pull request at the end');
     });
 
     it('should document error handling', () => {
@@ -140,6 +145,58 @@ describe('orchestrating-workflows skill', () => {
 
     it('should have stop-hook.sh', () => {
       expect(existsSync(STOP_HOOK)).toBe(true);
+    });
+  });
+
+  describe('extracted reference files', () => {
+    it('should have references/issue-tracking.md', () => {
+      expect(existsSync(ISSUE_TRACKING_REF)).toBe(true);
+    });
+
+    it('should have references/chain-procedures.md', () => {
+      expect(existsSync(CHAIN_PROCEDURES_REF)).toBe(true);
+    });
+
+    it('should have references/step-execution-details.md', () => {
+      expect(existsSync(STEP_EXECUTION_DETAILS_REF)).toBe(true);
+    });
+
+    it('should have references/verification-and-relationships.md', () => {
+      expect(existsSync(VERIFICATION_REF)).toBe(true);
+    });
+
+    it('issue-tracking.md should contain the full issue tracking protocol', async () => {
+      const content = await readFile(ISSUE_TRACKING_REF, 'utf-8');
+      expect(content).toContain('## Issue Tracking via `managing-work-items`');
+      expect(content).toContain('How to Invoke `managing-work-items`');
+      expect(content).toContain('Mechanism-Failure Logging');
+    });
+
+    it('chain-procedures.md should contain all workflow procedures', async () => {
+      const content = await readFile(CHAIN_PROCEDURES_REF, 'utf-8');
+      expect(content).toContain('## New Feature Workflow Procedure');
+      expect(content).toContain('## New Chore Workflow Procedure');
+      expect(content).toContain('## New Bug Workflow Procedure');
+      expect(content).toContain('## Resume Procedure');
+    });
+
+    it('step-execution-details.md should contain chain-specific fork instructions', async () => {
+      const content = await readFile(STEP_EXECUTION_DETAILS_REF, 'utf-8');
+      expect(content).toContain('Feature Chain Step-Specific Fork Instructions');
+      expect(content).toContain('Chore Chain Step-Specific Fork Instructions');
+      expect(content).toContain('Bug Chain Step-Specific Fork Instructions');
+      expect(content).toContain('Pause Steps');
+      expect(content).toContain('Phase Loop');
+      expect(content).toContain('PR Creation');
+    });
+
+    it('verification-and-relationships.md should contain checklists and relationship section', async () => {
+      const content = await readFile(VERIFICATION_REF, 'utf-8');
+      expect(content).toContain('## Verification Checklist');
+      expect(content).toContain('## Relationship to Other Skills');
+      expect(content).toContain('Feature Chain Skills');
+      expect(content).toContain('Chore Chain Skills');
+      expect(content).toContain('Bug Chain Skills');
     });
   });
 
@@ -221,32 +278,22 @@ describe('orchestrating-workflows skill', () => {
         expect(skillMd).not.toContain('Phase-5 move note');
       });
 
-      it('should contain the step baseline matrix (Axis 1)', () => {
-        // Extract the Model Selection section to avoid matching other places
+      it('should summarize step baseline matrix (Axis 1) with link to reference', () => {
         const start = skillMd.indexOf('\n## Model Selection\n');
         const end = skillMd.indexOf('\n## Error Handling\n', start);
         const section = skillMd.slice(start, end);
         expect(section).toContain('Axis 1');
         expect(section).toContain('Step baseline');
-        expect(section).toContain('`finalizing-workflow`');
-        expect(section).toContain('`reviewing-requirements`');
-        expect(section).toContain('`implementing-plan-phases`');
-        expect(section).toContain('haiku');
-        expect(section).toContain('sonnet');
+        expect(section).toContain('references/model-selection.md');
       });
 
-      it('should contain the work-item complexity signal matrix (Axis 2)', () => {
+      it('should summarize work-item complexity signal matrix (Axis 2) with link to reference', () => {
         const start = skillMd.indexOf('\n## Model Selection\n');
         const end = skillMd.indexOf('\n## Error Handling\n', start);
         const section = skillMd.slice(start, end);
         expect(section).toContain('Axis 2');
-        expect(section).toContain('Acceptance criteria count');
-        expect(section).toContain('Severity field');
-        expect(section).toContain('Root-cause count');
-        expect(section).toContain('Category');
-        expect(section).toContain('FR count');
-        expect(section).toContain('Phase count');
-        expect(section).toContain('post-plan');
+        expect(section).toContain('complexity');
+        expect(section).toContain('references/model-selection.md');
       });
 
       it('should document override precedence (Axis 3) with hard vs soft distinction', () => {
@@ -271,15 +318,14 @@ describe('orchestrating-workflows skill', () => {
         expect(section).toContain('PR-creation');
       });
 
-      it('should contain worked examples A, B, C, D', () => {
+      it('should not contain worked examples (moved to reference)', () => {
         const start = skillMd.indexOf('\n## Model Selection\n');
         const end = skillMd.indexOf('\n## Error Handling\n', start);
         const section = skillMd.slice(start, end);
-        expect(section).toContain('Example A');
-        expect(section).toContain('Example B');
-        expect(section).toContain('Example C');
-        expect(section).toContain('Example D');
-        expect(section).toContain('zero Opus');
+        expect(section).not.toContain('Example A');
+        expect(section).not.toContain('Example B');
+        expect(section).not.toContain('Example C');
+        expect(section).not.toContain('Example D');
       });
 
       it('should link to references/model-selection.md for deep detail', () => {
@@ -1444,11 +1490,11 @@ describe('orchestrating-workflows SKILL.md chore chain content', () => {
     expect(skillMd).toContain('executing-chores');
   });
 
-  it('should document chore chain in "Relationship to Other Skills" section', () => {
-    // Extract the Relationship section content
-    const relationshipIdx = skillMd.indexOf('## Relationship to Other Skills');
+  it('should document chore chain in verification-and-relationships reference', async () => {
+    const refContent = await readFile(VERIFICATION_REF, 'utf-8');
+    const relationshipIdx = refContent.indexOf('## Relationship to Other Skills');
     expect(relationshipIdx).toBeGreaterThan(-1);
-    const relationshipSection = skillMd.slice(relationshipIdx);
+    const relationshipSection = refContent.slice(relationshipIdx);
 
     expect(relationshipSection).toContain('Chore chain');
     expect(relationshipSection).toContain('documenting-chores');
@@ -1477,10 +1523,11 @@ describe('orchestrating-workflows SKILL.md bug chain content', () => {
     expect(skillMd).toContain('executing-bug-fixes');
   });
 
-  it('should document bug chain in "Relationship to Other Skills" section', () => {
-    const relationshipIdx = skillMd.indexOf('## Relationship to Other Skills');
+  it('should document bug chain in verification-and-relationships reference', async () => {
+    const refContent = await readFile(VERIFICATION_REF, 'utf-8');
+    const relationshipIdx = refContent.indexOf('## Relationship to Other Skills');
     expect(relationshipIdx).toBeGreaterThan(-1);
-    const relationshipSection = skillMd.slice(relationshipIdx);
+    const relationshipSection = refContent.slice(relationshipIdx);
 
     expect(relationshipSection).toContain('Bug chain');
     expect(relationshipSection).toContain('documenting-bugs');
@@ -1501,55 +1548,64 @@ describe('orchestrating-workflows SKILL.md managing-work-items integration', () 
     expect(skillMd).toContain('managing-work-items');
   });
 
-  it('should document issue reference extraction via FR-7', () => {
-    expect(skillMd).toContain('Issue Reference Extraction');
-    expect(skillMd).toContain('FR-7');
+  it('should document issue reference extraction via FR-7 in issue-tracking reference', async () => {
+    const refContent = await readFile(ISSUE_TRACKING_REF, 'utf-8');
+    expect(refContent).toContain('Issue Reference Extraction');
+    expect(refContent).toContain('FR-7');
   });
 
-  it('should document skip behavior when no issue reference found', () => {
-    expect(skillMd).toContain('Skip Behavior');
-    expect(skillMd).toContain('skipped');
+  it('should document skip behavior in issue-tracking reference', async () => {
+    const refContent = await readFile(ISSUE_TRACKING_REF, 'utf-8');
+    expect(refContent).toContain('Skip Behavior');
+    expect(refContent).toContain('skipped');
   });
 
-  it('should contain managing-work-items invocation points for feature chain', () => {
+  it('should contain managing-work-items invocation points for feature chain in step-execution-details reference', async () => {
+    const refContent = await readFile(STEP_EXECUTION_DETAILS_REF, 'utf-8');
     // Phase start/completion comments around implementing-plan-phases
-    expect(skillMd).toContain('phase-start');
-    expect(skillMd).toContain('phase-completion');
+    expect(refContent).toContain('phase-start');
+    expect(refContent).toContain('phase-completion');
     // FR-6 issue link at PR creation
-    expect(skillMd).toContain('FR-6');
+    expect(refContent).toContain('FR-6');
   });
 
-  it('should contain managing-work-items invocation points for chore chain', () => {
-    expect(skillMd).toContain('work-start');
-    expect(skillMd).toContain('work-complete');
+  it('should contain managing-work-items invocation points for chore chain in step-execution-details reference', async () => {
+    const refContent = await readFile(STEP_EXECUTION_DETAILS_REF, 'utf-8');
+    expect(refContent).toContain('work-start');
+    expect(refContent).toContain('work-complete');
   });
 
-  it('should contain managing-work-items invocation points for bug chain', () => {
-    expect(skillMd).toContain('bug-start');
-    expect(skillMd).toContain('bug-complete');
+  it('should contain managing-work-items invocation points for bug chain in step-execution-details reference', async () => {
+    const refContent = await readFile(STEP_EXECUTION_DETAILS_REF, 'utf-8');
+    expect(refContent).toContain('bug-start');
+    expect(refContent).toContain('bug-complete');
   });
 
-  it('should document fetch operation for issue data retrieval', () => {
-    expect(skillMd).toContain('managing-work-items fetch');
+  it('should document fetch operation in issue-tracking reference', async () => {
+    const refContent = await readFile(ISSUE_TRACKING_REF, 'utf-8');
+    expect(refContent).toContain('managing-work-items fetch');
   });
 
-  it('should document comment operation at correct workflow points', () => {
-    expect(skillMd).toContain('managing-work-items comment');
+  it('should document comment operation in step-execution-details reference', async () => {
+    const refContent = await readFile(STEP_EXECUTION_DETAILS_REF, 'utf-8');
+    expect(refContent).toContain('managing-work-items comment');
   });
 
-  it('should include managing-work-items in relationship chain diagrams', () => {
-    const relationshipIdx = skillMd.indexOf('## Relationship to Other Skills');
+  it('should include managing-work-items in relationship chain diagrams in reference', async () => {
+    const refContent = await readFile(VERIFICATION_REF, 'utf-8');
+    const relationshipIdx = refContent.indexOf('## Relationship to Other Skills');
     expect(relationshipIdx).toBeGreaterThan(-1);
-    const relationshipSection = skillMd.slice(relationshipIdx);
+    const relationshipSection = refContent.slice(relationshipIdx);
 
     // All three chain diagrams should reference managing-work-items
     expect(relationshipSection).toContain('managing-work-items');
   });
 
-  it('should include managing-work-items in all three chain skill tables', () => {
-    const relationshipIdx = skillMd.indexOf('## Relationship to Other Skills');
+  it('should include managing-work-items in all three chain skill tables in reference', async () => {
+    const refContent = await readFile(VERIFICATION_REF, 'utf-8');
+    const relationshipIdx = refContent.indexOf('## Relationship to Other Skills');
     expect(relationshipIdx).toBeGreaterThan(-1);
-    const relationshipSection = skillMd.slice(relationshipIdx);
+    const relationshipSection = refContent.slice(relationshipIdx);
 
     // Count managing-work-items rows in the skill tables (one per chain)
     const tableRowMatches = relationshipSection.match(
@@ -1559,10 +1615,11 @@ describe('orchestrating-workflows SKILL.md managing-work-items integration', () 
     expect(tableRowMatches!.length).toBe(3);
   });
 
-  it('should include managing-work-items checks in verification checklist', () => {
-    const checklistIdx = skillMd.indexOf('## Verification Checklist');
+  it('should include managing-work-items checks in verification reference', async () => {
+    const refContent = await readFile(VERIFICATION_REF, 'utf-8');
+    const checklistIdx = refContent.indexOf('## Verification Checklist');
     expect(checklistIdx).toBeGreaterThan(-1);
-    const checklistSection = skillMd.slice(checklistIdx);
+    const checklistSection = refContent.slice(checklistIdx);
 
     expect(checklistSection).toContain('Managing Work Items Checks');
     expect(checklistSection).toContain('Issue reference extracted');
