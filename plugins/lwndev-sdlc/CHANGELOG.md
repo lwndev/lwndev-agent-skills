@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.2] - 2026-04-12
+
+### Chores
+
+- **refactoring:** tighten bug classifier and skip unnecessary fork steps (#141)
+
+[1.8.2]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.8.1...lwndev-sdlc@1.8.2
+
 ## [1.8.1] - 2026-04-12
 
 ### Bug Fixes
