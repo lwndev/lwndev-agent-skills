@@ -14,7 +14,7 @@
 
 ## Description
 
-Synthetic fixture exercising `max(severity, RC count)`. Severity is `low`, but four distinct root causes push RC bucket to `high`. `max(low, high) = high`. Category is logic-error so no bump. Classifier should return `high`.
+Synthetic fixture exercising `max(severity, RC count)`. Severity is `low`, four distinct root causes push RC bucket to `high`. Under CHORE-031 T1, severity must be ≥ medium for the result to reach `high` — since severity is `low`, the result is capped at `medium` despite 4 RCs.
 
 ## Root Cause(s)
 

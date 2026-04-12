@@ -520,11 +520,24 @@ _classify_bug() {
   fi
 
   # Category bump (security or performance → bump one tier).
+  local cat_bump=false
   case "$category" in
     security|performance)
       base=$(_bump_complexity "$base")
+      cat_bump=true
       ;;
   esac
+
+  # CHORE-031 / T1: neither severity alone nor RC count alone can promote
+  # to high. Require severity ≥ medium AND at least one escalation signal
+  # (rc_count ≥ 4 → rc_tier=high, or security/performance category bump).
+  if [[ "$base" == "high" ]]; then
+    local sev_rank=0
+    case "$sev_tier" in medium) sev_rank=2 ;; high) sev_rank=3 ;; esac
+    if (( sev_rank < 2 )) || { [[ "$rc_tier" != "high" ]] && [[ "$cat_bump" != "true" ]]; }; then
+      base="medium"
+    fi
+  fi
 
   echo "$base"
 }

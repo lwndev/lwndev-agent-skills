@@ -1113,10 +1113,10 @@ describe('workflow-state.sh', () => {
           expect(run(`classify-init BUG-001 ${fixturePath('bug-high.md')}`)).toBe('high');
         });
 
-        it('critical severity alias maps to high even with 1 RC', () => {
+        it('critical severity alone caps at medium (CHORE-031 T1)', () => {
           runJSON('init BUG-001 bug');
           expect(run(`classify-init BUG-001 ${fixturePath('bug-critical-severity.md')}`)).toBe(
-            'high'
+            'medium'
           );
         });
 
@@ -1125,11 +1125,16 @@ describe('workflow-state.sh', () => {
           expect(run(`classify-init BUG-001 ${fixturePath('bug-perf-bump.md')}`)).toBe('medium');
         });
 
-        it('max(severity low, RC count 4 → high) = high', () => {
+        it('RC count 4 alone caps at medium when severity is low (CHORE-031 T1)', () => {
           runJSON('init BUG-001 bug');
           expect(run(`classify-init BUG-001 ${fixturePath('bug-max-severity-rc.md')}`)).toBe(
-            'high'
+            'medium'
           );
+        });
+
+        it('high severity + 4 RCs + logic-error → high via rc_tier branch (CHORE-031 T1)', () => {
+          runJSON('init BUG-001 bug');
+          expect(run(`classify-init BUG-001 ${fixturePath('bug-high-rc-only.md')}`)).toBe('high');
         });
       });
 
