@@ -45,7 +45,7 @@ The orchestrator integrates with issue trackers (GitHub Issues, Jira) through th
 
 At the start of every workflow, after step 1 (documentation) completes and the requirements artifact exists, the orchestrator extracts the issue reference:
 
-1. Invoke `managing-work-items fetch <requirements-artifact-path>` using FR-7 (issue reference extraction from documents)
+1. Invoke `managing-work-items fetch <requirements-artifact-path>` using FR-7 (issue reference extraction from documents) — executed inline per "How to Invoke `managing-work-items`" below
 2. The skill parses the `## GitHub Issue` section of the requirements document for `[#N](URL)` or `[PROJ-123](URL)` patterns
 3. Store the extracted reference (e.g., `#42` or `PROJ-123`) as `issueRef` for all subsequent invocations
 4. If no issue reference is found, set `issueRef` to empty
@@ -65,6 +65,117 @@ managing-work-items <operation> <issueRef> [--type <comment-type>] [--context <j
 - **fetch**: Retrieve issue data to pre-fill requirements
 - **comment**: Post a status update to the linked issue
 - **FR-6 (PR link)**: Generate `Closes #N` or `PROJ-123` for PR bodies
+
+### How to Invoke `managing-work-items`
+
+`managing-work-items` is a **cross-cutting reference document**, not a forkable step. The orchestrator **executes it inline from its own main context** using its existing `Bash`, `Read`, and `Glob` tool access. Concretely:
+
+1. **Once per workflow, at workflow start**, the orchestrator `Read`s `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/SKILL.md` plus whichever template reference it will need (`references/github-templates.md` for `#N` issues or `references/jira-templates.md` for `PROJ-123` issues). The file is a reference document — the orchestrator consults it the way a function looks up an argument table, not the way it forks a sub-skill.
+2. **At every call site below**, the orchestrator runs the documented `gh` / `acli` / Rovo MCP command directly from main context. No Agent tool fork. No Skill tool call. No sub-conversation.
+3. **Graceful degradation** (NFR-1) still applies — every external command is wrapped in the try/skip pattern from `managing-work-items/SKILL.md:287-306`. Failures are logged and the workflow continues.
+
+**Note on cross-cutting skills**: `managing-work-items` is deliberately not in any chain step table (Feature, Chore, or Bug). Cross-cutting skills — skills invoked between steps rather than as a step — do **not** follow the Forked Steps recipe below. They follow this "How to Invoke" subsection instead. This distinction matters because the Forked Steps recipe is scoped to "steps marked **fork** in the step sequence", and cross-cutting invocations have no such marker.
+
+#### Rejected alternatives
+
+Two other invocation mechanisms were considered and explicitly rejected:
+
+- **Agent-tool fork (rejected)**: Forking a subagent for every `gh issue comment` adds conversation-spawn overhead, audit-trail noise, and an unnecessary context boundary for what is usually a single CLI command. `managing-work-items` operations are small, stateless, and don't need isolation — they're idiomatic main-context tool use.
+- **Skill-tool invocation (rejected)**: `managing-work-items` is framed as a reference document for the orchestrator; it is not a user-facing skill. Invoking it via the Skill tool would require restructuring its contract (name, trigger phrases, arguments) and would still force the orchestrator to hand off control to a sub-conversation for operations it can execute inline in one tool call.
+
+**Inline execution composes cleanly with the existing Forked Steps recipe.** Step-sequence forks (skills that appear in the chain tables — `reviewing-requirements`, `creating-implementation-plans`, `implementing-plan-phases`, `executing-chores`, `executing-bug-fixes`, `finalizing-workflow`, `pr-creation`) continue to use the Forked Steps recipe below. Cross-cutting invocations (`managing-work-items`) are handled inline per this subsection. The two mechanisms do not overlap and do not need to be reconciled.
+
+#### Runnable examples
+
+Each example assumes the orchestrator has already `Read` the `managing-work-items/SKILL.md` reference document once at workflow start and has `issueRef` in scope (either a `#N` GitHub reference or a `PROJ-123` Jira reference).
+
+**Operation 1: `extract-ref` (parse issue reference from requirements document)**
+
+Use `Read` on the requirements document and search for the `## GitHub Issue` section. Pseudocode:
+
+```
+content = Read("requirements/features/FEAT-042-my-feature.md")
+# Find the "## GitHub Issue" heading and the next non-empty line
+# Match patterns: [#N](URL) or [PROJ-123](URL)
+# Example content under the heading:
+#   ## GitHub Issue
+#   [#131](https://github.com/lwndev/lwndev-marketplace/issues/131)
+issueRef = "#131"  # extracted; store for the rest of the workflow
+```
+
+Concretely, `Grep` the file for `^\[#[0-9]+\]` or `^\[[A-Z][A-Z0-9]*-[0-9]+\]` within the `## GitHub Issue` section, or (equivalently) `Read` the file and string-search in the orchestrator's head. If the section is missing or empty, set `issueRef` to empty and log the info-level skip message; do **not** warn.
+
+**Operation 2: `fetch` (retrieve issue data via `gh issue view`)**
+
+For a GitHub `#N` reference:
+
+```bash
+gh issue view 131 --json title,body,labels,state,assignees
+```
+
+The orchestrator runs this via its `Bash` tool and parses the returned JSON. For a Jira `PROJ-123` reference, the orchestrator follows the tiered fallback documented in `managing-work-items/SKILL.md` — first try Rovo MCP (`getJiraIssue(cloudId, "PROJ-123")`), then `acli jira workitem view --key PROJ-123`, then skip with a warning if both are unavailable. The orchestrator executes whichever tier succeeds directly; no subagent fork.
+
+**Operation 3: `comment` (post a lifecycle comment via `gh issue comment`)**
+
+For a phase-start comment on a GitHub issue:
+
+1. `Read` the appropriate template from `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/references/github-templates.md` — select the `phase-start` section.
+2. Substitute context variables (`phase`, `totalPhases`, `workItemId`, phase name, steps, deliverables) into the template to produce the rendered markdown body.
+3. Run the following command. Use the plain multi-line double-quoted string form (matching the canonical templates in `github-templates.md`); do **not** wrap the body in a `$(cat <<'EOF' ... EOF)"` heredoc — the closing `EOF` delimiter must be at column 0, which conflicts with markdown list-continuation indentation and breaks copy-paste from raw source:
+
+   ```bash
+   gh issue comment 131 --body "## Phase 1 Started: GitHub Backend
+
+   **FEAT-014** — Phase 1 of 4
+
+   ### Steps
+   - Implement classifier script
+   - Wire up state-file fields
+   ..."
+   ```
+
+   If the rendered body contains literal `$`, backticks, or backslashes that you do not want bash to interpret, use single quotes instead: `gh issue comment 131 --body '...'`. For dynamic substitution, build the body in a shell variable first (`body="..."; gh issue comment 131 --body "$body"`).
+
+4. On failure (non-zero exit), emit a warning-level skip message (see "Mechanism-Failure Logging" below) and continue the workflow.
+
+For a Jira `PROJ-123` reference, the orchestrator instead reads `jira-templates.md`, renders the ADF JSON (for Rovo MCP) or markdown (for `acli`), and invokes the matching backend tier. The template and backend selection are the only differences — the inline-execution pattern is the same.
+
+**Operation 4: `pr-link` (generate PR body issue link)**
+
+For GitHub, hand-write the syntax when constructing the PR body:
+
+```
+Closes #131
+```
+
+For Jira, write the issue key:
+
+```
+PROJ-123
+```
+
+This is pure string generation — the orchestrator does not need to shell out for it. It builds the PR body in main context and passes it to `gh pr create --body` alongside all other PR metadata.
+
+#### Mechanism-Failure Logging (WARNING level)
+
+Graceful degradation (NFR-1) tells the orchestrator to skip issue operations on failure rather than block the workflow. That's still correct — but a **mechanism-missing** failure must be distinguishable from a legitimate empty-`issueRef` skip. The orchestrator emits a WARNING-level log line (visibly distinct from the INFO-level skip) in the following cases:
+
+| Failure mode | Warning message format |
+|--------------|------------------------|
+| `managing-work-items/SKILL.md` cannot be read at workflow start | `[warn] managing-work-items reference document unreadable at ${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/SKILL.md — issue tracking disabled for this workflow.` |
+| `gh` CLI missing when `issueRef` is a `#N` reference | `[warn] gh CLI not found on PATH — cannot invoke managing-work-items for GitHub issue ${issueRef}. Skipping issue tracking.` |
+| `gh` CLI not authenticated when `issueRef` is `#N` | `[warn] gh CLI not authenticated (run \`gh auth login\`) — cannot invoke managing-work-items for GitHub issue ${issueRef}. Skipping issue tracking.` |
+| Jira tiered fallback exhausts all three tiers | `[warn] No Jira backend available (Rovo MCP not registered, acli not found) — cannot invoke managing-work-items for Jira issue ${issueRef}. Skipping issue tracking.` |
+| GitHub template file unreadable | `[warn] managing-work-items GitHub template file unreadable at references/github-templates.md — cannot render ${commentType} comment. Skipping.` |
+| Jira template file unreadable | `[warn] managing-work-items Jira template file unreadable at references/jira-templates.md — cannot render ${commentType} comment. Skipping.` |
+
+Contrast with the INFO-level skip (legitimate empty-`issueRef`):
+
+```
+[info] No issue reference found in requirements document -- skipping issue tracking.
+```
+
+The key distinction: INFO means "nothing to do", WARNING means "we have work to do but can't do it — silent-skip regression risk". The `[warn]` prefix is mandatory so a future `grep -n '\[warn\]' conversation.log` catches mechanism regressions.
 
 ## Quick Start
 
@@ -157,7 +268,7 @@ requirements/features/FEAT-*-*.md
 
 Extract the `FEAT-NNN` portion from the filename. This ID is used for all subsequent state operations.
 
-**Extract issue reference**: If the argument was a `#N` issue reference, invoke `managing-work-items fetch <issueRef>` to retrieve issue data (this was already used by `documenting-features` to pre-fill requirements via delegation). Use FR-7 to extract the issue reference from the requirements artifact and store it as `issueRef` for all subsequent `managing-work-items` invocations. If no issue reference is found, skip all future `managing-work-items` calls (see Skip Behavior above).
+**Extract issue reference**: If the argument was a `#N` issue reference, invoke `managing-work-items fetch <issueRef>` to retrieve issue data (this was already used by `documenting-features` to pre-fill requirements via delegation). Use FR-7 to extract the issue reference from the requirements artifact and store it as `issueRef` for all subsequent `managing-work-items` invocations. Both the `fetch` and `extract-ref` calls are executed inline from the orchestrator's main context — see "How to Invoke `managing-work-items`" in the Issue Tracking section above for the runnable examples. If no issue reference is found, skip all future `managing-work-items` calls (see Skip Behavior above).
 
 ### 4. Initialize State
 
@@ -210,7 +321,7 @@ requirements/chores/CHORE-*-*.md
 
 Extract the `CHORE-NNN` portion from the filename. This ID is used for all subsequent state operations.
 
-**Extract issue reference**: Use FR-7 from `managing-work-items` to extract the issue reference from the requirements artifact. Store it as `issueRef` for all subsequent `managing-work-items` invocations. If no issue reference is found, skip all future `managing-work-items` calls (see Skip Behavior above).
+**Extract issue reference**: Use FR-7 from `managing-work-items` to extract the issue reference from the requirements artifact (executed inline — see "How to Invoke `managing-work-items`" in the Issue Tracking section above). Store it as `issueRef` for all subsequent `managing-work-items` invocations. If no issue reference is found, skip all future `managing-work-items` calls (see Skip Behavior above).
 
 ### 4. Initialize State
 
@@ -263,7 +374,7 @@ requirements/bugs/BUG-*-*.md
 
 Extract the `BUG-NNN` portion from the filename. This ID is used for all subsequent state operations.
 
-**Extract issue reference**: Use FR-7 from `managing-work-items` to extract the issue reference from the requirements artifact. Store it as `issueRef` for all subsequent `managing-work-items` invocations. If no issue reference is found, skip all future `managing-work-items` calls (see Skip Behavior above).
+**Extract issue reference**: Use FR-7 from `managing-work-items` to extract the issue reference from the requirements artifact (executed inline — see "How to Invoke `managing-work-items`" in the Issue Tracking section above). Store it as `issueRef` for all subsequent `managing-work-items` invocations. If no issue reference is found, skip all future `managing-work-items` calls (see Skip Behavior above).
 
 ### 4. Initialize State
 
@@ -354,6 +465,8 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-r
 ```
 
 ### Forked Steps
+
+**Scope**: This recipe applies **only** to steps marked **fork** in the Feature/Chore/Bug chain step-sequence tables above. Cross-cutting skills — skills that are not listed in any chain step table, such as `managing-work-items` — do **not** follow this recipe. They are executed inline from the orchestrator's main context per the "How to Invoke `managing-work-items`" subsection in the Issue Tracking section. If you find yourself trying to apply the Forked Steps recipe to `managing-work-items`, stop: that skill has a different invocation mechanism and the two do not overlap.
 
 For all steps marked **fork** in the step sequence, use the Agent tool to delegate. Every fork site must execute the FEAT-014 pre-fork sequence **before** spawning the subagent — the audit trail write must precede fork execution (NFR-3) so a crashed fork still leaves a trace:
 
@@ -527,7 +640,7 @@ Steps 2, 4, 7, and 9 follow the same fork pattern as the feature chain without c
 
 **Step 5 — `executing-chores` (fork)**:
 
-Before forking (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-start --context '{"workItemId": "{ID}"}'`
+Before forking (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-start --context '{"workItemId": "{ID}"}'` inline per "How to Invoke `managing-work-items`" above (read the `work-start` template from `references/github-templates.md` — or `references/jira-templates.md` for Jira — substitute context variables, and post via `gh issue comment` / Jira backend).
 
 Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) using step-name `executing-chores`, then fork via the Agent tool with `{ID}` as argument and the resolved tier passed as the `model` parameter. If `issueRef` is set, include the FR-6 issue link instruction in the subagent prompt: "Include `Closes #N` (or `PROJ-123` for Jira) in the PR body." After the subagent completes:
 1. Extract the PR number from the subagent output (the `executing-chores` skill creates a PR as its final step)
@@ -538,7 +651,7 @@ Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-1
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
    ```
 
-After step 5 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'`
+After step 5 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'` inline per "How to Invoke `managing-work-items`" above.
 
 **Step 7 — `reviewing-requirements` (code-review reconciliation)**: Append `{ID} --pr {prNumber}` as argument. Pre-fork step-name `reviewing-requirements`, mode `code-review`.
 
@@ -570,7 +683,7 @@ Steps 2, 4, 7, and 9 follow the same fork pattern as the chore chain. Every fork
 
 **Step 5 — `executing-bug-fixes` (fork)**:
 
-Before forking (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-start --context '{"workItemId": "{ID}"}'`
+Before forking (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-start --context '{"workItemId": "{ID}"}'` inline per "How to Invoke `managing-work-items`" above (read the `bug-start` template from `references/github-templates.md` — or `references/jira-templates.md` for Jira — substitute context variables, and post via `gh issue comment` / Jira backend).
 
 Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) using step-name `executing-bug-fixes`, then fork via the Agent tool with `{ID}` as argument and the resolved tier passed as the `model` parameter. If `issueRef` is set, include the FR-6 issue link instruction in the subagent prompt: "Include `Closes #N` (or `PROJ-123` for Jira) in the PR body." After the subagent completes:
 1. Extract the PR number from the subagent output (the `executing-bug-fixes` skill creates a PR as its final step)
@@ -581,7 +694,7 @@ Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-1
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
    ```
 
-After step 5 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'`
+After step 5 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'` inline per "How to Invoke `managing-work-items`" above.
 
 **Step 7 — `reviewing-requirements` (code-review reconciliation)**: Append `{ID} --pr {prNumber}` as argument. Pre-fork step-name `reviewing-requirements`, mode `code-review`.
 
@@ -638,7 +751,7 @@ After step 6 (test-plan reconciliation) completes:
 
 2. For each phase 1 through N:
 
-   **a. Before the phase** (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type phase-start --context '{"phase": <phase-number>, "totalPhases": <N>, "workItemId": "{ID}"}'`
+   **a. Before the phase** (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type phase-start --context '{"phase": <phase-number>, "totalPhases": <N>, "workItemId": "{ID}"}'` inline per "How to Invoke `managing-work-items`" above (read the `phase-start` template from `references/github-templates.md` — or `references/jira-templates.md` for Jira — substitute context variables, and post via `gh issue comment` / Jira backend).
 
    **b. Run the FEAT-014 pre-fork sequence**. Resolve the tier per phase (the `complexityStage` — `init` or `post-plan` — is captured per entry so the audit trail shows the upgrade transition when one occurred):
 
@@ -661,7 +774,7 @@ After step 6 (test-plan reconciliation) completes:
 
    Pass the resolved `${tier}` as the Agent tool's `model` parameter (FEAT-014 FR-9).
 
-   **d. After the phase completes** (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type phase-completion --context '{"phase": <phase-number>, "totalPhases": <N>, "workItemId": "{ID}"}'`
+   **d. After the phase completes** (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type phase-completion --context '{"phase": <phase-number>, "totalPhases": <N>, "workItemId": "{ID}"}'` inline per "How to Invoke `managing-work-items`" above.
 
 3. After each phase completes, advance state:
    ```bash
@@ -696,7 +809,7 @@ After all phases complete (step 6+N+1):
 
 2. Fork a subagent to create the PR. Pass the resolved `${tier}` as the Agent tool's `model` parameter. The prompt should instruct:
    - Create a pull request from the current feature branch to main
-   - If `issueRef` is set, use `managing-work-items` FR-6 to generate the issue link for the PR body: `Closes #N` for GitHub issues or `PROJ-123` for Jira issues. Include this link in the PR body
+   - If `issueRef` is set, use `managing-work-items` FR-6 to generate the issue link for the PR body: `Closes #N` for GitHub issues or `PROJ-123` for Jira issues. Include this link in the PR body. This `pr-link` operation is pure string generation, executed inline per "How to Invoke `managing-work-items`" above — the orchestrator builds the PR body in main context and passes it to `gh pr create --body` without forking
    - Return the PR number and branch name
 
 3. Record PR metadata:
@@ -891,6 +1004,16 @@ Before marking the workflow complete:
 - [ ] `bug-complete` comment posted after executing-bug-fixes (bug chain)
 - [ ] PR body includes issue link via FR-6 (`Closes #N` or `PROJ-123`)
 - [ ] All `managing-work-items` invocations gracefully skipped when no issue reference found
+
+### Issue Tracking Verification
+
+Issue tracking is supplementary (NFR-1) and must never block workflow progression, but the **reason** for a skipped invocation matters. After the workflow completes, confirm the observed state matches exactly one of the three cases below — and that the log line type (INFO vs WARNING) matches the case. A silent mismatch (e.g., no comments posted but no WARNING either, when `issueRef` was populated) indicates a mechanism-missing regression of BUG-009 and must be escalated.
+
+- [ ] **Case A — invocation succeeded and posted a comment**: `issueRef` was populated from the requirements document, the orchestrator executed `gh issue comment` / Jira backend calls inline, and at least one lifecycle comment is visible on the linked issue. Verification command: `gh issue view <N> --comments` (or `acli jira workitem view --key PROJ-123` for Jira). Expected: `phase-start` + `phase-completion` per phase (feature), or `work-start` + `work-complete` (chore), or `bug-start` + `bug-complete` (bug), plus `Closes #N` / `PROJ-123` in the PR body.
+- [ ] **Case B — gracefully skipped because `issueRef` is empty**: The requirements document has no `## GitHub Issue` section (or the section is empty). The orchestrator's conversation log contains exactly one `[info] No issue reference found in requirements document -- skipping issue tracking.` line and no lifecycle comments are expected. No WARNING-level log lines should appear for issue tracking in this case. This is the correct NFR-1 behavior.
+- [ ] **Case C — skipped because the invocation mechanism failed**: `issueRef` was populated, but the orchestrator could not execute the invocation because of a mechanism failure (unreadable `managing-work-items/SKILL.md`, missing `gh`, unauthenticated `gh`, exhausted Jira tiered fallback, unreadable template file). The orchestrator's conversation log contains at least one `[warn]` line in the format documented in "Mechanism-Failure Logging" identifying which failure mode fired. The workflow still completes, but the WARNING line makes the silent-skip regression observable. Verify the warning message names the specific failure (e.g., `gh CLI not found on PATH`, `No Jira backend available`) and not the generic "No issue reference found" info message.
+
+If the observed state cannot be classified into one of these three cases, treat it as a BUG-009 regression candidate and investigate the conversation log for silent skips.
 
 ## Relationship to Other Skills
 

@@ -22,7 +22,7 @@ Centralized issue tracker operations for GitHub Issues and Jira, invoked by the 
 - Orchestrator needs to generate the PR body issue link (`Closes #N` or `PROJ-123`)
 - Orchestrator needs to extract the issue reference from a requirement document's `## GitHub Issue` section
 
-This skill is invoked by the orchestrator -- not directly by users. All operations are supplementary to the workflow and must never block workflow progression on failure.
+This skill's `SKILL.md` is a **reference document read inline by the orchestrator's main context** — the orchestrator `Read`s it once at workflow start, then executes the documented `gh issue view` / `gh issue comment` / Jira backend commands directly using its existing `Bash`, `Read`, and `Glob` tool access. It is **not** forked via the Agent tool and **not** invoked via the Skill tool. Users do not invoke it directly; the orchestrator handles all invocations inline per the "How to Invoke `managing-work-items`" subsection in `orchestrating-workflows/SKILL.md`. All operations remain **supplementary** to the workflow and must **never** block workflow progression on failure — graceful degradation (NFR-1) still governs every call site, so any backend or tool failure logs and skips rather than halting.
 
 ## Arguments
 
