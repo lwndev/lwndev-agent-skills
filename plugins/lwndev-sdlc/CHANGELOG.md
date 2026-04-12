@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.3] - 2026-04-12
+
+### Documentation
+
+- **qa:** add QA test plan and results for BUG-010
+
+### Bug Fixes
+
+- **stop-hooks:** add state-file gates to `documenting-qa` and `executing-qa` stop hooks to prevent cross-fire with unrelated skills (BUG-010)
+
+[1.8.3]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.8.2...lwndev-sdlc@1.8.3
+
 ## [1.8.2] - 2026-04-12
 
 ### Chores
