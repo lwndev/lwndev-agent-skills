@@ -9,6 +9,13 @@ set -euo pipefail
 #   0 — allow stop (both phases complete or stop_hook_active is set)
 #   2 — block stop (verification or reconciliation not yet complete)
 
+ACTIVE_FILE=".sdlc/qa/.executing-active"
+
+# If the executing-qa skill is not active, allow stop immediately
+if [[ ! -f "$ACTIVE_FILE" ]]; then
+  exit 0
+fi
+
 # Read stdin JSON; if empty or malformed, allow stop to avoid trapping the user
 INPUT="$(cat)" || exit 0
 if [[ -z "$INPUT" ]]; then
@@ -50,12 +57,14 @@ fi
 
 # Both verification and reconciliation must be complete
 if [[ "$HAS_VERIFICATION" == "true" && "$HAS_RECONCILIATION" == "true" ]]; then
+  rm -f "$ACTIVE_FILE"
   exit 0
 fi
 
 # If results file is mentioned with either indicator, that's also sufficient
 # (results are only saved at the very end after both phases)
 if [[ "$HAS_RESULTS" == "true" && ("$HAS_VERIFICATION" == "true" || "$HAS_RECONCILIATION" == "true") ]]; then
+  rm -f "$ACTIVE_FILE"
   exit 0
 fi
 

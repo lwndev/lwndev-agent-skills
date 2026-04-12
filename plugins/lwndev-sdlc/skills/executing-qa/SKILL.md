@@ -41,6 +41,24 @@ Execute QA verification against a test plan, then reconcile requirements documen
 4. Run the reconciliation loop (update requirements docs to match implementation)
 5. Save results and present to user
 
+## State File Management
+
+This skill uses a state file to prevent its stop hook from interfering with other skills.
+
+**At the start of this skill**, create the state file:
+
+```bash
+mkdir -p .sdlc/qa && touch .sdlc/qa/.executing-active
+```
+
+This signals to the stop hook that `executing-qa` is the active skill. The stop hook removes this file automatically when it detects a successful completion and exits 0.
+
+**On completion** (after saving the QA results), remove the state file:
+
+```bash
+rm -f .sdlc/qa/.executing-active
+```
+
 ## Input
 
 The user provides a requirement ID in one of these formats:

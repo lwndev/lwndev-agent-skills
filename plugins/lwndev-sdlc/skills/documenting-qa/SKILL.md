@@ -40,6 +40,20 @@ Build a comprehensive QA test plan from requirements documents. The test plan ma
 5. Verify plan completeness via qa-verifier subagent
 6. Save test plan and present to user
 
+## State File Management
+
+This skill uses a state file to prevent its stop hook from interfering with other skills.
+
+**At the start of this skill**, create the state file using the Write tool:
+
+```
+Write tool: path=".sdlc/qa/.documenting-active", content=""
+```
+
+This signals to the stop hook that `documenting-qa` is the active skill. The stop hook removes this file automatically when it detects a successful completion and exits 0. If the skill completes without the stop hook firing (e.g., in an orchestrated workflow), use the Write tool to overwrite the file and then remove it — or simply leave it in place, as it will be cleaned up the next time the skill runs or the hook exits successfully.
+
+**On completion** (after saving the test plan), remove the state file using the Write tool by writing an empty string — however, since Write cannot delete files, the primary cleanup path is the stop hook's built-in `rm -f`. If running in an orchestrated context where the stop hook may not fire, the orchestrator is responsible for cleaning up `.sdlc/qa/.documenting-active` using a Bash `rm -f .sdlc/qa/.documenting-active` call after this skill returns.
+
 ## Important: No Bash Usage
 
 This skill does not include `Bash` in its allowed tools. Do NOT use Bash commands (including `echo`) for output formatting, status messages, or any other purpose. Use direct text output in your response instead. All communication with the user should be through your response text, not through shell commands.

@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { execSync } from 'node:child_process';
 import { readFile, access } from 'node:fs/promises';
-import { constants } from 'node:fs';
+import { constants, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { validate, type DetailedValidateResult } from 'ai-skills-manager';
 
@@ -125,6 +125,8 @@ describe('executing-qa skill', () => {
   });
 
   describe('stop hook behavior', () => {
+    const STATE_FILE = '.sdlc/qa/.executing-active';
+
     function runHook(stdinJson: string): { exitCode: number; stderr: string } {
       try {
         execSync(`echo '${stdinJson.replace(/'/g, "'\\''")}' | bash ${STOP_HOOK_PATH}`, {
@@ -138,7 +140,60 @@ describe('executing-qa skill', () => {
       }
     }
 
+    function createStateFile(): void {
+      mkdirSync('.sdlc/qa', { recursive: true });
+      writeFileSync(STATE_FILE, '');
+    }
+
+    function removeStateFile(): void {
+      try {
+        rmSync(STATE_FILE);
+      } catch {
+        // ignore if not present
+      }
+    }
+
+    afterEach(() => {
+      removeStateFile();
+    });
+
+    it('exits 0 immediately when state file does not exist (skill not active)', () => {
+      removeStateFile();
+      const result = runHook(
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'I am reading the test plan.',
+        })
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('exits 2 when state file is present and keywords are absent', () => {
+      createStateFile();
+      const result = runHook(
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'I am reading the test plan.',
+        })
+      );
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('exits 0 and removes state file when state file is present and keywords match', () => {
+      createStateFile();
+      const result = runHook(
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message:
+            'QA verification passed with all entries clean. Documentation reconciliation is complete. Results saved to qa/test-results/QA-results-FEAT-003.md.',
+        })
+      );
+      expect(result.exitCode).toBe(0);
+      expect(existsSync(STATE_FILE)).toBe(false);
+    });
+
     it('exits 0 when stop_hook_active is true', () => {
+      createStateFile();
       const result = runHook(
         JSON.stringify({ stop_hook_active: true, last_assistant_message: '' })
       );
@@ -146,6 +201,7 @@ describe('executing-qa skill', () => {
     });
 
     it('exits 0 when both verification and reconciliation are complete', () => {
+      createStateFile();
       const result = runHook(
         JSON.stringify({
           stop_hook_active: false,
@@ -157,6 +213,7 @@ describe('executing-qa skill', () => {
     });
 
     it('exits 2 when only verification is complete (no reconciliation)', () => {
+      createStateFile();
       const result = runHook(
         JSON.stringify({
           stop_hook_active: false,
@@ -168,6 +225,7 @@ describe('executing-qa skill', () => {
     });
 
     it('exits 2 when only reconciliation is complete (no verification)', () => {
+      createStateFile();
       const result = runHook(
         JSON.stringify({
           stop_hook_active: false,
@@ -179,6 +237,7 @@ describe('executing-qa skill', () => {
     });
 
     it('exits 0 when results file is mentioned with verification indicator', () => {
+      createStateFile();
       const result = runHook(
         JSON.stringify({
           stop_hook_active: false,
@@ -189,6 +248,7 @@ describe('executing-qa skill', () => {
     });
 
     it('exits 2 when neither verification nor reconciliation is detected', () => {
+      createStateFile();
       const result = runHook(
         JSON.stringify({
           stop_hook_active: false,
@@ -199,11 +259,13 @@ describe('executing-qa skill', () => {
     });
 
     it('exits 0 on empty stdin', () => {
+      createStateFile();
       const result = runHook('');
       expect(result.exitCode).toBe(0);
     });
 
     it('exits 0 on malformed JSON', () => {
+      createStateFile();
       const result = runHook('not json at all');
       expect(result.exitCode).toBe(0);
     });
