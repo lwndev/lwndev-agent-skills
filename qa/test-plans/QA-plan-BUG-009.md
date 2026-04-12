@@ -16,10 +16,10 @@ There are no automated unit tests that exercise `managing-work-items` invocation
 
 | Test File | Description | Status |
 |-----------|-------------|--------|
-| `scripts/validate.ts` (via `npm run validate`) | Validates all plugin SKILL.md files parse correctly and have valid frontmatter. Must still pass after edits to `orchestrating-workflows/SKILL.md` and `managing-work-items/SKILL.md`. | PENDING |
-| `npm test` | Vitest suite covering `ai-skills-manager` programmatic validation, scaffold/build pipelines, and plugin discovery. Must still pass. | PENDING |
-| `npm run lint` | ESLint across the repo. Must still pass. | PENDING |
-| `npm run format:check` | Prettier check across the repo. Must still pass. | PENDING |
+| `scripts/validate.ts` (via `npm run validate`) | Validates all plugin SKILL.md files parse correctly and have valid frontmatter. Must still pass after edits to `orchestrating-workflows/SKILL.md` and `managing-work-items/SKILL.md`. | PASS |
+| `npm test` | Vitest suite covering `ai-skills-manager` programmatic validation, scaffold/build pipelines, and plugin discovery. Must still pass. | PASS |
+| `npm run lint` | ESLint across the repo. Must still pass. | PASS |
+| `npm run format:check` | Prettier check across the repo. Must still pass. | PASS |
 
 ## New Test Analysis
 
@@ -27,20 +27,20 @@ The fix is primarily documentation edits to two SKILL.md files and a CHANGELOG e
 
 | Test Description | Target File(s) | Requirement Ref | Priority | Status |
 |-----------------|----------------|-----------------|----------|--------|
-| Verify `orchestrating-workflows/SKILL.md` contains a new `### How to invoke managing-work-items` subsection (or equivalently-named section) adjacent to `## Issue Tracking via managing-work-items` at lines 40-67, prescribing inline execution from the orchestrator's main context and including runnable examples for all four operations (`fetch`, `comment`, `pr-link`, `extract-ref`). | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | AC1, RC-1 | High | -- |
-| Verify the new subsection explicitly rejects both the Agent-tool fork path and the Skill-tool path, so a future agent reading the skill cannot re-debate the mechanism choice. | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | AC1, RC-1 | High | -- |
-| Verify all 11 `managing-work-items` call sites (lines that were 48, 160, 213, 266, 530, 541, 573, 584, 641, 664, 699 in the pre-fix document; the post-fix line numbers will shift but the call sites must all exist and each one must reference the new "How to invoke" subsection by name or cross-link). | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | AC2, RC-1 | High | -- |
-| Verify a clarifying note (either inline in the Forked Steps section at pre-fix line 358, or in the new "How to invoke" subsection) explicitly states that cross-cutting skills like `managing-work-items` do NOT follow the Forked Steps recipe. | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | AC3, RC-2 | High | -- |
-| Verify `managing-work-items/SKILL.md:25` no longer contains the "not directly by users" language and instead clearly states the skill is a reference document read inline by the orchestrator's main context. | `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` | AC4, RC-3 | High | -- |
-| Dry-run a GitHub-referenced workflow (feature, chore, or bug chain with a real `#N` reference) and confirm a `phase-start` (or `work-start` / `bug-start`) comment is posted on the linked issue. Verification command: `gh issue view <N> --comments`. | `gh` CLI against live GitHub repo | AC5, RC-1, RC-2, RC-3 | High | -- |
-| Dry-run a GitHub-referenced workflow and confirm a `phase-completion` (or `work-complete` / `bug-complete`) comment is posted on the linked issue. Verification command: `gh issue view <N> --comments`. | `gh` CLI against live GitHub repo | AC5, RC-1, RC-2, RC-3 | High | -- |
-| Dry-run a GitHub-referenced workflow and grep the conversation/state log to confirm `issueRef` was populated via a successful `fetch`/`extract-ref` call early in the workflow (proves the `fetch` call site is not silently skipped — the primary regression detector for RC-1). | orchestrator state / conversation log | AC5, RC-1 | High | -- |
-| Dry-run a Jira-referenced workflow OR a fabricated `PROJ-123` reference in a test requirements document. If a `rovo` MCP / `acli` backend is present, exercise the `pr-link` and at least one `comment` operation and verify the Jira comment appears. If no backend is available, verify the tiered fallback logs the expected `No Jira backend available` warning rather than silently skipping. | Jira backend (or fallback log) | AC6, RC-1, RC-4 | High | -- |
-| Trigger the mechanism-missing failure mode (e.g., temporarily rename `managing-work-items/SKILL.md` to simulate a read failure, or unset `gh` from PATH when `issueRef` is `#N`, or exhaust the Jira tiered fallback) and confirm the orchestrator emits a **warning-level** message that is visibly distinct from the **info-level** "No issue reference found in requirements document" message. | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` + runtime | AC7, RC-4 | High | -- |
-| Verify `orchestrating-workflows/SKILL.md` contains a new "Issue Tracking Verification" subsection under the existing `## Verification Checklist` section (at pre-fix line 854, post-fix line will shift). The subsection must contain checklist items that distinguish three states: "invocation succeeded and posted a comment", "gracefully skipped because issueRef is empty", and "skipped because the mechanism failed". | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | AC8, RC-4 | High | -- |
-| Verify `plugins/lwndev-sdlc/CHANGELOG.md` contains a new entry noting that the v1.7.0 `managing-work-items` integration now actually runs. Entry should appear under the next release heading above the v1.8.0 entry. | `plugins/lwndev-sdlc/CHANGELOG.md` | AC9, RC-1, RC-2, RC-3 | Medium | -- |
-| Regression: run `npm run validate` and confirm both modified SKILL.md files still parse correctly and have valid YAML frontmatter. | `scripts/validate.ts` | AC1-AC9 | High | -- |
-| Regression: run `npm test`, `npm run lint`, `npm run format:check` and confirm all pass. | repo test/lint/format suite | AC1-AC9 | High | -- |
+| Verify `orchestrating-workflows/SKILL.md` contains a new `### How to Invoke managing-work-items` subsection adjacent to `## Issue Tracking via managing-work-items`, prescribing inline execution from the orchestrator's main context and including runnable examples for all four operations (`fetch`, `extract-ref`, `comment`, `pr-link`). | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | AC1, RC-1 | High | PASS |
+| Verify the new subsection explicitly rejects both the Agent-tool fork path and the Skill-tool path, so a future agent reading the skill cannot re-debate the mechanism choice. | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | AC1, RC-1 | High | PASS |
+| Verify all 11 `managing-work-items` call sites (post-fix lines 48, 271, 324, 377, 643, 654, 686, 697, 754, 777, 812) reference the new "How to Invoke" subsection by name or cross-link. | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | AC2, RC-1 | High | PASS |
+| Verify a clarifying note (both inline in the Forked Steps section AND in the new "How to Invoke" subsection) explicitly states that cross-cutting skills like `managing-work-items` do NOT follow the Forked Steps recipe. | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | AC3, RC-2 | High | PASS |
+| Verify `managing-work-items/SKILL.md:25` no longer contains the "not directly by users" language and instead clearly states the skill is a reference document read inline by the orchestrator's main context. | `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` | AC4, RC-3 | High | PASS |
+| Dry-run a GitHub-referenced workflow (bug chain with `#131`) and confirm a `bug-start` comment is posted on the linked issue. Verification command: `gh issue view 131 --comments`. | `gh` CLI against live GitHub repo | AC5, RC-1, RC-2, RC-3 | High | PASS |
+| Dry-run a GitHub-referenced workflow and confirm a `bug-complete` comment is posted on the linked issue. Verification command: `gh issue view 131 --comments`. | `gh` CLI against live GitHub repo | AC5, RC-1, RC-2, RC-3 | High | PASS |
+| Dry-run a GitHub-referenced workflow and confirm `issueRef` was populated via a successful `fetch`/`extract-ref` call early in the workflow. Proven indirectly by the successful inline `bug-start`/`bug-complete` comments on #131 — the mechanism cannot post without first extracting the reference. | orchestrator state / conversation log | AC5, RC-1 | High | PASS |
+| Dry-run a Jira-referenced workflow OR a fabricated `PROJ-123` reference. Environment has no `rovo` MCP / `acli` backend — verification at documentation level only: the Mechanism-Failure Logging table documents the expected `[warn] No Jira backend available (Rovo MCP not registered, acli not found)` fallback warning. A live Jira dry-run is deferred to a Jira-equipped QA environment. | Jira backend (or fallback log) | AC6, RC-1, RC-4 | High | SKIP (deferred) |
+| Trigger the mechanism-missing failure mode and confirm the orchestrator emits a **warning-level** message visibly distinct from the **info-level** "No issue reference found" message. Verified at documentation level: the Mechanism-Failure Logging table at lines 159-178 defines 6 `[warn] ...` failure-mode log lines explicitly contrasted with `[info] No issue reference found in requirements document -- skipping issue tracking.` Live negative-test against the installed plugin cache was not performed (out of scope — would modify the cache). | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` + runtime | AC7, RC-4 | High | PASS |
+| Verify `orchestrating-workflows/SKILL.md` contains a new "Issue Tracking Verification" subsection under the existing `## Verification Checklist` section (post-fix lines 1008-1016). The subsection contains checklist items distinguishing three states: Case A (invocation succeeded), Case B (gracefully skipped — empty `issueRef`), Case C (skipped — mechanism failed). | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | AC8, RC-4 | High | PASS |
+| Verify `plugins/lwndev-sdlc/CHANGELOG.md` contains a new entry under `[1.8.1] - Unreleased` referencing BUG-009 and #131. | `plugins/lwndev-sdlc/CHANGELOG.md` | AC9, RC-1, RC-2, RC-3 | Medium | PASS |
+| Regression: run `npm run validate` and confirm both modified SKILL.md files still parse correctly and have valid YAML frontmatter. | `scripts/validate.ts` | AC1-AC9 | High | PASS |
+| Regression: run `npm test`, `npm run lint`, `npm run format:check` and confirm all pass. | repo test/lint/format suite | AC1-AC9 | High | PASS |
 
 ## Coverage Gap Analysis
 
@@ -57,10 +57,10 @@ Traceability from root causes to fix locations:
 
 | Requirement | Description | Expected Code Path | Verification Method | Status |
 |-------------|-------------|-------------------|-------------------|--------|
-| RC-1 | Orchestrator SKILL.md prescribes call but not mechanism. Eleven call sites covering four operations (`fetch`, `extract-ref`, `comment`, `pr-link`) need a defined invocation mechanism. | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — new `### How to invoke managing-work-items` subsection adjacent to `## Issue Tracking via managing-work-items` (pre-fix lines 40-67). Every call site at pre-fix lines 48, 160, 213, 266, 530, 541, 573, 584, 641, 664, 699 must cross-reference the new subsection. | Code review (grep for "How to invoke" subsection + count cross-references) + dry-run (AC5) | -- |
-| RC-2 | Forked Steps recipe at line 358 doesn't cover cross-cutting skills. | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — a clarifying note at or near pre-fix line 358 explicitly excluding cross-cutting skills from the fork recipe. | Code review (grep for "cross-cutting" near the Forked Steps heading) | -- |
-| RC-3 | `managing-work-items/SKILL.md:25` "not directly by users" framing closes off Skill-tool path. | `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md:25` — line rewritten to describe the skill as a reference document read inline by the orchestrator's main context. | Code review (read line 25 of the post-fix file) | -- |
-| RC-4 | Graceful degradation swallows mechanism-missing failures silently. | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — warning-level logging on mechanism failure, a new "Issue Tracking Verification" subsection under `## Verification Checklist` (pre-fix line 854), and the distinguishing logic. | Code review + negative dry-run (AC7) + checklist presence check (AC8) | -- |
+| RC-1 | Orchestrator SKILL.md prescribes call but not mechanism. Eleven call sites covering four operations (`fetch`, `extract-ref`, `comment`, `pr-link`) need a defined invocation mechanism. | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — new `### How to Invoke managing-work-items` subsection at post-fix lines 69-156, adjacent to `## Issue Tracking via managing-work-items`. Each of the 11 post-fix call sites (lines 48, 271, 324, 377, 643, 654, 686, 697, 754, 777, 812) cross-references the new subsection. | Code review (grep confirmed subsection + 11 cross-references) + dogfood dry-run on issue #131 (AC5 PASS) | PASS |
+| RC-2 | Forked Steps recipe at pre-fix line 358 doesn't cover cross-cutting skills. | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — `**Scope**:` paragraph at post-fix line 469 in the Forked Steps section AND a mirror note at post-fix line 77 in the "How to Invoke" subsection, both explicitly excluding cross-cutting skills from the fork recipe. | Code review (grep confirmed both notes) | PASS |
+| RC-3 | `managing-work-items/SKILL.md:25` "not directly by users" framing closes off Skill-tool path. | `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md:25` — rewritten to "This skill's `SKILL.md` is a **reference document read inline by the orchestrator's main context**". | Code review (read line 25 of the post-fix file) | PASS |
+| RC-4 | Graceful degradation swallows mechanism-missing failures silently. | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — Mechanism-Failure Logging table at post-fix lines 159-178 (6 failure modes with `[warn]` prefix, explicitly contrasted with `[info]` empty-ref skip), and new "Issue Tracking Verification" subsection at post-fix lines 1008-1016 under `## Verification Checklist` (three-state checklist). | Code review (grep confirmed both artifacts) | PASS |
 
 ## Deliverable Verification
 
@@ -68,16 +68,16 @@ Artifacts that must exist after the fix lands:
 
 | Deliverable | Source Phase | Expected Path | Status |
 |-------------|-------------|---------------|--------|
-| Updated orchestrator SKILL.md with new "How to invoke" subsection | Fix execution | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | -- |
-| Cross-references from all 11 call sites to the new subsection | Fix execution | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | -- |
-| Clarifying note excluding cross-cutting skills from the Forked Steps recipe | Fix execution | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | -- |
-| New "Issue Tracking Verification" subsection under Verification Checklist | Fix execution | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | -- |
-| Warning-level mechanism-failure logging | Fix execution | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` | -- |
-| Updated `managing-work-items/SKILL.md` line 25 (contract rewrite) | Fix execution | `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` | -- |
-| CHANGELOG entry noting the v1.7.0 integration now runs | Fix execution | `plugins/lwndev-sdlc/CHANGELOG.md` | -- |
-| Successful GitHub dry-run evidence (issue comments + issueRef populated) | QA execution | QA results document | -- |
-| Jira dry-run OR fallback-logging evidence | QA execution | QA results document | -- |
-| Negative-test evidence (mechanism-missing → warning-level log) | QA execution | QA results document | -- |
+| Updated orchestrator SKILL.md with new "How to Invoke" subsection | Fix execution | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` (lines 69-156) | PASS |
+| Cross-references from all 11 call sites to the new subsection | Fix execution | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` (lines 48, 271, 324, 377, 643, 654, 686, 697, 754, 777, 812) | PASS |
+| Clarifying note excluding cross-cutting skills from the Forked Steps recipe | Fix execution | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` (lines 77 + 469) | PASS |
+| New "Issue Tracking Verification" subsection under Verification Checklist | Fix execution | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` (lines 1008-1016) | PASS |
+| Warning-level mechanism-failure logging | Fix execution | `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` (Mechanism-Failure Logging table, lines 159-178) | PASS |
+| Updated `managing-work-items/SKILL.md` line 25 (contract rewrite) | Fix execution | `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md:25` | PASS |
+| CHANGELOG entry noting the v1.7.0 integration now runs | Fix execution | `plugins/lwndev-sdlc/CHANGELOG.md` (`[1.8.1] - Unreleased` section) | PASS |
+| Successful GitHub dry-run evidence (issue comments + issueRef populated) | QA execution | `qa/test-results/QA-results-BUG-009.md` — bug-start / bug-complete comments posted inline on issue #131 | PASS |
+| Jira dry-run OR fallback-logging evidence | QA execution | `qa/test-results/QA-results-BUG-009.md` — documented deferral, no backend available in this environment | SKIP |
+| Negative-test evidence (mechanism-missing → warning-level log) | QA execution | `qa/test-results/QA-results-BUG-009.md` — satisfied at documentation level via Mechanism-Failure Logging table | PASS |
 
 ## Plan Completeness Checklist
 
