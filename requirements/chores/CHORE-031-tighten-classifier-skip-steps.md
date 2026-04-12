@@ -26,12 +26,12 @@ Refactor `_classify_bug` in `workflow-state.sh` so that severity alone or RC cou
 - [x] `_classify_bug` no longer returns `high` from severity alone or RC count alone
 - [x] A BUG-009-equivalent bug (documentation category, 1-line fix, severity=high) resolves to `sonnet`
 - [x] Bug/chore chains with `complexity == low` skip `reviewing-requirements` step 2
-- [x] Test-plan reconciliation fork is skipped when the plan has no cross-reference mapping sections or `complexity == low`
+- [x] Test-plan reconciliation fork is skipped when `complexity == low`
 - [x] Feature-chain behavior is unchanged by all of the above
 
 ## Completion
 
-**Status:** `In Progress`
+**Status:** `Completed`
 
 **Completed:** 2026-04-12
 

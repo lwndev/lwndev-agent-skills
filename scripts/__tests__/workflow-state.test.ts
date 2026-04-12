@@ -1131,6 +1131,11 @@ describe('workflow-state.sh', () => {
             'medium'
           );
         });
+
+        it('high severity + 4 RCs + logic-error → high via rc_tier branch (CHORE-031 T1)', () => {
+          runJSON('init BUG-001 bug');
+          expect(run(`classify-init BUG-001 ${fixturePath('bug-high-rc-only.md')}`)).toBe('high');
+        });
       });
 
       // --- feature init-stage extractor tests ---

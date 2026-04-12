@@ -219,7 +219,7 @@ The chore chain has a fixed 9 steps with no phase loop and no plan-approval paus
 | 1 | Document chore | `documenting-chores` | **main** |
 | 2 | Review requirements (standard) | `reviewing-requirements` | fork (skip if `complexity == low`) |
 | 3 | Document QA test plan | `documenting-qa` | **main** |
-| 4 | Reconcile test plan | `reviewing-requirements` | fork (skip if `complexity == low` or no mapping sections) |
+| 4 | Reconcile test plan | `reviewing-requirements` | fork (skip if `complexity == low`) |
 | 5 | Execute chore | `executing-chores` | fork |
 | 6 | **PAUSE: PR review** | — | pause |
 | 7 | Reconcile post-review | `reviewing-requirements` | fork |
@@ -235,7 +235,7 @@ The bug chain has a fixed 9 steps with no phase loop and no plan-approval pause,
 | 1 | Document bug | `documenting-bugs` | **main** |
 | 2 | Review requirements (standard) | `reviewing-requirements` | fork (skip if `complexity == low`) |
 | 3 | Document QA test plan | `documenting-qa` | **main** |
-| 4 | Reconcile test plan | `reviewing-requirements` | fork (skip if `complexity == low` or no mapping sections) |
+| 4 | Reconcile test plan | `reviewing-requirements` | fork (skip if `complexity == low`) |
 | 5 | Execute bug fix | `executing-bug-fixes` | fork |
 | 6 | **PAUSE: PR review** | — | pause |
 | 7 | Reconcile post-review | `reviewing-requirements` | fork |
@@ -632,7 +632,7 @@ If the plan file is missing or malformed, `classify-post-plan` retains the init-
 
 ### Chore Chain Step-Specific Fork Instructions
 
-Steps 2, 4, 7, and 9 follow the same fork pattern as the feature chain without chore-specific overrides. Every fork runs the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) with the appropriate step-name and mode before spawning the subagent, and passes the resolved tier as the Agent tool's `model` parameter:
+Steps 2, 4, 7, and 9 follow the same fork pattern as the feature chain without chore-specific overrides. Every non-skipped fork runs the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) with the appropriate step-name and mode before spawning the subagent, and passes the resolved tier as the Agent tool's `model` parameter. Steps skipped by CHORE-031 conditions call only `advance` — no pre-fork sequence, no audit trail entry, and no `modelSelections` entry for that step index:
 
 **Step 2 — `reviewing-requirements` (standard review)**: **Skip condition (CHORE-031 T2)**: read the persisted complexity from the state file (`jq -r '.complexity' ".sdlc/workflows/{ID}.json"`). If `complexity == low`, skip this fork — advance state without spawning a subagent:
 ```bash
@@ -640,7 +640,7 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
 ```
 Otherwise, append `{ID}` as argument. Pre-fork step-name `reviewing-requirements`, mode `standard`.
 
-**Step 4 — `reviewing-requirements` (test-plan reconciliation)**: **Skip condition (CHORE-031 T6)**: if `complexity == low`, or the produced `qa/test-plans/QA-plan-{ID}.md` contains no mapping sections (grep for lines matching `^##+ .*[Mm]apping` returns no results), skip this fork — advance state without spawning a subagent:
+**Step 4 — `reviewing-requirements` (test-plan reconciliation)**: **Skip condition (CHORE-031 T6)**: if `complexity == low`, skip this fork — advance state without spawning a subagent:
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
 ```
@@ -683,7 +683,7 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-r
 
 ### Bug Chain Step-Specific Fork Instructions
 
-Steps 2, 4, 7, and 9 follow the same fork pattern as the chore chain. Every fork runs the FEAT-014 pre-fork sequence before spawning the subagent and passes the resolved tier as the Agent tool's `model` parameter:
+Steps 2, 4, 7, and 9 follow the same fork pattern as the chore chain. Every non-skipped fork runs the FEAT-014 pre-fork sequence before spawning the subagent and passes the resolved tier as the Agent tool's `model` parameter. Steps skipped by CHORE-031 conditions call only `advance` — no pre-fork sequence, no audit trail entry, and no `modelSelections` entry for that step index:
 
 **Step 2 — `reviewing-requirements` (standard review)**: **Skip condition (CHORE-031 T2)**: read the persisted complexity from the state file (`jq -r '.complexity' ".sdlc/workflows/{ID}.json"`). If `complexity == low`, skip this fork — advance state without spawning a subagent:
 ```bash
@@ -691,7 +691,7 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
 ```
 Otherwise, append `{ID}` as argument. Pre-fork step-name `reviewing-requirements`, mode `standard`.
 
-**Step 4 — `reviewing-requirements` (test-plan reconciliation)**: **Skip condition (CHORE-031 T6)**: if `complexity == low`, or the produced `qa/test-plans/QA-plan-{ID}.md` contains no mapping sections (grep for lines matching `^##+ .*[Mm]apping` returns no results), skip this fork — advance state without spawning a subagent:
+**Step 4 — `reviewing-requirements` (test-plan reconciliation)**: **Skip condition (CHORE-031 T6)**: if `complexity == low`, skip this fork — advance state without spawning a subagent:
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
 ```
@@ -989,7 +989,7 @@ Before marking the workflow complete:
 - [ ] State file at `.sdlc/workflows/{ID}.json` reflects completion
 - [ ] Artifacts exist for all completed steps
 - [ ] Sub-skills were NOT modified — no `context: fork` added to their frontmatter
-- [ ] Reconciliation steps (reviewing-requirements in test-plan and code-review modes) were not skipped
+- [ ] Reconciliation steps (reviewing-requirements in test-plan and code-review modes) were not skipped — unless CHORE-031 skip conditions apply (bug/chore chains: step 2 skipped if `complexity == low`; step 4 skipped if `complexity == low`)
 - [ ] Stop hook prevents premature stopping during in-progress steps
 
 ### Feature Chain Checks
