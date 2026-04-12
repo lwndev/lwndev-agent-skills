@@ -70,7 +70,7 @@ Both hooks evaluate keyword patterns against `last_assistant_message` regardless
 
 **Completed:** 2026-04-12
 
-**Pull Request:** [#145](https://github.com/lwndev/lwndev-marketplace/pull/145)
+**Pull Request:** [#146](https://github.com/lwndev/lwndev-marketplace/pull/146)
 
 ## Notes
 
