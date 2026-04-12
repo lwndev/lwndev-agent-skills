@@ -50,9 +50,7 @@ This skill uses a state file to prevent its stop hook from interfering with othe
 Write tool: path=".sdlc/qa/.documenting-active", content=""
 ```
 
-This signals to the stop hook that `documenting-qa` is the active skill. The stop hook removes this file automatically when it detects a successful completion and exits 0. If the skill completes without the stop hook firing (e.g., in an orchestrated workflow), use the Write tool to overwrite the file and then remove it — or simply leave it in place, as it will be cleaned up the next time the skill runs or the hook exits successfully.
-
-**On completion** (after saving the test plan), remove the state file using the Write tool by writing an empty string — however, since Write cannot delete files, the primary cleanup path is the stop hook's built-in `rm -f`. If running in an orchestrated context where the stop hook may not fire, the orchestrator is responsible for cleaning up `.sdlc/qa/.documenting-active` using a Bash `rm -f .sdlc/qa/.documenting-active` call after this skill returns.
+This signals to the stop hook that `documenting-qa` is the active skill. The stop hook handles cleanup automatically — it removes the state file when it detects successful completion and exits 0. In orchestrated workflows where the stop hook may not fire, the orchestrator cleans up the state file after this skill returns.
 
 ## Important: No Bash Usage
 

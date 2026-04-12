@@ -192,12 +192,13 @@ describe('executing-qa skill', () => {
       expect(existsSync(STATE_FILE)).toBe(false);
     });
 
-    it('exits 0 when stop_hook_active is true', () => {
+    it('exits 0 and removes state file when stop_hook_active is true', () => {
       createStateFile();
       const result = runHook(
         JSON.stringify({ stop_hook_active: true, last_assistant_message: '' })
       );
       expect(result.exitCode).toBe(0);
+      expect(existsSync(STATE_FILE)).toBe(false);
     });
 
     it('exits 0 when both verification and reconciliation are complete', () => {

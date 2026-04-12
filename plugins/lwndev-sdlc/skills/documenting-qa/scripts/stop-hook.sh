@@ -24,6 +24,7 @@ fi
 # Check stop_hook_active bypass — exit 0 immediately if true
 STOP_HOOK_ACTIVE="$(echo "$INPUT" | jq -r '.stop_hook_active // false' 2>/dev/null)" || exit 0
 if [[ "$STOP_HOOK_ACTIVE" == "true" ]]; then
+  rm -f "$ACTIVE_FILE"
   exit 0
 fi
 
