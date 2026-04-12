@@ -295,28 +295,30 @@ Based on the parsed counts, follow this flow:
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-gate {ID} findings-decision
    ```
    Present two options:
-   - **Apply fixes** → Clear the gate, then apply the auto-fixable corrections in main context using the Edit tool. Then spawn a **new** `reviewing-requirements` subagent fork to re-verify (this is the re-run, max 1). Parse the re-run findings per the rules in "Applying Auto-Fixes" below.
+   - **Apply fixes** → Keep the gate active during fix application and re-verification (the gate suppresses stop-hook nudges for the entire fix+re-run cycle). Apply the auto-fixable corrections in main context using the Edit tool. Then spawn a **new** `reviewing-requirements` subagent fork to re-verify (this is the re-run, max 1). The gate is cleared after the re-run completes and the outcome is determined — see "Applying Auto-Fixes" below.
+   - **Pause for manual resolution** → Pause immediately (the `pause` command clears the gate automatically):
      ```bash
-     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh clear-gate {ID}
-     ```
-   - **Pause for manual resolution** → Clear the gate, then pause immediately:
-     ```bash
-     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh clear-gate {ID}
      ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} review-findings
      ```
      Halt execution.
 
 #### Applying Auto-Fixes
 
-When the user opts to apply fixes, the orchestrator (not a subagent) applies them:
+When the user opts to apply fixes, the orchestrator (not a subagent) applies them. The gate remains active throughout this entire sequence to suppress stop-hook nudges:
 
 1. Read the auto-fixable items from the findings (listed under "Auto-fixable" or "Applicable updates" in the subagent's return text)
 2. For each fix, use the Edit tool to apply the correction to the target file
 3. After all fixes are applied, spawn a new `reviewing-requirements` subagent fork with the same arguments as the original step to re-verify
-4. This re-run is the single allowed retry. After the re-run completes, **do not apply any further edits regardless of what the re-run findings contain**:
-   - If the re-run returns zero errors → advance state.
-   - If the re-run returns warnings/info only (zero errors) → advance state unconditionally. Zero errors after a fix pass means the fixes succeeded; residual warnings are accepted.
-   - If the re-run returns errors → display the remaining findings and pause with `review-findings`. Do not attempt to fix the errors.
+4. This re-run is the single allowed retry. After the re-run completes, clear the gate and act on the outcome — **do not apply any further edits regardless of what the re-run findings contain**:
+   - If the re-run returns zero errors → clear the gate, then advance state.
+     ```bash
+     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh clear-gate {ID}
+     ```
+   - If the re-run returns warnings/info only (zero errors) → clear the gate, then advance state unconditionally. Zero errors after a fix pass means the fixes succeeded; residual warnings are accepted.
+     ```bash
+     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh clear-gate {ID}
+     ```
+   - If the re-run returns errors → display the remaining findings, then pause with `review-findings` (the `pause` command clears the gate automatically). Do not attempt to fix the errors.
      ```bash
      ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} review-findings
      ```

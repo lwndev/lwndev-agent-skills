@@ -538,6 +538,28 @@ describe('integration tests', () => {
       expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain('failed');
     });
+
+    it('exits 0 when gate is active (findings-decision suppresses nudge)', () => {
+      stateJSON('init FEAT-001 feature');
+      stateCmd('set-gate FEAT-001 findings-decision');
+      mkdirSync(join(testDir, '.sdlc/workflows'), { recursive: true });
+      writeFileSync(join(testDir, '.sdlc/workflows/.active'), 'FEAT-001');
+
+      const result = runHook();
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('exits 2 after gate is cleared', () => {
+      stateJSON('init FEAT-001 feature');
+      stateCmd('set-gate FEAT-001 findings-decision');
+      stateCmd('clear-gate FEAT-001');
+      mkdirSync(join(testDir, '.sdlc/workflows'), { recursive: true });
+      writeFileSync(join(testDir, '.sdlc/workflows/.active'), 'FEAT-001');
+
+      const result = runHook();
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain('in-progress');
+    });
   });
 
   describe('PR metadata', () => {

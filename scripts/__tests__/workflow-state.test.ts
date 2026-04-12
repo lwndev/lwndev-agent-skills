@@ -539,6 +539,27 @@ describe('workflow-state.sh', () => {
       const err = run('set-gate FEAT-999 findings-decision', { expectError: true });
       expect(err).toContain('State file not found');
     });
+
+    it('rejects set-gate on a paused workflow', () => {
+      runJSON('init FEAT-001 feature');
+      run('pause FEAT-001 plan-approval');
+      const err = run('set-gate FEAT-001 findings-decision', { expectError: true });
+      expect(err).toContain('Cannot set gate on a paused workflow');
+    });
+
+    it('rejects set-gate on a failed workflow', () => {
+      runJSON('init FEAT-001 feature');
+      run('fail FEAT-001 "step broke"');
+      const err = run('set-gate FEAT-001 findings-decision', { expectError: true });
+      expect(err).toContain('Cannot set gate on a failed workflow');
+    });
+
+    it('rejects set-gate on a complete workflow', () => {
+      runJSON('init FEAT-001 feature');
+      run('complete FEAT-001');
+      const err = run('set-gate FEAT-001 findings-decision', { expectError: true });
+      expect(err).toContain('Cannot set gate on a complete workflow');
+    });
   });
 
   describe('clear-gate', () => {
@@ -584,6 +605,14 @@ describe('workflow-state.sh', () => {
       run('set-gate FEAT-001 findings-decision');
       const state = runJSON('resume FEAT-001');
       expect(state.gate).toBeNull();
+    });
+
+    it('fail clears an active gate', () => {
+      runJSON('init FEAT-001 feature');
+      run('set-gate FEAT-001 findings-decision');
+      const state = runJSON('fail FEAT-001 "step broke"');
+      expect(state.gate).toBeNull();
+      expect(state.status).toBe('failed');
     });
   });
 
@@ -1772,6 +1801,10 @@ const WORKFLOW_STATE = join(
   'plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh'
 );
 
+// Both runHook and runState use cwd: testDir so that relative paths in
+// stop-hook.sh (e.g. ACTIVE_FILE=".sdlc/workflows/.active") resolve inside
+// the isolated temp directory, matching real-world behavior where scripts
+// run from the project root.
 function runHook(): {
   stdout: string;
   stderr: string;

@@ -178,10 +178,10 @@ _step_baseline_locked() {
   esac
 }
 
-# Defensive migration for pre-existing state files missing FEAT-014 fields (FR-13).
-# Adds complexity, complexityStage, modelOverride, and modelSelections with their init
-# defaults when any of them are missing. Silent except for a single stderr debug line
-# the first time a file is actually rewritten.
+# Defensive migration for pre-existing state files missing required fields.
+# Adds complexity, complexityStage, modelOverride, modelSelections (FEAT-014 FR-13),
+# and gate (BUG-011) with their init defaults when any are missing. Silent except for
+# a single stderr debug line the first time a file is actually rewritten.
 _migrate_state_file() {
   local file="$1"
   [[ -f "$file" ]] || return 0
@@ -200,7 +200,7 @@ _migrate_state_file() {
     return 0
   fi
 
-  echo "[workflow-state] debug: migrating ${file} to add FEAT-014 model-selection fields" >&2
+  echo "[workflow-state] debug: migrating ${file} to add missing state fields (model-selection and gate)" >&2
 
   jq '
     (if has("complexity") | not then .complexity = null else . end)
@@ -1021,6 +1021,13 @@ cmd_set_gate() {
   file=$(state_file "$id")
   validate_state_file "$file"
 
+  local current_status
+  current_status=$(jq -r '.status' "$file")
+  if [[ "$current_status" != "in-progress" ]]; then
+    echo "Error: Cannot set gate on a ${current_status} workflow. Gate is only valid for in-progress workflows." >&2
+    exit 1
+  fi
+
   if [[ "$gate_type" != "findings-decision" ]]; then
     echo "Error: Invalid gate type '${gate_type}'. Expected 'findings-decision'." >&2
     exit 1
@@ -1056,7 +1063,7 @@ cmd_fail() {
   current_step=$(jq -r '.currentStep' "$file")
 
   jq --arg msg "$message" --argjson step "$current_step" \
-    '.status = "failed" | .error = $msg | .steps[$step].status = "failed"' \
+    '.status = "failed" | .error = $msg | .steps[$step].status = "failed" | .gate = null' \
     "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   cat "$file"
