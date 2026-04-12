@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.9.0] - 2026-04-12
+
+### Documentation
+
+- **qa:** add QA test results for FEAT-015
+- **FEAT-015:** add requirements and QA test plan artifacts
+
+### Bug Fixes
+
+- **refs:** update review-findings resume handler for FEAT-015 changes
+
+### Chores
+
+- **FEAT-015:** mark Phase 1 complete and check off deliverables
+
+### Features
+
+- **FEAT-015:** add chain-type/complexity gate to findings-handling decision flow
+
+[1.9.0]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.8.4...lwndev-sdlc@1.9.0
+
 ## [1.8.4] - 2026-04-12
 
 ### Documentation
