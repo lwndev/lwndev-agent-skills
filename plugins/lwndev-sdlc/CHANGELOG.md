@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.9.1] - 2026-04-12
+
+### Documentation
+
+- **qa:** add QA test results for BUG-011
+
+### Bug Fixes
+
+- **orchestrating-workflows:** add gate mechanism to prevent stop-hook feedback loop during findings decisions (BUG-011)
+
+[1.9.1]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.9.0...lwndev-sdlc@1.9.1
+
 ## [1.9.0] - 2026-04-12
 
 ### Documentation
