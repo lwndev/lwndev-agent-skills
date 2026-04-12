@@ -45,7 +45,7 @@ Extract five sections from `orchestrating-workflows/SKILL.md` (currently 1,097 l
 
 **Completed:** 2026-04-12
 
-**Pull Request:** Pending PR creation
+**Pull Request:** [#149](https://github.com/lwndev/lwndev-marketplace/pull/149)
 
 ## Notes
 
