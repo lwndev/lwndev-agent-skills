@@ -67,7 +67,7 @@ describe('orchestrating-workflows skill', () => {
       // All references should use ${CLAUDE_SKILL_DIR}/ prefix
       const prefixedRefs = body.match(/\$\{CLAUDE_SKILL_DIR\}\/scripts\/workflow-state\.sh/g);
       expect(prefixedRefs).not.toBeNull();
-      expect(prefixedRefs!.length).toBe(62);
+      expect(prefixedRefs!.length).toBe(66);
     });
 
     it('should include "When to Use This Skill" section', () => {
