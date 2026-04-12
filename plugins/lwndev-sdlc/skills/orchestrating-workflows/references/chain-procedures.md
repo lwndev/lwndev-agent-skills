@@ -24,7 +24,7 @@ requirements/features/FEAT-*-*.md
 
 Extract the `FEAT-NNN` portion from the filename. This ID is used for all subsequent state operations.
 
-**Extract issue reference**: If the argument was a `#N` issue reference, invoke `managing-work-items fetch <issueRef>` to retrieve issue data (this was already used by `documenting-features` to pre-fill requirements via delegation). Use FR-7 to extract the issue reference from the requirements artifact and store it as `issueRef` for all subsequent `managing-work-items` invocations. Both the `fetch` and `extract-ref` calls are executed inline from the orchestrator's main context — see "How to Invoke `managing-work-items`" in the Issue Tracking section above for the runnable examples. If no issue reference is found, skip all future `managing-work-items` calls (see Skip Behavior above).
+**Extract issue reference**: If the argument was a `#N` issue reference, invoke `managing-work-items fetch <issueRef>` to retrieve issue data (this was already used by `documenting-features` to pre-fill requirements via delegation). Use FR-7 to extract the issue reference from the requirements artifact and store it as `issueRef` for all subsequent `managing-work-items` invocations. Both the `fetch` and `extract-ref` calls are executed inline from the orchestrator's main context — see "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md) for the runnable examples. If no issue reference is found, skip all future `managing-work-items` calls (see Skip Behavior in [issue-tracking.md](issue-tracking.md)).
 
 ### 4. Initialize State
 
@@ -77,7 +77,7 @@ requirements/chores/CHORE-*-*.md
 
 Extract the `CHORE-NNN` portion from the filename. This ID is used for all subsequent state operations.
 
-**Extract issue reference**: Use FR-7 from `managing-work-items` to extract the issue reference from the requirements artifact (executed inline — see "How to Invoke `managing-work-items`" in the Issue Tracking section above). Store it as `issueRef` for all subsequent `managing-work-items` invocations. If no issue reference is found, skip all future `managing-work-items` calls (see Skip Behavior above).
+**Extract issue reference**: Use FR-7 from `managing-work-items` to extract the issue reference from the requirements artifact (executed inline — see "How to Invoke `managing-work-items`" in the Issue Tracking section above). Store it as `issueRef` for all subsequent `managing-work-items` invocations. If no issue reference is found, skip all future `managing-work-items` calls (see Skip Behavior in [issue-tracking.md](issue-tracking.md)).
 
 ### 4. Initialize State
 
@@ -130,7 +130,7 @@ requirements/bugs/BUG-*-*.md
 
 Extract the `BUG-NNN` portion from the filename. This ID is used for all subsequent state operations.
 
-**Extract issue reference**: Use FR-7 from `managing-work-items` to extract the issue reference from the requirements artifact (executed inline — see "How to Invoke `managing-work-items`" in the Issue Tracking section above). Store it as `issueRef` for all subsequent `managing-work-items` invocations. If no issue reference is found, skip all future `managing-work-items` calls (see Skip Behavior above).
+**Extract issue reference**: Use FR-7 from `managing-work-items` to extract the issue reference from the requirements artifact (executed inline — see "How to Invoke `managing-work-items`" in the Issue Tracking section above). Store it as `issueRef` for all subsequent `managing-work-items` invocations. If no issue reference is found, skip all future `managing-work-items` calls (see Skip Behavior in [issue-tracking.md](issue-tracking.md)).
 
 ### 4. Initialize State
 

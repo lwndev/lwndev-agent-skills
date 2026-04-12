@@ -35,7 +35,7 @@ managing-work-items <operation> <issueRef> [--type <comment-type>] [--context <j
 2. **At every call site below**, the orchestrator runs the documented `gh` / `acli` / Rovo MCP command directly from main context. No Agent tool fork. No Skill tool call. No sub-conversation.
 3. **Graceful degradation** (NFR-1) still applies — every external command is wrapped in the try/skip pattern from `managing-work-items/SKILL.md:287-306`. Failures are logged and the workflow continues.
 
-**Note on cross-cutting skills**: `managing-work-items` is deliberately not in any chain step table (Feature, Chore, or Bug). Cross-cutting skills — skills invoked between steps rather than as a step — do **not** follow the Forked Steps recipe below. They follow this "How to Invoke" subsection instead. This distinction matters because the Forked Steps recipe is scoped to "steps marked **fork** in the step sequence", and cross-cutting invocations have no such marker.
+**Note on cross-cutting skills**: `managing-work-items` is deliberately not in any chain step table (Feature, Chore, or Bug). Cross-cutting skills — skills invoked between steps rather than as a step — do **not** follow the Forked Steps recipe in SKILL.md. They follow this "How to Invoke" subsection instead. This distinction matters because the Forked Steps recipe is scoped to "steps marked **fork** in the step sequence", and cross-cutting invocations have no such marker.
 
 #### Rejected alternatives
 
@@ -44,7 +44,7 @@ Two other invocation mechanisms were considered and explicitly rejected:
 - **Agent-tool fork (rejected)**: Forking a subagent for every `gh issue comment` adds conversation-spawn overhead, audit-trail noise, and an unnecessary context boundary for what is usually a single CLI command. `managing-work-items` operations are small, stateless, and don't need isolation — they're idiomatic main-context tool use.
 - **Skill-tool invocation (rejected)**: `managing-work-items` is framed as a reference document for the orchestrator; it is not a user-facing skill. Invoking it via the Skill tool would require restructuring its contract (name, trigger phrases, arguments) and would still force the orchestrator to hand off control to a sub-conversation for operations it can execute inline in one tool call.
 
-**Inline execution composes cleanly with the existing Forked Steps recipe.** Step-sequence forks (skills that appear in the chain tables — `reviewing-requirements`, `creating-implementation-plans`, `implementing-plan-phases`, `executing-chores`, `executing-bug-fixes`, `finalizing-workflow`, `pr-creation`) continue to use the Forked Steps recipe below. Cross-cutting invocations (`managing-work-items`) are handled inline per this subsection. The two mechanisms do not overlap and do not need to be reconciled.
+**Inline execution composes cleanly with the existing Forked Steps recipe.** Step-sequence forks (skills that appear in the chain tables — `reviewing-requirements`, `creating-implementation-plans`, `implementing-plan-phases`, `executing-chores`, `executing-bug-fixes`, `finalizing-workflow`, `pr-creation`) continue to use the Forked Steps recipe in SKILL.md. Cross-cutting invocations (`managing-work-items`) are handled inline per this subsection. The two mechanisms do not overlap and do not need to be reconciled.
 
 #### Runnable examples
 

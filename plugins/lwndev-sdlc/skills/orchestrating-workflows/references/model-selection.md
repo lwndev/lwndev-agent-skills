@@ -585,7 +585,7 @@ section of the FEAT-014 requirements doc for details.
 
 - **`plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` "Model
   Selection" section** — the concise in-SKILL summary with the baseline
-  and signal matrices, override precedence table, and worked examples.
+  and signal matrices, and override precedence table.
 - **`requirements/features/FEAT-014-adaptive-model-selection.md`** —
   the full requirements doc with every FR, NFR, edge case, and worked
   example.
