@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.8.4] - 2026-04-12
+
+### Documentation
+
+- **qa:** add QA test results for CHORE-032
+- **chore:** update CHORE-032 completion with PR #149
+
+### Bug Fixes
+
+- **refs:** update stale directional cross-references in extracted reference files
+
+### Chores
+
+- **refactoring:** split orchestrating-workflows SKILL.md into core + reference files
+
+[1.8.4]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.8.3...lwndev-sdlc@1.8.4
+
 ## [1.8.3] - 2026-04-12
 
 ### Documentation
