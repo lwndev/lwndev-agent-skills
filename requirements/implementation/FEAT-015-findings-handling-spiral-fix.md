@@ -8,7 +8,7 @@ This plan covers the prose-only changes to `plugins/lwndev-sdlc/skills/orchestra
 
 | ID | Name | Priority | Complexity | Status |
 |----|------|----------|------------|--------|
-| FEAT-015 | Fix Findings-Handling Spiral on Bug/Chore Chains | Medium | Low | 🔄 In Progress |
+| FEAT-015 | Fix Findings-Handling Spiral on Bug/Chore Chains | Medium | Low | ✅ Complete |
 
 ## Recommended Build Sequence
 
@@ -131,12 +131,12 @@ Manual verification scenarios (from the requirements):
 
 ## Success Criteria
 
-- [ ] Bug/chore chains with `complexity <= medium` auto-advance on warnings-only findings from `reviewing-requirements` (all modes: standard, test-plan, code-review)
-- [ ] The "no edits after re-run" rule is unambiguous — the re-run is terminal regardless of findings content
-- [ ] Feature-chain behavior is completely unchanged at all complexities
-- [ ] `complexity == high` bug/chore chains still prompt the user on warnings-only findings
-- [ ] Auto-advanced findings are logged with the exact `[info]` format from FR-4
-- [ ] Null complexity is treated as medium (null-coalescing in jq expression)
+- [x] Bug/chore chains with `complexity <= medium` auto-advance on warnings-only findings from `reviewing-requirements` (all modes: standard, test-plan, code-review)
+- [x] The "no edits after re-run" rule is unambiguous — the re-run is terminal regardless of findings content
+- [x] Feature-chain behavior is completely unchanged at all complexities
+- [x] `complexity == high` bug/chore chains still prompt the user on warnings-only findings
+- [x] Auto-advanced findings are logged with the exact `[info]` format from FR-4
+- [x] Null complexity is treated as medium (null-coalescing in jq expression)
 
 ## Code Organization
 
