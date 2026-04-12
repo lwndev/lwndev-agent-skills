@@ -14,7 +14,7 @@
 
 ## Description
 
-Refactor `_classify_bug` in `workflow-state.sh` so that severity alone or RC count alone cannot promote a bug to `high` complexity (which forces Opus). Then make the orchestrator skip `reviewing-requirements` standard review (step 2) on `complexity == low` bug/chore chains and skip test-plan reconciliation (step 4) when the plan has no cross-reference mapping sections or `complexity == low`.
+Refactor `_classify_bug` in `workflow-state.sh` so that severity alone or RC count alone cannot promote a bug to `high` complexity (which forces Opus). Then make the orchestrator skip `reviewing-requirements` standard review (step 2) and test-plan reconciliation (step 4) on `complexity == low` bug/chore chains.
 
 ## Affected Files
 
