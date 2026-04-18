@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.0] - 2026-04-18
+
+### Features
+
+- **FEAT-016:** Persist reviewing-requirements findings in workflow state ([#145](https://github.com/lwndev/lwndev-marketplace/issues/145)). Adds a `record-findings` subcommand to `workflow-state.sh` and integrates it at every decision point in the orchestrator's findings handling flow, so severity counts, decisions, and individual finding details are durably recorded in the state file after each reviewing-requirements step.
+
+[1.10.0]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.9.1...lwndev-sdlc@1.10.0
+
 ## [1.9.1] - 2026-04-12
 
 ### Documentation
