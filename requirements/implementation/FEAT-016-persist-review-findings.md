@@ -89,7 +89,7 @@ The implementation has a natural dependency order: `workflow-state.sh` must expo
 
 ### Phase 2: Orchestrator Integration in `SKILL.md`
 **Feature:** [FEAT-016](../features/FEAT-016-persist-review-findings.md) | [#145](https://github.com/lwndev/lwndev-marketplace/issues/145)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 
 #### Rationale
 
@@ -170,7 +170,7 @@ The implementation has a natural dependency order: `workflow-state.sh` must expo
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — "Persisting Findings" subsection (including decision-to-call table and FR-7 parsing procedure), `record-findings` calls in Decision Flow items 1–3, `record-findings --rerun` calls in Applying Auto-Fixes step 4
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — "Persisting Findings" subsection (including decision-to-call table and FR-7 parsing procedure), `record-findings` calls in Decision Flow items 1–3, `record-findings --rerun` calls in Applying Auto-Fixes step 4
 
 ---
 
