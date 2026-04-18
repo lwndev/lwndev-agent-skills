@@ -39,6 +39,8 @@ Add missing `Skill(...)` allow rules for `orchestrating-workflows` and `managing
 
 **Status:** `In Progress`
 
+**Pull Request:** [#161](https://github.com/lwndev/lwndev-marketplace/pull/161)
+
 ## Notes
 
 ### Scope changes since issue was filed (2026-03-28)
