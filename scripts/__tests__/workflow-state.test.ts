@@ -1261,11 +1261,14 @@ describe('workflow-state.sh', () => {
         writeFileSync(badFile, 'not valid json {{');
         // Should succeed (exit 0) but log warning to stderr.
         const output = execSync(
-          `bash "${SCRIPT}" record-findings FEAT-001 1 0 1 0 auto-advanced "Warnings" --details-file ${badFile}`,
-          { cwd: testDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+          `bash "${SCRIPT}" record-findings FEAT-001 1 0 1 0 auto-advanced "Warnings" --details-file ${badFile} 2>&1`,
+          { cwd: testDir, encoding: 'utf-8' }
         );
-        const state = JSON.parse(output) as Record<string, unknown>;
-        const steps = state.steps as Array<Record<string, unknown>>;
+        // Should contain the warning on stderr (merged into stdout via 2>&1).
+        expect(output).toContain('[warn] Could not read details file');
+        // State file must still be updated without details.
+        const stateAfter = readState('FEAT-001');
+        const steps = stateAfter.steps as Array<Record<string, unknown>>;
         const findings = steps[1].findings as Record<string, unknown>;
         expect(findings.decision).toBe('auto-advanced');
         expect(Object.prototype.hasOwnProperty.call(findings, 'details')).toBe(false);

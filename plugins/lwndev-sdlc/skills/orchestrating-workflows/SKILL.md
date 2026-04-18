@@ -333,9 +333,9 @@ When the user opts to apply fixes, the orchestrator (not a subagent) applies the
 2. For each fix, use the Edit tool to apply the correction to the target file
 3. After all fixes are applied, spawn a new `reviewing-requirements` subagent fork with the same arguments as the original step to re-verify
 4. This re-run is the single allowed retry. After the re-run completes, clear the gate and act on the outcome — **do not apply any further edits regardless of what the re-run findings contain**:
-   - If the re-run returns zero errors → persist re-run findings, then clear the gate, then advance state.
+   - If the re-run returns zero errors → persist re-run findings, then clear the gate, then advance state. Normalize `{rerun-summary}` to `'No issues found'` when the re-run returns zero counts (see summary normalization note in "Persisting Findings" below).
      ```bash
-     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh record-findings {ID} {stepIndex} 0 0 0 advanced '{rerun-summary}' --rerun
+     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh record-findings {ID} {stepIndex} 0 0 0 advanced 'No issues found' --rerun
      ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh clear-gate {ID}
      ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "{artifact-path}"
      ```
