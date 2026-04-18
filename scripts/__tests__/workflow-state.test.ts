@@ -1173,6 +1173,148 @@ describe('workflow-state.sh', () => {
       });
     });
 
+    describe('record-findings', () => {
+      it('writes the correct JSON structure for a valid stepIndex', () => {
+        runJSON('init FEAT-001 feature');
+        const state = runJSON('record-findings FEAT-001 1 3 2 1 advanced "No issues found"');
+        const steps = state.steps as Array<Record<string, unknown>>;
+        expect(steps[1].findings).toEqual({
+          errors: 3,
+          warnings: 2,
+          info: 1,
+          decision: 'advanced',
+          summary: 'No issues found',
+        });
+        // Numeric fields are numbers, not strings.
+        const findings = steps[1].findings as Record<string, unknown>;
+        expect(typeof findings.errors).toBe('number');
+        expect(typeof findings.warnings).toBe('number');
+        expect(typeof findings.info).toBe('number');
+      });
+
+      it('--rerun writes to rerunFindings without overwriting an existing findings field', () => {
+        runJSON('init FEAT-001 feature');
+        runJSON('record-findings FEAT-001 1 0 2 1 auto-advanced "Warnings found"');
+        const state = runJSON('record-findings FEAT-001 1 0 0 0 advanced "Clean on rerun" --rerun');
+        const steps = state.steps as Array<Record<string, unknown>>;
+        // Original findings must be preserved.
+        expect(steps[1].findings).toMatchObject({ decision: 'auto-advanced' });
+        // rerunFindings must be written.
+        expect(steps[1].rerunFindings).toMatchObject({
+          decision: 'advanced',
+          summary: 'Clean on rerun',
+        });
+      });
+
+      it('stores a summary containing shell-special characters verbatim', () => {
+        runJSON('init FEAT-001 feature');
+        const specialSummary = 'Found: $HOME `echo hi` (parens) "quotes" \'single\'';
+        // Pass the summary as a single shell-quoted argument via execSync.
+        const state = JSON.parse(
+          execSync(
+            `bash "${SCRIPT}" record-findings FEAT-001 1 0 1 0 paused '${specialSummary.replace(/'/g, "'\\''")}'`,
+            { cwd: testDir, encoding: 'utf-8' }
+          )
+        ) as Record<string, unknown>;
+        const steps = state.steps as Array<Record<string, unknown>>;
+        const findings = steps[1].findings as Record<string, unknown>;
+        expect(findings.summary).toBe(specialSummary);
+      });
+
+      it('--details-file with decision "auto-advanced" includes the details array', () => {
+        runJSON('init FEAT-001 feature');
+        const detailsFile = join(testDir, 'details.json');
+        const detailsArray = [
+          { id: 'W1', severity: 'warning', category: 'Style', description: 'Missing semicolon' },
+          { id: 'I1', severity: 'info', category: 'Docs', description: 'Consider adding example' },
+        ];
+        writeFileSync(detailsFile, JSON.stringify(detailsArray));
+        const state = runJSON(
+          `record-findings FEAT-001 1 0 1 1 auto-advanced "Warnings only" --details-file ${detailsFile}`
+        );
+        const steps = state.steps as Array<Record<string, unknown>>;
+        const findings = steps[1].findings as Record<string, unknown>;
+        expect(findings.decision).toBe('auto-advanced');
+        expect(Array.isArray(findings.details)).toBe(true);
+        expect(findings.details).toEqual(detailsArray);
+      });
+
+      it('--details-file with a non-auto-advanced decision omits details from the written object', () => {
+        runJSON('init FEAT-001 feature');
+        const detailsFile = join(testDir, 'details.json');
+        writeFileSync(
+          detailsFile,
+          JSON.stringify([{ id: 'W1', severity: 'warning', category: 'Style', description: 'x' }])
+        );
+        const state = runJSON(
+          `record-findings FEAT-001 1 0 1 0 user-advanced "User confirmed" --details-file ${detailsFile}`
+        );
+        const steps = state.steps as Array<Record<string, unknown>>;
+        const findings = steps[1].findings as Record<string, unknown>;
+        expect(findings.decision).toBe('user-advanced');
+        expect(Object.prototype.hasOwnProperty.call(findings, 'details')).toBe(false);
+      });
+
+      it('--details-file pointing to invalid JSON logs warning and writes without details', () => {
+        runJSON('init FEAT-001 feature');
+        const badFile = join(testDir, 'bad.json');
+        writeFileSync(badFile, 'not valid json {{');
+        // Should succeed (exit 0) but log warning to stderr.
+        const output = execSync(
+          `bash "${SCRIPT}" record-findings FEAT-001 1 0 1 0 auto-advanced "Warnings" --details-file ${badFile}`,
+          { cwd: testDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+        );
+        const state = JSON.parse(output) as Record<string, unknown>;
+        const steps = state.steps as Array<Record<string, unknown>>;
+        const findings = steps[1].findings as Record<string, unknown>;
+        expect(findings.decision).toBe('auto-advanced');
+        expect(Object.prototype.hasOwnProperty.call(findings, 'details')).toBe(false);
+      });
+
+      it('--details-file pointing to a non-existent file logs warning and writes without details', () => {
+        runJSON('init FEAT-001 feature');
+        const missingFile = join(testDir, 'missing.json');
+        const output = execSync(
+          `bash "${SCRIPT}" record-findings FEAT-001 1 0 1 0 auto-advanced "Warnings" --details-file ${missingFile} 2>&1 || true`,
+          { cwd: testDir, encoding: 'utf-8', shell: '/bin/bash' }
+        );
+        // Should contain the warning.
+        expect(output).toContain('[warn] Could not read details file');
+        // State file must still be updated without details.
+        const stateAfter = readState('FEAT-001');
+        const steps = stateAfter.steps as Array<Record<string, unknown>>;
+        const findings = steps[1].findings as Record<string, unknown>;
+        expect(findings.decision).toBe('auto-advanced');
+        expect(Object.prototype.hasOwnProperty.call(findings, 'details')).toBe(false);
+      });
+
+      it('stepIndex equal to steps.length (out of bounds) exits non-zero and does not modify the state file', () => {
+        runJSON('init FEAT-001 feature');
+        // Feature workflow has 6 initial steps; index 6 is out of bounds.
+        const before = readState('FEAT-001');
+        const err = run('record-findings FEAT-001 6 0 0 0 advanced "test"', { expectError: true });
+        expect(err).toContain('out of bounds');
+        const after = readState('FEAT-001');
+        expect(JSON.stringify(after)).toBe(JSON.stringify(before));
+      });
+
+      it('status subcommand returns findings data when present and works normally when absent', () => {
+        runJSON('init FEAT-001 feature');
+        // Without findings: status should work normally.
+        const stateWithout = runJSON('status FEAT-001');
+        const stepsWithout = stateWithout.steps as Array<Record<string, unknown>>;
+        expect(Object.prototype.hasOwnProperty.call(stepsWithout[1], 'findings')).toBe(false);
+
+        // After recording findings: status should include the findings field.
+        runJSON('record-findings FEAT-001 1 0 0 0 advanced "No issues found"');
+        const stateWith = runJSON('status FEAT-001');
+        const stepsWith = stateWith.steps as Array<Record<string, unknown>>;
+        expect(Object.prototype.hasOwnProperty.call(stepsWith[1], 'findings')).toBe(true);
+        const findings = stepsWith[1].findings as Record<string, unknown>;
+        expect(findings.decision).toBe('advanced');
+      });
+    });
+
     describe('classifier (FEAT-014 Phase 2)', () => {
       // --- chore signal extractor tests ---
       describe('chore classifier', () => {

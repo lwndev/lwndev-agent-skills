@@ -64,6 +64,11 @@ usage() {
   echo "  set-gate <ID> <gate-type>     Signal that the orchestrator is waiting for user input within an" >&2
   echo "                                in-progress step. Valid gate types: findings-decision." >&2
   echo "  clear-gate <ID>               Remove the active gate (sets gate to null)." >&2
+  echo "  record-findings <ID> <stepIndex> <errors> <warnings> <info> <decision> <summary> [--rerun] [--details-file <path>]" >&2
+  echo "                                Persist reviewing-requirements findings on a step entry." >&2
+  echo "                                decision must be one of: advanced, auto-advanced, user-advanced, auto-fixed, paused." >&2
+  echo "                                --rerun writes to rerunFindings instead of findings." >&2
+  echo "                                --details-file is only used when decision is auto-advanced." >&2
   exit 1
 }
 
@@ -1052,6 +1057,116 @@ cmd_clear_gate() {
   cat "$file"
 }
 
+cmd_record_findings() {
+  local id="$1"
+  local step_index="$2"
+  local errors="$3"
+  local warnings="$4"
+  local info="$5"
+  local decision="$6"
+  local summary="$7"
+  shift 7
+
+  # Validate step_index is a non-negative integer.
+  if [[ -z "$step_index" ]] || ! [[ "$step_index" =~ ^[0-9]+$ ]]; then
+    echo "Error: record-findings requires a numeric <stepIndex>; got '${step_index}'." >&2
+    exit 1
+  fi
+
+  # Validate errors, warnings, info are non-negative integers.
+  if [[ -z "$errors" ]] || ! [[ "$errors" =~ ^[0-9]+$ ]]; then
+    echo "Error: record-findings requires a numeric <errors>; got '${errors}'." >&2
+    exit 1
+  fi
+  if [[ -z "$warnings" ]] || ! [[ "$warnings" =~ ^[0-9]+$ ]]; then
+    echo "Error: record-findings requires a numeric <warnings>; got '${warnings}'." >&2
+    exit 1
+  fi
+  if [[ -z "$info" ]] || ! [[ "$info" =~ ^[0-9]+$ ]]; then
+    echo "Error: record-findings requires a numeric <info>; got '${info}'." >&2
+    exit 1
+  fi
+
+  # Validate decision is one of the allowed values.
+  case "$decision" in
+    advanced|auto-advanced|user-advanced|auto-fixed|paused) ;;
+    *)
+      echo "Error: record-findings requires decision to be one of: advanced, auto-advanced, user-advanced, auto-fixed, paused; got '${decision}'." >&2
+      exit 1
+      ;;
+  esac
+
+  # Parse optional flags: --rerun and --details-file <path>.
+  local rerun=false
+  local details_file=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --rerun)
+        rerun=true
+        shift
+        ;;
+      --details-file)
+        [[ $# -ge 2 ]] || { echo "Error: --details-file requires a path argument." >&2; exit 1; }
+        details_file="$2"
+        shift 2
+        ;;
+      *)
+        echo "Error: record-findings unknown flag '${1}'." >&2
+        exit 1
+        ;;
+    esac
+  done
+
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  # Bounds check: stepIndex must be < length(.steps).
+  local steps_len
+  steps_len=$(jq '.steps | length' "$file")
+  if (( step_index >= steps_len )); then
+    echo "Error: stepIndex ${step_index} out of bounds for workflow ${id} (steps length: ${steps_len})." >&2
+    exit 1
+  fi
+
+  # Determine target field name.
+  local field_name="findings"
+  if [[ "$rerun" == "true" ]]; then
+    field_name="rerunFindings"
+  fi
+
+  # Build the base findings JSON object.
+  local findings_json
+  findings_json=$(jq -n \
+    --argjson errors "$errors" \
+    --argjson warnings "$warnings" \
+    --argjson info "$info" \
+    --arg decision "$decision" \
+    --arg summary "$summary" \
+    '{errors: $errors, warnings: $warnings, info: $info, decision: $decision, summary: $summary}')
+
+  # Handle --details-file: only merge details when decision == "auto-advanced".
+  if [[ -n "$details_file" && "$decision" == "auto-advanced" ]]; then
+    if [[ ! -f "$details_file" ]]; then
+      echo "[warn] Could not read details file — recording counts only." >&2
+    else
+      local details_content
+      details_content=$(cat "$details_file")
+      if jq -e '. | arrays' "$details_file" &>/dev/null; then
+        findings_json=$(echo "$findings_json" | jq --argjson details "$details_content" '. + {details: $details}')
+      else
+        echo "[warn] Could not read details file — recording counts only." >&2
+      fi
+    fi
+  fi
+
+  # Write findings object to the target field on the step entry.
+  jq --argjson idx "$step_index" --argjson obj "$findings_json" \
+    ".steps[\$idx].${field_name} = \$obj" "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+
+  cat "$file"
+}
+
 cmd_fail() {
   local id="$1"
   local message="$2"
@@ -1568,6 +1683,10 @@ case "$command" in
   clear-gate)
     [[ $# -ge 1 ]] || { echo "Error: clear-gate requires <ID>" >&2; exit 1; }
     cmd_clear_gate "$1"
+    ;;
+  record-findings)
+    [[ $# -ge 7 ]] || { echo "Error: record-findings requires <ID> <stepIndex> <errors> <warnings> <info> <decision> <summary> [--rerun] [--details-file <path>]" >&2; exit 1; }
+    cmd_record_findings "$@"
     ;;
   *)
     echo "Error: Unknown command '${command}'" >&2
