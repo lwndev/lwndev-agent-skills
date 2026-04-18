@@ -1151,8 +1151,7 @@ cmd_record_findings() {
       echo "[warn] Could not read details file — recording counts only." >&2
     else
       local details_content
-      details_content=$(cat "$details_file")
-      if jq -e '. | arrays' "$details_file" &>/dev/null; then
+      if details_content=$(jq -e '. | arrays' "$details_file" 2>/dev/null); then
         findings_json=$(echo "$findings_json" | jq --argjson details "$details_content" '. + {details: $details}')
       else
         echo "[warn] Could not read details file — recording counts only." >&2

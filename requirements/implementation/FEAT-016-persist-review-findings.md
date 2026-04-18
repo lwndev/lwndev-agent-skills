@@ -10,7 +10,7 @@ The change is scoped to two artifacts: a new `record-findings` subcommand in `wo
 
 | Feature ID | GitHub Issue | Feature Document | Priority | Complexity | Status |
 |------------|--------------|------------------|----------|------------|--------|
-| FEAT-016 | [#145](https://github.com/lwndev/lwndev-marketplace/issues/145) | [FEAT-016-persist-review-findings.md](../features/FEAT-016-persist-review-findings.md) | Medium | Medium | Pending |
+| FEAT-016 | [#145](https://github.com/lwndev/lwndev-marketplace/issues/145) | [FEAT-016-persist-review-findings.md](../features/FEAT-016-persist-review-findings.md) | Medium | Medium | ✅ Complete |
 
 ## Recommended Build Sequence
 
