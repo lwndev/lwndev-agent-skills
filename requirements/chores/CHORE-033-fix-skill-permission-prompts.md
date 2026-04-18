@@ -23,6 +23,9 @@ Add missing `Skill(...)` allow rules for `orchestrating-workflows` and `managing
 - `plugins/lwndev-sdlc/skills/executing-chores/SKILL.md` — remove unused `Agent` from `allowed-tools`
 - `plugins/lwndev-sdlc/skills/implementing-plan-phases/SKILL.md` — remove unused `Agent` from `allowed-tools`
 - `plugins/lwndev-sdlc/skills/finalizing-workflow/SKILL.md` — remove unused `Glob` from `allowed-tools`
+- `scripts/__tests__/executing-bug-fixes.test.ts` — update allowed-tools assertion to expect `Agent` absent
+- `scripts/__tests__/executing-chores.test.ts` — update allowed-tools assertion to expect `Agent` absent
+- `scripts/__tests__/implementing-plan-phases.test.ts` — update allowed-tools assertion to expect `Agent` absent
 
 ## Acceptance Criteria
 
@@ -37,7 +40,7 @@ Add missing `Skill(...)` allow rules for `orchestrating-workflows` and `managing
 
 ## Completion
 
-**Status:** `In Progress`
+**Status:** `Complete (pending manual AC8 verification)`
 
 **Pull Request:** [#161](https://github.com/lwndev/lwndev-marketplace/pull/161)
 
