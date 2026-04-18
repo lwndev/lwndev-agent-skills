@@ -20,7 +20,7 @@ The implementation has a natural dependency order: `workflow-state.sh` must expo
 
 ### Phase 1: `record-findings` Subcommand in `workflow-state.sh`
 **Feature:** [FEAT-016](../features/FEAT-016-persist-review-findings.md) | [#145](https://github.com/lwndev/lwndev-marketplace/issues/145)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 
 #### Rationale
 
