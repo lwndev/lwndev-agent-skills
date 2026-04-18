@@ -4,7 +4,6 @@ description: Merges the current PR, checks out main, fetches, and pulls — redu
 allowed-tools:
   - Bash
   - Read
-  - Glob
 ---
 
 # Finalizing Workflow
