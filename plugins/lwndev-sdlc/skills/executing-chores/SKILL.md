@@ -8,7 +8,6 @@ allowed-tools:
   - Bash
   - Glob
   - Grep
-  - Agent
 argument-hint: <chore-id>
 ---
 

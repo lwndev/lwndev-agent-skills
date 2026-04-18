@@ -83,7 +83,7 @@ describe('executing-bug-fixes skill', () => {
       expect(skillMd).toMatch(/^---\s*\n[\s\S]*?allowed-tools:[\s\S]*?---/);
     });
 
-    it('should include Read, Write, Edit, Bash, Glob, Grep, Agent', () => {
+    it('should include Read, Write, Edit, Bash, Glob, Grep', () => {
       const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
       expect(frontmatter).toContain('- Read');
       expect(frontmatter).toContain('- Write');
@@ -91,7 +91,7 @@ describe('executing-bug-fixes skill', () => {
       expect(frontmatter).toContain('- Bash');
       expect(frontmatter).toContain('- Glob');
       expect(frontmatter).toContain('- Grep');
-      expect(frontmatter).toContain('- Agent');
+      expect(frontmatter).not.toContain('- Agent');
     });
   });
 
