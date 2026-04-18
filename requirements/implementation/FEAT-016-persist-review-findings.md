@@ -89,7 +89,7 @@ The implementation has a natural dependency order: `workflow-state.sh` must expo
 
 ### Phase 2: Orchestrator Integration in `SKILL.md`
 **Feature:** [FEAT-016](../features/FEAT-016-persist-review-findings.md) | [#145](https://github.com/lwndev/lwndev-marketplace/issues/145)
-**Status:** Pending
+**Status:** 🔄 In Progress
 
 #### Rationale
 
