@@ -76,10 +76,10 @@ skill-name/
 ```
 
 ### Existing Skills (lwndev-sdlc plugin)
-Eleven skills exist that form three workflow chains. The `reviewing-requirements` skill appears at multiple points — its mode is automatic based on context. Reconciliation steps are optional but recommended.
-1. **documenting-features** → **reviewing-requirements** → **creating-implementation-plans** → **documenting-qa** → **reviewing-requirements** *(reconciliation)* → **implementing-plan-phases** → *PR review* → **reviewing-requirements** *(reconciliation)* → **executing-qa** → **finalizing-workflow**
-2. **documenting-chores** → **reviewing-requirements** → **documenting-qa** → **reviewing-requirements** *(reconciliation)* → **executing-chores** → *PR review* → **reviewing-requirements** *(reconciliation)* → **executing-qa** → **finalizing-workflow**
-3. **documenting-bugs** → **reviewing-requirements** → **documenting-qa** → **reviewing-requirements** *(reconciliation)* → **executing-bug-fixes** → *PR review* → **reviewing-requirements** *(reconciliation)* → **executing-qa** → **finalizing-workflow**
+Eleven skills exist that form three workflow chains. The `reviewing-requirements` skill is invoked for standard review before QA planning; its test-plan reconciliation mode is still available as a standalone invocation but is not part of the orchestrator chains.
+1. **documenting-features** → **reviewing-requirements** → **creating-implementation-plans** → **documenting-qa** → **implementing-plan-phases** → *PR review* → **executing-qa** → **finalizing-workflow**
+2. **documenting-chores** → **reviewing-requirements** → **documenting-qa** → **executing-chores** → *PR review* → **executing-qa** → **finalizing-workflow**
+3. **documenting-bugs** → **reviewing-requirements** → **documenting-qa** → **executing-bug-fixes** → *PR review* → **executing-qa** → **finalizing-workflow**
 
 ## Key Patterns
 

@@ -14,17 +14,15 @@ tier=$("${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" classify-post-plan {ID})
 
 If the plan file is missing or malformed, `classify-post-plan` retains the init-stage tier per NFR-5 and emits a one-line warning. Chore and bug chains have no post-plan stage.
 
-**Step 6 — `reviewing-requirements` (test-plan reconciliation)**: Append `{ID}` as argument. The skill auto-detects test-plan reconciliation mode because `qa/test-plans/QA-plan-{ID}.md` exists. Run the FEAT-014 pre-fork sequence with step-name `reviewing-requirements` and mode `test-plan`. This fork is the first to see the post-plan stage transition (if one occurred).
+**Steps 6…5+N — `implementing-plan-phases`**: See Phase Loop below. The first phase fork is the first to see the post-plan stage transition (if one occurred).
 
-**Steps 7…6+N — `implementing-plan-phases`**: See Phase Loop below.
+**Step 5+N+1 — Create PR**: See PR Creation below.
 
-**Step 6+N+1 — Create PR**: See PR Creation below.
-
-**Step 6+N+4 — `finalizing-workflow`**: No special argument needed. The skill merges the current PR and resets to main. Run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow`. This step is **baseline-locked** at `haiku` — the pre-fork echo uses the `baseline-locked` tag, and only a hard override (`--model`, `--model-for`) can push it off its baseline.
+**Step 5+N+4 — `finalizing-workflow`**: No special argument needed. The skill merges the current PR and resets to main. Run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow`. This step is **baseline-locked** at `haiku` — the pre-fork echo uses the `baseline-locked` tag, and only a hard override (`--model`, `--model-for`) can push it off its baseline.
 
 ### Chore Chain Step-Specific Fork Instructions
 
-Steps 2, 4, and 8 follow the same fork pattern as the feature chain without chore-specific overrides. Every non-skipped fork runs the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) with the appropriate step-name and mode before spawning the subagent, and passes the resolved tier as the Agent tool's `model` parameter. Steps skipped by CHORE-031 conditions call only `advance` — no pre-fork sequence, no audit trail entry, and no `modelSelections` entry for that step index:
+Steps 2, 4, and 7 follow the same fork pattern as the feature chain without chore-specific overrides. Every non-skipped fork runs the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) with the appropriate step-name and mode before spawning the subagent, and passes the resolved tier as the Agent tool's `model` parameter. Steps skipped by CHORE-031 conditions call only `advance` — no pre-fork sequence, no audit trail entry, and no `modelSelections` entry for that step index:
 
 **Step 2 — `reviewing-requirements` (standard review)**: **Skip condition (CHORE-031 T2)**: read the persisted complexity from the state file (`jq -r '.complexity' ".sdlc/workflows/{ID}.json"`). If `complexity == low`, skip this fork — advance state without spawning a subagent:
 ```bash
@@ -32,13 +30,7 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
 ```
 Otherwise, append `{ID}` as argument. Pre-fork step-name `reviewing-requirements`, mode `standard`.
 
-**Step 4 — `reviewing-requirements` (test-plan reconciliation)**: **Skip condition (CHORE-031 T6)**: if `complexity == low`, skip this fork — advance state without spawning a subagent:
-```bash
-${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
-```
-Otherwise, append `{ID}` as argument. Pre-fork step-name `reviewing-requirements`, mode `test-plan`.
-
-**Step 5 — `executing-chores` (fork)**:
+**Step 4 — `executing-chores` (fork)**:
 
 Before forking (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-start --context '{"workItemId": "{ID}"}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md) (read the `work-start` template from `references/github-templates.md` — or `references/jira-templates.md` for Jira — substitute context variables, and post via `gh issue comment` / Jira backend).
 
@@ -51,11 +43,11 @@ Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-1
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
    ```
 
-After step 5 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md).
+After step 4 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md).
 
-**Step 8 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag).
+**Step 7 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag).
 
-### Bug Chain Main-Context Steps (Steps 1, 3, 7)
+### Bug Chain Main-Context Steps (Steps 1, 3, 6)
 
 **Step 1 — `documenting-bugs`**: See New Bug Workflow Procedure in [chain-procedures.md](chain-procedures.md).
 
@@ -65,7 +57,7 @@ After step 5 completes (if `issueRef` is set): invoke `managing-work-items comme
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-plans/QA-plan-{ID}.md"
 ```
 
-**Step 7 — `executing-qa`**: Same pattern as chore chain step 7. Read `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/SKILL.md`, follow its instructions in this conversation, passing the workflow ID as argument. Expected artifact: `qa/test-results/QA-results-{ID}.md`. On completion:
+**Step 6 — `executing-qa`**: Same pattern as chore chain step 6. Read `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/SKILL.md`, follow its instructions in this conversation, passing the workflow ID as argument. Expected artifact: `qa/test-results/QA-results-{ID}.md`. On completion:
 
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-results-{ID}.md"
@@ -73,7 +65,7 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-r
 
 ### Bug Chain Step-Specific Fork Instructions
 
-Steps 2, 4, and 8 follow the same fork pattern as the chore chain. Every non-skipped fork runs the FEAT-014 pre-fork sequence before spawning the subagent and passes the resolved tier as the Agent tool's `model` parameter. Steps skipped by CHORE-031 conditions call only `advance` — no pre-fork sequence, no audit trail entry, and no `modelSelections` entry for that step index:
+Steps 2, 4, and 7 follow the same fork pattern as the chore chain. Every non-skipped fork runs the FEAT-014 pre-fork sequence before spawning the subagent and passes the resolved tier as the Agent tool's `model` parameter. Steps skipped by CHORE-031 conditions call only `advance` — no pre-fork sequence, no audit trail entry, and no `modelSelections` entry for that step index:
 
 **Step 2 — `reviewing-requirements` (standard review)**: **Skip condition (CHORE-031 T2)**: read the persisted complexity from the state file (`jq -r '.complexity' ".sdlc/workflows/{ID}.json"`). If `complexity == low`, skip this fork — advance state without spawning a subagent:
 ```bash
@@ -81,13 +73,7 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
 ```
 Otherwise, append `{ID}` as argument. Pre-fork step-name `reviewing-requirements`, mode `standard`.
 
-**Step 4 — `reviewing-requirements` (test-plan reconciliation)**: **Skip condition (CHORE-031 T6)**: if `complexity == low`, skip this fork — advance state without spawning a subagent:
-```bash
-${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
-```
-Otherwise, append `{ID}` as argument. Pre-fork step-name `reviewing-requirements`, mode `test-plan`.
-
-**Step 5 — `executing-bug-fixes` (fork)**:
+**Step 4 — `executing-bug-fixes` (fork)**:
 
 Before forking (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-start --context '{"workItemId": "{ID}"}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md) (read the `bug-start` template from `references/github-templates.md` — or `references/jira-templates.md` for Jira — substitute context variables, and post via `gh issue comment` / Jira backend).
 
@@ -100,9 +86,9 @@ Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-1
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
    ```
 
-After step 5 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md).
+After step 4 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md).
 
-**Step 8 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag).
+**Step 7 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag).
 
 ### Pause Steps
 
@@ -117,7 +103,7 @@ Display: "Implementation plan created at `requirements/implementation/{ID}-*.md`
 
 Halt execution. The user re-invokes the skill to resume.
 
-**Step 6+N+2 — PR Review**:
+**Step 5+N+2 — PR Review**:
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} pr-review
@@ -126,7 +112,7 @@ Display the PR number, link, and branch. Halt execution.
 
 #### Chore Chain Pause Steps
 
-**Step 6 — PR Review** (the only pause in the chore chain):
+**Step 5 — PR Review** (the only pause in the chore chain):
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} pr-review
@@ -135,7 +121,7 @@ Display the PR number, link, and branch. Halt execution. The user re-invokes wit
 
 #### Bug Chain Pause Steps
 
-**Step 6 — PR Review** (the only pause in the bug chain):
+**Step 5 — PR Review** (the only pause in the bug chain):
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} pr-review
@@ -144,14 +130,14 @@ Display the PR number, link, and branch. Halt execution. The user re-invokes wit
 
 ## Phase Loop
 
-After step 6 (test-plan reconciliation) completes:
+After step 5 (documenting-qa) completes:
 
 1. Determine phase count and populate steps:
    ```bash
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh phase-count {ID}
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh populate-phases {ID} {count}
    ```
-   This inserts N phase steps and 4 post-phase steps (Create PR, PR review, Execute QA, Finalize) into the state file after the initial 6 steps.
+   This inserts N phase steps and 4 post-phase steps (Create PR, PR review, Execute QA, Finalize) into the state file after the initial 5 steps.
 
 2. For each phase 1 through N:
 
@@ -191,11 +177,11 @@ After step 6 (test-plan reconciliation) completes:
    ```
    Do not proceed to subsequent phases or PR creation.
 
-5. After the final phase completes, continue to step 6+N+1 (PR creation).
+5. After the final phase completes, continue to step 5+N+1 (PR creation).
 
 ## PR Creation
 
-After all phases complete (step 6+N+1):
+After all phases complete (step 5+N+1):
 
 1. Run the FEAT-014 pre-fork sequence for the PR-creation inline fork. This site is **baseline-locked** at `haiku` — work-item complexity and soft overrides are ignored; only a hard `--model` / `--model-for pr-creation:<tier>` override can push it off baseline.
 
@@ -222,4 +208,4 @@ After all phases complete (step 6+N+1):
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
    ```
 
-4. Continue to step 6+N+2 (PR review pause).
+4. Continue to step 5+N+2 (PR review pause).

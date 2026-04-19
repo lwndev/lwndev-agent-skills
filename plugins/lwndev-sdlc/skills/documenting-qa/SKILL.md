@@ -1,13 +1,13 @@
 ---
 name: documenting-qa
-description: Builds a QA test plan from requirements documents. Use when the user says "document qa", "create test plan", "qa plan", or provides a requirement ID (FEAT-XXX, CHORE-XXX, BUG-XXX) for QA planning.
+description: Builds an adversarial QA test plan for a feature, chore, or bug. Plans are built from the user-facing summary + PR/diff + capability report (NOT from the requirements doc) and organized by adversarial dimension (inputs, state transitions, environment, dependency failure, cross-cutting).
 allowed-tools:
   - Read
   - Write
   - Edit
+  - Bash
   - Glob
   - Grep
-  - Agent
 hooks:
   Stop:
     - hooks:
@@ -18,170 +18,138 @@ argument-hint: <requirement-id>
 
 # Documenting QA
 
-Build a comprehensive QA test plan from requirements documents. The test plan maps every acceptance criterion, functional requirement, and root cause to verification entries, ensuring complete coverage before QA execution begins.
+Build an adversarial QA test plan from the user-facing summary of a change and the code that implements it — **not** from the requirements document that drove the implementation. You operate as a skeptical tester probing failure modes the engineers likely did not anticipate.
 
 ## When to Use This Skill
 
 - User says "document qa", "create test plan", or "qa plan"
-- User provides a requirement ID (FEAT-XXX, CHORE-XXX, BUG-XXX) for QA planning
-- After reviewing requirements and before execution/implementation — to define how the work will be tested
+- User provides a requirement ID (`FEAT-XXX`, `CHORE-XXX`, `BUG-XXX`) for QA planning
+- After implementation has landed on a branch (and ideally after a PR is open) — so you have real code diff and a user-facing PR summary to plan against
 
 ## Arguments
 
-- **When argument is provided**: Match the argument against requirement IDs by prefix. Search across `requirements/features/`, `requirements/chores/`, and `requirements/bugs/` for a matching document (e.g., `FEAT-008` matches `FEAT-008-skill-argument-hints.md`). If no match is found, inform the user and fall back to interactive selection.
+- **When argument is provided**: Match the argument against requirement IDs by prefix. The ID prefix determines the type: `FEAT-` (feature), `CHORE-` (chore), `BUG-` (bug). Optionally a `--pr <number>` flag may be provided to target a specific PR explicitly.
 - **When no argument is provided**: Ask the user for a requirement ID.
 
 ## Quick Start
 
-1. Accept a requirement ID as input
-2. Parse the ID to determine type and locate source documents
-3. Load and analyze requirements
-4. Build a structured test plan
-5. Verify plan completeness via qa-verifier subagent
-6. Save test plan and present to user
+1. Accept a requirement ID (and optional `--pr <number>`)
+2. Run capability discovery
+3. Load the `qa` persona overlay
+4. Gather the user-facing summary — from the PR (preferred) or the requirements doc's `## User Story` section only
+5. Gather code context — PR diff or `git diff main...HEAD`
+6. Build adversarial scenarios organized by dimension
+7. Emit a version-2 plan artifact to `qa/test-plans/QA-plan-{ID}.md`
+8. Exit; the stop hook validates structural conformance
 
 ## State File Management
 
-This skill uses a state file to prevent its stop hook from interfering with other skills.
+At the start of this skill, create `.sdlc/qa/.documenting-active` via the Write tool (empty content). This signals the stop hook that `documenting-qa` is the active skill. The stop hook removes the state file on success. In orchestrated workflows the orchestrator cleans it up after this skill returns.
 
-**At the start of this skill**, create the state file using the Write tool:
+## Important: Bash-for-scripts-only
+
+This skill includes `Bash` in allowed-tools so it can invoke `capability-discovery.sh`, `persona-loader.sh`, `gh pr view`, and `git diff`. Do NOT use Bash for output formatting, status messages, progress echoes, or any communication with the user. All communication with the user happens through direct response text, not through shell `echo`.
+
+## Step 1: Resolve the requirement ID and run capability discovery
+
+1. **Parse the ID prefix** → type (feature / chore / bug). Establish the expected requirements-doc path (`requirements/features/{ID}-*.md`, `requirements/chores/{ID}-*.md`, or `requirements/bugs/{ID}-*.md`) — you will read **only** its `## User Story` section if no PR exists (see Step 2).
+2. **Resolve the consumer repo root** via `git rev-parse --show-toplevel`. This is the directory you will inspect for test-framework detection.
+3. **Run capability discovery**:
+   ```
+   bash ${CLAUDE_PLUGIN_ROOT}/skills/documenting-qa/scripts/capability-discovery.sh <consumer-root> <ID>
+   ```
+   Capture the emitted JSON (also written to `/tmp/qa-capability-<ID>.json`). The report has fields: `mode` (`test-framework` | `exploratory-only`), `framework`, `packageManager`, `testCommand`, `language`.
+4. If `capability-discovery.sh` exits non-zero, note the error and proceed as `mode: exploratory-only`. The capability report informs the plan's `## Capability Report` section and constrains which scenarios are feasible under test-framework mode.
+
+## Step 2: Gather the user-facing summary (NOT the full requirements doc)
+
+You need a 2–5 sentence user-facing summary of what the change does. The source depends on whether a PR is open:
+
+**Precedence:**
+1. **PR-first**: If a PR exists for this feature branch, run `gh pr view --json title,body` (or `gh pr view <number> --json title,body` when `--pr` was provided). Set `user_summary = PR title + first paragraph of PR body`.
+2. **User Story fallback**: If no PR is open, read **only** the `## User Story` section of the requirements doc — use Grep/Read to extract that single heading's content.
+3. **Ask the user**: If no PR exists and no `## User Story` section is found, ask the user to describe the change in 2–5 sentences.
+
+**Forbidden reads during planning.** Do NOT read `requirements/features/FEAT-*.md`, `requirements/chores/CHORE-*.md`, or `requirements/bugs/BUG-*.md` beyond the isolated `## User Story` block. Specifically, do NOT read the FR grid, NFRs, acceptance criteria, edge cases, or implementation plans. The stop hook verifies no `FR-N` references leak into the `## Scenarios (by dimension)` section; if you find yourself writing `FR-3 covers X`, you are doing it wrong.
+
+The point of this prohibition: QA must probe failure modes the spec did not anticipate. Reading the spec biases the plan toward confirming what engineers already planned for.
+
+## Step 3: Gather code context
+
+- **With PR**: `gh pr diff <number>` (omit `<number>` for the branch's default PR).
+- **No PR but on a feature branch**: `git diff main...HEAD`.
+- **No branch changes**: ask the user for a pointer to what to test.
+
+The diff + the user summary + the capability report are the only inputs you plan against.
+
+## Step 4: Compose the `qa` persona overlay
 
 ```
-Write tool: path=".sdlc/qa/.documenting-active", content=""
+source ${CLAUDE_PLUGIN_ROOT}/skills/documenting-qa/scripts/persona-loader.sh
+load_persona qa ${CLAUDE_PLUGIN_ROOT}/skills/documenting-qa
 ```
 
-This signals to the stop hook that `documenting-qa` is the active skill. The stop hook handles cleanup automatically — it removes the state file when it detects successful completion and exits 0. In orchestrated workflows where the stop hook may not fire, the orchestrator cleans up the state file after this skill returns.
+If `load_persona` returns non-zero (missing or malformed persona file), abort with the error — do not silently substitute a default persona. The emitted persona content becomes part of the planning context; its directives are what you follow when generating scenarios.
 
-## Important: No Bash Usage
+> The `--persona <name>` CLI flag is a future feature; for now the persona is always `qa`.
 
-This skill does not include `Bash` in its allowed tools. Do NOT use Bash commands (including `echo`) for output formatting, status messages, or any other purpose. Use direct text output in your response instead. All communication with the user should be through your response text, not through shell commands.
+## Step 5: Build the adversarial plan
 
-## Input
+For each of the five adversarial dimensions, generate P0/P1/P2-prioritized scenarios. Each scenario line in the artifact MUST match the shape:
 
-The user provides a requirement ID in one of these formats:
+```
+- [P0|P1|P2] <description> | mode: test-framework|exploratory | expected: <test shape>
+```
 
-- `FEAT-XXX` — Feature requirement
-- `CHORE-XXX` — Chore/maintenance task
-- `BUG-XXX` — Bug report
+Dimensions:
+- **Inputs** — malformed, empty, boundary, encoding, excessive size, injection
+- **State transitions** — cancellation, interruption, idempotency, concurrent invocations
+- **Environment** — offline, low disk, slow network, wrong locale/timezone
+- **Dependency failure** — external API 5xx/4xx/timeout, rate limiting, partial response
+- **Cross-cutting** — accessibility, internationalization, concurrency, permissions
 
-If no ID is provided, ask the user for one.
+For any dimension that truly does not apply, write a justification in `## Non-applicable dimensions` (e.g., `- a11y: this feature has no UI surface`). Blanket "not applicable" with no justification is rejected by the stop hook.
 
-## Step 1: Parse ID and Locate Documents
+**Execution mode per scenario**:
+- `test-framework` — feasible to express as an automated test under the detected framework (Step 1's capability report). Use only when `capability.mode == "test-framework"`.
+- `exploratory` — requires human judgment, manual reproduction, or environmental setup outside the automated framework.
 
-Parse the requirement ID to determine the type and locate source documents:
+Prioritize ruthlessly: P0 = user-visible regression risk or data loss, P1 = degraded UX, P2 = polish / edge case.
 
-| ID Prefix | Type | Requirements Directory | Additional Documents |
-|-----------|------|----------------------|---------------------|
-| `FEAT-` | Feature | `requirements/features/` | `requirements/implementation/` (if exists) |
-| `CHORE-` | Chore | `requirements/chores/` | — |
-| `BUG-` | Bug | `requirements/bugs/` | — |
+## Step 6: Emit the version-2 plan artifact
 
-Search for files matching the pattern `{PREFIX}-{NNN}*.md` in the appropriate directory. Error clearly if no matching document is found — include the expected path in the error message.
+Write the plan to `qa/test-plans/QA-plan-{ID}.md` using the schema from [assets/test-plan-template-v2.md](assets/test-plan-template-v2.md).
 
-For `FEAT-` IDs, also search `requirements/implementation/` for a matching implementation plan. If found, load it as an additional source document. If not found, note the absence but proceed with the feature requirements document alone.
+Frontmatter (required fields):
+- `id: {full ID, e.g. FEAT-018}`
+- `version: 2`
+- `timestamp: <ISO-8601>`
+- `persona: qa`
 
-## Step 2: Analyze Requirements
+Sections (required, in order):
+- `## User Summary`
+- `## Capability Report`
+- `## Scenarios (by dimension)` — with all five dimension subheadings, each containing either scenario lines or a matching justification in the next section
+- `## Non-applicable dimensions`
 
-Read the source document(s) and extract all verifiable items:
+Create the `qa/test-plans/` directory if it does not exist.
 
-### For FEAT (Features)
-- All functional requirements (FR-N entries)
-- All acceptance criteria
-- Phase deliverables from the implementation plan (if available)
-- Non-functional requirements that are testable
+## Step 7: Verify and exit
 
-### For CHORE (Maintenance Tasks)
-- All acceptance criteria
-- Scope boundaries (what should and should NOT change)
-
-### For BUG (Bug Fixes)
-- All root causes (RC-N entries)
-- All acceptance criteria (with their RC-N traceability tags)
-- Reproduction steps (for regression test verification)
-
-## Step 3: Build Test Plan
-
-Use the template from [assets/test-plan-template.md](assets/test-plan-template.md) to build the test plan.
-
-For each extracted item from Step 2, create a test plan entry in the appropriate section:
-
-### FEAT Test Plan Entries
-- Map each FR-N to a "Code Path Verification" entry with expected behavior
-- Map each acceptance criterion to a verification checklist item
-- Map each phase deliverable to a "Deliverable Verification" entry
-- Identify existing tests that cover the feature area
-
-### CHORE Test Plan Entries
-- Map each acceptance criterion to a verification checklist item
-- Add scope verification entries (confirm no unrelated changes)
-- Identify existing tests that should still pass (regression check)
-
-### BUG Test Plan Entries
-- Map each RC-N to a "Code Path Verification" entry targeting the root cause
-- Map each acceptance criterion to a verification checklist item with its RC-N tag
-- Add reproduction step verification entries (confirm bug no longer reproduces)
-- Identify existing tests related to the bug area
-
-### Plan Completeness Checklist
-After populating all sections, check off (`- [x]`) each item in the template's `## Plan Completeness Checklist` that has been satisfied. Items should be checked as the plan is built — do not leave them unchecked for later.
-
-## Step 4: Verify Plan Completeness (Ralph Loop)
-
-Delegate plan completeness verification to the `qa-verifier` subagent:
-
-1. Use the Agent tool to spawn a `qa-verifier` subagent
-2. Provide the subagent with:
-   - The test plan content built in Step 3
-   - The source requirements document(s) content
-   - Instructions to verify every AC, FR-N, RC-N, and phase deliverable is covered
-3. The subagent returns a completeness verdict
-
-If the subagent identifies gaps:
-- Add the missing items to the test plan
-- Re-delegate to the subagent for another verification pass
-
-**After each verification round, attempt to finish.** The Stop hook will evaluate your last message to determine if the plan is truly complete. If gaps remain, it will block and feed the missing items back to you. Continue adding missing items and re-verifying until the hook allows completion.
-
-**Important**: State the verification results clearly in your message when attempting to finish — the Stop hook uses pattern matching on your last message to assess completeness. Mention the test plan file path (e.g., `QA-plan-FEAT-003`) and confirm that the plan is complete/verified/saved.
-
-### Minimizing Verification Iterations
-
-This verification loop involves multiple API calls: the main conversation and the qa-verifier subagent (Sonnet). To reduce cumulative API pressure:
-
-- **Build a thorough test plan in Step 3 before entering verification.** Cover every AC, FR-N, RC-N, and phase deliverable on the first pass rather than relying on the verification loop to catch gaps iteratively.
-- **When the subagent identifies gaps, address all of them in a single pass** before re-delegating — do not fix one gap at a time.
-- **Aim to complete verification in 1–2 rounds.** If verification requires more than 2 rounds, pause and review whether the test plan template is being applied correctly.
-
-### Handling Transient API Errors
-
-The qa-verifier subagent may fail due to transient API errors (e.g., "service overloaded"). When this occurs:
-
-1. **Retry the subagent delegation** — spawn a new qa-verifier subagent with the same inputs. Transient errors typically resolve on a subsequent attempt.
-2. **Retry up to 2 times** (3 total attempts including the original). Do not retry indefinitely.
-3. **If all retries fail, degrade gracefully:**
-   - Save the test plan as-is to the standard output path
-   - Present the plan to the user with a clear note that automated verification could not be completed due to API errors
-   - Recommend the user review the plan manually or re-run the skill later to complete verification
-
-## Step 5: Save and Present
-
-1. Save the completed test plan to `qa/test-plans/QA-plan-{id}.md`
-   - `{id}` is the full ID: e.g., `FEAT-003`, `BUG-001`
-   - Example: `qa/test-plans/QA-plan-FEAT-003.md`
-   - Create the `qa/test-plans/` directory if it doesn't exist
-2. Present the test plan to the user for review before they proceed to `executing-qa`
+State in your last message that the plan file path is `qa/test-plans/QA-plan-{ID}.md`. The stop hook validates structural conformance (frontmatter fields, required sections, scenario shape with priorities and modes, and the no-`FR-N`-in-`Scenarios` guard). If the hook blocks, fix the flagged issue and try again.
 
 ## Verification Checklist
 
 Before finishing, verify:
 
-- [ ] Requirement ID was parsed correctly and source documents were found
-- [ ] All acceptance criteria from the source document are covered in the test plan
-- [ ] All FR-N (features), RC-N (bugs), or scope items (chores) are mapped to test plan entries
-- [ ] Implementation plan deliverables are covered (for FEAT IDs with implementation plans)
-- [ ] The qa-verifier subagent confirmed plan completeness (or verification was skipped with user notification per the transient error guidance)
-- [ ] Test plan is saved to the correct path
-- [ ] Test plan was presented to the user
+- [ ] Capability discovery report produced (check `/tmp/qa-capability-{ID}.json` exists)
+- [ ] Persona overlay composed via `persona-loader.sh`
+- [ ] User summary gathered from PR title+body OR `## User Story` only — the full requirements doc was NOT read
+- [ ] Plan artifact saved to `qa/test-plans/QA-plan-{ID}.md` with `version: 2` frontmatter
+- [ ] Scenarios organized by dimension (not by FR row, not by AC)
+- [ ] Every scenario has a priority tag `[P0|P1|P2]` and a `mode:` tag
+- [ ] Non-applicable dimensions have justifications (no blanket dismissal)
+- [ ] The `## Scenarios (by dimension)` section contains no `FR-N` references
 
 ## Relationship to Other Skills
 
@@ -190,10 +158,11 @@ Before finishing, verify:
 | Document requirements first | Use `documenting-features`, `documenting-chores`, or `documenting-bugs` |
 | Review requirements | Use `reviewing-requirements` |
 | **Build QA test plan** | **Use this skill (`documenting-qa`)** |
-| Reconcile after QA plan creation | Use `reviewing-requirements` — test-plan reconciliation mode (optional but recommended) |
 | Create implementation plan | Use `creating-implementation-plans` |
 | Implement the plan | Use `implementing-plan-phases` |
 | Execute chore or bug fix | Use `executing-chores` or `executing-bug-fixes` |
 | Reconcile after PR review | Use `reviewing-requirements` — code-review reconciliation mode (optional but recommended) |
-| Execute QA verification | Use `executing-qa` (requires test plan from this skill) |
+| Execute QA verification | Use `executing-qa` (requires the v2 test plan from this skill) |
 | Merge PR and reset to main | Use `finalizing-workflow` |
+
+> Note: The `reviewing-requirements` test-plan reconciliation mode remains available as a standalone skill but is no longer invoked by the orchestrator between `documenting-qa` and `implementing-plan-phases` (per FR-11 Option B decision for FEAT-018).

@@ -52,14 +52,14 @@ For the full issue tracking protocol — extraction, invocation pattern, runnabl
 5. **New bug workflow**: Run step 1 (`documenting-bugs`) in main context, read allocated ID, initialize state with `init {ID} bug`
 6. **Resume**: Load state, handle pause/failure logic, continue from current step
 7. Execute steps sequentially using the step execution procedures below
-8. **Feature chain**: Pause at plan approval (step 4) and PR review (step 6+N+2)
-9. **Chore chain**: Pause at PR review only (step 6) — no plan-approval pause
-10. **Bug chain**: Pause at PR review only (step 6) — no plan-approval pause, same as chore chain
+8. **Feature chain**: Pause at plan approval (step 4) and PR review (step 5+N+2)
+9. **Chore chain**: Pause at PR review only (step 5) — no plan-approval pause
+10. **Bug chain**: Pause at PR review only (step 5) — no plan-approval pause, same as chore chain
 11. On completion, mark workflow complete
 
 ## Feature Chain Step Sequence
 
-The feature chain has 6 + N + 4 steps where N = number of implementation phases:
+The feature chain has 5 + N + 4 steps where N = number of implementation phases:
 
 | # | Step | Skill | Context |
 |---|------|-------|---------|
@@ -68,42 +68,39 @@ The feature chain has 6 + N + 4 steps where N = number of implementation phases:
 | 3 | Create implementation plan | `creating-implementation-plans` | fork |
 | 4 | **PAUSE: Plan approval** | — | pause |
 | 5 | Document QA test plan | `documenting-qa` | **main** |
-| 6 | Reconcile test plan | `reviewing-requirements` | fork |
-| 7…6+N | Implement phases 1…N | `implementing-plan-phases` | fork |
-| 6+N+1 | Create PR | orchestrator | fork |
-| 6+N+2 | **PAUSE: PR review** | — | pause |
-| 6+N+3 | Execute QA | `executing-qa` | **main** |
-| 6+N+4 | Finalize | `finalizing-workflow` | fork |
+| 6…5+N | Implement phases 1…N | `implementing-plan-phases` | fork |
+| 5+N+1 | Create PR | orchestrator | fork |
+| 5+N+2 | **PAUSE: PR review** | — | pause |
+| 5+N+3 | Execute QA | `executing-qa` | **main** |
+| 5+N+4 | Finalize | `finalizing-workflow` | fork |
 
 ## Chore Chain Step Sequence
 
-The chore chain has a fixed 8 steps with no phase loop and no plan-approval pause:
+The chore chain has a fixed 7 steps with no phase loop and no plan-approval pause:
 
 | # | Step | Skill | Context |
 |---|------|-------|---------|
 | 1 | Document chore | `documenting-chores` | **main** |
 | 2 | Review requirements (standard) | `reviewing-requirements` | fork (skip if `complexity == low`) |
 | 3 | Document QA test plan | `documenting-qa` | **main** |
-| 4 | Reconcile test plan | `reviewing-requirements` | fork (skip if `complexity == low`) |
-| 5 | Execute chore | `executing-chores` | fork |
-| 6 | **PAUSE: PR review** | — | pause |
-| 7 | Execute QA | `executing-qa` | **main** |
-| 8 | Finalize | `finalizing-workflow` | fork |
+| 4 | Execute chore | `executing-chores` | fork |
+| 5 | **PAUSE: PR review** | — | pause |
+| 6 | Execute QA | `executing-qa` | **main** |
+| 7 | Finalize | `finalizing-workflow` | fork |
 
 ## Bug Chain Step Sequence
 
-The bug chain has a fixed 8 steps with no phase loop and no plan-approval pause, mirroring the chore chain structure with bug-specific skills:
+The bug chain has a fixed 7 steps with no phase loop and no plan-approval pause, mirroring the chore chain structure with bug-specific skills:
 
 | # | Step | Skill | Context |
 |---|------|-------|---------|
 | 1 | Document bug | `documenting-bugs` | **main** |
 | 2 | Review requirements (standard) | `reviewing-requirements` | fork (skip if `complexity == low`) |
 | 3 | Document QA test plan | `documenting-qa` | **main** |
-| 4 | Reconcile test plan | `reviewing-requirements` | fork (skip if `complexity == low`) |
-| 5 | Execute bug fix | `executing-bug-fixes` | fork |
-| 6 | **PAUSE: PR review** | — | pause |
-| 7 | Execute QA | `executing-qa` | **main** |
-| 8 | Finalize | `finalizing-workflow` | fork |
+| 4 | Execute bug fix | `executing-bug-fixes` | fork |
+| 5 | **PAUSE: PR review** | — | pause |
+| 6 | Execute QA | `executing-qa` | **main** |
+| 7 | Finalize | `finalizing-workflow` | fork |
 
 ## Chain Workflow Procedures
 
@@ -119,7 +116,7 @@ For each step, determine the context from the appropriate step sequence table (F
 
 These steps run directly in the orchestrator's conversation because they rely on Stop hooks or interactive prompts that don't work when forked.
 
-#### Feature Chain Main-Context Steps (Steps 1, 5, 6+N+3)
+#### Feature Chain Main-Context Steps (Steps 1, 5, 5+N+3)
 
 **Step 1 — `documenting-features`**: See New Feature Workflow Procedure above.
 
@@ -129,13 +126,13 @@ These steps run directly in the orchestrator's conversation because they rely on
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-plans/QA-plan-{ID}.md"
 ```
 
-**Step 6+N+3 — `executing-qa`**: Read the SKILL.md content from `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/SKILL.md`. Follow its instructions directly in this conversation, passing the workflow ID as argument. Expected artifact: `qa/test-results/QA-results-{ID}.md`. On completion:
+**Step 5+N+3 — `executing-qa`**: Read the SKILL.md content from `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/SKILL.md`. Follow its instructions directly in this conversation, passing the workflow ID as argument. Expected artifact: `qa/test-results/QA-results-{ID}.md`. On completion:
 
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-results-{ID}.md"
 ```
 
-#### Chore Chain Main-Context Steps (Steps 1, 3, 7)
+#### Chore Chain Main-Context Steps (Steps 1, 3, 6)
 
 **Step 1 — `documenting-chores`**: See New Chore Workflow Procedure above.
 
@@ -145,7 +142,7 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-r
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-plans/QA-plan-{ID}.md"
 ```
 
-**Step 7 — `executing-qa`**: Same pattern as feature chain step 6+N+3. Read `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/SKILL.md`, follow its instructions in this conversation, passing the workflow ID as argument. Expected artifact: `qa/test-results/QA-results-{ID}.md`. On completion:
+**Step 6 — `executing-qa`**: Same pattern as feature chain step 5+N+3. Read `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/SKILL.md`, follow its instructions in this conversation, passing the workflow ID as argument. Expected artifact: `qa/test-results/QA-results-{ID}.md`. On completion:
 
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-results-{ID}.md"
@@ -232,7 +229,7 @@ The `resolve-tier` and `record-model-selection` subcommands key off canonical st
 
 | Fork site | Step-name | Baseline | Baseline-locked? |
 |-----------|-----------|----------|------------------|
-| Review requirements (standard / test-plan) | `reviewing-requirements` | sonnet | no |
+| Review requirements (standard) | `reviewing-requirements` | sonnet | no |
 | Create implementation plan | `creating-implementation-plans` | sonnet | no |
 | Implement phases (per-phase) | `implementing-plan-phases` | sonnet | no |
 | Execute chore | `executing-chores` | sonnet | no |
@@ -240,11 +237,11 @@ The `resolve-tier` and `record-model-selection` subcommands key off canonical st
 | Finalize workflow | `finalizing-workflow` | haiku | **yes** |
 | PR creation (inline fork) | `pr-creation` | haiku | **yes** |
 
-For `reviewing-requirements` call sites, pass the mode (`standard`, `test-plan`) as the `mode` argument of `record-model-selection`. For `implementing-plan-phases`, pass the phase number as the `phase` argument. All other sites pass `null` for both.
+For `reviewing-requirements` call sites, pass the mode (`standard`) as the `mode` argument of `record-model-selection`. For `implementing-plan-phases`, pass the phase number as the `phase` argument. All other sites pass `null` for both.
 
 ### Reviewing-Requirements Findings Handling
 
-All `reviewing-requirements` fork steps (feature steps 2, 6; chore steps 2, 4; bug steps 2, 4) require findings handling after the subagent returns. The orchestrator parses the subagent's return text and acts on the findings before advancing.
+All `reviewing-requirements` fork steps (feature steps 2; chore steps 2; bug steps 2) require findings handling after the subagent returns. The orchestrator parses the subagent's return text and acts on the findings before advancing.
 
 #### Parsing Findings
 
@@ -368,7 +365,7 @@ At every reviewing-requirements decision point, call `record-findings` **before*
 | Re-run after auto-fix → auto-advanced | (same as above plus `--details-file {tmp}`) |
 
 Notes:
-- `{stepIndex}` is the zero-based index in the `steps` array for the current reviewing-requirements step. Use the chain-step-to-index table: feature steps 2/6 map to indices 1/5; chore/bug steps 2/4 map to indices 1/3.
+- `{stepIndex}` is the zero-based index in the `steps` array for the current reviewing-requirements step. Use the chain-step-to-index table: feature step 2 maps to index 1; chore/bug step 2 maps to index 1.
 - When the subagent returns `"No issues found"` or `Found **0 errors**, **0 warnings**, **0 info**`, normalize to `'No issues found'` as the canonical summary.
 - The `{summary}` must be passed as a single shell-quoted token. Use single quotes around the summary string to handle embedded special characters.
 
