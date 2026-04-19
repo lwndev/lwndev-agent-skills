@@ -70,7 +70,7 @@ Reasoning:
 
 ### Phase 1 — Capability Discovery Module
 **Feature:** [FEAT-018](../features/FEAT-018-qa-executable-oracle-redesign.md) | [#170](https://github.com/lwndev/lwndev-marketplace/issues/170)
-**Status:** Pending
+**Status:** ✅ Complete
 **Phase Dependencies:** Phase 0 (scope locked).
 
 #### Rationale
@@ -127,8 +127,8 @@ The module ships as a shell script rather than a TypeScript module because the s
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/documenting-qa/scripts/capability-discovery.sh` — executable, all detection paths implemented, JSON emitted to stdout and `/tmp/qa-capability-{ID}.json`
-- [ ] `scripts/__tests__/capability-discovery.test.ts` — 10 test cases covering all FR-1 detection paths, edge cases 1/2/6/10, and the no-framework fallback
+- [x] `plugins/lwndev-sdlc/skills/documenting-qa/scripts/capability-discovery.sh` — executable, all detection paths implemented, JSON emitted to stdout and `/tmp/qa-capability-{ID}.json`
+- [x] `scripts/__tests__/capability-discovery.test.ts` — 10 test cases covering all FR-1 detection paths, edge cases 1/2/6/10, and the no-framework fallback
 
 ---
 
