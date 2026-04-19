@@ -496,7 +496,7 @@ The `executing-qa` rewrite is the most complex: it must implement the write-and-
 
 ### Phase 6 — Rewrite `qa-verifier.md` Agent
 **Feature:** [FEAT-018](../features/FEAT-018-qa-executable-oracle-redesign.md) | [#170](https://github.com/lwndev/lwndev-marketplace/issues/170)
-**Status:** Pending
+**Status:** ✅ Complete
 **Phase Dependencies:** Phases 4 and 5 (skill rewrites define the agent's new responsibilities).
 
 #### Rationale
@@ -526,9 +526,9 @@ The current `qa-verifier.md` agent is built around the "read the file and confir
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/agents/qa-verifier.md` — rewritten around adversarial-scenario-coverage review; FR-4 compliant (no requirements-doc input)
-- [ ] `plugins/lwndev-sdlc/agents/qa-reconciliation-agent.md` — new agent for FR-5 delta computation
-- [ ] `scripts/__tests__/qa-verifier.test.ts` — updated to reflect new agent role and output format
+- [x] `plugins/lwndev-sdlc/agents/qa-verifier.md` — rewritten around adversarial-scenario-coverage review; FR-4 compliant (no requirements-doc input)
+- [x] `plugins/lwndev-sdlc/agents/qa-reconciliation-agent.md` — new agent for FR-5 delta computation
+- [x] `scripts/__tests__/qa-verifier.test.ts` — updated to reflect new agent role and output format
 
 ---
 
