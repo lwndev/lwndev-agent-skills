@@ -7,7 +7,7 @@ Before marking the workflow complete:
 - [ ] State file at `.sdlc/workflows/{ID}.json` reflects completion
 - [ ] Artifacts exist for all completed steps
 - [ ] Sub-skills were NOT modified — no `context: fork` added to their frontmatter
-- [ ] Reconciliation steps (reviewing-requirements in test-plan and code-review modes) were not skipped — unless CHORE-031 skip conditions apply (bug/chore chains: step 2 skipped if `complexity == low`; step 4 skipped if `complexity == low`)
+- [ ] Reconciliation steps (reviewing-requirements in test-plan mode) were not skipped — unless CHORE-031 skip conditions apply (bug/chore chains: step 2 skipped if `complexity == low`; step 4 skipped if `complexity == low`)
 - [ ] Stop hook prevents premature stopping during in-progress steps
 
 ### Feature Chain Checks
@@ -17,13 +17,13 @@ Before marking the workflow complete:
 
 ### Chore Chain Checks
 - [ ] No plan-approval pause occurred (chore chains skip this)
-- [ ] No phase loop was executed (chore chains have a fixed 9-step sequence)
+- [ ] No phase loop was executed (chore chains have a fixed 8-step sequence)
 - [ ] PR number was extracted from `executing-chores` output or detected via `gh pr list` fallback
 - [ ] `set-pr` was called with the correct PR number and branch after step 5
 
 ### Bug Chain Checks
 - [ ] No plan-approval pause occurred (bug chains skip this)
-- [ ] No phase loop was executed (bug chains have a fixed 9-step sequence)
+- [ ] No phase loop was executed (bug chains have a fixed 8-step sequence)
 - [ ] PR number was extracted from `executing-bug-fixes` output or detected via `gh pr list` fallback
 - [ ] `set-pr` was called with the correct PR number and branch after step 5
 - [ ] RC-N traceability maintained through the chain (delegated to sub-skills)
@@ -60,21 +60,21 @@ documenting-features → [managing-work-items: extract issueRef]
   → PAUSE → documenting-qa → reviewing-requirements (test-plan)
   → [managing-work-items: phase-start] → implementing-plan-phases (×N) → [managing-work-items: phase-completion]
   → Create PR [managing-work-items: FR-6 issue link]
-  → PAUSE → reviewing-requirements (code-review) → executing-qa → finalizing-workflow
+  → PAUSE → executing-qa → finalizing-workflow
 
 Chore chain:
 documenting-chores → [managing-work-items: extract issueRef]
   → reviewing-requirements (standard) → documenting-qa
   → reviewing-requirements (test-plan)
   → [managing-work-items: work-start] → executing-chores [managing-work-items: FR-6 issue link] → [managing-work-items: work-complete]
-  → PAUSE → reviewing-requirements (code-review) → executing-qa → finalizing-workflow
+  → PAUSE → executing-qa → finalizing-workflow
 
 Bug chain:
 documenting-bugs → [managing-work-items: extract issueRef]
   → reviewing-requirements (standard) → documenting-qa
   → reviewing-requirements (test-plan)
   → [managing-work-items: bug-start] → executing-bug-fixes [managing-work-items: FR-6 issue link] → [managing-work-items: bug-complete]
-  → PAUSE → reviewing-requirements (code-review) → executing-qa → finalizing-workflow
+  → PAUSE → executing-qa → finalizing-workflow
 ```
 
 ### Feature Chain Skills
@@ -83,12 +83,12 @@ documenting-bugs → [managing-work-items: extract issueRef]
 |------|-------|
 | Document feature requirements | `documenting-features` (step 1, main) |
 | Issue tracking (fetch, comments, PR link) | `managing-work-items` (after step 1, before/after phases, at PR creation) |
-| Review requirements | `reviewing-requirements` (steps 2/6/6+N+3, fork) |
+| Review requirements | `reviewing-requirements` (steps 2/6, fork) |
 | Create implementation plan | `creating-implementation-plans` (step 3, fork) |
 | Document QA test plan | `documenting-qa` (step 5, main) |
 | Implement phases | `implementing-plan-phases` (steps 7…6+N, fork) |
-| Execute QA verification | `executing-qa` (step 6+N+4, main) |
-| Merge and finalize | `finalizing-workflow` (step 6+N+5, fork) |
+| Execute QA verification | `executing-qa` (step 6+N+3, main) |
+| Merge and finalize | `finalizing-workflow` (step 6+N+4, fork) |
 
 ### Chore Chain Skills
 
@@ -96,11 +96,11 @@ documenting-bugs → [managing-work-items: extract issueRef]
 |------|-------|
 | Document chore requirements | `documenting-chores` (step 1, main) |
 | Issue tracking (comments, PR link) | `managing-work-items` (after step 1, before/after step 5) |
-| Review requirements | `reviewing-requirements` (steps 2/4/7, fork) |
+| Review requirements | `reviewing-requirements` (steps 2/4, fork) |
 | Document QA test plan | `documenting-qa` (step 3, main) |
 | Execute chore implementation | `executing-chores` (step 5, fork) |
-| Execute QA verification | `executing-qa` (step 8, main) |
-| Merge and finalize | `finalizing-workflow` (step 9, fork) |
+| Execute QA verification | `executing-qa` (step 7, main) |
+| Merge and finalize | `finalizing-workflow` (step 8, fork) |
 
 ### Bug Chain Skills
 
@@ -108,8 +108,8 @@ documenting-bugs → [managing-work-items: extract issueRef]
 |------|-------|
 | Document bug report | `documenting-bugs` (step 1, main) |
 | Issue tracking (comments, PR link) | `managing-work-items` (after step 1, before/after step 5) |
-| Review requirements | `reviewing-requirements` (steps 2/4/7, fork) |
+| Review requirements | `reviewing-requirements` (steps 2/4, fork) |
 | Document QA test plan | `documenting-qa` (step 3, main) |
 | Execute bug fix | `executing-bug-fixes` (step 5, fork) |
-| Execute QA verification | `executing-qa` (step 8, main) |
-| Merge and finalize | `finalizing-workflow` (step 9, fork) |
+| Execute QA verification | `executing-qa` (step 7, main) |
+| Merge and finalize | `finalizing-workflow` (step 8, fork) |

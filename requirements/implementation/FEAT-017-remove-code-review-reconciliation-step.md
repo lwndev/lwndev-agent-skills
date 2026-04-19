@@ -80,7 +80,7 @@ The work is partitioned into three phases that align with natural review boundar
 
 ### Phase 2: Downstream References — Verification Checklists, Relationship Tables, Chain Procedures
 **Feature:** [FEAT-017](../features/FEAT-017-remove-code-review-reconciliation-step.md) | [#147](https://github.com/lwndev/lwndev-marketplace/issues/147)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 
@@ -107,9 +107,9 @@ The work is partitioned into three phases that align with natural review boundar
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/verification-and-relationships.md` — verification checklist items referencing the removed step deleted, chain-length prose updated (`9-step` → `8-step`), skill-relationship tables updated to drop `code-review` mode
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/chain-procedures.md` — grep-swept; edits applied only if the file references the removed step or downstream step numbers
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/model-selection.md` — `mode` schema prose updated to reflect the orchestrator-vs-historical distinction (FR-7, NFR-1)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/verification-and-relationships.md` — verification checklist items referencing the removed step deleted, chain-length prose updated (`9-step` → `8-step`), skill-relationship tables updated to drop `code-review` mode
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/chain-procedures.md` — grep-swept; edits applied only if the file references the removed step or downstream step numbers
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/model-selection.md` — `mode` schema prose updated to reflect the orchestrator-vs-historical distinction (FR-7, NFR-1)
 
 #### Phase-Level Acceptance Criteria
 

@@ -370,9 +370,12 @@ overwriting earlier ones.
   Matches the step order shown by `workflow-state.sh status`.
 - **`skill`** — the forked skill's name. For inline forks not backed by a
   standalone skill (PR creation), this is `"pr-creation"`.
-- **`mode`** — populated for `reviewing-requirements` only. One of
-  `"standard"`, `"test-plan"`, or `"code-review"`. `null` for every other
-  skill.
+- **`mode`** — populated for `reviewing-requirements` only. The
+  orchestrator writes one of `"standard"` or `"test-plan"`; `"code-review"`
+  is a valid historical value that remains readable for backwards
+  compatibility (pre-FEAT-017 state files and manual invocations of
+  `/reviewing-requirements --pr` may still record it, but the orchestrator
+  no longer writes it). `null` for every other skill.
 - **`phase`** — populated for `implementing-plan-phases` only. One-based
   phase number (e.g. `1` for the first phase). `null` for every other
   skill.
