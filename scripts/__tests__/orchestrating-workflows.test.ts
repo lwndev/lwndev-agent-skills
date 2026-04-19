@@ -97,7 +97,7 @@ describe('orchestrating-workflows skill', () => {
       expect(skillMd).toContain('finalizing-workflow');
     });
 
-    it('should document main-context steps (1, 5, 6+N+3)', () => {
+    it('should document main-context steps (1, 5, 5+N+3)', () => {
       expect(skillMd).toContain('Main-Context Steps');
       expect(skillMd).toContain('main');
     });
@@ -576,34 +576,33 @@ describe('integration tests', () => {
   // --- Chore Chain Integration Tests ---
 
   describe('chore chain lifecycle', () => {
-    it('init → advance through all 8 steps → pause at step 5 → resume → advance remaining → complete', () => {
+    it('init → advance through all 7 steps → pause at step 4 → resume → advance remaining → complete', () => {
       // Init chore chain
       const initState = stateJSON('init CHORE-001 chore');
       expect(initState.status).toBe('in-progress');
       expect(initState.currentStep).toBe(0);
       expect(initState.type).toBe('chore');
       const initSteps = initState.steps as Array<Record<string, unknown>>;
-      expect(initSteps).toHaveLength(8);
+      expect(initSteps).toHaveLength(7);
 
-      // Advance steps 0-4 (Document chore through Execute chore)
+      // Advance steps 0-3 (Document chore through Execute chore)
       stateCmd('advance CHORE-001 "requirements/chores/CHORE-001-test.md"'); // step 0: Document chore
       stateCmd('advance CHORE-001'); // step 1: Review requirements
       stateCmd('advance CHORE-001'); // step 2: Document QA test plan
-      stateCmd('advance CHORE-001'); // step 3: Reconcile test plan
-      stateCmd('advance CHORE-001'); // step 4: Execute chore
+      stateCmd('advance CHORE-001'); // step 3: Execute chore
 
-      // Now at step 5 (PR review pause point)
+      // Now at step 4 (PR review pause point)
       const prePause = stateJSON('status CHORE-001');
-      expect(prePause.currentStep).toBe(5);
+      expect(prePause.currentStep).toBe(4);
       const prePauseSteps = prePause.steps as Array<Record<string, unknown>>;
-      expect(prePauseSteps[5].name).toBe('PR review');
-      expect(prePauseSteps[5].context).toBe('pause');
+      expect(prePauseSteps[4].name).toBe('PR review');
+      expect(prePauseSteps[4].context).toBe('pause');
 
-      // Pause at step 5 (PR review)
+      // Pause at step 4 (PR review)
       const pauseState = stateJSON('pause CHORE-001 pr-review');
       expect(pauseState.status).toBe('paused');
       expect(pauseState.pauseReason).toBe('pr-review');
-      expect(pauseState.currentStep).toBe(5);
+      expect(pauseState.currentStep).toBe(4);
 
       // Resume
       const resumeState = stateJSON('resume CHORE-001');
@@ -611,10 +610,10 @@ describe('integration tests', () => {
       expect(resumeState.pauseReason).toBeNull();
       expect(resumeState.lastResumedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 
-      // Advance steps 5-7 (PR review through Finalize)
-      stateCmd('advance CHORE-001'); // step 5: PR review
-      stateCmd('advance CHORE-001'); // step 6: Execute QA
-      stateCmd('advance CHORE-001'); // step 7: Finalize
+      // Advance steps 4-6 (PR review through Finalize)
+      stateCmd('advance CHORE-001'); // step 4: PR review
+      stateCmd('advance CHORE-001'); // step 5: Execute QA
+      stateCmd('advance CHORE-001'); // step 6: Finalize
 
       // Complete
       const completeState = stateJSON('complete CHORE-001');
@@ -623,7 +622,7 @@ describe('integration tests', () => {
 
       // Verify all steps are complete
       const finalSteps = completeState.steps as Array<Record<string, unknown>>;
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 7; i++) {
         expect(finalSteps[i].status).toBe('complete');
       }
     });
@@ -641,30 +640,29 @@ describe('integration tests', () => {
   });
 
   describe('chore chain has no phase loop', () => {
-    it('state file has exactly 8 steps from init with no dynamic insertion needed', () => {
+    it('state file has exactly 7 steps from init with no dynamic insertion needed', () => {
       const state = stateJSON('init CHORE-001 chore');
       const steps = state.steps as Array<Record<string, unknown>>;
 
-      // Exactly 8 steps — no populate-phases needed
-      expect(steps).toHaveLength(8);
+      // Exactly 7 steps — no populate-phases needed
+      expect(steps).toHaveLength(7);
 
       // Verify no step has phaseNumber (no phase loop steps)
       for (const step of steps) {
         expect(step).not.toHaveProperty('phaseNumber');
       }
 
-      // Verify step names match the fixed 8-step sequence
+      // Verify step names match the fixed 7-step sequence
       const expectedNames = [
         'Document chore',
         'Review requirements (standard)',
         'Document QA test plan',
-        'Reconcile test plan',
         'Execute chore',
         'PR review',
         'Execute QA',
         'Finalize',
       ];
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 7; i++) {
         expect(steps[i].name).toBe(expectedNames[i]);
       }
     });
@@ -692,28 +690,27 @@ describe('integration tests', () => {
   });
 
   describe('chore chain error recovery', () => {
-    it('fail at step 4 (executing-chores) → resume → retry → advance succeeds', () => {
+    it('fail at step 3 (executing-chores) → resume → retry → advance succeeds', () => {
       stateJSON('init CHORE-001 chore');
 
-      // Advance to step 4 (Execute chore)
+      // Advance to step 3 (Execute chore)
       stateCmd('advance CHORE-001'); // step 0
       stateCmd('advance CHORE-001'); // step 1
       stateCmd('advance CHORE-001'); // step 2
-      stateCmd('advance CHORE-001'); // step 3
 
-      // Verify we're at step 4
-      const atStep4 = stateJSON('status CHORE-001');
-      expect(atStep4.currentStep).toBe(4);
-      const steps4 = atStep4.steps as Array<Record<string, unknown>>;
-      expect(steps4[4].name).toBe('Execute chore');
-      expect(steps4[4].skill).toBe('executing-chores');
+      // Verify we're at step 3
+      const atStep3 = stateJSON('status CHORE-001');
+      expect(atStep3.currentStep).toBe(3);
+      const steps3 = atStep3.steps as Array<Record<string, unknown>>;
+      expect(steps3[3].name).toBe('Execute chore');
+      expect(steps3[3].skill).toBe('executing-chores');
 
-      // Fail at step 4
+      // Fail at step 3
       const failState = stateJSON('fail CHORE-001 "Chore execution crashed"');
       expect(failState.status).toBe('failed');
       expect(failState.error).toBe('Chore execution crashed');
       const failSteps = failState.steps as Array<Record<string, unknown>>;
-      expect(failSteps[4].status).toBe('failed');
+      expect(failSteps[3].status).toBe('failed');
 
       // Resume (retry)
       const resumeState = stateJSON('resume CHORE-001');
@@ -723,9 +720,9 @@ describe('integration tests', () => {
 
       // Retry the step — advance succeeds this time
       const retryState = stateJSON('advance CHORE-001');
-      expect(retryState.currentStep).toBe(5);
+      expect(retryState.currentStep).toBe(4);
       const retrySteps = retryState.steps as Array<Record<string, unknown>>;
-      expect(retrySteps[4].status).toBe('complete');
+      expect(retrySteps[3].status).toBe('complete');
     });
   });
 
@@ -762,24 +759,23 @@ describe('integration tests', () => {
   });
 
   describe('bug chain lifecycle', () => {
-    it('init → advance through all 8 steps → pause at step 5 → resume → advance remaining → complete', () => {
+    it('init → advance through all 7 steps → pause at step 4 → resume → advance remaining → complete', () => {
       const initState = stateJSON('init BUG-001 bug');
       expect(initState.type).toBe('bug');
-      expect(initState.steps).toHaveLength(8);
+      expect(initState.steps).toHaveLength(7);
 
-      // Advance steps 0-4
-      stateCmd('advance BUG-001');
+      // Advance steps 0-3
       stateCmd('advance BUG-001');
       stateCmd('advance BUG-001');
       stateCmd('advance BUG-001');
       stateCmd('advance BUG-001');
 
-      // At step 5 (PR review pause)
+      // At step 4 (PR review pause)
       const atPause = stateJSON('status BUG-001');
-      expect(atPause.currentStep).toBe(5);
+      expect(atPause.currentStep).toBe(4);
       const pauseSteps = atPause.steps as Array<Record<string, unknown>>;
-      expect(pauseSteps[5].name).toBe('PR review');
-      expect(pauseSteps[5].context).toBe('pause');
+      expect(pauseSteps[4].name).toBe('PR review');
+      expect(pauseSteps[4].context).toBe('pause');
 
       // Pause and resume
       stateCmd('pause BUG-001 pr-review');
@@ -791,7 +787,7 @@ describe('integration tests', () => {
       expect(resumedState.status).toBe('in-progress');
       expect(resumedState.lastResumedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 
-      // Advance remaining steps 5-7
+      // Advance remaining steps 4-6
       stateCmd('advance BUG-001');
       stateCmd('advance BUG-001');
       stateCmd('advance BUG-001');
@@ -802,7 +798,7 @@ describe('integration tests', () => {
       expect(completedState.completedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 
       const finalSteps = completedState.steps as Array<Record<string, unknown>>;
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 7; i++) {
         expect(finalSteps[i].status).toBe('complete');
       }
     });
@@ -820,23 +816,22 @@ describe('integration tests', () => {
   });
 
   describe('bug chain has no phase loop', () => {
-    it('state file has exactly 8 steps from init with no dynamic insertion needed', () => {
+    it('state file has exactly 7 steps from init with no dynamic insertion needed', () => {
       const state = stateJSON('init BUG-001 bug');
       const steps = state.steps as Array<Record<string, unknown>>;
 
-      expect(steps).toHaveLength(8);
+      expect(steps).toHaveLength(7);
 
       const expectedNames = [
         'Document bug',
         'Review requirements (standard)',
         'Document QA test plan',
-        'Reconcile test plan',
         'Execute bug fix',
         'PR review',
         'Execute QA',
         'Finalize',
       ];
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 7; i++) {
         expect(steps[i].name).toBe(expectedNames[i]);
       }
     });
@@ -862,19 +857,18 @@ describe('integration tests', () => {
   });
 
   describe('bug chain error recovery', () => {
-    it('fail at step 4 (executing-bug-fixes) → resume → retry → advance succeeds', () => {
+    it('fail at step 3 (executing-bug-fixes) → resume → retry → advance succeeds', () => {
       stateJSON('init BUG-001 bug');
 
       stateCmd('advance BUG-001');
       stateCmd('advance BUG-001');
       stateCmd('advance BUG-001');
-      stateCmd('advance BUG-001');
 
-      const atStep4 = stateJSON('status BUG-001');
-      expect(atStep4.currentStep).toBe(4);
-      const steps4 = atStep4.steps as Array<Record<string, unknown>>;
-      expect(steps4[4].name).toBe('Execute bug fix');
-      expect(steps4[4].skill).toBe('executing-bug-fixes');
+      const atStep3 = stateJSON('status BUG-001');
+      expect(atStep3.currentStep).toBe(3);
+      const steps3 = atStep3.steps as Array<Record<string, unknown>>;
+      expect(steps3[3].name).toBe('Execute bug fix');
+      expect(steps3[3].skill).toBe('executing-bug-fixes');
 
       const failState = stateJSON('fail BUG-001 "Bug fix execution crashed"');
       expect(failState.status).toBe('failed');
@@ -885,9 +879,9 @@ describe('integration tests', () => {
       expect(resumeState.lastResumedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 
       const retryState = stateJSON('advance BUG-001');
-      expect(retryState.currentStep).toBe(5);
+      expect(retryState.currentStep).toBe(4);
       const retrySteps = retryState.steps as Array<Record<string, unknown>>;
-      expect(retrySteps[4].status).toBe('complete');
+      expect(retrySteps[3].status).toBe('complete');
     });
   });
 
@@ -981,14 +975,14 @@ describe('integration tests', () => {
         stateCmd(`set-complexity ${id} ${initTier}`);
 
         // Every chore-chain fork step and its expected tier per Example A.
-        // Post-FEAT-017: the code-review reconcile fork is removed from the
-        // orchestrated chain, so this fixture no longer writes that entry.
+        // Post-FEAT-017 and FEAT-018: the code-review and test-plan reconcile
+        // forks are removed from the orchestrated chain, so this fixture no
+        // longer writes those entries.
         const forkSteps: Array<[number, string, string, string]> = [
           // [stepIndex, step-name, mode, expected tier]
           [1, 'reviewing-requirements', 'standard', 'sonnet'],
-          [3, 'reviewing-requirements', 'test-plan', 'sonnet'],
-          [4, 'executing-chores', 'null', 'sonnet'],
-          [8, 'finalizing-workflow', 'null', 'haiku'],
+          [3, 'executing-chores', 'null', 'sonnet'],
+          [6, 'finalizing-workflow', 'null', 'haiku'],
         ];
 
         for (const [stepIndex, step, mode, expected] of forkSteps) {
@@ -999,14 +993,14 @@ describe('integration tests', () => {
 
         const finalState = stateJSON(`status ${id}`);
         const selections = finalState.modelSelections as Array<Record<string, unknown>>;
-        expect(selections).toHaveLength(4);
+        expect(selections).toHaveLength(3);
 
         // Zero Opus tier invocations.
         const opusCount = selections.filter((s) => s.tier === 'opus').length;
         expect(opusCount).toBe(0);
 
         // All non-final forks at sonnet; finalizing at haiku.
-        expect(selections.filter((s) => s.tier === 'sonnet')).toHaveLength(3);
+        expect(selections.filter((s) => s.tier === 'sonnet')).toHaveLength(2);
         expect(selections.filter((s) => s.tier === 'haiku')).toHaveLength(1);
 
         // Every audit entry is stamped with init stage (chore chains never upgrade).
@@ -1027,13 +1021,13 @@ describe('integration tests', () => {
         stateCmd(`set-complexity ${id} ${initTier}`);
 
         // Bug-chain fork steps per Example B.
-        // Post-FEAT-017: the code-review reconcile fork is removed from the
-        // orchestrated chain, so this fixture no longer writes that entry.
+        // Post-FEAT-017 and FEAT-018: the code-review and test-plan reconcile
+        // forks are removed from the orchestrated chain, so this fixture no
+        // longer writes those entries.
         const forkSteps: Array<[number, string, string, string]> = [
           [1, 'reviewing-requirements', 'standard', 'sonnet'],
-          [3, 'reviewing-requirements', 'test-plan', 'sonnet'],
-          [4, 'executing-bug-fixes', 'null', 'sonnet'],
-          [8, 'finalizing-workflow', 'null', 'haiku'],
+          [3, 'executing-bug-fixes', 'null', 'sonnet'],
+          [6, 'finalizing-workflow', 'null', 'haiku'],
         ];
 
         for (const [stepIndex, step, mode, expected] of forkSteps) {
@@ -1044,9 +1038,9 @@ describe('integration tests', () => {
 
         const finalState = stateJSON(`status ${id}`);
         const selections = finalState.modelSelections as Array<Record<string, unknown>>;
-        expect(selections).toHaveLength(4);
+        expect(selections).toHaveLength(3);
         expect(selections.filter((s) => s.tier === 'opus')).toHaveLength(0);
-        expect(selections.filter((s) => s.tier === 'sonnet')).toHaveLength(3);
+        expect(selections.filter((s) => s.tier === 'sonnet')).toHaveLength(2);
         expect(selections.filter((s) => s.tier === 'haiku')).toHaveLength(1);
       });
     });
@@ -1081,51 +1075,50 @@ describe('integration tests', () => {
         expect(midState.complexity).toBe('high');
         expect(midState.complexityStage).toBe('post-plan');
 
-        // Downstream forks (step 6 onward) resolve on post-plan stage → opus.
-        const t6 = resolveTier(id, 'reviewing-requirements');
-        expect(t6).toBe('opus');
-        recordSelection(id, 5, 'reviewing-requirements', 'test-plan', 'null', t6);
-
         // Phase loop: 4 phases of implementing-plan-phases → opus.
+        // Post-FEAT-018: the test-plan reconcile fork (formerly step 5) is
+        // removed, so phases now occupy indices 5..8.
         for (let phase = 1; phase <= 4; phase++) {
           const tPhase = resolveTier(id, 'implementing-plan-phases');
           expect(tPhase).toBe('opus');
-          recordSelection(id, 5 + phase, 'implementing-plan-phases', 'null', String(phase), tPhase);
+          recordSelection(id, 4 + phase, 'implementing-plan-phases', 'null', String(phase), tPhase);
         }
 
         // PR creation (baseline-locked haiku).
-        // Post-FEAT-017: the code-review reconcile fork has been removed from
-        // the orchestrated chain, so no 'code-review' entry is recorded here.
+        // Post-FEAT-017 and FEAT-018: the code-review and test-plan reconcile
+        // forks have been removed from the orchestrated chain, so no
+        // 'code-review' or 'reviewing-requirements (test-plan)' entries are
+        // recorded here.
         const tPr = resolveTier(id, 'pr-creation');
         expect(tPr).toBe('haiku');
-        recordSelection(id, 10, 'pr-creation', 'null', 'null', tPr);
+        recordSelection(id, 9, 'pr-creation', 'null', 'null', tPr);
 
         // Finalize (baseline-locked haiku).
         const tFinal = resolveTier(id, 'finalizing-workflow');
         expect(tFinal).toBe('haiku');
-        recordSelection(id, 14, 'finalizing-workflow', 'null', 'null', tFinal);
+        recordSelection(id, 13, 'finalizing-workflow', 'null', 'null', tFinal);
 
         // Audit trail assertions.
         const finalState = stateJSON(`status ${id}`);
         const selections = finalState.modelSelections as Array<Record<string, unknown>>;
-        expect(selections).toHaveLength(9);
+        expect(selections).toHaveLength(8);
 
         // Steps 2 and 3 are init-stage; everything after post-plan recomputation is post-plan.
         const initEntries = selections.filter((s) => s.complexityStage === 'init');
         const postPlanEntries = selections.filter((s) => s.complexityStage === 'post-plan');
         expect(initEntries).toHaveLength(2);
-        expect(postPlanEntries).toHaveLength(7);
+        expect(postPlanEntries).toHaveLength(6);
 
         // Init entries are sonnet (baseline floor).
         for (const s of initEntries) {
           expect(s.tier).toBe('sonnet');
         }
 
-        // Post-plan non-locked entries are opus (review, plan phases × 4).
+        // Post-plan non-locked entries are opus (plan phases × 4).
         const nonLockedPostPlan = postPlanEntries.filter(
           (s) => s.skill !== 'finalizing-workflow' && s.skill !== 'pr-creation'
         );
-        expect(nonLockedPostPlan).toHaveLength(5);
+        expect(nonLockedPostPlan).toHaveLength(4);
         for (const s of nonLockedPostPlan) {
           expect(s.tier).toBe('opus');
         }

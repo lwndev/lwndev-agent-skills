@@ -794,7 +794,7 @@ cmd_resolve_tier() {
 }
 
 # Generate the feature chain step sequence (FR-1)
-# Steps 1-6 are fixed, then phase steps are added dynamically later
+# Steps 1-5 are fixed, then phase steps are added dynamically later
 generate_feature_steps() {
   cat <<'STEPS'
 [
@@ -802,21 +802,19 @@ generate_feature_steps() {
   {"name":"Review requirements (standard)","skill":"reviewing-requirements","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"Create implementation plan","skill":"creating-implementation-plans","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"Plan approval","skill":null,"context":"pause","status":"pending","artifact":null,"completedAt":null},
-  {"name":"Document QA test plan","skill":"documenting-qa","context":"main","status":"pending","artifact":null,"completedAt":null},
-  {"name":"Reconcile test plan","skill":"reviewing-requirements","context":"fork","status":"pending","artifact":null,"completedAt":null}
+  {"name":"Document QA test plan","skill":"documenting-qa","context":"main","status":"pending","artifact":null,"completedAt":null}
 ]
 STEPS
 }
 
 # Generate the chore chain step sequence (FR-1)
-# Fixed 8-step sequence with a single PR-review pause point, no phase loop
+# Fixed 7-step sequence with a single PR-review pause point, no phase loop
 generate_chore_steps() {
   cat <<'STEPS'
 [
   {"name":"Document chore","skill":"documenting-chores","context":"main","status":"pending","artifact":null,"completedAt":null},
   {"name":"Review requirements (standard)","skill":"reviewing-requirements","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"Document QA test plan","skill":"documenting-qa","context":"main","status":"pending","artifact":null,"completedAt":null},
-  {"name":"Reconcile test plan","skill":"reviewing-requirements","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"Execute chore","skill":"executing-chores","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"PR review","skill":null,"context":"pause","status":"pending","artifact":null,"completedAt":null},
   {"name":"Execute QA","skill":"executing-qa","context":"main","status":"pending","artifact":null,"completedAt":null},
@@ -826,14 +824,13 @@ STEPS
 }
 
 # Generate the bug chain step sequence (FR-1)
-# Fixed 8-step sequence mirroring the chore chain but with bug-specific skills, no phase loop
+# Fixed 7-step sequence mirroring the chore chain but with bug-specific skills, no phase loop
 generate_bug_steps() {
   cat <<'STEPS'
 [
   {"name":"Document bug","skill":"documenting-bugs","context":"main","status":"pending","artifact":null,"completedAt":null},
   {"name":"Review requirements (standard)","skill":"reviewing-requirements","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"Document QA test plan","skill":"documenting-qa","context":"main","status":"pending","artifact":null,"completedAt":null},
-  {"name":"Reconcile test plan","skill":"reviewing-requirements","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"Execute bug fix","skill":"executing-bug-fixes","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"PR review","skill":null,"context":"pause","status":"pending","artifact":null,"completedAt":null},
   {"name":"Execute QA","skill":"executing-qa","context":"main","status":"pending","artifact":null,"completedAt":null},

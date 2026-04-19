@@ -79,11 +79,11 @@ describe('workflow-state.sh', () => {
       expect(state.phases).toEqual({ total: 0, completed: 0 });
     });
 
-    it('generates 6 initial feature chain steps', () => {
+    it('generates 5 initial feature chain steps', () => {
       const state = runJSON('init FEAT-001 feature');
       const steps = state.steps as Array<Record<string, unknown>>;
 
-      expect(steps).toHaveLength(6);
+      expect(steps).toHaveLength(5);
       expect(steps[0].name).toBe('Document feature requirements');
       expect(steps[0].skill).toBe('documenting-features');
       expect(steps[0].context).toBe('main');
@@ -102,9 +102,6 @@ describe('workflow-state.sh', () => {
       expect(steps[4].name).toBe('Document QA test plan');
       expect(steps[4].skill).toBe('documenting-qa');
       expect(steps[4].context).toBe('main');
-
-      expect(steps[5].name).toBe('Reconcile test plan');
-      expect(steps[5].skill).toBe('reviewing-requirements');
     });
 
     it('creates .sdlc/workflows/ directory if it does not exist', () => {
@@ -130,7 +127,7 @@ describe('workflow-state.sh', () => {
     it('accepts bug chain type', () => {
       const state = runJSON('init BUG-001 bug');
       expect(state.type).toBe('bug');
-      expect(state.steps).toHaveLength(8);
+      expect(state.steps).toHaveLength(7);
     });
 
     it('rejects unknown chain types', () => {
@@ -160,11 +157,11 @@ describe('workflow-state.sh', () => {
   });
 
   describe('chore chain', () => {
-    it('generate_chore_steps produces exactly 8 steps with correct names, skills, and contexts', () => {
+    it('generate_chore_steps produces exactly 7 steps with correct names, skills, and contexts', () => {
       const state = runJSON('init CHORE-001 chore');
       const steps = state.steps as Array<Record<string, unknown>>;
 
-      expect(steps).toHaveLength(8);
+      expect(steps).toHaveLength(7);
 
       const expected = [
         { name: 'Document chore', skill: 'documenting-chores', context: 'main' },
@@ -174,7 +171,6 @@ describe('workflow-state.sh', () => {
           context: 'fork',
         },
         { name: 'Document QA test plan', skill: 'documenting-qa', context: 'main' },
-        { name: 'Reconcile test plan', skill: 'reviewing-requirements', context: 'fork' },
         { name: 'Execute chore', skill: 'executing-chores', context: 'fork' },
         { name: 'PR review', skill: null, context: 'pause' },
         { name: 'Execute QA', skill: 'executing-qa', context: 'main' },
@@ -204,7 +200,7 @@ describe('workflow-state.sh', () => {
       expect(state.startedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
       expect(state.lastResumedAt).toBeNull();
       expect(state.phases).toEqual({ total: 0, completed: 0 });
-      expect(state.steps).toHaveLength(8);
+      expect(state.steps).toHaveLength(7);
     });
 
     it('all state commands work with chore chain state files', () => {
@@ -270,11 +266,11 @@ describe('workflow-state.sh', () => {
   });
 
   describe('bug chain', () => {
-    it('generate_bug_steps produces exactly 8 steps with correct names, skills, and contexts', () => {
+    it('generate_bug_steps produces exactly 7 steps with correct names, skills, and contexts', () => {
       const state = runJSON('init BUG-001 bug');
       const steps = state.steps as Array<Record<string, unknown>>;
 
-      expect(steps).toHaveLength(8);
+      expect(steps).toHaveLength(7);
 
       const expected = [
         { name: 'Document bug', skill: 'documenting-bugs', context: 'main' },
@@ -284,7 +280,6 @@ describe('workflow-state.sh', () => {
           context: 'fork',
         },
         { name: 'Document QA test plan', skill: 'documenting-qa', context: 'main' },
-        { name: 'Reconcile test plan', skill: 'reviewing-requirements', context: 'fork' },
         { name: 'Execute bug fix', skill: 'executing-bug-fixes', context: 'fork' },
         { name: 'PR review', skill: null, context: 'pause' },
         { name: 'Execute QA', skill: 'executing-qa', context: 'main' },
@@ -314,7 +309,7 @@ describe('workflow-state.sh', () => {
       expect(state.startedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
       expect(state.lastResumedAt).toBeNull();
       expect(state.phases).toEqual({ total: 0, completed: 0 });
-      expect(state.steps).toHaveLength(8);
+      expect(state.steps).toHaveLength(7);
     });
 
     it('all state commands work with bug chain state files', () => {
@@ -689,27 +684,27 @@ describe('workflow-state.sh', () => {
   });
 
   describe('populate-phases', () => {
-    it('inserts phase steps and post-phase steps after initial 6', () => {
+    it('inserts phase steps and post-phase steps after initial 5', () => {
       runJSON('init FEAT-001 feature');
       const state = runJSON('populate-phases FEAT-001 3');
 
       const steps = state.steps as Array<Record<string, unknown>>;
-      // 6 initial + 3 phase + 4 post-phase = 13
-      expect(steps).toHaveLength(13);
+      // 5 initial + 3 phase + 4 post-phase = 12
+      expect(steps).toHaveLength(12);
 
-      // Phase steps at indices 6, 7, 8
-      expect(steps[6].name).toBe('Implement phase 1 of 3');
-      expect(steps[6].phaseNumber).toBe(1);
-      expect(steps[7].name).toBe('Implement phase 2 of 3');
-      expect(steps[7].phaseNumber).toBe(2);
-      expect(steps[8].name).toBe('Implement phase 3 of 3');
-      expect(steps[8].phaseNumber).toBe(3);
+      // Phase steps at indices 5, 6, 7
+      expect(steps[5].name).toBe('Implement phase 1 of 3');
+      expect(steps[5].phaseNumber).toBe(1);
+      expect(steps[6].name).toBe('Implement phase 2 of 3');
+      expect(steps[6].phaseNumber).toBe(2);
+      expect(steps[7].name).toBe('Implement phase 3 of 3');
+      expect(steps[7].phaseNumber).toBe(3);
 
-      // Post-phase steps at indices 9-12
-      expect(steps[9].name).toBe('Create PR');
-      expect(steps[10].name).toBe('PR review');
-      expect(steps[11].name).toBe('Execute QA');
-      expect(steps[12].name).toBe('Finalize');
+      // Post-phase steps at indices 8-11
+      expect(steps[8].name).toBe('Create PR');
+      expect(steps[9].name).toBe('PR review');
+      expect(steps[10].name).toBe('Execute QA');
+      expect(steps[11].name).toBe('Finalize');
     });
 
     it('sets phases.total to the count', () => {
@@ -726,8 +721,8 @@ describe('workflow-state.sh', () => {
       // Second call should be a no-op
       const state = runJSON('populate-phases FEAT-001 5');
       const steps = state.steps as Array<Record<string, unknown>>;
-      // Should still have 13 steps (3 phases), not 15 (5 phases)
-      expect(steps).toHaveLength(13);
+      // Should still have 12 steps (3 phases), not 14 (5 phases)
+      expect(steps).toHaveLength(12);
     });
   });
 

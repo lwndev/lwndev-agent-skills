@@ -534,7 +534,7 @@ The current `qa-verifier.md` agent is built around the "read the file and confir
 
 ### Phase 7 — Orchestrator Chain-Table Changes (FR-11 Option B)
 **Feature:** [FEAT-018](../features/FEAT-018-qa-executable-oracle-redesign.md) | [#170](https://github.com/lwndev/lwndev-marketplace/issues/170)
-**Status:** Pending
+**Status:** ✅ Complete
 **Phase Dependencies:** Phase 0 (FR-11 decision locked). Logically independent of Phases 1–6, but should land before Phase 8 so the smoke run uses accurate chain tables.
 
 #### Rationale
@@ -579,15 +579,15 @@ The scope enumeration from Phase 0 is the work-item list for this phase. Line-nu
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — feature/chore/bug chain tables updated (step 6/4/4 deleted + renumbered); chain-length prose updated; main-context step headings renumbered; Fork Step-Name Map and Findings Handling scope updated
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/step-execution-details.md` — three fork-instruction blocks deleted; downstream step headings renumbered
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/verification-and-relationships.md` — checklist items deleted; chain lengths updated; skill-relationship tables updated
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/chain-procedures.md` — grep-swept (likely no edits)
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` — step generators drop `Reconcile test plan` entry; code comments updated
-- [ ] `CLAUDE.md` — workflow-chain descriptions updated in all three chains
-- [ ] `scripts/__tests__/orchestrating-workflows.test.ts` — chain-length assertions updated; step-name arrays shortened; main-context-steps test renamed
-- [ ] `scripts/__tests__/workflow-state.test.ts` — state-file fixtures updated; `toHaveLength` and `populate-phases` assertions updated
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` — zero changes (confirmed via `git diff --stat`)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — feature/chore/bug chain tables updated (step 6/4/4 deleted + renumbered); chain-length prose updated; main-context step headings renumbered; Fork Step-Name Map and Findings Handling scope updated
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/step-execution-details.md` — three fork-instruction blocks deleted; downstream step headings renumbered
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/verification-and-relationships.md` — checklist items deleted; chain lengths updated; skill-relationship tables updated
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/chain-procedures.md` — grep-swept (no edits needed; zero stale hits)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` — step generators drop `Reconcile test plan` entry; code comments updated
+- [x] `CLAUDE.md` — workflow-chain descriptions updated in all three chains
+- [x] `scripts/__tests__/orchestrating-workflows.test.ts` — chain-length assertions updated; step-name arrays shortened; main-context-steps test renamed
+- [x] `scripts/__tests__/workflow-state.test.ts` — state-file fixtures updated; `toHaveLength` and `populate-phases` assertions updated
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` — zero changes (confirmed via `git diff --stat`)
 
 ---
 
