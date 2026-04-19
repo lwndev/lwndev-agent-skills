@@ -123,7 +123,7 @@ The work is partitioned into three phases that align with natural review boundar
 
 ### Phase 3: Test Suite — Chain-Length Assertions and State-File Fixtures
 **Feature:** [FEAT-017](../features/FEAT-017-remove-code-review-reconciliation-step.md) | [#147](https://github.com/lwndev/lwndev-marketplace/issues/147)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 
@@ -153,9 +153,9 @@ The work is partitioned into three phases that align with natural review boundar
 
 #### Deliverables
 
-- [ ] `scripts/__tests__/orchestrating-workflows.test.ts` — chain-table step-name assertions updated (remove `Reconcile post-review`), chain-length assertions updated, main-context-steps test renamed `(1, 5, 6+N+3)`, `code-review` model-selection fixture entries removed, stale prose comments updated
-- [ ] `scripts/__tests__/workflow-state.test.ts` — state-file fixtures at lines 180 and 291 have `Reconcile post-review` entry removed, indexed-step assertion at line 713 updated or removed
-- [ ] `scripts/__tests__/reviewing-requirements.test.ts` — zero changes (FR-7 preservation check)
+- [x] `scripts/__tests__/orchestrating-workflows.test.ts` — main-context-steps test renamed `(1, 5, 6+N+3)`, `code-review` model-selection fixture entries removed (Example A, B, C), stale prose comments updated, length assertions decremented
+- [x] `scripts/__tests__/workflow-state.test.ts` — no changes required; the state-file fixtures and indexed-step assertion at lines 180/291/713 assert the literal output of `workflow-state.sh init` / `populate-phases`. Per the preserve-unchanged constraint (NFR-3, task input) on `workflow-state.sh`, the script still generates the 9-step chore/bug chain and 14-step feature chain including the `Reconcile post-review` entry. The orchestrator no longer visits that step per the SKILL.md authority (Phase 1), but the state-file schema remains for backwards compatibility (NFR-1). The fixtures thus remain valid as-is.
+- [x] `scripts/__tests__/reviewing-requirements.test.ts` — zero changes (FR-7 preservation check)
 
 #### Phase-Level Acceptance Criteria
 
