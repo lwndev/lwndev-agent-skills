@@ -386,7 +386,7 @@ The version-2 artifact schema is also defined here. The existing version-1 artif
 
 ### Phase 4 — Rewrite `documenting-qa/SKILL.md`
 **Feature:** [FEAT-018](../features/FEAT-018-qa-executable-oracle-redesign.md) | [#170](https://github.com/lwndev/lwndev-marketplace/issues/170)
-**Status:** Pending
+**Status:** ✅ Complete
 **Phase Dependencies:** Phases 1 (capability discovery script in place), 2 (persona loader in place), 3 (stop hook and artifact schema defined).
 
 #### Rationale
@@ -428,8 +428,8 @@ The `qa-verifier` subagent is NOT used in the rewritten `documenting-qa`. The ol
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/documenting-qa/SKILL.md` — fully rewritten: capability discovery in step 1, persona load in step 2, no-spec code-context gathering in step 3, adversarial scenario planning in step 4, version-2 artifact output in step 5; Ralph loop removed; `Reconcile after QA plan creation` row removed from relationship table
-- [ ] `scripts/__tests__/documenting-qa.test.ts` — SKILL.md assertions updated for new structure (qa-verifier loop tests removed; 5 new assertions for capability discovery, persona, no-spec, version-2, Bash tool)
+- [x] `plugins/lwndev-sdlc/skills/documenting-qa/SKILL.md` — fully rewritten: capability discovery in step 1, persona load in step 2, no-spec code-context gathering in step 3, adversarial scenario planning in step 4, version-2 artifact output in step 5; Ralph loop removed; `Reconcile after QA plan creation` row removed from relationship table
+- [x] `scripts/__tests__/documenting-qa.test.ts` — SKILL.md assertions updated for new structure (qa-verifier loop tests removed; 5 new assertions for capability discovery, persona, no-spec, version-2, Bash tool)
 
 ---
 

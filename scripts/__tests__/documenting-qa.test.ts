@@ -62,18 +62,52 @@ describe('documenting-qa skill', () => {
       expect(skillMd).toContain('requirements/bugs/');
     });
 
-    it('should reference implementation plans for FEAT IDs', () => {
-      expect(skillMd).toContain('requirements/implementation/');
-    });
-
     it('should specify test plan output path format', () => {
       expect(skillMd).toContain('qa/test-plans/QA-plan-');
+    });
+
+    it('should forbid reading requirements docs during planning (FR-4 no-spec guard)', () => {
+      // The skill must explicitly instruct the planning agent not to read
+      // the full spec during planning; enforcement happens via the stop
+      // hook's no-FR-N rule, but the instruction must also be documented
+      // in SKILL.md itself so the agent sees it in context.
+      expect(skillMd).toMatch(/Do NOT read\s+`?requirements\//i);
+    });
+
+    it('should reference capability-discovery.sh in step instructions', () => {
+      expect(skillMd).toContain('capability-discovery.sh');
+    });
+
+    it('should reference persona-loader.sh in step instructions', () => {
+      expect(skillMd).toContain('persona-loader.sh');
+    });
+
+    it('should reference the version-2 artifact template (test-plan-template-v2.md)', () => {
+      expect(skillMd).toContain('test-plan-template-v2.md');
+    });
+
+    it('should specify version-2 artifact output in frontmatter guidance', () => {
+      expect(skillMd).toContain('version: 2');
+    });
+
+    it('should NOT reference the qa-verifier agent (Ralph loop removed per FEAT-018)', () => {
+      expect(skillMd).not.toContain('qa-verifier');
     });
   });
 
   describe('allowed-tools', () => {
     it('should have allowed-tools in frontmatter', () => {
       expect(skillMd).toMatch(/^---\s*\n[\s\S]*?allowed-tools:[\s\S]*?---/);
+    });
+
+    it('should include Bash in allowed-tools (invokes capability-discovery and persona-loader scripts)', () => {
+      const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
+      expect(frontmatter).toMatch(/allowed-tools:[\s\S]*?-\s*Bash/);
+    });
+
+    it('should NOT include Agent in allowed-tools (qa-verifier Ralph loop removed)', () => {
+      const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
+      expect(frontmatter).not.toMatch(/allowed-tools:[\s\S]*?-\s*Agent/);
     });
   });
 
