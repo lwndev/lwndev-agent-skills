@@ -108,7 +108,7 @@ The work is partitioned into three phases that align with natural review boundar
 #### Deliverables
 
 - [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/verification-and-relationships.md` — verification checklist items referencing the removed step deleted, chain-length prose updated (`9-step` → `8-step`), skill-relationship tables updated to drop `code-review` mode
-- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/chain-procedures.md` — grep-swept; edits applied only if the file references the removed step or downstream step numbers
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/chain-procedures.md` — grep-swept clean; no edits landed (the file contained no numeric step references to the removed step, matching the plan's prediction in Phase 2 rationale)
 - [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/model-selection.md` — `mode` schema prose updated to reflect the orchestrator-vs-historical distinction (FR-7, NFR-1)
 
 #### Phase-Level Acceptance Criteria
@@ -133,19 +133,21 @@ The work is partitioned into three phases that align with natural review boundar
 
 #### Implementation Steps
 
-1. **Update `scripts/__tests__/orchestrating-workflows.test.ts` chain-table assertions (FR-8)**. Locate tests that assert the ordered sequence of step names for each chain. Remove the `'Reconcile post-review'` entry from the feature, chore, and bug step-name arrays. Confirmed occurrences: two entries in this file at lines 665 and 839 (grep-identified). Adjust any `.length` assertions accordingly (feature `6+N+5` → `6+N+4`; chore `9` → `8`; bug `9` → `8`).
+_Line-number anchors are intentionally omitted from the steps below; they were accurate at plan authoring but shift as edits land. Locate each change by content (test description, fixture contents, comment text) rather than by line number. Grep is the authoritative locator._
 
-2. **Update the main-context-steps test (FR-8, FR-3)**. The test at line 100 reads `it('should document main-context steps (1, 5, 6+N+4)', () => {...})`. Update the test name and its body assertion to `(1, 5, 6+N+3)` to reflect the renumbering.
+1. **Update `scripts/__tests__/orchestrating-workflows.test.ts` chain-table assertions (FR-8)**. Locate tests that assert the ordered sequence of step names for each chain (the `expectedNames` arrays inside the `"chore chain has no phase loop"` and `"bug chain has no phase loop"` describe blocks). Remove the `'Reconcile post-review'` entry from the feature, chore, and bug step-name arrays. Adjust any `.length` assertions accordingly (feature `6+N+5` → `6+N+4`; chore `9` → `8`; bug `9` → `8`).
 
-3. **Update `stateCmd('advance CHORE-001')` fixture comments (FR-8)**. The test at line 616 has the trailing comment `// step 6: Reconcile post-review`. Remove the step entirely from the advancement sequence (the `advance` call that takes the workflow from the previous step to `Reconcile post-review`). If the test was asserting final step-index, decrement the expected value by one.
+2. **Update the main-context-steps test (FR-8, FR-3)**. Locate the `it('should document main-context steps (1, 5, 6+N+4)', ...)` test description. Update the description and its body assertion to `(1, 5, 6+N+3)` to reflect the renumbering.
 
-4. **Update model-selection fixtures with `mode: "code-review"` (FR-8)**. Locate the entries at lines 993, 1037, 1098, 1105, and 1128 that reference `"code-review"` in orchestrator-driven fixtures (`recordSelection(id, 12, 'reviewing-requirements', 'code-review', ...)` etc.). For fixtures that simulate a fresh post-FEAT-017 orchestrator run, remove the `code-review` entry entirely. For fixtures that exist specifically to test historical compatibility (if any), leave the entry but rename the test description to clarify it is a historical-state scenario. The preferred edit is removal: the requirements' "no fixture should expect a `mode: 'code-review'` entry in `modelSelections` for a new workflow" directs to delete.
+3. **Update `stateCmd('advance CHORE-001')` fixture sequence (FR-8)**. Inside the chore-chain lifecycle integration test, locate the trailing comment `// step 6: Reconcile post-review`. Remove the corresponding `stateCmd('advance CHORE-001')` line entirely, and update the surrounding comments that enumerate `step N: <name>` to renumber for the shortened sequence. Decrement the expected final step-index where asserted. Do the same for the parallel bug-chain lifecycle test.
 
-5. **Update the surrounding prose comments in model-selection tests (FR-8)**. Comments at lines 1098 (`// PR creation (baseline-locked haiku) and code-review reconcile (opus post-plan).`) and 1128 (`// Post-plan non-locked entries are opus (review, plan phases × 4, code-review).`) become stale when the `code-review` entry is removed. Update each comment to describe the new expected sequence (drop `code-review reconcile` / `code-review` from the description).
+4. **Update model-selection fixtures with `mode: "code-review"` (FR-8)**. Locate every `recordSelection(..., 'reviewing-requirements', 'code-review', ...)` call in the `FEAT-014 adaptive model selection` integration fixtures (Examples A, B, C). For fixtures that simulate a fresh post-FEAT-017 orchestrator run, remove the `code-review` entry entirely and decrement the accompanying `selections.length`, `postPlanEntries`, and `nonLockedPostPlan` counters. The requirements' "no fixture should expect a `mode: 'code-review'` entry in `modelSelections` for a new workflow" directs removal.
 
-6. **Update `scripts/__tests__/workflow-state.test.ts` state-file fixtures (FR-8)**. At lines 180 and 291, the test fixtures include `{ name: 'Reconcile post-review', skill: 'reviewing-requirements', context: 'fork' }`. Remove these entries from the steps-array literals. If the fixture's length is relied on by assertions elsewhere in the same test block, decrement the expected length by one.
+5. **Update the surrounding prose comments in model-selection tests (FR-8)**. Two comments near the Example C fixture describe the expected audit-trail sequence as "PR creation (baseline-locked haiku) and code-review reconcile (opus post-plan)" and "Post-plan non-locked entries are opus (review, plan phases × 4, code-review)". Update each comment to describe the new expected sequence with `code-review reconcile` / `code-review` dropped.
 
-7. **Update the indexed-step assertion at line 713 (FR-8)**. The test asserts `expect(steps[11].name).toBe('Reconcile post-review')`. Either remove the assertion entirely (if the test's purpose was to confirm the step existed at that index) or update it to assert the step that now occupies index 11 in the new numbering (e.g., `Execute QA` on a feature chain with N=3 phases, after the removed step is gone — `steps[11].name === 'Execute QA'`). The implementer confirms the intended post-edit step at that index by re-reading the surrounding test setup.
+6. **Update `scripts/__tests__/workflow-state.test.ts` state-file fixtures (FR-8)**. Inside the `chore chain` and `bug chain` describe blocks, locate each `expected` array that lists `{ name: 'Reconcile post-review', skill: 'reviewing-requirements', context: 'fork' }`. Remove that entry from both arrays. Decrement the matching `expect(steps).toHaveLength(9)` / `expect(state.steps).toHaveLength(9)` assertions (including the `bug chain type` init test) to `toHaveLength(8)`. Update the describe-block test descriptions that say "produces exactly 9 steps" to "produces exactly 8 steps".
+
+7. **Update the `populate-phases` indexed-step assertions (FR-8)**. Inside the `populate-phases` describe block, locate the test `"inserts phase steps and post-phase steps after initial 6"`. It currently asserts a total length of 14 and indexed names including `steps[11].name === 'Reconcile post-review'`, `steps[12].name === 'Execute QA'`, `steps[13].name === 'Finalize'`. Update: total length `14 → 13`; drop the `steps[11] === 'Reconcile post-review'` assertion; renumber `steps[12] → 11` (`Execute QA`) and `steps[13] → 12` (`Finalize`). Update the `// 6 initial + 3 phase + 5 post-phase = 14` comment to `// 6 initial + 3 phase + 4 post-phase = 13`. Repeat for the sibling idempotent-populate-phases test: `toHaveLength(14)` → `toHaveLength(13)` and the `// Should still have 14 steps...` comment.
 
 8. **Run the test suite and iterate until green**. Execute `npm test` from the repository root. For any failing test not covered by steps 1–7, grep the failure location for `code-review`, `6+N+5`, `9`, or `Reconcile post-review` and apply the same transformations. The vitest config (`fileParallelism: false`) means tests run sequentially — fix failures in order of appearance.
 
@@ -153,18 +155,19 @@ The work is partitioned into three phases that align with natural review boundar
 
 #### Deliverables
 
-- [x] `scripts/__tests__/orchestrating-workflows.test.ts` — main-context-steps test renamed `(1, 5, 6+N+3)`, `code-review` model-selection fixture entries removed (Example A, B, C), stale prose comments updated, length assertions decremented
-- [x] `scripts/__tests__/workflow-state.test.ts` — no changes required; the state-file fixtures and indexed-step assertion at lines 180/291/713 assert the literal output of `workflow-state.sh init` / `populate-phases`. Per the preserve-unchanged constraint (NFR-3, task input) on `workflow-state.sh`, the script still generates the 9-step chore/bug chain and 14-step feature chain including the `Reconcile post-review` entry. The orchestrator no longer visits that step per the SKILL.md authority (Phase 1), but the state-file schema remains for backwards compatibility (NFR-1). The fixtures thus remain valid as-is.
+- [x] `scripts/__tests__/orchestrating-workflows.test.ts` — main-context-steps test renamed `(1, 5, 6+N+3)`, `code-review` model-selection fixture entries removed (Examples A, B, C), stale prose comments updated, chain-length assertions decremented (chore/bug lifecycle and no-phase-loop tests), step-name arrays renumbered, `advance` call sequences shortened by one per chain
+- [x] `scripts/__tests__/workflow-state.test.ts` — state-file fixtures updated: `Reconcile post-review` entries removed from the chore-chain and bug-chain `expected` arrays; `toHaveLength(9)` assertions (chore + bug init) and `toHaveLength(14)` assertions (populate-phases) decremented to `8` and `13` respectively; `populate-phases` indexed-step assertions renumbered (drop `steps[11]`, shift `Execute QA`/`Finalize` up by one); describe-block test descriptions updated from "9 steps" to "8 steps"
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` — scope-correction commit: `generate_chore_steps`, `generate_bug_steps`, and `generate_post_phase_steps` drop the `Reconcile post-review` step entry; accompanying function-comment annotations updated from "9-step" to "8-step". Subcommand signatures unchanged (see NFR-3 scope-correction note)
 - [x] `scripts/__tests__/reviewing-requirements.test.ts` — zero changes (FR-7 preservation check)
 
 #### Phase-Level Acceptance Criteria
 
-- [ ] `npm test` passes with zero failing tests
-- [ ] No test fixture or assertion contains the string `Reconcile post-review` or expects it in a chain sequence
-- [ ] No orchestrator-driven fixture writes a `mode: "code-review"` entry to `modelSelections`
-- [ ] Chain-length assertions: feature = `6 + N + 4`, chore = `8`, bug = `8`
-- [ ] `scripts/__tests__/reviewing-requirements.test.ts` has zero changes vs main
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` has zero changes vs main
+- [x] `npm test` passes with zero failing tests (752/752)
+- [x] No test fixture or assertion contains the string `Reconcile post-review` or expects it in a chain sequence
+- [x] No orchestrator-driven fixture writes a `mode: "code-review"` entry to `modelSelections`
+- [x] Chain-length assertions: feature = `6 + N + 4`, chore = `8`, bug = `8`
+- [x] `scripts/__tests__/reviewing-requirements.test.ts` has zero changes vs main
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` step generators drop `Reconcile post-review`; subcommand signatures remain unchanged (scope correction per NFR-3 note)
 
 ---
 
