@@ -448,27 +448,27 @@ The following are explicitly **out of scope** for this feature and tracked as fo
 
 ## Acceptance Criteria
 
-- [ ] Capability-discovery module implemented with detection for vitest, jest, pytest, and go-test; produces a structured capability report (FR-1).
-- [ ] Capability discovery degrades to `mode: "exploratory-only"` for repos with no supported framework (FR-1, FR-3).
-- [ ] Detection order is deterministic (vitest → jest → pytest → go-test) and multi-framework detection records a warning note (FR-1, edge case 1).
-- [ ] `executing-qa` writes and runs real tests in the detected framework, producing a structured results artifact (FR-2).
-- [ ] `executing-qa` produces `ISSUES-FOUND` on failing tests, `ERROR` on runner/compile failures, `EXPLORATORY-ONLY` on no-framework repos (FR-2, FR-3).
-- [ ] `documenting-qa` planning prompt is rewritten to build plans from user summary + code + capability report, without reading the requirements document (FR-4).
-- [ ] Planning output is organized by adversarial dimension, not by FR row; every scenario has a priority and expected execution mode (FR-4).
-- [ ] Reconciliation delta (coverage-surplus + coverage-gap) is produced after every executing-qa run (FR-5).
-- [ ] Adversarial tester persona (`qa`) ships as a persona module covering inputs, state transitions, environment, dependency failure, and cross-cutting dimensions (FR-6).
-- [ ] Persona overlay enforces the "empty findings is suspicious" directive; runs with zero findings on applicable dimensions fail validation (FR-6, FR-8).
-- [ ] Persona-module slot is in place: directory structure and composition mechanism allow adding a new persona without restructuring the skill (FR-7).
-- [ ] `executing-qa/scripts/stop-hook.sh` rewritten to validate artifact structure and verdict, not regex-match PASS phrases (FR-8).
-- [ ] `documenting-qa`'s stop hook validates plan artifact structure — not phrase-matching (FR-8).
-- [ ] Structured results artifact conforms to the version-2 schema with frontmatter (FR-9).
-- [ ] Structured plan artifact conforms to the version-2 schema with frontmatter (FR-9).
-- [ ] Existing `qa/test-results/QA-results-*.md` artifacts are preserved unmodified; new runs are clearly versioned (FR-10, NFR-3).
-- [ ] FR-11 decision made and recorded: `reviewing-requirements` test-plan reconciliation mode is either repurposed (Option A) or removed (Option B).
-- [ ] `orchestrating-workflows/SKILL.md` chain tables updated per the FR-11 decision; `CLAUDE.md` workflow-chain descriptions updated (FR-12).
-- [ ] Orchestrator main-context calling pattern for `documenting-qa` and `executing-qa` is unchanged (NFR-6).
-- [ ] All edge cases from the Edge Cases section have corresponding unit or integration tests.
-- [ ] NFR-5 smoke-run demonstration: at least one real end-to-end run on a recent feature branch produces a non-PASS verdict, with the resulting artifact committed to `qa/test-results/` or attached to the implementation PR as evidence.
-- [ ] `qa-verifier.md` agent is rewritten or replaced around the adversarial-tester persona and the executable-oracle model.
-- [ ] Tests in `scripts/__tests__/` updated for the new responsibilities, artifact format, and stop-hook behavior.
-- [ ] PR description references this requirements doc, #170, #163 (closed), and #169 (bookkeeping, independent).
+- [x] Capability-discovery module implemented with detection for vitest, jest, pytest, and go-test; produces a structured capability report (FR-1).
+- [x] Capability discovery degrades to `mode: "exploratory-only"` for repos with no supported framework (FR-1, FR-3).
+- [x] Detection order is deterministic (vitest → jest → pytest → go-test) and multi-framework detection records a warning note (FR-1, edge case 1).
+- [x] `executing-qa` writes and runs real tests in the detected framework, producing a structured results artifact (FR-2).
+- [x] `executing-qa` produces `ISSUES-FOUND` on failing tests, `ERROR` on runner/compile failures, `EXPLORATORY-ONLY` on no-framework repos (FR-2, FR-3).
+- [x] `documenting-qa` planning prompt is rewritten to build plans from user summary + code + capability report, without reading the requirements document (FR-4).
+- [x] Planning output is organized by adversarial dimension, not by FR row; every scenario has a priority and expected execution mode (FR-4).
+- [x] Reconciliation delta (coverage-surplus + coverage-gap) is produced after every executing-qa run (FR-5).
+- [x] Adversarial tester persona (`qa`) ships as a persona module covering inputs, state transitions, environment, dependency failure, and cross-cutting dimensions (FR-6).
+- [x] Persona overlay enforces the "empty findings is suspicious" directive; runs with zero findings on applicable dimensions fail validation (FR-6, FR-8).
+- [x] Persona-module slot is in place: directory structure and composition mechanism allow adding a new persona without restructuring the skill (FR-7).
+- [x] `executing-qa/scripts/stop-hook.sh` rewritten to validate artifact structure and verdict, not regex-match PASS phrases (FR-8).
+- [x] `documenting-qa`'s stop hook validates plan artifact structure — not phrase-matching (FR-8).
+- [x] Structured results artifact conforms to the version-2 schema with frontmatter (FR-9).
+- [x] Structured plan artifact conforms to the version-2 schema with frontmatter (FR-9).
+- [x] Existing `qa/test-results/QA-results-*.md` artifacts are preserved unmodified; new runs are clearly versioned (FR-10, NFR-3).
+- [x] FR-11 decision made and recorded: `reviewing-requirements` test-plan reconciliation mode is either repurposed (Option A) or removed (Option B).
+- [x] `orchestrating-workflows/SKILL.md` chain tables updated per the FR-11 decision; `CLAUDE.md` workflow-chain descriptions updated (FR-12).
+- [x] Orchestrator main-context calling pattern for `documenting-qa` and `executing-qa` is unchanged (NFR-6).
+- [x] All edge cases from the Edge Cases section have corresponding unit or integration tests.
+- [x] NFR-5 smoke-run demonstration: at least one real end-to-end run on a recent feature branch produces a non-PASS verdict, with the resulting artifact committed to `qa/test-results/` or attached to the implementation PR as evidence.
+- [x] `qa-verifier.md` agent is rewritten or replaced around the adversarial-tester persona and the executable-oracle model.
+- [x] Tests in `scripts/__tests__/` updated for the new responsibilities, artifact format, and stop-hook behavior.
+- [x] PR description references this requirements doc, #170, #163 (closed), and #169 (bookkeeping, independent).
