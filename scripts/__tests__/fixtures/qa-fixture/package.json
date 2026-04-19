@@ -1,0 +1,10 @@
+{
+  "name": "qa-fixture",
+  "private": true,
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "*"
+  }
+}

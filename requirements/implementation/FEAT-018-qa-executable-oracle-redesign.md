@@ -593,7 +593,7 @@ The scope enumeration from Phase 0 is the work-item list for this phase. Line-nu
 
 ### Phase 8 — Integration Test Pass and NFR-5 Smoke Run
 **Feature:** [FEAT-018](../features/FEAT-018-qa-executable-oracle-redesign.md) | [#170](https://github.com/lwndev/lwndev-marketplace/issues/170)
-**Status:** Pending
+**Status:** ✅ Complete
 **Phase Dependencies:** All prior phases complete. This is the final gate.
 
 #### Rationale
@@ -643,12 +643,12 @@ This phase serves two purposes: (1) a full `npm test` green-pass verifying that 
 
 #### Deliverables
 
-- [ ] `scripts/__tests__/fixtures/qa-fixture/` — minimal vitest fixture repo with a deliberate bug for integration testing
-- [ ] `scripts/__tests__/qa-integration.test.ts` — fixture-based integration tests: vitest discovery → test write → run → `ISSUES-FOUND` verdict; no-framework → `EXPLORATORY-ONLY`
-- [ ] `npm test` passing — all tests green across the full test suite
-- [ ] `npm run validate` passing — all plugin skills valid
-- [ ] `npm run lint` passing — no linting issues
-- [ ] `qa/test-results/QA-results-{target-ID}.md` — smoke-run evidence artifact committed; version 2 frontmatter; non-PASS verdict; reconciliation delta populated
+- [x] `scripts/__tests__/fixtures/qa-fixture/` — minimal vitest fixture repo with a deliberate bug for integration testing
+- [x] `scripts/__tests__/qa-integration.test.ts` — fixture-based integration tests: vitest discovery → test write → run → `ISSUES-FOUND` verdict; no-framework → `EXPLORATORY-ONLY`
+- [x] `npm test` passing — all tests green across the full test suite
+- [x] `npm run validate` passing — all plugin skills valid
+- [x] `npm run lint` passing — no linting issues
+- [x] `qa/test-results/QA-results-FEAT-017-smoke.md` — smoke-run evidence artifact committed; version 2 frontmatter; non-PASS verdict (EXPLORATORY-ONLY); reconciliation delta populated. Filename uses `-smoke` suffix to avoid clashing with the existing v1 `QA-results-FEAT-017.md`.
 
 ---
 
