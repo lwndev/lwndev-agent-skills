@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.12.0] - 2026-04-19
+
+### Features
+
+- **FEAT-018:** QA skills redesigned around an executable oracle ([#170](https://github.com/lwndev/lwndev-marketplace/issues/170)). `executing-qa` now writes and runs real adversarial tests in the consumer repo's detected framework (vitest, jest, pytest, or go-test), grades on actual runner output, and produces a structured version-2 results artifact with verdict (`PASS | ISSUES-FOUND | ERROR | EXPLORATORY-ONLY`), reconciliation delta, and per-dimension findings. Repos without a supported framework degrade gracefully to `EXPLORATORY-ONLY` mode rather than failing. Stop hooks rewritten to validate artifact structure rather than regex-match PASS phrases.
+- **FEAT-018:** `documenting-qa` now builds plans from user-summary + PR diff rather than the requirements doc, organizing scenarios by adversarial dimension (Inputs, State transitions, Environment, Dependency failure, Cross-cutting) with explicit priorities (P0/P1/P2) and execution modes. The closed-loop "verify every FR-N is mapped" Ralph loop has been removed.
+- **FEAT-018:** New composable persona system — first persona (`qa`, adversarial tester) ships with a directory-based loader so future personas (a11y, security, performance) can be added without skill restructuring.
+- **FEAT-018:** New `qa-reconciliation-agent` reference spec describing the bidirectional coverage-surplus / coverage-gap delta that `executing-qa` produces inline at the end of every run. `qa-verifier` rewritten around adversarial-coverage review (not closed-loop spec consistency).
+- **FEAT-018:** Orchestrator chains shortened — feature `6+N+4 → 5+N+4`, chore/bug `8 → 7` steps. The test-plan reconciliation step is no longer invoked automatically by the orchestrator (FR-11 Option B). The `reviewing-requirements` test-plan reconciliation mode is preserved unchanged and remains callable standalone via `/reviewing-requirements {ID}`. Existing workflow state files with historical `Reconcile test plan` step entries or `mode: "test-plan"` audit-trail entries remain valid and queryable — no migration required.
+
+### Compatibility notes
+
+- Existing **v1** QA test plans (no `version: 2` frontmatter) are rejected by the new `executing-qa`. Re-run `documenting-qa` to regenerate as v2 before re-invoking `executing-qa`.
+- The 34 historical v1 QA results artifacts under `qa/test-results/` are preserved unmodified. New runs are clearly distinguished by the `version: 2` frontmatter field.
+- The orchestrator's main-context calling pattern for `documenting-qa` and `executing-qa` is unchanged.
+
+[1.12.0]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.11.0...lwndev-sdlc@1.12.0
+
 ## [1.11.0] - 2026-04-19
 
 ### Features
