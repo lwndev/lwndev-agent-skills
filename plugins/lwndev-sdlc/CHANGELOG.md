@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.11.0] - 2026-04-19
+
+### Features
+
+- **FEAT-017:** Orchestrated workflows no longer fork a second `reviewing-requirements` subagent after PR review — `executing-qa` handles post-PR reconciliation instead ([#147](https://github.com/lwndev/lwndev-marketplace/issues/147)). The `reviewing-requirements` code-review mode remains callable standalone via `/reviewing-requirements {ID} --pr {N}` for ad-hoc drift reports. Existing workflow state files with historical `Reconcile post-review` step entries or `mode: "code-review"` audit-trail entries remain valid and queryable — no migration required. (Feature chain: one fewer step; chore/bug chains: 9 → 8 steps.)
+
+### Chores
+
+- **CHORE-033:** Fix skill permission prompts in plugin configuration.
+
+[1.11.0]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.10.0...lwndev-sdlc@1.11.0
+
 ## [1.10.0] - 2026-04-18
 
 ### Features
