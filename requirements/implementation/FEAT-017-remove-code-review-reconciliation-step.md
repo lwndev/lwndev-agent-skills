@@ -178,10 +178,11 @@ Per NFR-3, the following files must remain at their pre-FEAT-017 content:
 
 - `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` — the standalone `code-review` mode is preserved (FR-7)
 - `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` — scope unchanged; still owns CR2/CR4 coverage post-removal (NFR-2)
-- `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` — the script accepts `mode` and `decision` as free-form strings; no enum updates required (FR-4)
 - `scripts/__tests__/reviewing-requirements.test.ts` — the standalone-mode tests remain valid (FR-7, FR-8 preserve clause)
 
-Every PR in this plan must include a `git diff --stat` check (manual or CI-enforced) that no changes land in these paths.
+**Scope correction during Phase 3**: `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` was originally listed as preserved-unchanged, on the premise that its `record-model-selection` / `record-findings` subcommands accept free-form `mode`/`decision` strings. That holds for subcommand behavior but missed the step-generation functions (`generate_chore_steps`, `generate_bug_steps`, `generate_post_phase_steps`) which emit the literal `Reconcile post-review` step entry during `init` / `populate-phases`. Without editing those generators, new workflows would still include the removed step in their state-file `steps` array — contradicting the feature's acceptance criteria. The script has been updated to drop the step entry from those three generator functions and update the "9-step"/"14-step" code comments to "8-step"/"13-step". The subcommand signatures remain unchanged; only the step-generation JSON heredocs were edited.
+
+Every PR in this plan must include a `git diff --stat` check (manual or CI-enforced) that no changes land in the preserved-unchanged paths above.
 
 ## Testing Strategy
 

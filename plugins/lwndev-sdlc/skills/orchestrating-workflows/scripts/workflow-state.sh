@@ -809,7 +809,7 @@ STEPS
 }
 
 # Generate the chore chain step sequence (FR-1)
-# Fixed 9-step sequence with a single PR-review pause point, no phase loop
+# Fixed 8-step sequence with a single PR-review pause point, no phase loop
 generate_chore_steps() {
   cat <<'STEPS'
 [
@@ -819,7 +819,6 @@ generate_chore_steps() {
   {"name":"Reconcile test plan","skill":"reviewing-requirements","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"Execute chore","skill":"executing-chores","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"PR review","skill":null,"context":"pause","status":"pending","artifact":null,"completedAt":null},
-  {"name":"Reconcile post-review","skill":"reviewing-requirements","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"Execute QA","skill":"executing-qa","context":"main","status":"pending","artifact":null,"completedAt":null},
   {"name":"Finalize","skill":"finalizing-workflow","context":"fork","status":"pending","artifact":null,"completedAt":null}
 ]
@@ -827,7 +826,7 @@ STEPS
 }
 
 # Generate the bug chain step sequence (FR-1)
-# Fixed 9-step sequence mirroring the chore chain but with bug-specific skills, no phase loop
+# Fixed 8-step sequence mirroring the chore chain but with bug-specific skills, no phase loop
 generate_bug_steps() {
   cat <<'STEPS'
 [
@@ -837,7 +836,6 @@ generate_bug_steps() {
   {"name":"Reconcile test plan","skill":"reviewing-requirements","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"Execute bug fix","skill":"executing-bug-fixes","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"PR review","skill":null,"context":"pause","status":"pending","artifact":null,"completedAt":null},
-  {"name":"Reconcile post-review","skill":"reviewing-requirements","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"Execute QA","skill":"executing-qa","context":"main","status":"pending","artifact":null,"completedAt":null},
   {"name":"Finalize","skill":"finalizing-workflow","context":"fork","status":"pending","artifact":null,"completedAt":null}
 ]
@@ -850,7 +848,6 @@ generate_post_phase_steps() {
 [
   {"name":"Create PR","skill":"orchestrator","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"PR review","skill":null,"context":"pause","status":"pending","artifact":null,"completedAt":null},
-  {"name":"Reconcile post-review","skill":"reviewing-requirements","context":"fork","status":"pending","artifact":null,"completedAt":null},
   {"name":"Execute QA","skill":"executing-qa","context":"main","status":"pending","artifact":null,"completedAt":null},
   {"name":"Finalize","skill":"finalizing-workflow","context":"fork","status":"pending","artifact":null,"completedAt":null}
 ]

@@ -576,14 +576,14 @@ describe('integration tests', () => {
   // --- Chore Chain Integration Tests ---
 
   describe('chore chain lifecycle', () => {
-    it('init → advance through all 9 steps → pause at step 5 → resume → advance remaining → complete', () => {
+    it('init → advance through all 8 steps → pause at step 5 → resume → advance remaining → complete', () => {
       // Init chore chain
       const initState = stateJSON('init CHORE-001 chore');
       expect(initState.status).toBe('in-progress');
       expect(initState.currentStep).toBe(0);
       expect(initState.type).toBe('chore');
       const initSteps = initState.steps as Array<Record<string, unknown>>;
-      expect(initSteps).toHaveLength(9);
+      expect(initSteps).toHaveLength(8);
 
       // Advance steps 0-4 (Document chore through Execute chore)
       stateCmd('advance CHORE-001 "requirements/chores/CHORE-001-test.md"'); // step 0: Document chore
@@ -611,11 +611,10 @@ describe('integration tests', () => {
       expect(resumeState.pauseReason).toBeNull();
       expect(resumeState.lastResumedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 
-      // Advance steps 5-8 (PR review through Finalize)
+      // Advance steps 5-7 (PR review through Finalize)
       stateCmd('advance CHORE-001'); // step 5: PR review
-      stateCmd('advance CHORE-001'); // step 6: Reconcile post-review
-      stateCmd('advance CHORE-001'); // step 7: Execute QA
-      stateCmd('advance CHORE-001'); // step 8: Finalize
+      stateCmd('advance CHORE-001'); // step 6: Execute QA
+      stateCmd('advance CHORE-001'); // step 7: Finalize
 
       // Complete
       const completeState = stateJSON('complete CHORE-001');
@@ -624,7 +623,7 @@ describe('integration tests', () => {
 
       // Verify all steps are complete
       const finalSteps = completeState.steps as Array<Record<string, unknown>>;
-      for (let i = 0; i < 9; i++) {
+      for (let i = 0; i < 8; i++) {
         expect(finalSteps[i].status).toBe('complete');
       }
     });
@@ -642,19 +641,19 @@ describe('integration tests', () => {
   });
 
   describe('chore chain has no phase loop', () => {
-    it('state file has exactly 9 steps from init with no dynamic insertion needed', () => {
+    it('state file has exactly 8 steps from init with no dynamic insertion needed', () => {
       const state = stateJSON('init CHORE-001 chore');
       const steps = state.steps as Array<Record<string, unknown>>;
 
-      // Exactly 9 steps — no populate-phases needed
-      expect(steps).toHaveLength(9);
+      // Exactly 8 steps — no populate-phases needed
+      expect(steps).toHaveLength(8);
 
       // Verify no step has phaseNumber (no phase loop steps)
       for (const step of steps) {
         expect(step).not.toHaveProperty('phaseNumber');
       }
 
-      // Verify step names match the fixed 9-step sequence
+      // Verify step names match the fixed 8-step sequence
       const expectedNames = [
         'Document chore',
         'Review requirements (standard)',
@@ -662,11 +661,10 @@ describe('integration tests', () => {
         'Reconcile test plan',
         'Execute chore',
         'PR review',
-        'Reconcile post-review',
         'Execute QA',
         'Finalize',
       ];
-      for (let i = 0; i < 9; i++) {
+      for (let i = 0; i < 8; i++) {
         expect(steps[i].name).toBe(expectedNames[i]);
       }
     });
@@ -764,10 +762,10 @@ describe('integration tests', () => {
   });
 
   describe('bug chain lifecycle', () => {
-    it('init → advance through all 9 steps → pause at step 5 → resume → advance remaining → complete', () => {
+    it('init → advance through all 8 steps → pause at step 5 → resume → advance remaining → complete', () => {
       const initState = stateJSON('init BUG-001 bug');
       expect(initState.type).toBe('bug');
-      expect(initState.steps).toHaveLength(9);
+      expect(initState.steps).toHaveLength(8);
 
       // Advance steps 0-4
       stateCmd('advance BUG-001');
@@ -793,8 +791,7 @@ describe('integration tests', () => {
       expect(resumedState.status).toBe('in-progress');
       expect(resumedState.lastResumedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 
-      // Advance remaining steps 5-8
-      stateCmd('advance BUG-001');
+      // Advance remaining steps 5-7
       stateCmd('advance BUG-001');
       stateCmd('advance BUG-001');
       stateCmd('advance BUG-001');
@@ -805,7 +802,7 @@ describe('integration tests', () => {
       expect(completedState.completedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
 
       const finalSteps = completedState.steps as Array<Record<string, unknown>>;
-      for (let i = 0; i < 9; i++) {
+      for (let i = 0; i < 8; i++) {
         expect(finalSteps[i].status).toBe('complete');
       }
     });
@@ -823,11 +820,11 @@ describe('integration tests', () => {
   });
 
   describe('bug chain has no phase loop', () => {
-    it('state file has exactly 9 steps from init with no dynamic insertion needed', () => {
+    it('state file has exactly 8 steps from init with no dynamic insertion needed', () => {
       const state = stateJSON('init BUG-001 bug');
       const steps = state.steps as Array<Record<string, unknown>>;
 
-      expect(steps).toHaveLength(9);
+      expect(steps).toHaveLength(8);
 
       const expectedNames = [
         'Document bug',
@@ -836,11 +833,10 @@ describe('integration tests', () => {
         'Reconcile test plan',
         'Execute bug fix',
         'PR review',
-        'Reconcile post-review',
         'Execute QA',
         'Finalize',
       ];
-      for (let i = 0; i < 9; i++) {
+      for (let i = 0; i < 8; i++) {
         expect(steps[i].name).toBe(expectedNames[i]);
       }
     });

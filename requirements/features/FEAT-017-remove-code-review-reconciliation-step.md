@@ -78,7 +78,13 @@ Update the Reviewing-Requirements Findings Handling section of `SKILL.md`:
 - Update the chain-step-to-index table (see FR-3).
 - Remove the prose note about mode prefixes including `code-review` from the count-extraction regex guidance if it is no longer relevant to remaining call sites. (The `test-plan` prefix case still exists, so the prefix-handling note must be retained — only remove the explicit `code-review` example.)
 
-The `code-review` decision value is no longer written by the orchestrator. No removal is required from `workflow-state.sh` — the `record-model-selection` and `record-findings` subcommands accept `mode` and `decision` as free-form strings; they do not validate against an enum of modes. Old state files that already contain `mode: "code-review"` entries remain valid.
+Update `workflow-state.sh` step-generation functions to drop the `Reconcile post-review` entry:
+
+- `generate_chore_steps` — remove the `Reconcile post-review` step entry; update the function comment from "Fixed 9-step sequence" to "Fixed 8-step sequence".
+- `generate_bug_steps` — same transformation as the chore function.
+- `generate_post_phase_steps` — remove the `Reconcile post-review` step entry (this generator appends the post-phase tail to feature chains after `populate-phases`).
+
+The `record-model-selection` and `record-findings` subcommands of `workflow-state.sh` remain unchanged — they accept `mode` and `decision` as free-form strings; old state files that already contain `mode: "code-review"` entries remain valid and queryable.
 
 ### FR-5: Remove the Fork-Step-Name Map Row
 
@@ -138,12 +144,16 @@ The only skill files touched are:
 2. `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/step-execution-details.md`
 3. `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/chain-procedures.md` (if it references the removed step by number — likely minimal)
 4. `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/verification-and-relationships.md`
-5. `scripts/__tests__/orchestrating-workflows.test.ts` and `scripts/__tests__/workflow-state.test.ts` (test updates only)
+5. `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/model-selection.md` (mode-enum prose update)
+6. `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` (drop `Reconcile post-review` from `generate_chore_steps`, `generate_bug_steps`, `generate_post_phase_steps`; update "9-step" comments to "8-step")
+7. `scripts/__tests__/orchestrating-workflows.test.ts` and `scripts/__tests__/workflow-state.test.ts` (test updates only)
 
 Files explicitly NOT touched:
 - `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` (per FR-7)
 - `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` (its scope is unchanged)
-- `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` (per FR-4; no enum updates needed)
+- `scripts/__tests__/reviewing-requirements.test.ts` (standalone `code-review` mode tests remain valid per FR-7)
+
+**Scope correction note**: The original FR-4 and NFR-3 excluded `workflow-state.sh` from edits, on the premise that its `record-model-selection` / `record-findings` subcommands accept free-form `mode`/`decision` strings. That reasoning holds for subcommand behavior but missed the step-generation functions (`generate_chore_steps`, `generate_bug_steps`, `generate_post_phase_steps`) which emit the literal `Reconcile post-review` step entry during `init` / `populate-phases`. Without updating those generators, new workflows would still include the removed step in their state-file `steps` array, contradicting the acceptance criteria. This scope was corrected during Phase 3 implementation.
 
 ### NFR-4: Performance
 
@@ -204,7 +214,7 @@ Removing one fork per workflow reduces workflow runtime by the latency of one su
 - [ ] Verification checklists no longer reference the removed step or its findings handling.
 - [ ] `reviewing-requirements/SKILL.md` is unchanged (per FR-7); the code-review reconciliation mode remains callable standalone.
 - [ ] `executing-qa/SKILL.md` is unchanged.
-- [ ] `workflow-state.sh` is unchanged (per NFR-3).
+- [ ] `workflow-state.sh` step-generation functions updated: `generate_chore_steps` and `generate_bug_steps` emit 8 steps each (no `Reconcile post-review`); `generate_post_phase_steps` emits 4 steps (no `Reconcile post-review`); `record-model-selection` and `record-findings` subcommand signatures are unchanged.
 - [ ] Existing workflow state files with historical code-review reconciliation entries remain valid and queryable.
 - [ ] The orchestrator's test suite passes with the updated chain lengths and step sequences.
 - [ ] A full feature chain end-to-end run produces a state file with no "Reconcile post-review" step entry.
