@@ -134,7 +134,7 @@ The module ships as a shell script rather than a TypeScript module because the s
 
 ### Phase 2 — Persona Module and Loader
 **Feature:** [FEAT-018](../features/FEAT-018-qa-executable-oracle-redesign.md) | [#170](https://github.com/lwndev/lwndev-marketplace/issues/170)
-**Status:** Pending
+**Status:** ✅ Complete
 **Phase Dependencies:** Phase 0 (scope locked). Independent of Phase 1.
 
 #### Rationale
@@ -209,11 +209,11 @@ The loader ships as a shell function in a sourced helper (`persona-loader.sh`) r
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/documenting-qa/personas/qa.md` — adversarial tester persona overlay covering all 5 FR-6 dimensions plus the empty-findings directive
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/personas/qa.md` — same content (cross-referenced)
-- [ ] `plugins/lwndev-sdlc/skills/documenting-qa/scripts/persona-loader.sh` — `load_persona` function with present/missing/malformed handling
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/persona-loader.sh` — same implementation
-- [ ] `scripts/__tests__/persona-loader.test.ts` — 3 test cases covering present, missing, and malformed
+- [x] `plugins/lwndev-sdlc/skills/documenting-qa/personas/qa.md` — adversarial tester persona overlay covering all 5 FR-6 dimensions plus the empty-findings directive
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/personas/qa.md` — same content (cross-referenced)
+- [x] `plugins/lwndev-sdlc/skills/documenting-qa/scripts/persona-loader.sh` — `load_persona` function with present/missing/malformed handling
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/persona-loader.sh` — same implementation
+- [x] `scripts/__tests__/persona-loader.test.ts` — 3 test cases covering present, missing, and malformed
 
 ---
 
