@@ -258,6 +258,16 @@ No test framework detected; falling back to structured exploratory review.
 - Test command: none
 - Language: none
 
+## Scenarios Run
+| ID | Dimension | Priority | Result | Test file |
+|----|-----------|----------|--------|-----------|
+
+## Findings
+
+## Reconciliation Delta
+### Summary
+Reconciliation delta skipped: no requirements doc for EMPTY
+
 ## Exploratory Mode
 Reason: capability-discovery detected no vitest/jest/pytest/go-test signals in the target repo.
 Dimensions covered: inputs, state-transitions, environment, dependency-failure, cross-cutting

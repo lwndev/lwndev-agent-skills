@@ -653,6 +653,278 @@ Dimensions covered: inputs, state-transitions, environment, dependency-failure, 
       const result = runHookIn(fixture, 'not json at all');
       expect([0, 2]).toContain(result.exitCode);
     });
+
+    // Finding 1 — ISSUES-FOUND Findings-line regex must cover pytest + Go
+    // output shapes in addition to vitest/jest (PR #172 code review).
+
+    it('Finding 1: accepts pytest nodeid notation (module.py::test_name)', () => {
+      fixture = mkdtempSync(join(tmpdir(), 'exec-qa-hook-'));
+      setupStateFile(fixture);
+      const content = issuesFoundArtifact('FEAT-F1A').replace(
+        '- severity: high | dimension: Inputs | title: empty-input regression | test: qa-inputs.spec.ts',
+        '- severity: high | dimension: Inputs | title: empty-input regression | test: tests/test_inputs.py::test_empty_input'
+      );
+      writeResults(fixture, 'FEAT-F1A', content);
+      const result = runHookIn(
+        fixture,
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'qa/test-results/QA-results-FEAT-F1A.md',
+        })
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('Finding 1: accepts pytest class::method::test nodeid', () => {
+      fixture = mkdtempSync(join(tmpdir(), 'exec-qa-hook-'));
+      setupStateFile(fixture);
+      const content = issuesFoundArtifact('FEAT-F1B').replace(
+        '- severity: high | dimension: Inputs | title: empty-input regression | test: qa-inputs.spec.ts',
+        '- severity: high | dimension: State transitions | title: race | test: tests/test_state.py::TestStateMachine::test_concurrent_writes'
+      );
+      writeResults(fixture, 'FEAT-F1B', content);
+      const result = runHookIn(
+        fixture,
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'qa/test-results/QA-results-FEAT-F1B.md',
+        })
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('Finding 1: accepts Go --- FAIL: TestX verbose-output prefix', () => {
+      fixture = mkdtempSync(join(tmpdir(), 'exec-qa-hook-'));
+      setupStateFile(fixture);
+      const content = issuesFoundArtifact('FEAT-F1C').replace(
+        '- severity: high | dimension: Inputs | title: empty-input regression | test: qa-inputs.spec.ts',
+        '- severity: high | dimension: Inputs | title: boundary overflow | output: --- FAIL: TestInputValidation'
+      );
+      writeResults(fixture, 'FEAT-F1C', content);
+      const result = runHookIn(
+        fixture,
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'qa/test-results/QA-results-FEAT-F1C.md',
+        })
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('Finding 1: accepts Go "- FAIL TestX" list / summary form', () => {
+      fixture = mkdtempSync(join(tmpdir(), 'exec-qa-hook-'));
+      setupStateFile(fixture);
+      const content = issuesFoundArtifact('FEAT-F1D').replace(
+        '- severity: high | dimension: Inputs | title: empty-input regression | test: qa-inputs.spec.ts',
+        '- severity: medium | dimension: Dependency failure | title: timeout cascade | output: FAIL TestCascadeTimeouts (subtest)'
+      );
+      writeResults(fixture, 'FEAT-F1D', content);
+      const result = runHookIn(
+        fixture,
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'qa/test-results/QA-results-FEAT-F1D.md',
+        })
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('Finding 1: accepts _test.go filename fragment', () => {
+      fixture = mkdtempSync(join(tmpdir(), 'exec-qa-hook-'));
+      setupStateFile(fixture);
+      const content = issuesFoundArtifact('FEAT-F1E').replace(
+        '- severity: high | dimension: Inputs | title: empty-input regression | test: qa-inputs.spec.ts',
+        '- severity: high | dimension: Inputs | title: off-by-one | file: qa/inputs_test.go'
+      );
+      writeResults(fixture, 'FEAT-F1E', content);
+      const result = runHookIn(
+        fixture,
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'qa/test-results/QA-results-FEAT-F1E.md',
+        })
+      );
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('Finding 1: prose-only finding with no test reference is still rejected (negative control)', () => {
+      fixture = mkdtempSync(join(tmpdir(), 'exec-qa-hook-'));
+      setupStateFile(fixture);
+      // Finding line has no filename fragment, no ::, no FAIL marker, no test: inline.
+      const content = issuesFoundArtifact('FEAT-F1N').replace(
+        '- severity: high | dimension: Inputs | title: empty-input regression | test: qa-inputs.spec.ts',
+        '- severity: high | dimension: Inputs | something went wrong somewhere'
+      );
+      writeResults(fixture, 'FEAT-F1N', content);
+      const result = runHookIn(
+        fixture,
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'qa/test-results/QA-results-FEAT-F1N.md',
+        })
+      );
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toMatch(/Findings|failing/);
+    });
+
+    // Finding 3 — `## Scenarios Run` and `## Reconciliation Delta` are
+    // declared required sections in SKILL.md but were not previously
+    // enforced by the stop hook. Added unconditional require_section calls
+    // and parametrize across all four verdict shapes (PR #172 code review).
+
+    const removeScenariosRun = (content: string): string =>
+      content.replace(/## Scenarios Run\n[\s\S]*?(?=## [A-Z])/, '');
+    const removeReconciliationDelta = (content: string): string =>
+      content.replace(/## Reconciliation Delta\n[\s\S]*?(?=## [A-Z]|$)/, '');
+
+    it('Finding 3: PASS artifact missing `## Scenarios Run` is rejected', () => {
+      fixture = mkdtempSync(join(tmpdir(), 'exec-qa-hook-'));
+      setupStateFile(fixture);
+      const content = removeScenariosRun(passArtifact('FEAT-F3A'));
+      writeResults(fixture, 'FEAT-F3A', content);
+      const result = runHookIn(
+        fixture,
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'qa/test-results/QA-results-FEAT-F3A.md',
+        })
+      );
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain('Scenarios Run');
+    });
+
+    it('Finding 3: PASS artifact missing `## Reconciliation Delta` is rejected', () => {
+      fixture = mkdtempSync(join(tmpdir(), 'exec-qa-hook-'));
+      setupStateFile(fixture);
+      const content = removeReconciliationDelta(passArtifact('FEAT-F3B'));
+      writeResults(fixture, 'FEAT-F3B', content);
+      const result = runHookIn(
+        fixture,
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'qa/test-results/QA-results-FEAT-F3B.md',
+        })
+      );
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain('Reconciliation Delta');
+    });
+
+    it('Finding 3: ISSUES-FOUND artifact missing `## Scenarios Run` is rejected', () => {
+      fixture = mkdtempSync(join(tmpdir(), 'exec-qa-hook-'));
+      setupStateFile(fixture);
+      const content = removeScenariosRun(issuesFoundArtifact('FEAT-F3C'));
+      writeResults(fixture, 'FEAT-F3C', content);
+      const result = runHookIn(
+        fixture,
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'qa/test-results/QA-results-FEAT-F3C.md',
+        })
+      );
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain('Scenarios Run');
+    });
+
+    it('Finding 3: ISSUES-FOUND artifact missing `## Reconciliation Delta` is rejected', () => {
+      fixture = mkdtempSync(join(tmpdir(), 'exec-qa-hook-'));
+      setupStateFile(fixture);
+      const content = removeReconciliationDelta(issuesFoundArtifact('FEAT-F3D'));
+      writeResults(fixture, 'FEAT-F3D', content);
+      const result = runHookIn(
+        fixture,
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'qa/test-results/QA-results-FEAT-F3D.md',
+        })
+      );
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain('Reconciliation Delta');
+    });
+
+    it('Finding 3: ERROR artifact missing `## Scenarios Run` is rejected', () => {
+      fixture = mkdtempSync(join(tmpdir(), 'exec-qa-hook-'));
+      setupStateFile(fixture);
+      const content = removeScenariosRun(errorArtifact('FEAT-F3E'));
+      writeResults(fixture, 'FEAT-F3E', content);
+      const result = runHookIn(
+        fixture,
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'qa/test-results/QA-results-FEAT-F3E.md',
+        })
+      );
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain('Scenarios Run');
+    });
+
+    it('Finding 3: ERROR artifact missing `## Reconciliation Delta` is rejected', () => {
+      fixture = mkdtempSync(join(tmpdir(), 'exec-qa-hook-'));
+      setupStateFile(fixture);
+      const content = removeReconciliationDelta(errorArtifact('FEAT-F3F'));
+      writeResults(fixture, 'FEAT-F3F', content);
+      const result = runHookIn(
+        fixture,
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'qa/test-results/QA-results-FEAT-F3F.md',
+        })
+      );
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain('Reconciliation Delta');
+    });
+
+    it('Finding 3: EXPLORATORY-ONLY artifact missing `## Scenarios Run` is rejected', () => {
+      fixture = mkdtempSync(join(tmpdir(), 'exec-qa-hook-'));
+      setupStateFile(fixture);
+      const content = removeScenariosRun(exploratoryArtifact('FEAT-F3G'));
+      writeResults(fixture, 'FEAT-F3G', content);
+      const result = runHookIn(
+        fixture,
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'qa/test-results/QA-results-FEAT-F3G.md',
+        })
+      );
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain('Scenarios Run');
+    });
+
+    it('Finding 3: EXPLORATORY-ONLY artifact missing `## Reconciliation Delta` is rejected', () => {
+      fixture = mkdtempSync(join(tmpdir(), 'exec-qa-hook-'));
+      setupStateFile(fixture);
+      const content = removeReconciliationDelta(exploratoryArtifact('FEAT-F3H'));
+      writeResults(fixture, 'FEAT-F3H', content);
+      const result = runHookIn(
+        fixture,
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'qa/test-results/QA-results-FEAT-F3H.md',
+        })
+      );
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain('Reconciliation Delta');
+    });
+
+    it('Finding 3: edge case 7 — `## Reconciliation Delta` with skip-note body still passes', () => {
+      // When no requirements doc exists (edge case 7), the skill emits the
+      // `## Reconciliation Delta` section with a skip note under `### Summary`
+      // rather than omitting it. The hook must accept this shape.
+      fixture = mkdtempSync(join(tmpdir(), 'exec-qa-hook-'));
+      setupStateFile(fixture);
+      const content = exploratoryArtifact('FEAT-F3I').replace(
+        /## Reconciliation Delta\n[\s\S]*?(?=## [A-Z])/,
+        '## Reconciliation Delta\n### Summary\nReconciliation delta skipped: no requirements doc for FEAT-F3I\n\n'
+      );
+      writeResults(fixture, 'FEAT-F3I', content);
+      const result = runHookIn(
+        fixture,
+        JSON.stringify({
+          stop_hook_active: false,
+          last_assistant_message: 'qa/test-results/QA-results-FEAT-F3I.md',
+        })
+      );
+      expect(result.exitCode).toBe(0);
+    });
   });
 
   describe('test results template (v1)', () => {

@@ -9,7 +9,7 @@ tools:
 
 # QA Verifier
 
-You verify **adversarial coverage** of a QA plan or results artifact. You do NOT perform a closed-loop consistency check against the requirements document — that is the responsibility of `qa-reconciliation-agent.md`, which runs exactly once at the end of an execution run.
+You verify **adversarial coverage** of a QA plan or results artifact. You do NOT perform a closed-loop consistency check against the requirements document — that is the role described by `qa-reconciliation-agent.md` and performed inline by `executing-qa` exactly once at the end of an execution run. (The skill does not currently delegate to that agent; `qa-reconciliation-agent.md` is a reference spec for the inline reconciliation logic.)
 
 You operate in an isolated context to keep verbose coverage analysis out of the main conversation.
 
@@ -26,7 +26,7 @@ Use Bash only for targeted structural inspection (e.g., extracting sections, cou
 - A path to a QA plan (`qa/test-plans/QA-plan-{ID}.md`) or results artifact (`qa/test-results/QA-results-{ID}.md`)
 - Optionally, the persona name that was used (default `qa`)
 
-You do **not** read the requirements document. The redesigned QA chain deliberately keeps planning independent of the spec; requirements-doc reconciliation happens exactly once at the end of an execution run via `qa-reconciliation-agent.md`.
+You do **not** read the requirements document. The redesigned QA chain deliberately keeps planning independent of the spec; requirements-doc reconciliation happens exactly once at the end of an execution run — performed inline by `executing-qa` using the logic described in `qa-reconciliation-agent.md`.
 
 ## What You Verify
 
@@ -49,7 +49,7 @@ You do **not** read the requirements document. The redesigned QA chain deliberat
 
 ## What You Do NOT Verify
 
-- Coverage against the requirements document's FR grid, AC list, or edge-case list. That comparison is performed exactly once, at the end of execution, by `qa-reconciliation-agent.md`.
+- Coverage against the requirements document's FR grid, AC list, or edge-case list. That comparison is performed inline by `executing-qa` exactly once at the end of an execution run, following the reference spec in `qa-reconciliation-agent.md`.
 - Implementation correctness. The test framework's exit code is the authoritative signal.
 - Artifact structural conformance beyond the checks above. The stop hook enforces schema-level structure.
 - Whether the plan "matches" a requirements doc. The redesign deliberately decouples planning from the spec.

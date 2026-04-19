@@ -170,6 +170,8 @@ require_section() {
 
 require_section '## Summary'
 require_section '## Capability Report'
+require_section '## Scenarios Run'
+require_section '## Reconciliation Delta'
 
 # ---------------------------------------------------------------------------
 # Verdict-specific validation.
@@ -219,9 +221,16 @@ case "$VERDICT" in
       FINDINGS_BLOCK="$(get_section_block 'Findings')"
       # Heuristic: at least one non-blank, non-placeholder line that names a
       # test. Accept list items starting with `- ` that contain either a
-      # file path-like token (e.g., contains `.spec.`/`.test.`/`_test.`) or
-      # an inline `test:`/`Test:` marker.
-      if ! echo "$FINDINGS_BLOCK" | grep -qE '^-[[:space:]]+.*(\.(spec|test)\.|_test\.|[Tt]est[[:space:]]*:|[Ff]ailing[[:space:]]*(test|case))'; then
+      # framework-specific test reference or an inline test/failing marker.
+      # Patterns covered:
+      #   - vitest/jest: `.spec.` / `.test.` filename fragments
+      #   - python (partial): `_test.` fragment
+      #   - go: `_test.go` filename
+      #   - pytest: `module.py::test_name` nodeid notation
+      #   - go: `--- FAIL: TestX` verbose-output prefix
+      #   - go: `- FAIL TestX` / trailing `FAIL TestMain` summary form
+      #   - inline markers: `test:` / `Test:` / `Failing test` / `failing case`
+      if ! echo "$FINDINGS_BLOCK" | grep -qE '^-[[:space:]]+.*(\.(spec|test)\.|_test\.|_test\.go|\.py::|---[[:space:]]+FAIL:|FAIL[[:space:]]+Test|[Tt]est[[:space:]]*:|[Ff]ailing[[:space:]]*(test|case))'; then
         echo "Stop hook: results artifact ${RESULTS_PATH} has verdict ISSUES-FOUND but '## Findings' does not name any failing tests. Each finding must identify the failing test (e.g., test file path or test name)." >&2
         exit 2
       fi

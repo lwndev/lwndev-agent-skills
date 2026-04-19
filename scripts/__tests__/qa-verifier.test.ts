@@ -183,5 +183,16 @@ describe('qa-reconciliation-agent', () => {
     it('should forbid reading the requirements doc during planning', () => {
       expect(agentMd).toMatch(/during\s+QA\s+\*?\*?planning/i);
     });
+
+    it('should identify itself as a reference spec, not a required delegate (PR #172 review)', () => {
+      // executing-qa's allowed-tools omits `Agent` by design, so the skill
+      // cannot actually delegate to this agent. The file must frame itself
+      // as a reference spec for the inline reconciliation logic.
+      expect(agentMd).toMatch(/reference spec/i);
+      // The prior wording "You run exactly once" / "when executing-qa invokes you
+      // to populate" implied live delegation. Those phrasings must not appear.
+      expect(agentMd).not.toMatch(/^You run \*\*exactly once\*\*/m);
+      expect(agentMd).not.toMatch(/when `executing-qa` invokes you to populate/);
+    });
   });
 });
