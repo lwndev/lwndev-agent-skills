@@ -219,7 +219,7 @@ The loader ships as a shell function in a sourced helper (`persona-loader.sh`) r
 
 ### Phase 3 — Artifact Schema + Stop-Hook Rewrite
 **Feature:** [FEAT-018](../features/FEAT-018-qa-executable-oracle-redesign.md) | [#170](https://github.com/lwndev/lwndev-marketplace/issues/170)
-**Status:** Pending
+**Status:** ✅ Complete
 **Phase Dependencies:** Phase 0 (schema version decision locked in the plan).
 
 #### Rationale
@@ -375,12 +375,12 @@ The version-2 artifact schema is also defined here. The existing version-1 artif
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/documenting-qa/assets/test-plan-template-v2.md` — version-2 plan artifact schema with version-1/version-2 split note
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/assets/test-results-template-v2.md` — version-2 results artifact schema with same split note
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/stop-hook.sh` — rewritten to validate artifact structure, not regex-match phrases; all FR-8 conditions implemented
-- [ ] `plugins/lwndev-sdlc/skills/documenting-qa/scripts/stop-hook.sh` — rewritten to validate plan artifact structure; FR-4 no-spec enforcement; version-2 frontmatter check
-- [ ] `scripts/__tests__/executing-qa.test.ts` — stop-hook behavioral tests updated to artifact-structure assertions (12 new cases replacing 8 phrase-matching cases)
-- [ ] `scripts/__tests__/documenting-qa.test.ts` — stop-hook behavioral tests updated (8 new artifact-structure cases)
+- [x] `plugins/lwndev-sdlc/skills/documenting-qa/assets/test-plan-template-v2.md` — version-2 plan artifact schema with version-1/version-2 split note
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/assets/test-results-template-v2.md` — version-2 results artifact schema with same split note
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/stop-hook.sh` — rewritten to validate artifact structure, not regex-match phrases; all FR-8 conditions implemented
+- [x] `plugins/lwndev-sdlc/skills/documenting-qa/scripts/stop-hook.sh` — rewritten to validate plan artifact structure; FR-4 no-spec enforcement; version-2 frontmatter check
+- [x] `scripts/__tests__/executing-qa.test.ts` — stop-hook behavioral tests updated to artifact-structure assertions (12 new cases replacing 8 phrase-matching cases)
+- [x] `scripts/__tests__/documenting-qa.test.ts` — stop-hook behavioral tests updated (8 new artifact-structure cases)
 
 ---
 
