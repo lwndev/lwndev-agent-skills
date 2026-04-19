@@ -130,7 +130,7 @@ describe('workflow-state.sh', () => {
     it('accepts bug chain type', () => {
       const state = runJSON('init BUG-001 bug');
       expect(state.type).toBe('bug');
-      expect(state.steps).toHaveLength(9);
+      expect(state.steps).toHaveLength(8);
     });
 
     it('rejects unknown chain types', () => {
@@ -160,11 +160,11 @@ describe('workflow-state.sh', () => {
   });
 
   describe('chore chain', () => {
-    it('generate_chore_steps produces exactly 9 steps with correct names, skills, and contexts', () => {
+    it('generate_chore_steps produces exactly 8 steps with correct names, skills, and contexts', () => {
       const state = runJSON('init CHORE-001 chore');
       const steps = state.steps as Array<Record<string, unknown>>;
 
-      expect(steps).toHaveLength(9);
+      expect(steps).toHaveLength(8);
 
       const expected = [
         { name: 'Document chore', skill: 'documenting-chores', context: 'main' },
@@ -177,7 +177,6 @@ describe('workflow-state.sh', () => {
         { name: 'Reconcile test plan', skill: 'reviewing-requirements', context: 'fork' },
         { name: 'Execute chore', skill: 'executing-chores', context: 'fork' },
         { name: 'PR review', skill: null, context: 'pause' },
-        { name: 'Reconcile post-review', skill: 'reviewing-requirements', context: 'fork' },
         { name: 'Execute QA', skill: 'executing-qa', context: 'main' },
         { name: 'Finalize', skill: 'finalizing-workflow', context: 'fork' },
       ];
@@ -205,7 +204,7 @@ describe('workflow-state.sh', () => {
       expect(state.startedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
       expect(state.lastResumedAt).toBeNull();
       expect(state.phases).toEqual({ total: 0, completed: 0 });
-      expect(state.steps).toHaveLength(9);
+      expect(state.steps).toHaveLength(8);
     });
 
     it('all state commands work with chore chain state files', () => {
@@ -271,11 +270,11 @@ describe('workflow-state.sh', () => {
   });
 
   describe('bug chain', () => {
-    it('generate_bug_steps produces exactly 9 steps with correct names, skills, and contexts', () => {
+    it('generate_bug_steps produces exactly 8 steps with correct names, skills, and contexts', () => {
       const state = runJSON('init BUG-001 bug');
       const steps = state.steps as Array<Record<string, unknown>>;
 
-      expect(steps).toHaveLength(9);
+      expect(steps).toHaveLength(8);
 
       const expected = [
         { name: 'Document bug', skill: 'documenting-bugs', context: 'main' },
@@ -288,7 +287,6 @@ describe('workflow-state.sh', () => {
         { name: 'Reconcile test plan', skill: 'reviewing-requirements', context: 'fork' },
         { name: 'Execute bug fix', skill: 'executing-bug-fixes', context: 'fork' },
         { name: 'PR review', skill: null, context: 'pause' },
-        { name: 'Reconcile post-review', skill: 'reviewing-requirements', context: 'fork' },
         { name: 'Execute QA', skill: 'executing-qa', context: 'main' },
         { name: 'Finalize', skill: 'finalizing-workflow', context: 'fork' },
       ];
@@ -316,7 +314,7 @@ describe('workflow-state.sh', () => {
       expect(state.startedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
       expect(state.lastResumedAt).toBeNull();
       expect(state.phases).toEqual({ total: 0, completed: 0 });
-      expect(state.steps).toHaveLength(9);
+      expect(state.steps).toHaveLength(8);
     });
 
     it('all state commands work with bug chain state files', () => {
@@ -696,8 +694,8 @@ describe('workflow-state.sh', () => {
       const state = runJSON('populate-phases FEAT-001 3');
 
       const steps = state.steps as Array<Record<string, unknown>>;
-      // 6 initial + 3 phase + 5 post-phase = 14
-      expect(steps).toHaveLength(14);
+      // 6 initial + 3 phase + 4 post-phase = 13
+      expect(steps).toHaveLength(13);
 
       // Phase steps at indices 6, 7, 8
       expect(steps[6].name).toBe('Implement phase 1 of 3');
@@ -707,12 +705,11 @@ describe('workflow-state.sh', () => {
       expect(steps[8].name).toBe('Implement phase 3 of 3');
       expect(steps[8].phaseNumber).toBe(3);
 
-      // Post-phase steps at indices 9-13
+      // Post-phase steps at indices 9-12
       expect(steps[9].name).toBe('Create PR');
       expect(steps[10].name).toBe('PR review');
-      expect(steps[11].name).toBe('Reconcile post-review');
-      expect(steps[12].name).toBe('Execute QA');
-      expect(steps[13].name).toBe('Finalize');
+      expect(steps[11].name).toBe('Execute QA');
+      expect(steps[12].name).toBe('Finalize');
     });
 
     it('sets phases.total to the count', () => {
@@ -729,8 +726,8 @@ describe('workflow-state.sh', () => {
       // Second call should be a no-op
       const state = runJSON('populate-phases FEAT-001 5');
       const steps = state.steps as Array<Record<string, unknown>>;
-      // Should still have 14 steps (3 phases), not 16 (5 phases)
-      expect(steps).toHaveLength(14);
+      // Should still have 13 steps (3 phases), not 15 (5 phases)
+      expect(steps).toHaveLength(13);
     });
   });
 

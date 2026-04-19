@@ -20,13 +20,11 @@ If the plan file is missing or malformed, `classify-post-plan` retains the init-
 
 **Step 6+N+1 — Create PR**: See PR Creation below.
 
-**Step 6+N+3 — `reviewing-requirements` (code-review reconciliation)**: Append `{ID} --pr {prNumber}` as argument. The skill auto-detects code-review reconciliation mode. Run the FEAT-014 pre-fork sequence with step-name `reviewing-requirements` and mode `code-review`.
-
-**Step 6+N+5 — `finalizing-workflow`**: No special argument needed. The skill merges the current PR and resets to main. Run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow`. This step is **baseline-locked** at `haiku` — the pre-fork echo uses the `baseline-locked` tag, and only a hard override (`--model`, `--model-for`) can push it off its baseline.
+**Step 6+N+4 — `finalizing-workflow`**: No special argument needed. The skill merges the current PR and resets to main. Run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow`. This step is **baseline-locked** at `haiku` — the pre-fork echo uses the `baseline-locked` tag, and only a hard override (`--model`, `--model-for`) can push it off its baseline.
 
 ### Chore Chain Step-Specific Fork Instructions
 
-Steps 2, 4, 7, and 9 follow the same fork pattern as the feature chain without chore-specific overrides. Every non-skipped fork runs the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) with the appropriate step-name and mode before spawning the subagent, and passes the resolved tier as the Agent tool's `model` parameter. Steps skipped by CHORE-031 conditions call only `advance` — no pre-fork sequence, no audit trail entry, and no `modelSelections` entry for that step index:
+Steps 2, 4, and 8 follow the same fork pattern as the feature chain without chore-specific overrides. Every non-skipped fork runs the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) with the appropriate step-name and mode before spawning the subagent, and passes the resolved tier as the Agent tool's `model` parameter. Steps skipped by CHORE-031 conditions call only `advance` — no pre-fork sequence, no audit trail entry, and no `modelSelections` entry for that step index:
 
 **Step 2 — `reviewing-requirements` (standard review)**: **Skip condition (CHORE-031 T2)**: read the persisted complexity from the state file (`jq -r '.complexity' ".sdlc/workflows/{ID}.json"`). If `complexity == low`, skip this fork — advance state without spawning a subagent:
 ```bash
@@ -55,11 +53,9 @@ Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-1
 
 After step 5 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md).
 
-**Step 7 — `reviewing-requirements` (code-review reconciliation)**: Append `{ID} --pr {prNumber}` as argument. Pre-fork step-name `reviewing-requirements`, mode `code-review`.
+**Step 8 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag).
 
-**Step 9 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag).
-
-### Bug Chain Main-Context Steps (Steps 1, 3, 8)
+### Bug Chain Main-Context Steps (Steps 1, 3, 7)
 
 **Step 1 — `documenting-bugs`**: See New Bug Workflow Procedure in [chain-procedures.md](chain-procedures.md).
 
@@ -69,7 +65,7 @@ After step 5 completes (if `issueRef` is set): invoke `managing-work-items comme
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-plans/QA-plan-{ID}.md"
 ```
 
-**Step 8 — `executing-qa`**: Same pattern as chore chain step 8. Read `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/SKILL.md`, follow its instructions in this conversation, passing the workflow ID as argument. Expected artifact: `qa/test-results/QA-results-{ID}.md`. On completion:
+**Step 7 — `executing-qa`**: Same pattern as chore chain step 7. Read `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/SKILL.md`, follow its instructions in this conversation, passing the workflow ID as argument. Expected artifact: `qa/test-results/QA-results-{ID}.md`. On completion:
 
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-results-{ID}.md"
@@ -77,7 +73,7 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-r
 
 ### Bug Chain Step-Specific Fork Instructions
 
-Steps 2, 4, 7, and 9 follow the same fork pattern as the chore chain. Every non-skipped fork runs the FEAT-014 pre-fork sequence before spawning the subagent and passes the resolved tier as the Agent tool's `model` parameter. Steps skipped by CHORE-031 conditions call only `advance` — no pre-fork sequence, no audit trail entry, and no `modelSelections` entry for that step index:
+Steps 2, 4, and 8 follow the same fork pattern as the chore chain. Every non-skipped fork runs the FEAT-014 pre-fork sequence before spawning the subagent and passes the resolved tier as the Agent tool's `model` parameter. Steps skipped by CHORE-031 conditions call only `advance` — no pre-fork sequence, no audit trail entry, and no `modelSelections` entry for that step index:
 
 **Step 2 — `reviewing-requirements` (standard review)**: **Skip condition (CHORE-031 T2)**: read the persisted complexity from the state file (`jq -r '.complexity' ".sdlc/workflows/{ID}.json"`). If `complexity == low`, skip this fork — advance state without spawning a subagent:
 ```bash
@@ -106,9 +102,7 @@ Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-1
 
 After step 5 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md).
 
-**Step 7 — `reviewing-requirements` (code-review reconciliation)**: Append `{ID} --pr {prNumber}` as argument. Pre-fork step-name `reviewing-requirements`, mode `code-review`.
-
-**Step 9 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag).
+**Step 8 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag).
 
 ### Pause Steps
 
@@ -157,7 +151,7 @@ After step 6 (test-plan reconciliation) completes:
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh phase-count {ID}
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh populate-phases {ID} {count}
    ```
-   This inserts N phase steps and 5 post-phase steps (Create PR, PR review, Reconcile post-review, Execute QA, Finalize) into the state file after the initial 6 steps.
+   This inserts N phase steps and 4 post-phase steps (Create PR, PR review, Execute QA, Finalize) into the state file after the initial 6 steps.
 
 2. For each phase 1 through N:
 
