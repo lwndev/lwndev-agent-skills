@@ -144,7 +144,7 @@ Phase 1 produces the artifact under test, which is a prerequisite for meaningful
 ### Phase 2: Test Coverage — `scripts/__tests__/finalizing-workflow.test.ts`
 
 **Feature:** [FEAT-019](../features/FEAT-019-finalizing-workflow-pre-merge-bookkeeping.md) | [#169](https://github.com/lwndev/lwndev-marketplace/issues/169)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 
@@ -249,8 +249,8 @@ Phase 2 depends on Phase 1 only for the SKILL.md structural assertions (which as
 
 #### Deliverables
 
-- [ ] `scripts/__tests__/finalizing-workflow.test.ts` — new file, all test cases passing
-- [ ] `npm test` passes (zero failures)
+- [x] `scripts/__tests__/finalizing-workflow.test.ts` — new file, all test cases passing
+- [x] `npm test` passes (zero failures)
 
 #### Verification Criteria
 
