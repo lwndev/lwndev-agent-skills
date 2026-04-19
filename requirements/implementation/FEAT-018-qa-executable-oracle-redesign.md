@@ -435,7 +435,7 @@ The `qa-verifier` subagent is NOT used in the rewritten `documenting-qa`. The ol
 
 ### Phase 5 — Rewrite `executing-qa/SKILL.md`
 **Feature:** [FEAT-018](../features/FEAT-018-qa-executable-oracle-redesign.md) | [#170](https://github.com/lwndev/lwndev-marketplace/issues/170)
-**Status:** Pending
+**Status:** ✅ Complete
 **Phase Dependencies:** Phases 1 (capability discovery), 2 (persona loader), 3 (stop hook and results schema).
 
 #### Rationale
@@ -489,8 +489,8 @@ The `executing-qa` rewrite is the most complex: it must implement the write-and-
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` — fully rewritten: capability discovery + persona load in step 1; test plan load in step 2; write-and-run loop (or exploratory fallback) in step 3; reconciliation delta in step 4; version-2 results artifact in step 5; doc-editing reconciliation loop removed
-- [ ] `scripts/__tests__/executing-qa.test.ts` — SKILL.md assertions updated (5 old assertions removed, 6 new assertions added); v2 template describe block added
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` — fully rewritten: capability discovery + persona load in step 1; test plan load in step 2; write-and-run loop (or exploratory fallback) in step 3; reconciliation delta in step 4; version-2 results artifact in step 5; doc-editing reconciliation loop removed
+- [x] `scripts/__tests__/executing-qa.test.ts` — SKILL.md assertions updated (5 old assertions removed, 6 new assertions added); v2 template describe block added
 
 ---
 

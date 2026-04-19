@@ -65,6 +65,50 @@ describe('executing-qa skill', () => {
     });
   });
 
+  describe('SKILL.md structural assertions (Phase 5)', () => {
+    it('should reference capability-discovery.sh', () => {
+      expect(skillMd).toContain('capability-discovery.sh');
+    });
+
+    it('should reference persona-loader.sh', () => {
+      expect(skillMd).toContain('persona-loader.sh');
+    });
+
+    it('should reference test-results-template-v2.md', () => {
+      expect(skillMd).toContain('test-results-template-v2.md');
+    });
+
+    it('should describe the four verdict values', () => {
+      expect(skillMd).toContain('PASS');
+      expect(skillMd).toContain('ISSUES-FOUND');
+      expect(skillMd).toContain('ERROR');
+      expect(skillMd).toContain('EXPLORATORY-ONLY');
+    });
+
+    it('should include a Reconciliation Delta step', () => {
+      expect(skillMd).toContain('## Reconciliation Delta');
+    });
+
+    it('should NOT reference the qa-verifier agent (Ralph loop removed)', () => {
+      expect(skillMd).not.toContain('qa-verifier');
+    });
+
+    it('should NOT include Agent in allowed-tools (subagent loop removed)', () => {
+      const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
+      expect(frontmatter).not.toContain('- Agent');
+    });
+
+    it('should handle clean branch vs main by emitting ERROR verdict with specific reason (edge case 5)', () => {
+      expect(skillMd).toMatch(
+        /git diff main\.\.\.HEAD[\s\S]*ERROR[\s\S]*no changes to test relative to main/
+      );
+    });
+
+    it('should handle missing requirements doc by skipping reconciliation delta with note (edge case 7)', () => {
+      expect(skillMd).toMatch(/Reconciliation delta skipped: no requirements doc/);
+    });
+  });
+
   describe('allowed-tools', () => {
     it('should have allowed-tools in frontmatter', () => {
       expect(skillMd).toMatch(/^---\s*\n[\s\S]*?allowed-tools:[\s\S]*?---/);
