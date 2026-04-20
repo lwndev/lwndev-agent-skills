@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.13.0] - 2026-04-20
+
+### Features
+
+- **FEAT-019:** `finalizing-workflow` gains a `## Pre-Merge Bookkeeping` section that performs four mechanical updates to the active requirement document before `gh pr merge` runs ([#169](https://github.com/lwndev/lwndev-marketplace/issues/169)). The skill derives the work-item ID from the current branch name (`feat/FEAT-*`, `chore/CHORE-*`, `fix/BUG-*`), locates the matching requirement doc via glob, and — unless the doc is already finalized (idempotency check) — flips `## Acceptance Criteria` checkboxes from `[ ]` to `[x]`, upserts a `## Completion` block with today's UTC date and the PR link, and reconciles `## Affected Files` against `gh pr view --json files` (additions appended; drops annotated `(planned but not modified)`). Bookkeeping produces a single `chore({ID}): finalize requirement document` commit and pushes it before merge; non-matching branch names and missing docs skip bookkeeping gracefully (benign skip), while push failure aborts the merge. `allowed-tools` frontmatter gains `Edit` and `Glob` to support the new work. BK-3 and BK-4 are defined to be line-ending-agnostic (handle both `\n` and `\r\n`) and fenced-code-block aware (illustrative `- [ ]` examples and `## Acceptance Criteria` headings inside fenced blocks are correctly ignored) — these robustness rules were validated by the adversarial QA run that shipped alongside the feature.
+- **FEAT-019:** New `scripts/__tests__/finalizing-workflow.test.ts` with 66 tests covering SKILL.md structural shape, unit-level correctness of the bookkeeping helpers (branch parsing, glob resolution, idempotency, AC checkoff, Completion upsert, Affected Files reconciliation, commit-message format), and end-to-end integration scenarios (happy path, idempotency re-run, `gh` partial failure, `gh` total failure, push-failure abort, non-matching-branch skip). Complements the adversarial spec `qa-finalizing-workflow-inputs.spec.ts` (14 P0 Inputs tests surfacing CRLF and fenced-code boundary cases).
+
+### Scope notes
+
+- `executing-qa/SKILL.md` is unchanged by this release. The pre-FEAT-018 write-back reconciliation loop it used to contain was already removed in v1.12.0; FEAT-019 does not reintroduce any `executing-qa` edits.
+- The bookkeeping behavior applies only to workflows whose branch names follow the canonical `feat/FEAT-*-`, `chore/CHORE-*-`, or `fix/BUG-*-` conventions. Release branches (`release/...`) are intentionally skipped so the plugin's own releases do not attempt to bookkeep themselves.
+
+[1.13.0]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.12.1...lwndev-sdlc@1.13.0
+
 ## [1.12.1] - 2026-04-20
 
 ### Documentation
