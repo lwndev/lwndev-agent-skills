@@ -29,16 +29,67 @@ function parseBranchName(branch: string): BranchParseResult | null {
   return null;
 }
 
+// Mirrors findSection / checkoffAC / upsertCompletion from
+// finalizing-workflow.test.ts after the SKILL.md BK-4 robustness rules were
+// added (CRLF + fenced-code awareness).
+
+interface SectionBounds {
+  headingStart: number;
+  bodyStart: number;
+  bodyEnd: number;
+}
+
+function findSection(content: string, heading: string): SectionBounds | null {
+  const lines = content.split(/\r?\n/);
+  let inFence = false;
+  let offset = 0;
+  let headingStart = -1;
+  let bodyStart = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineLen = line.length;
+    const sepLen = content.slice(offset + lineLen, offset + lineLen + 2) === '\r\n' ? 2 : 1;
+
+    if (/^```/.test(line)) {
+      inFence = !inFence;
+    } else if (!inFence) {
+      if (headingStart === -1 && line === `## ${heading}`) {
+        headingStart = offset;
+        bodyStart = offset + lineLen + sepLen;
+      } else if (headingStart !== -1 && /^## /.test(line)) {
+        return { headingStart, bodyStart, bodyEnd: offset };
+      }
+    }
+    offset += lineLen + sepLen;
+  }
+
+  if (headingStart !== -1) return { headingStart, bodyStart, bodyEnd: content.length };
+  return null;
+}
+
 function checkoffAC(content: string): string {
-  const acHeadingIdx = content.indexOf('## Acceptance Criteria\n');
-  if (acHeadingIdx === -1) return content;
-  const start = acHeadingIdx + '## Acceptance Criteria\n'.length;
-  const afterAC = content.slice(start);
-  const nextHeadingOffset = afterAC.search(/\n## /);
-  const end = nextHeadingOffset === -1 ? content.length : start + nextHeadingOffset;
-  const acBody = content.slice(start, end);
-  const checked = acBody.replace(/^- \[ \]/gm, '- [x]');
-  return content.slice(0, start) + checked + content.slice(end);
+  const bounds = findSection(content, 'Acceptance Criteria');
+  if (!bounds) return content;
+
+  const body = content.slice(bounds.bodyStart, bounds.bodyEnd);
+  const parts = body.split(/(\r?\n)/);
+  let inFence = false;
+  const out: string[] = [];
+  for (let i = 0; i < parts.length; i++) {
+    const chunk = parts[i];
+    if (i % 2 === 1) {
+      out.push(chunk);
+      continue;
+    }
+    if (/^```/.test(chunk)) inFence = !inFence;
+    if (!inFence && chunk.startsWith('- [ ]')) {
+      out.push('- [x]' + chunk.slice('- [ ]'.length));
+    } else {
+      out.push(chunk);
+    }
+  }
+  return content.slice(0, bounds.bodyStart) + out.join('') + content.slice(bounds.bodyEnd);
 }
 
 function upsertCompletion(
@@ -47,17 +98,15 @@ function upsertCompletion(
   prNumber: number,
   prUrl: string | null
 ): string {
-  const prLine = prUrl ? `\n**Pull Request:** [#${prNumber}](${prUrl})` : '';
-  const block = `## Completion\n\n**Status:** \`Complete\`\n\n**Completed:** ${date}${prLine}\n`;
-  const completionIdx = content.indexOf('## Completion\n');
-  if (completionIdx === -1) {
-    return content.trimEnd() + '\n\n' + block;
+  const eol = /\r\n/.test(content) ? '\r\n' : '\n';
+  const prLine = prUrl ? `${eol}**Pull Request:** [#${prNumber}](${prUrl})` : '';
+  const block = `## Completion${eol}${eol}**Status:** \`Complete\`${eol}${eol}**Completed:** ${date}${prLine}${eol}`;
+
+  const bounds = findSection(content, 'Completion');
+  if (!bounds) {
+    return content.replace(/\s+$/, '') + eol + eol + block;
   }
-  const afterHeading = content.slice(completionIdx + '## Completion\n'.length);
-  const nextHeading = afterHeading.search(/\n## /);
-  const bodyEnd =
-    nextHeading === -1 ? content.length : completionIdx + '## Completion\n'.length + nextHeading;
-  return content.slice(0, completionIdx) + block + content.slice(bodyEnd);
+  return content.slice(0, bounds.headingStart) + block + content.slice(bounds.bodyEnd);
 }
 
 // ---------------------------------------------------------------------------

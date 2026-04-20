@@ -81,9 +81,9 @@ Using the derived ID and directory from BK-1, locate the doc via Glob pattern `{
 
 ### BK-3 — Idempotency Check (FR-4)
 
-Before any edits, check all three conditions:
+Before any edits, check all three conditions. All detection uses the same line-ending- and fence-aware rules as BK-4 (see the robustness rules at the top of BK-4):
 
-1. The `## Acceptance Criteria` section is absent, or present with zero `- [ ]` lines.
+1. The `## Acceptance Criteria` section is absent, or present with zero `- [ ]` lines outside fenced code blocks.
 2. A `## Completion` section exists containing `**Status:** \`Complete\`` or `**Status:** \`Completed\``.
 3. A `**Pull Request:**` line within `## Completion` contains `[#N]` or `/pull/N` where N equals the current PR number (from Pre-Flight Check 3; no new `gh` call).
 
@@ -92,9 +92,14 @@ If any fails → proceed to BK-4.
 
 ### BK-4 — Four Mechanical Updates (FR-5)
 
+**Robustness rules that apply to every sub-step below:**
+
+- **Line-ending agnostic**: match section headings with `\r?\n` (not literal `\n`). A doc with CRLF endings (Windows editors, `core.autocrlf=true`) MUST be detected and edited correctly. If in doubt, normalize on read and restore the original ending on write.
+- **Fenced-code-block aware**: a fenced code block opens with a line starting with ` ``` ` and closes at the next such line. Section-heading detection MUST skip over fenced blocks — a `## Something` line inside a fence is documentation content, not a real heading. Checkbox and path scans inside section bodies MUST also skip over fenced content so that illustrative examples (`- [ ]` sample items, example Affected Files lists) are never modified.
+
 Execute the following sub-steps in order:
 
-**BK-4.1 (FR-5.1): Acceptance Criteria Checkoff** — Read the doc; for every `- [ ]` line within `## Acceptance Criteria` (up to the next `## ` heading or EOF), replace with `- [x]`. Preserve text verbatim. If the section is absent, skip silently.
+**BK-4.1 (FR-5.1): Acceptance Criteria Checkoff** — Read the doc; for every `- [ ]` line within `## Acceptance Criteria` (up to the next `## ` heading outside a fenced code block, or EOF), replace with `- [x]`. Preserve text verbatim. Do NOT flip `- [ ]` lines inside fenced code blocks — those are illustrative examples. If the section is absent, skip silently.
 
 **BK-4.2 (FR-5.2): Completion Section Upsert** — Construct the block below. If `## Completion` exists, replace its body in place (heading preserved, all sub-sections replaced). If absent, append (preceded by a blank line) at end of doc.
 

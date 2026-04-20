@@ -55,31 +55,77 @@ function findRequirementDoc(
 }
 
 // ---------------------------------------------------------------------------
+// Shared: line-ending- and fence-aware section-bounds finder
+// ---------------------------------------------------------------------------
+//
+// SKILL.md's BK-4 robustness rules require both CRLF handling and
+// fenced-code-block awareness. This helper scans line-by-line, tracks fence
+// state (```), and returns the character offsets of a `## <heading>` section
+// while ignoring false matches inside code fences and respecting `\r?\n` line
+// endings. The returned offsets are slice-safe indices into `content`.
+
+interface SectionBounds {
+  headingStart: number; // offset of `## ` in the heading line
+  bodyStart: number; // offset of first char after the heading line's newline
+  bodyEnd: number; // offset of the next `## ` heading line (or content.length)
+}
+
+function findSection(content: string, heading: string): SectionBounds | null {
+  const lines = content.split(/\r?\n/);
+  let inFence = false;
+  let offset = 0;
+  let headingStart = -1;
+  let bodyStart = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineLen = line.length;
+    const sepLen = content.slice(offset + lineLen, offset + lineLen + 2) === '\r\n' ? 2 : 1;
+
+    if (/^```/.test(line)) {
+      inFence = !inFence;
+    } else if (!inFence) {
+      if (headingStart === -1 && line === `## ${heading}`) {
+        headingStart = offset;
+        bodyStart = offset + lineLen + sepLen;
+      } else if (headingStart !== -1 && /^## /.test(line)) {
+        return { headingStart, bodyStart, bodyEnd: offset };
+      }
+    }
+    offset += lineLen + sepLen;
+  }
+
+  if (headingStart !== -1) return { headingStart, bodyStart, bodyEnd: content.length };
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Helper: idempotency check (FR-4)
 // ---------------------------------------------------------------------------
 
 function isAlreadyFinalized(content: string, prNumber: number): boolean {
-  // Condition 1: AC section absent OR has zero unchecked items
-  const acHeadingIdx = content.indexOf('## Acceptance Criteria');
-  if (acHeadingIdx !== -1) {
-    const afterAC = content.slice(acHeadingIdx + '## Acceptance Criteria'.length);
-    const nextHeading = afterAC.search(/\n## /);
-    const acBody = nextHeading === -1 ? afterAC : afterAC.slice(0, nextHeading);
-    const unchecked = (acBody.match(/^- \[ \]/gm) ?? []).length;
-    if (unchecked > 0) return false;
+  // Condition 1: AC section absent OR has zero unchecked items outside fences
+  const acBounds = findSection(content, 'Acceptance Criteria');
+  if (acBounds) {
+    const acBody = content.slice(acBounds.bodyStart, acBounds.bodyEnd);
+    let inFence = false;
+    for (const line of acBody.split(/\r?\n/)) {
+      if (/^```/.test(line)) {
+        inFence = !inFence;
+        continue;
+      }
+      if (!inFence && /^- \[ \]/.test(line)) return false;
+    }
   }
 
-  // Condition 2: Completion section with Complete/Completed status
-  const completionIdx = content.indexOf('## Completion\n');
-  if (completionIdx === -1) return false;
-  const afterCompletion = content.slice(completionIdx + '## Completion\n'.length);
-  const nextHeading2 = afterCompletion.search(/\n## /);
-  const completionBody =
-    nextHeading2 === -1 ? afterCompletion : afterCompletion.slice(0, nextHeading2);
+  // Condition 2: Completion section exists with Complete/Completed status
+  const completionBounds = findSection(content, 'Completion');
+  if (!completionBounds) return false;
+  const completionBody = content.slice(completionBounds.bodyStart, completionBounds.bodyEnd);
   if (!/\*\*Status:\*\* `Complet(e|ed)`/.test(completionBody)) return false;
 
   // Condition 3: PR link with matching number
-  const prLinkPattern = new RegExp(`\\[#${prNumber}\\]|/pull/${prNumber}[^0-9]`);
+  const prLinkPattern = new RegExp(`\\[#${prNumber}\\]|/pull/${prNumber}(?!\\d)`);
   if (!prLinkPattern.test(completionBody)) return false;
 
   return true;
@@ -90,17 +136,28 @@ function isAlreadyFinalized(content: string, prNumber: number): boolean {
 // ---------------------------------------------------------------------------
 
 function checkoffAC(content: string): string {
-  const acHeadingIdx = content.indexOf('## Acceptance Criteria\n');
-  if (acHeadingIdx === -1) return content;
+  const bounds = findSection(content, 'Acceptance Criteria');
+  if (!bounds) return content;
 
-  const start = acHeadingIdx + '## Acceptance Criteria\n'.length;
-  const afterAC = content.slice(start);
-  const nextHeadingOffset = afterAC.search(/\n## /);
-  const end = nextHeadingOffset === -1 ? content.length : start + nextHeadingOffset;
-
-  const acBody = content.slice(start, end);
-  const checked = acBody.replace(/^- \[ \]/gm, '- [x]');
-  return content.slice(0, start) + checked + content.slice(end);
+  const body = content.slice(bounds.bodyStart, bounds.bodyEnd);
+  const lines = body.split(/(\r?\n)/); // keep separators
+  let inFence = false;
+  const out: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const chunk = lines[i];
+    if (i % 2 === 1) {
+      // separator
+      out.push(chunk);
+      continue;
+    }
+    if (/^```/.test(chunk)) inFence = !inFence;
+    if (!inFence && chunk.startsWith('- [ ]')) {
+      out.push('- [x]' + chunk.slice('- [ ]'.length));
+    } else {
+      out.push(chunk);
+    }
+  }
+  return content.slice(0, bounds.bodyStart) + out.join('') + content.slice(bounds.bodyEnd);
 }
 
 // ---------------------------------------------------------------------------
@@ -113,22 +170,15 @@ function upsertCompletion(
   prNumber: number,
   prUrl: string | null
 ): string {
-  const prLine = prUrl ? `\n**Pull Request:** [#${prNumber}](${prUrl})` : '';
-  const block = `## Completion\n\n**Status:** \`Complete\`\n\n**Completed:** ${date}${prLine}\n`;
+  const eol = /\r\n/.test(content) ? '\r\n' : '\n';
+  const prLine = prUrl ? `${eol}**Pull Request:** [#${prNumber}](${prUrl})` : '';
+  const block = `## Completion${eol}${eol}**Status:** \`Complete\`${eol}${eol}**Completed:** ${date}${prLine}${eol}`;
 
-  const completionIdx = content.indexOf('## Completion\n');
-  if (completionIdx === -1) {
-    // Append at end
-    return content.trimEnd() + '\n\n' + block;
+  const bounds = findSection(content, 'Completion');
+  if (!bounds) {
+    return content.replace(/\s+$/, '') + eol + eol + block;
   }
-
-  // Replace existing body (preserve heading)
-  const afterHeading = content.slice(completionIdx + '## Completion\n'.length);
-  const nextHeading = afterHeading.search(/\n## /);
-  const bodyEnd =
-    nextHeading === -1 ? content.length : completionIdx + '## Completion\n'.length + nextHeading;
-
-  return content.slice(0, completionIdx) + block + content.slice(bodyEnd);
+  return content.slice(0, bounds.headingStart) + block + content.slice(bounds.bodyEnd);
 }
 
 // ---------------------------------------------------------------------------
@@ -136,47 +186,56 @@ function upsertCompletion(
 // ---------------------------------------------------------------------------
 
 function reconcileAffectedFiles(content: string, prFiles: string[]): string {
-  const afHeadingIdx = content.indexOf('## Affected Files\n');
-  if (afHeadingIdx === -1) return content;
+  const bounds = findSection(content, 'Affected Files');
+  if (!bounds) return content;
 
-  const start = afHeadingIdx + '## Affected Files\n'.length;
-  const afterAF = content.slice(start);
-  const nextHeadingOffset = afterAF.search(/\n## /);
-  const end = nextHeadingOffset === -1 ? content.length : start + nextHeadingOffset;
+  const sectionBody = content.slice(bounds.bodyStart, bounds.bodyEnd);
+  const parts = sectionBody.split(/(\r?\n)/);
+  const pathRegex = /^- `?([^`\s(—]+)`?/;
 
-  const sectionBody = content.slice(start, end);
-
-  // Parse existing paths from bullet lines
+  // Collect existing paths (skip content inside fences)
   const docPaths: string[] = [];
-  const lines = sectionBody.split('\n');
-  for (const line of lines) {
-    const m = line.match(/^- `?([^`\s(—]+)`?/);
+  let inFence = false;
+  for (let i = 0; i < parts.length; i += 2) {
+    const line = parts[i];
+    if (/^```/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const m = line.match(pathRegex);
     if (m) docPaths.push(m[1]);
   }
 
-  // Build updated lines
-  const updatedLines = lines.map((line) => {
-    const m = line.match(/^- `?([^`\s(—]+)`?/);
-    if (!m) return line;
+  // Rewrite lines with annotations for drops
+  inFence = false;
+  for (let i = 0; i < parts.length; i += 2) {
+    const line = parts[i];
+    if (/^```/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const m = line.match(pathRegex);
+    if (!m) continue;
     const filePath = m[1];
     if (!prFiles.includes(filePath)) {
-      // File in doc but not in PR
-      if (line.endsWith('(planned but not modified)')) return line;
-      return line.trimEnd() + ' (planned but not modified)';
+      if (line.endsWith('(planned but not modified)')) continue;
+      parts[i] = line.replace(/\s+$/, '') + ' (planned but not modified)';
     }
-    return line;
-  });
-
-  // Append files in PR but not in doc
-  const prSet = new Set(prFiles);
-  const docSet = new Set(docPaths);
-  const toAppend = [...prSet].filter((f) => !docSet.has(f)).sort();
-  for (const f of toAppend) {
-    updatedLines.push(`- \`${f}\``);
   }
 
-  const newBody = updatedLines.join('\n');
-  return content.slice(0, start) + newBody + content.slice(end);
+  // Append files in PR but not in doc
+  const eol = /\r\n/.test(content) ? '\r\n' : '\n';
+  const docSet = new Set(docPaths);
+  const toAppend = [...new Set(prFiles)].filter((f) => !docSet.has(f)).sort();
+  let appended = '';
+  for (const f of toAppend) {
+    appended += `${eol}- \`${f}\``;
+  }
+
+  const rebuiltBody = parts.join('') + appended;
+  return content.slice(0, bounds.bodyStart) + rebuiltBody + content.slice(bounds.bodyEnd);
 }
 
 // ---------------------------------------------------------------------------
