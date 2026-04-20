@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.12.1] - 2026-04-20
+
+### Documentation
+
+- Plugin README, root README, and CLAUDE.md refreshed to reflect the v1.12.0 state: the two new skills (`managing-work-items`, `orchestrating-workflows`) and second agent (`qa-reconciliation-agent`) shipped via FEAT-018 are now listed; the shared library inventory, release/test-skill scripts, and full npm command set are documented; and the workflow chain diagrams now show the reconciliation steps in their correct positions.
+
+[1.12.1]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.12.0...lwndev-sdlc@1.12.1
+
 ## [1.12.0] - 2026-04-19
 
 ### Features
