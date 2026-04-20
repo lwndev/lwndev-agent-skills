@@ -46,12 +46,17 @@ Or add to your project's `.claude/settings.json`:
 
 ```bash
 npm run scaffold         # Create a new skill interactively
-npm run validate            # Validate all plugins
+npm run validate         # Validate all plugins
 npm test                 # Run all tests
+npm run test:watch       # Run tests in watch mode
+npm run test:coverage    # Run tests with coverage reporting
+npm run test-skill       # Drive a single skill end-to-end against a fixture
 npm run lint             # Check for linting issues
 npm run lint:fix         # Auto-fix linting issues
 npm run format           # Format code with Prettier
 npm run format:check     # Check formatting
+npm run release          # Run the plugin release workflow
+npm run release:tag      # Tag-only operations for an already-prepared release
 ```
 
 ### Project Structure
@@ -61,6 +66,7 @@ npm run format:check     # Check formatting
 │   └── lwndev-sdlc/                  # SDLC workflow plugin
 │       ├── .claude-plugin/
 │       │   └── plugin.json           # Plugin manifest
+│       ├── agents/                    # Subagent definitions (qa-verifier, qa-reconciliation-agent)
 │       ├── skills/                    # Skill directories
 │       │   └── {skill-name}/
 │       │       ├── SKILL.md           # Required: YAML frontmatter + instructions
@@ -100,7 +106,8 @@ Instructions for Claude on how to use this skill...
 
 ## Dependencies
 
-- **ai-skills-manager** - Programmatic API for skill validation (v1.8.0+)
+- **ai-skills-manager** - Programmatic API for skill validation (v1.8.1+)
 - **@inquirer/prompts** - Interactive CLI prompts
 - **chalk** - Colored console output
 - **gray-matter** - YAML frontmatter parsing
+- **semver** - Semantic version comparison (used by the release scripts)
