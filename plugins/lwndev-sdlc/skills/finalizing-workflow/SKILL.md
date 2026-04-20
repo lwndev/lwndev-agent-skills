@@ -4,6 +4,8 @@ description: Merges the current PR, checks out main, fetches, and pulls — redu
 allowed-tools:
   - Bash
   - Read
+  - Edit
+  - Glob
 ---
 
 # Finalizing Workflow
@@ -52,13 +54,93 @@ gh pr view --json number,title,state,mergeable
 
 If no PR exists for the current branch, stop and inform the user. If the PR is not in an `OPEN` state, stop and report the current state. If the PR is not mergeable (e.g., merge conflicts, failing checks), stop and report the reason.
 
-## Execution
+## Pre-Merge Bookkeeping
 
 After all pre-flight checks pass, confirm intent with the user before proceeding:
 
-> Ready to merge PR #N ("PR title") and switch to main. Proceed?
+> Ready to merge PR #N ("PR title") and finalize the requirement document. Proceed?
 
-Wait for user confirmation. Once confirmed, execute the following sequence:
+Wait for user confirmation. If the user declines, abort before running any bookkeeping. Bookkeeping runs once after confirmation; `## Execution` proceeds without a second prompt.
+
+### BK-1 — Derive Work Item ID From Branch Name (FR-2)
+
+Parse the branch name captured in Pre-Flight Check 2 using the following patterns (no new shell call required):
+
+- `^feat/(FEAT-[0-9]+)-` → derived ID `FEAT-NNN`, directory `requirements/features/`
+- `^chore/(CHORE-[0-9]+)-` → derived ID `CHORE-NNN`, directory `requirements/chores/`
+- `^fix/(BUG-[0-9]+)-` → derived ID `BUG-NNN`, directory `requirements/bugs/`
+- Any other pattern → skip all bookkeeping with info-level message (see Error Handling row 1); continue to `## Execution`.
+
+### BK-2 — Locate the Requirement Document (FR-3)
+
+Using the derived ID and directory from BK-1, locate the doc via Glob pattern `{directory}/{ID}-*.md`:
+
+- Zero matches → skip all bookkeeping with warning (Error Handling row 2); continue to `## Execution`.
+- Two or more matches → skip all bookkeeping with error-level warning ("workspace inconsistency — investigate"); continue to `## Execution`.
+- Exactly one match → store the resolved path for BK-3 and BK-4.
+
+### BK-3 — Idempotency Check (FR-4)
+
+Before any edits, check all three conditions. All detection uses the same line-ending- and fence-aware rules as BK-4 (see the robustness rules at the top of BK-4):
+
+1. The `## Acceptance Criteria` section is absent, or present with zero `- [ ]` lines outside fenced code blocks.
+2. A `## Completion` section exists containing `**Status:** \`Complete\`` or `**Status:** \`Completed\``.
+3. A `**Pull Request:**` line within `## Completion` contains `[#N]` or `/pull/N` where N equals the current PR number (from Pre-Flight Check 3; no new `gh` call).
+
+If all three hold → skip bookkeeping silently; proceed to `## Execution` (Error Handling row 3).
+If any fails → proceed to BK-4.
+
+### BK-4 — Four Mechanical Updates (FR-5)
+
+**Robustness rules that apply to every sub-step below:**
+
+- **Line-ending agnostic**: match section headings with `\r?\n` (not literal `\n`). A doc with CRLF endings (Windows editors, `core.autocrlf=true`) MUST be detected and edited correctly. If in doubt, normalize on read and restore the original ending on write.
+- **Fenced-code-block aware**: a fenced code block opens with a line starting with ` ``` ` and closes at the next such line. Section-heading detection MUST skip over fenced blocks — a `## Something` line inside a fence is documentation content, not a real heading. Checkbox and path scans inside section bodies MUST also skip over fenced content so that illustrative examples (`- [ ]` sample items, example Affected Files lists) are never modified.
+
+Execute the following sub-steps in order:
+
+**BK-4.1 (FR-5.1): Acceptance Criteria Checkoff** — Read the doc; for every `- [ ]` line within `## Acceptance Criteria` (up to the next `## ` heading outside a fenced code block, or EOF), replace with `- [x]`. Preserve text verbatim. Do NOT flip `- [ ]` lines inside fenced code blocks — those are illustrative examples. If the section is absent, skip silently.
+
+**BK-4.2 (FR-5.2): Completion Section Upsert** — Construct the block below. If `## Completion` exists, replace its body in place (heading preserved, all sub-sections replaced). If absent, append (preceded by a blank line) at end of doc.
+
+```
+## Completion
+
+**Status:** `Complete`
+
+**Completed:** YYYY-MM-DD
+
+**Pull Request:** [#N](https://github.com/{owner}/{repo}/pull/N)
+```
+
+Date: `date -u +%Y-%m-%d`. PR number and URL: `gh pr view --json number,url --jq '{number: .number, url: .url}'`. On `gh` failure: omit the `**Pull Request:**` line; write Status + date only; log a warning.
+
+**BK-4.3 (FR-5.3): Affected Files Reconciliation** — Fetch PR files: `gh pr view {N} --json files --jq '.files[].path' | sort`. If `## Affected Files` section is absent → skip silently. If present: files in PR but not in doc → append as `` - `path` `` bullets; files in doc not in PR → annotate `(planned but not modified)` (idempotent — skip if already present); files in both → leave unchanged. On `gh` failure → skip sub-step; log warning.
+
+**BK-4.4 (FR-5.4):** Satisfied by BK-4.2 (the `**Pull Request:**` line). No additional edit required.
+
+### BK-5 — Bookkeeping Commit and Push (FR-6)
+
+Run `git status --porcelain`. If no changes → skip commit and push; proceed to `## Execution`.
+
+If changes exist → stage only the requirement doc (`git add {resolved-path}`), commit with:
+
+```
+chore({ID}): finalize requirement document
+
+- Tick completed acceptance criteria
+- Set completion status with PR link
+- Reconcile affected files against PR diff
+```
+
+Then `git push`. This is a new commit only (no amend, no force-push). Git author identity uses whatever `git config user.name`/`user.email` are set; if identity not configured, stop and report — do not auto-configure.
+
+If `git add` fails, stop and report — treat as a non-recoverable error.
+If push fails → stop and report; do not proceed to `## Execution` (Error Handling row 4).
+
+## Execution
+
+Once bookkeeping is complete (or skipped), execute the following sequence without a second confirmation prompt:
 
 ### Step 1: Merge the PR
 
@@ -102,6 +184,10 @@ After all steps succeed, report:
 | Merge fails | Stop. Report error. Do not retry. |
 | Checkout fails | Stop. Report error. |
 | Fetch/pull fails | Report error but note the merge already succeeded. |
+| Branch name does not match workflow ID pattern (`feat/`, `chore/`, `fix/`) | Skip bookkeeping. Emit info-level message: `[info] Branch {name} does not match workflow ID pattern; skipping bookkeeping.` Continue to merge. |
+| Requirement doc not found for derived ID | Skip bookkeeping. Emit warning-level message: `[warn] No requirement doc found for {ID} under {directory}; skipping bookkeeping.` Continue to merge. |
+| Requirement doc already finalized (FR-4 idempotency check passes) | Skip bookkeeping silently. Continue to merge. No message required. |
+| Bookkeeping commit or push fails | Stop. Report the error. Do not merge. |
 
 ## Relationship to Other Skills
 
@@ -124,4 +210,4 @@ Bugs:     ... → executing-bug-fixes → PR review → reviewing-requirements �
 | Execute chore or bug fix | Use `executing-chores` or `executing-bug-fixes` |
 | Reconcile after PR review | Use `reviewing-requirements` — code-review reconciliation mode (optional but recommended) |
 | Execute QA verification | Use `executing-qa` |
-| **Merge PR and reset to main** | **Use this skill (`finalizing-workflow`)** |
+| **Merge PR and reset to main (and finalize requirement doc)** | **Use this skill (`finalizing-workflow`)** |
