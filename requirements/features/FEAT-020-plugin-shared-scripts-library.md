@@ -354,41 +354,41 @@ The existing vitest suite at `scripts/__tests__/` validates plugin structure and
 
 ### Script infrastructure
 
-- [ ] AC-1: `plugins/lwndev-sdlc/scripts/` directory exists at the plugin root with a README describing the invocation convention, the list of scripts, and the bats-fixture layout.
-- [ ] AC-2: Each of the ten scripts (`next-id.sh`, `slugify.sh`, `resolve-requirement-doc.sh`, `build-branch-name.sh`, `ensure-branch.sh`, `check-acceptance.sh`, `checkbox-flip-all.sh`, `commit-work.sh`, `create-pr.sh`, `branch-id-parse.sh`) exists, is executable (`chmod +x`), and implements its FR exactly.
-- [ ] AC-3: Every script passes `shellcheck -S warning` with no warnings.
-- [ ] AC-4: `plugins/lwndev-sdlc/scripts/assets/pr-body.tmpl` exists and `create-pr.sh` substitutes variables into it correctly.
-- [ ] AC-5: `plugins/lwndev-sdlc/scripts/tests/` contains a bats file per script, each with at minimum happy-path + one error path + the fence-awareness / idempotency cases called out in NFR-2.
-- [ ] AC-6: `bats plugins/lwndev-sdlc/scripts/tests/*.bats` exits 0 on a clean check-out.
-- [ ] AC-7: The existing vitest suite at `scripts/__tests__/` includes a new integration test covering NFR-2 bullet three (script existence + executable bit + help-flag sanity).
+- [x] AC-1: `plugins/lwndev-sdlc/scripts/` directory exists at the plugin root with a README describing the invocation convention, the list of scripts, and the bats-fixture layout.
+- [x] AC-2: Each of the ten scripts (`next-id.sh`, `slugify.sh`, `resolve-requirement-doc.sh`, `build-branch-name.sh`, `ensure-branch.sh`, `check-acceptance.sh`, `checkbox-flip-all.sh`, `commit-work.sh`, `create-pr.sh`, `branch-id-parse.sh`) exists, is executable (`chmod +x`), and implements its FR exactly.
+- [x] AC-3: Every script passes `shellcheck -S warning` with no warnings.
+- [x] AC-4: `plugins/lwndev-sdlc/scripts/assets/pr-body.tmpl` exists and `create-pr.sh` substitutes variables into it correctly.
+- [x] AC-5: `plugins/lwndev-sdlc/scripts/tests/` contains a bats file per script, each with at minimum happy-path + one error path + the fence-awareness / idempotency cases called out in NFR-2.
+- [x] AC-6: `bats plugins/lwndev-sdlc/scripts/tests/*.bats` exits 0 on a clean check-out.
+- [x] AC-7: The existing vitest suite at `scripts/__tests__/` includes a new integration test covering NFR-2 bullet three (script existence + executable bit + help-flag sanity).
 
 ### Contract compliance
 
-- [ ] AC-8: `next-id.sh FEAT` returns `020` against the `requirements/features/` directory as it exists before this PR merges (i.e., with `FEAT-001` through `FEAT-019` present). Post-merge, once this document exists on disk as `FEAT-020`, the same invocation correctly returns `021`.
-- [ ] AC-9: `slugify.sh "The Quick Brown Fox Jumps"` returns `quick-brown-fox-jumps` (stopwords + token-count enforced).
-- [ ] AC-10: `resolve-requirement-doc.sh FEAT-020` returns `requirements/features/FEAT-020-plugin-shared-scripts-library.md` (this doc, post-merge).
+- [x] AC-8: `next-id.sh FEAT` returns `020` against the `requirements/features/` directory as it exists before this PR merges (i.e., with `FEAT-001` through `FEAT-019` present). Post-merge, once this document exists on disk as `FEAT-020`, the same invocation correctly returns `021`.
+- [x] AC-9: `slugify.sh "The Quick Brown Fox Jumps"` returns `quick-brown-fox-jumps` (stopwords + token-count enforced).
+- [x] AC-10: `resolve-requirement-doc.sh FEAT-020` returns `requirements/features/FEAT-020-plugin-shared-scripts-library.md` (this doc, post-merge).
 
 ### Adopter prose replacements (NFR-6 — same PR)
 
 Each of the following must have the legacy prose removed and replaced with a `bash "${CLAUDE_PLUGIN_ROOT}/scripts/<name>.sh" …` invocation, in the **same PR** that introduces the script. Specific SKILL.md edits are scoped to the smallest paragraph that currently describes the operation:
 
-- [ ] AC-11: `documenting-features/SKILL.md`, `documenting-chores/SKILL.md`, `documenting-bugs/SKILL.md` — ID-allocation prose in each skill's Quick Start or Template section replaced by `next-id.sh <PREFIX>` invocation.
-- [ ] AC-12: `documenting-features/SKILL.md`, `documenting-chores/SKILL.md`, `documenting-bugs/SKILL.md`, `implementing-plan-phases/SKILL.md`, `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md` — slug-derivation prose in each skill's filename/branch section replaced by `slugify.sh "<title>"` invocation.
-- [ ] AC-13: `reviewing-requirements/SKILL.md` (all three modes), `creating-implementation-plans/SKILL.md`, `implementing-plan-phases/SKILL.md`, `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md`, `executing-qa/SKILL.md`, `finalizing-workflow/SKILL.md` — ID→file resolution prose replaced by `resolve-requirement-doc.sh <ID>`.
-- [ ] AC-14: `implementing-plan-phases/SKILL.md`, `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md` — branch-name construction prose replaced by `build-branch-name.sh <type> <ID> <summary>`.
-- [ ] AC-15: `implementing-plan-phases/SKILL.md`, `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md` — branch-create-or-switch prose replaced by `ensure-branch.sh <branch-name>`.
-- [ ] AC-16: `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md`, `implementing-plan-phases/SKILL.md`, `finalizing-workflow/SKILL.md` — single-criterion checkbox-flip prose replaced by `check-acceptance.sh <doc> <matcher>`.
-- [ ] AC-17: `finalizing-workflow/SKILL.md` (FR-4.1, the "flip all ACs" step from FEAT-019) — section-wide checkbox-flip prose replaced by `checkbox-flip-all.sh <doc> <section-heading>`.
-- [ ] AC-18: `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md` — commit-message-format prose replaced by `commit-work.sh <type> <category> <description>`.
-- [ ] AC-19: `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md`, `implementing-plan-phases/SKILL.md` — PR-creation prose replaced by `create-pr.sh <type> <ID> <summary> [--closes <issueRef>]`.
-- [ ] AC-20: `finalizing-workflow/SKILL.md` (FR-2 branch classifier from FEAT-019), `orchestrating-workflows/SKILL.md` (resume detection) — branch-name classifier prose replaced by `branch-id-parse.sh <branch-name>`.
+- [x] AC-11: `documenting-features/SKILL.md`, `documenting-chores/SKILL.md`, `documenting-bugs/SKILL.md` — ID-allocation prose in each skill's Quick Start or Template section replaced by `next-id.sh <PREFIX>` invocation.
+- [x] AC-12: `documenting-features/SKILL.md`, `documenting-chores/SKILL.md`, `documenting-bugs/SKILL.md`, `implementing-plan-phases/SKILL.md`, `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md` — slug-derivation prose in each skill's filename/branch section replaced by `slugify.sh "<title>"` invocation.
+- [x] AC-13: `reviewing-requirements/SKILL.md` (all three modes), `creating-implementation-plans/SKILL.md`, `implementing-plan-phases/SKILL.md`, `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md`, `executing-qa/SKILL.md`, `finalizing-workflow/SKILL.md` — ID→file resolution prose replaced by `resolve-requirement-doc.sh <ID>`.
+- [x] AC-14: `implementing-plan-phases/SKILL.md`, `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md` — branch-name construction prose replaced by `build-branch-name.sh <type> <ID> <summary>`.
+- [x] AC-15: `implementing-plan-phases/SKILL.md`, `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md` — branch-create-or-switch prose replaced by `ensure-branch.sh <branch-name>`.
+- [x] AC-16: `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md`, `implementing-plan-phases/SKILL.md`, `finalizing-workflow/SKILL.md` — single-criterion checkbox-flip prose replaced by `check-acceptance.sh <doc> <matcher>`.
+- [x] AC-17: `finalizing-workflow/SKILL.md` (FR-4.1, the "flip all ACs" step from FEAT-019) — section-wide checkbox-flip prose replaced by `checkbox-flip-all.sh <doc> <section-heading>`.
+- [x] AC-18: `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md` — commit-message-format prose replaced by `commit-work.sh <type> <category> <description>`.
+- [x] AC-19: `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md`, `implementing-plan-phases/SKILL.md` — PR-creation prose replaced by `create-pr.sh <type> <ID> <summary> [--closes <issueRef>]`.
+- [x] AC-20: `finalizing-workflow/SKILL.md` (FR-2 branch classifier from FEAT-019), `orchestrating-workflows/SKILL.md` (resume detection) — branch-name classifier prose replaced by `branch-id-parse.sh <branch-name>`.
 
 ### Release & distribution
 
-- [ ] AC-21: `plugins/lwndev-sdlc/.claude-plugin/plugin.json` does not need to change (no new skills, agents, or hooks). Verify no edit is required.
-- [ ] AC-22: `npm run validate` passes on the updated plugin tree.
-- [ ] AC-23: The PR bumps `lwndev-sdlc` to the next minor version (1.14.0) since adopters' behavior changes publicly observably (prose is the public interface of a skill).
-- [ ] AC-24: The CHANGELOG under `plugins/lwndev-sdlc/CHANGELOG.md` records the new `scripts/` directory and lists all ten scripts.
+- [x] AC-21: `plugins/lwndev-sdlc/.claude-plugin/plugin.json` does not need to change (no new skills, agents, or hooks). Verify no edit is required.
+- [x] AC-22: `npm run validate` passes on the updated plugin tree.
+- [x] AC-23: The PR bumps `lwndev-sdlc` to the next minor version (1.14.0) since adopters' behavior changes publicly observably (prose is the public interface of a skill).
+- [x] AC-24: The CHANGELOG under `plugins/lwndev-sdlc/CHANGELOG.md` records the new `scripts/` directory and lists all ten scripts.
 
 ## Future Enhancements
 
@@ -430,4 +430,8 @@ Out of scope for this feature — tracked in the wider #179 backlog:
 
 ## Completion
 
-**Status:** Pending
+**Status:** `Complete`
+
+**Completed:** 2026-04-21
+
+**Pull Request:** [#193](https://github.com/lwndev/lwndev-marketplace/pull/193)
