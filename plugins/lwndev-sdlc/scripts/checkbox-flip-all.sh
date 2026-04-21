@@ -12,8 +12,9 @@
 #     `- [x] `.
 #   - Writes the file back in place. Prints `checked N lines` where N is the
 #     number of lines flipped (may be 0 — idempotent on re-run).
-#   - CRLF is stripped on read; the rewrite preserves whatever line endings
-#     awk emits (LF). Mixed CRLF input normalizes to LF on write.
+#   - CRLF is detected on read; if the file used CRLF endings, the rewrite
+#     preserves CRLF on every line (FEAT-019 contract: "normalize on read and
+#     restore the original ending on write").
 #
 # Exit codes:
 #   0 success (`checked N lines` printed, file possibly mutated)
@@ -35,15 +36,24 @@ if [ ! -f "$doc" ]; then
   exit 1
 fi
 
+# Detect line-ending style so we can restore CRLF on write when the input
+# used it (FEAT-019 rule).
+if grep -q $'\r$' "$doc"; then
+  eol=$'\r'
+else
+  eol=""
+fi
+
 # Look for the section and flip in a single awk pass.
 # The awk program exits with status 9 if the section was not seen (so we can
 # distinguish from "section found but no boxes to flip").
 tmp="$(mktemp)"
 set +e
-awk -v heading="$heading" '
+awk -v heading="$heading" -v eol="$eol" '
   BEGIN { in_fence = 0; in_section = 0; saw_section = 0; flipped = 0 }
+  function emit(s) { printf "%s%s\n", s, eol }
   {
-    # Normalize CR to LF so fence detection works on CRLF input.
+    # Strip trailing CR for matching purposes; we re-append "eol" on output.
     sub(/\r$/, "")
     line = $0
 
@@ -53,14 +63,14 @@ awk -v heading="$heading" '
     if (!in_fence && line == "## " heading) {
       in_section = 1
       saw_section = 1
-      print line
+      emit(line)
       next
     }
 
     if (in_section && !in_fence && substr(line, 1, 3) == "## ") {
       # Next H2 heading closes the section.
       in_section = 0
-      print line
+      emit(line)
       next
     }
 
@@ -78,12 +88,12 @@ awk -v heading="$heading" '
         sub(/-[ ]\[[ ]\][ ]/, "- [x] ", new)
         if (new != line) {
           flipped++
-          print new
+          emit(new)
           next
         }
       }
     }
-    print line
+    emit(line)
   }
   END {
     if (!saw_section) exit 9
