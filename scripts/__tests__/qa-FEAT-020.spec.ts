@@ -1,10 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   mkdtempSync,
   mkdirSync,
   writeFileSync,
   readFileSync,
-  readdirSync,
   rmSync,
   chmodSync,
   existsSync,
@@ -46,7 +45,11 @@ const SH = {
   branchParse: join(SCRIPTS, 'branch-id-parse.sh'),
 };
 
-function runBash(script: string, args: string[] = [], opts: { cwd?: string; env?: NodeJS.ProcessEnv; input?: string } = {}) {
+function runBash(
+  script: string,
+  args: string[] = [],
+  opts: { cwd?: string; env?: NodeJS.ProcessEnv; input?: string } = {}
+) {
   return spawnSync('bash', [script, ...args], {
     cwd: opts.cwd ?? REPO_ROOT,
     env: opts.env ?? process.env,
@@ -90,13 +93,16 @@ describe('[QA FEAT-020] Inputs: check-acceptance.sh literal-substring matching',
     const tmp = makeTmp();
     const doc = join(tmp, 'ac.md');
     try {
-      writeFileSync(doc, [
-        '## Acceptance Criteria',
-        '',
-        '- [ ] AC-142 some criterion',
-        '- [ ] AC-1.2 some other criterion',
-        '',
-      ].join('\n'));
+      writeFileSync(
+        doc,
+        [
+          '## Acceptance Criteria',
+          '',
+          '- [ ] AC-142 some criterion',
+          '- [ ] AC-1.2 some other criterion',
+          '',
+        ].join('\n')
+      );
       const res = runBash(SH.checkAc, [doc, 'AC-1.2']);
       expect(res.status).toBe(0);
       const after = readFileSync(doc, 'utf8');
@@ -128,16 +134,19 @@ describe('[QA FEAT-020] Inputs: fence-awareness with language-tagged and tilde f
     const tmp = makeTmp();
     const doc = join(tmp, 'ac.md');
     try {
-      writeFileSync(doc, [
-        '## Acceptance Criteria',
-        '',
-        '```markdown',
-        '- [ ] CRIT-inside example',
-        '```',
-        '',
-        '- [ ] CRIT-outside real',
-        '',
-      ].join('\n'));
+      writeFileSync(
+        doc,
+        [
+          '## Acceptance Criteria',
+          '',
+          '```markdown',
+          '- [ ] CRIT-inside example',
+          '```',
+          '',
+          '- [ ] CRIT-outside real',
+          '',
+        ].join('\n')
+      );
       const res = runBash(SH.flipAll, [doc, 'Acceptance Criteria']);
       expect(res.status).toBe(0);
       expect(res.stdout).toMatch(/checked 1 lines/);
@@ -153,14 +162,17 @@ describe('[QA FEAT-020] Inputs: fence-awareness with language-tagged and tilde f
     const tmp = makeTmp();
     const doc = join(tmp, 'ac.md');
     try {
-      writeFileSync(doc, [
-        '## Acceptance Criteria',
-        '',
-        '~~~',
-        '- [ ] CRIT-tilde-inside',
-        '~~~',
-        '- [ ] CRIT-tilde-outside',
-      ].join('\n'));
+      writeFileSync(
+        doc,
+        [
+          '## Acceptance Criteria',
+          '',
+          '~~~',
+          '- [ ] CRIT-tilde-inside',
+          '~~~',
+          '- [ ] CRIT-tilde-outside',
+        ].join('\n')
+      );
       const res = runBash(SH.flipAll, [doc, 'Acceptance Criteria']);
       expect(res.status).toBe(0);
       expect(res.stdout).toMatch(/checked 1 lines/);
@@ -219,12 +231,20 @@ describe('[QA FEAT-020] State transitions: next-id.sh concurrent invocation', ()
     }
     try {
       const runs = await Promise.all(
-        Array.from({ length: 6 }, () => new Promise<string>((resolve, reject) => {
-          const proc = spawn('bash', [SH.nextId, 'FEAT'], { cwd: tmp });
-          let out = '';
-          proc.stdout.on('data', (c) => { out += c.toString(); });
-          proc.on('close', (code) => code === 0 ? resolve(out.trim()) : reject(new Error(`rc=${code}`)));
-        }))
+        Array.from(
+          { length: 6 },
+          () =>
+            new Promise<string>((resolve, reject) => {
+              const proc = spawn('bash', [SH.nextId, 'FEAT'], { cwd: tmp });
+              let out = '';
+              proc.stdout.on('data', (c) => {
+                out += c.toString();
+              });
+              proc.on('close', (code) =>
+                code === 0 ? resolve(out.trim()) : reject(new Error(`rc=${code}`))
+              );
+            })
+        )
       );
       const unique = new Set(runs);
       expect(unique.size).toBe(1);
