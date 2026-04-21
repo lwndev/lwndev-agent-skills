@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.15.1] - 2026-04-21
+
+### Documentation
+
+- **orchestrating-workflows:** Output token optimization pilot (CHORE-034). Adds an `## Output Style` section to `orchestrating-workflows/SKILL.md` pinning lite-narration rules, a load-bearing carve-out list (error messages, security warnings, interactive prompts, findings display, FR-14 echoes, `[info]`/`[warn]`/`[model]` tagged logs, user-visible state transitions), and a three-shape fork-to-orchestrator return contract: `done | artifact=<path> | <note>` for success, `failed | <reason>` for failure, and the pre-existing `Found **N errors**, **N warnings**, **N info**` summary for `reviewing-requirements` forks. Every fork-invocation spec in `references/step-execution-details.md` now points subagents at the contract. Documentation-only — no behavioral changes, no new parsers. Captures baseline/post-change static measurements and a Learnings subsection so the same pattern can be replicated across the remaining twelve skills; rollout tracked in [#200](https://github.com/lwndev/lwndev-marketplace/issues/200).
+
+[1.15.1]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.15.0...lwndev-sdlc@1.15.1
+
 ## [1.15.0] - 2026-04-21
 
 ### Features
