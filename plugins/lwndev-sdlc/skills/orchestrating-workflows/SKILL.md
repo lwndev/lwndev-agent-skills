@@ -68,7 +68,7 @@ The orchestrator and its forked subagents must follow the lite-narration rules b
 - No emoji. ASCII punctuation only.
 - No restating what the user just said.
 - No status echoes that tools already show (e.g., the contents of a successful `git status`).
-- Prefer ASCII arrows (`->`) and punctuation over Unicode alternatives in orchestrator-authored prose. Existing Unicode em dashes in tables and reference docs are retained.
+- Prefer ASCII arrows (`->`) and punctuation over Unicode alternatives in orchestrator-authored prose. Existing Unicode em dashes in tables and reference docs are retained. **Script-emitted structured logs are out of scope for this rule** — FR-14 echoes, `[model]` complexity-upgrade notices, and other `prepare-fork.sh` / `workflow-state.sh` output use Unicode `→` as their documented format (see carve-out below); do not normalize them.
 - Short sentences over paragraphs. Bullet lists over prose when listing more than two items.
 
 ### Load-bearing carve-outs (never strip)
@@ -79,7 +79,7 @@ The following MUST always be emitted even when they resemble narration:
 - **Security-sensitive warnings** — destructive-operation confirmations, credential prompts, baseline-bypass warnings.
 - **Interactive prompts** — plan-approval pause prompts, findings-decision prompts, review-findings prompts. These block the workflow and must be visible.
 - **Findings display from `reviewing-requirements`** — the full findings list must be shown to the user before any findings-decision prompt. Do not truncate.
-- **FR-14 console echo lines** — `[model] step {N} ({skill}) -> {tier} (...)` audit-trail lines emitted by `prepare-fork.sh`.
+- **FR-14 console echo lines** — `[model] step {N} ({skill}) → {tier} (...)` audit-trail lines emitted by `prepare-fork.sh`. The Unicode `→` is the documented emitter format (matches `prepare-fork.bats` assertions and `references/step-execution-details.md`); do not rewrite to ASCII.
 - **Tagged structured logs** — any line prefixed `[info]`, `[warn]`, or `[model]` is a structured log, not narration. Emit verbatim.
 - **User-visible state transitions** — pause, advance, and resume announcements (at most one line each) so the user understands where the workflow is.
 
