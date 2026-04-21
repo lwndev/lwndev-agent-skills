@@ -159,6 +159,23 @@ Key properties:
 The resolved tier is passed as the `model` parameter to the Agent tool call
 and recorded in `modelSelections`.
 
+### Live invocation via `prepare-fork.sh`
+
+In production the orchestrator does not run the pseudocode above inline — it
+invokes `${CLAUDE_PLUGIN_ROOT}/scripts/prepare-fork.sh` per fork (see
+FEAT-021). The script composes the four-step pre-fork ceremony — SKILL.md
+readability check, tier resolution via `workflow-state.sh resolve-tier`,
+audit-trail write via `workflow-state.sh record-model-selection`, and the
+FR-14 echo line — into a single call and prints the resolved tier on stdout
+so the orchestrator can pass it verbatim as the Agent tool's `model`
+parameter.
+
+The pseudocode above remains the canonical reference for the
+tier-resolution algorithm itself; `prepare-fork.sh` is its scripted
+composer, not a replacement spec. Tune baselines, thresholds, and override
+semantics by editing `workflow-state.sh` and its test suite — the script
+just calls those subcommands in the documented order.
+
 ## Hard vs soft override rules
 
 | Rule | Hard overrides (`--model`, `--model-for`) | Soft overrides (`--complexity`, `modelOverride`) |

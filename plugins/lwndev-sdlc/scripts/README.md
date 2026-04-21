@@ -28,6 +28,7 @@ Scripts that read or write the consumer repo's filesystem (`next-id.sh`, `resolv
 | `commit-work.sh` | FR-8 | Emit a conventional-commits commit (caller stages). |
 | `create-pr.sh` | FR-9 | Push the current branch and create a PR from the template. |
 | `branch-id-parse.sh` | FR-10 | Classify a branch name into work-item `{id, type, dir}` JSON. |
+| `prepare-fork.sh` | FEAT-021 | Run the FEAT-014 pre-fork ceremony (SKILL.md readability check, tier resolution, audit-trail write, FR-14 echo line) and print the resolved tier. |
 
 ## Bats Fixture Layout
 

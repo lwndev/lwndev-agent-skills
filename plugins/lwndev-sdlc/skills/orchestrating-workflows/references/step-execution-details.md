@@ -143,19 +143,17 @@ After step 5 (documenting-qa) completes:
 
    **a. Before the phase** (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type phase-start --context '{"phase": <phase-number>, "totalPhases": <N>, "workItemId": "{ID}"}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md) (read the `phase-start` template from `references/github-templates.md` — or `references/jira-templates.md` for Jira — substitute context variables, and post via `gh issue comment` / Jira backend).
 
-   **b. Run the FEAT-014 pre-fork sequence**. Resolve the tier per phase (the `complexityStage` — `init` or `post-plan` — is captured per entry so the audit trail shows the upgrade transition when one occurred):
+   **b. Run the FEAT-014 pre-fork ceremony** via `prepare-fork.sh` (FEAT-021 FR-1). The script composes the four-step ceremony — SKILL.md readability check, tier resolution, audit-trail write, and FR-14 echo — into one invocation. The `complexityStage` (`init` or `post-plan`) is captured per audit-trail entry so the upgrade transition is visible when one occurred:
 
    ```bash
-   tier=$("${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" resolve-tier {ID} implementing-plan-phases \
+   tier=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-fork.sh" {ID} {stepIndex} implementing-plan-phases \
+     --phase {phase-number} \
      ${cli_model:+--cli-model $cli_model} \
      ${cli_complexity:+--cli-complexity $cli_complexity} \
      ${cli_model_for:+--cli-model-for $cli_model_for})
-   stage=$(jq -r '.complexityStage // "init"' ".sdlc/workflows/{ID}.json")
-   "${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" record-model-selection \
-     {ID} {stepIndex} implementing-plan-phases null {phase-number} "${tier}" "${stage}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
    ```
 
-   Then emit the FR-14 echo line: `[model] step {stepIndex} (implementing-plan-phases, phase {phase-number}) → {tier} (baseline=sonnet, wi-complexity={complexity}, override={override-or-none})`.
+   The script emits the FR-14 echo line to stderr automatically: `[model] step {stepIndex} (implementing-plan-phases, phase {phase-number}) → {tier} (baseline=sonnet, wi-complexity={complexity}, override={override-or-none})`.
 
    **c. Fork `implementing-plan-phases`** with the Agent tool. The prompt must include:
    - The SKILL.md content from `${CLAUDE_PLUGIN_ROOT}/skills/implementing-plan-phases/SKILL.md`
@@ -183,19 +181,16 @@ After step 5 (documenting-qa) completes:
 
 After all phases complete (step 5+N+1):
 
-1. Run the FEAT-014 pre-fork sequence for the PR-creation inline fork. This site is **baseline-locked** at `haiku` — work-item complexity and soft overrides are ignored; only a hard `--model` / `--model-for pr-creation:<tier>` override can push it off baseline.
+1. Run the FEAT-014 pre-fork ceremony via `prepare-fork.sh` (FEAT-021 FR-1) for the PR-creation inline fork. **Pass the literal `pr-creation` as the `skill-name`** — not the state-file's `"orchestrator"` label (FEAT-021 FR-1 PR-creation caveat; future editors: do not copy-paste an `orchestrator` skill-name into this call site). This site is **baseline-locked** at `haiku` — work-item complexity and soft overrides are ignored; only a hard `--model` / `--model-for pr-creation:<tier>` override can push it off baseline.
 
    ```bash
-   tier=$("${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" resolve-tier {ID} pr-creation \
+   tier=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-fork.sh" {ID} {stepIndex} pr-creation \
      ${cli_model:+--cli-model $cli_model} \
      ${cli_complexity:+--cli-complexity $cli_complexity} \
      ${cli_model_for:+--cli-model-for $cli_model_for})
-   stage=$(jq -r '.complexityStage // "init"' ".sdlc/workflows/{ID}.json")
-   "${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" record-model-selection \
-     {ID} {stepIndex} pr-creation null null "${tier}" "${stage}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
    ```
 
-   Emit the FR-14 echo line with the `baseline-locked` tag: `[model] step {stepIndex} (pr-creation) → haiku (baseline=haiku, baseline-locked)`.
+   The script emits the FR-14 echo line with the `baseline-locked` tag to stderr: `[model] step {stepIndex} (pr-creation) → haiku (baseline=haiku, baseline-locked)`.
 
 2. Fork a subagent to create the PR. Pass the resolved `${tier}` as the Agent tool's `model` parameter. The prompt should instruct:
    - Create a pull request from the current feature branch to main

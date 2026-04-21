@@ -1591,6 +1591,56 @@ describe('workflow-state.sh', () => {
           ).toBe('haiku');
         });
 
+        // --- Multi-flag --cli-model-for accumulation (FEAT-021 Edge Case 6) ---
+        // Pre-FEAT-021 fix, resolve-tier stored --cli-model-for in a scalar
+        // that silently discarded all but the last flag. The array
+        // accumulation preserves every occurrence; first-matching-step wins.
+        it('multiple --cli-model-for: flag matching the target step wins', () => {
+          runJSON('init FEAT-001 feature');
+          expect(
+            run(
+              'resolve-tier FEAT-001 reviewing-requirements ' +
+                '--cli-model-for reviewing-requirements:opus ' +
+                '--cli-model-for implementing-plan-phases:haiku'
+            )
+          ).toBe('opus');
+        });
+
+        it('multiple --cli-model-for: different target step picks its own flag', () => {
+          runJSON('init FEAT-001 feature');
+          expect(
+            run(
+              'resolve-tier FEAT-001 implementing-plan-phases ' +
+                '--cli-model-for reviewing-requirements:opus ' +
+                '--cli-model-for implementing-plan-phases:haiku'
+            )
+          ).toBe('haiku');
+        });
+
+        it('multiple --cli-model-for: unmatched target falls back to baseline', () => {
+          runJSON('init FEAT-001 feature');
+          // finalizing-workflow is baseline-locked at haiku; neither flag targets it.
+          expect(
+            run(
+              'resolve-tier FEAT-001 finalizing-workflow ' +
+                '--cli-model-for reviewing-requirements:opus ' +
+                '--cli-model-for implementing-plan-phases:haiku'
+            )
+          ).toBe('haiku');
+        });
+
+        it('multiple --cli-model-for for the same step: first occurrence wins', () => {
+          runJSON('init FEAT-001 feature');
+          // Per Edge Case 6: first-occurrence-wins for same-step disambiguation.
+          expect(
+            run(
+              'resolve-tier FEAT-001 reviewing-requirements ' +
+                '--cli-model-for reviewing-requirements:opus ' +
+                '--cli-model-for reviewing-requirements:haiku'
+            )
+          ).toBe('opus');
+        });
+
         // --- Soft overrides (FR-5 #3 and #4) ---
         it('soft --cli-complexity low on computed opus tier is a no-op (upgrade-only)', () => {
           runJSON('init FEAT-001 feature');
@@ -1649,6 +1699,87 @@ describe('workflow-state.sh', () => {
               'resolve-tier FEAT-001 reviewing-requirements --cli-complexity low --state-override opus'
             )
           ).toBe('sonnet');
+        });
+      });
+
+      // --- FEAT-021 Phase 1: step-baseline / step-baseline-locked subcommands ---
+      describe('step-baseline (FEAT-021 Phase 1)', () => {
+        it('echoes sonnet for reviewing-requirements', () => {
+          expect(run('step-baseline reviewing-requirements')).toBe('sonnet');
+        });
+
+        it('echoes sonnet for creating-implementation-plans', () => {
+          expect(run('step-baseline creating-implementation-plans')).toBe('sonnet');
+        });
+
+        it('echoes sonnet for implementing-plan-phases', () => {
+          expect(run('step-baseline implementing-plan-phases')).toBe('sonnet');
+        });
+
+        it('echoes sonnet for executing-chores', () => {
+          expect(run('step-baseline executing-chores')).toBe('sonnet');
+        });
+
+        it('echoes sonnet for executing-bug-fixes', () => {
+          expect(run('step-baseline executing-bug-fixes')).toBe('sonnet');
+        });
+
+        it('echoes haiku for finalizing-workflow', () => {
+          expect(run('step-baseline finalizing-workflow')).toBe('haiku');
+        });
+
+        it('echoes haiku for pr-creation', () => {
+          expect(run('step-baseline pr-creation')).toBe('haiku');
+        });
+
+        it('exits non-zero with a clear error for an unknown step-name', () => {
+          const err = run('step-baseline bogus-step', { expectError: true });
+          expect(err).toContain("unknown step-name 'bogus-step'");
+        });
+
+        it('exits non-zero when no step-name is provided', () => {
+          const err = run('step-baseline', { expectError: true });
+          expect(err).toContain('step-baseline requires');
+        });
+      });
+
+      describe('step-baseline-locked (FEAT-021 Phase 1)', () => {
+        it('echoes false for reviewing-requirements', () => {
+          expect(run('step-baseline-locked reviewing-requirements')).toBe('false');
+        });
+
+        it('echoes false for creating-implementation-plans', () => {
+          expect(run('step-baseline-locked creating-implementation-plans')).toBe('false');
+        });
+
+        it('echoes false for implementing-plan-phases', () => {
+          expect(run('step-baseline-locked implementing-plan-phases')).toBe('false');
+        });
+
+        it('echoes false for executing-chores', () => {
+          expect(run('step-baseline-locked executing-chores')).toBe('false');
+        });
+
+        it('echoes false for executing-bug-fixes', () => {
+          expect(run('step-baseline-locked executing-bug-fixes')).toBe('false');
+        });
+
+        it('echoes true for finalizing-workflow', () => {
+          expect(run('step-baseline-locked finalizing-workflow')).toBe('true');
+        });
+
+        it('echoes true for pr-creation', () => {
+          expect(run('step-baseline-locked pr-creation')).toBe('true');
+        });
+
+        it('exits non-zero with a clear error for an unknown step-name', () => {
+          const err = run('step-baseline-locked bogus-step', { expectError: true });
+          expect(err).toContain("unknown step-name 'bogus-step'");
+        });
+
+        it('exits non-zero when no step-name is provided', () => {
+          const err = run('step-baseline-locked', { expectError: true });
+          expect(err).toContain('step-baseline-locked requires');
         });
       });
     });

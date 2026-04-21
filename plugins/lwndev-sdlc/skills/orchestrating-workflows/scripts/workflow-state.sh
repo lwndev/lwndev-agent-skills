@@ -33,6 +33,14 @@ usage() {
   echo "  get-model <ID> <step-name>    Resolve model tier for a step (baseline + complexity + modelOverride)" >&2
   echo "  record-model-selection <ID> <stepIndex> <skill> <mode> <phase> <tier> <complexityStage> <startedAt>" >&2
   echo "                                Append an entry to the modelSelections audit trail" >&2
+  echo "  step-baseline <step-name>     FEAT-014 Axis 1. Echo the baseline tier (haiku|sonnet) for a known" >&2
+  echo "                                step-name. Exits 2 with an error for unknown names." >&2
+  echo "                                Example: workflow-state.sh step-baseline reviewing-requirements" >&2
+  echo "  step-baseline-locked <step-name>" >&2
+  echo "                                FEAT-014 Axis 1. Echo 'true' if the step-name is baseline-locked" >&2
+  echo "                                (finalizing-workflow, pr-creation) or 'false' otherwise. Exits 2" >&2
+  echo "                                with an error for unknown names." >&2
+  echo "                                Example: workflow-state.sh step-baseline-locked pr-creation" >&2
   echo "  classify-init <ID> [doc-path]" >&2
   echo "                                Compute init-stage work-item complexity (low|medium|high) from the" >&2
   echo "                                requirement document. Dispatches by chain type read from state." >&2
@@ -691,7 +699,7 @@ cmd_resolve_tier() {
 
   local cli_model=""
   local cli_complexity=""
-  local cli_model_for=""
+  local -a cli_model_for_list=()
   local state_override_flag=""
   local state_override_value=""
 
@@ -702,7 +710,10 @@ cmd_resolve_tier() {
       --cli-complexity)
         cli_complexity="${2:-}"; shift 2 ;;
       --cli-model-for)
-        cli_model_for="${2:-}"; shift 2 ;;
+        # --cli-model-for may be repeated; accumulate every occurrence so all
+        # per-step overrides survive. Pre-FEAT-021 fix this was a scalar that
+        # silently discarded all but the last flag.
+        cli_model_for_list+=("${2:-}"); shift 2 ;;
       --state-override)
         state_override_flag="set"
         state_override_value="${2:-}"; shift 2 ;;
@@ -747,14 +758,20 @@ cmd_resolve_tier() {
   fi
 
   # Resolve the per-step value for --cli-model-for. Format: step:tier.
+  # Walk every accumulated flag; first occurrence matching the step name wins
+  # and later occurrences for the same step are ignored (FEAT-021 Edge Case 6).
+  # Flags for other steps are skipped silently.
   local per_step_value=""
-  if [[ -n "$cli_model_for" ]]; then
-    local mf_step="${cli_model_for%%:*}"
-    local mf_tier="${cli_model_for##*:}"
+  local cli_model_for_entry mf_step mf_tier
+  for cli_model_for_entry in "${cli_model_for_list[@]+"${cli_model_for_list[@]}"}"; do
+    [[ -z "$cli_model_for_entry" ]] && continue
+    mf_step="${cli_model_for_entry%%:*}"
+    mf_tier="${cli_model_for_entry##*:}"
     if [[ "$mf_step" == "$step_name" ]]; then
       per_step_value="$mf_tier"
+      break
     fi
-  fi
+  done
 
   # Chain entries: (value, kind). Walk in order; first non-empty wins.
   # Both arrays MUST stay the same length — the walker below uses
@@ -1645,6 +1662,32 @@ case "$command" in
   record-model-selection)
     [[ $# -ge 8 ]] || { echo "Error: record-model-selection requires <ID> <stepIndex> <skill> <mode> <phase> <tier> <complexityStage> <startedAt>" >&2; exit 1; }
     cmd_record_model_selection "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8"
+    ;;
+  step-baseline)
+    [[ $# -ge 1 ]] || { echo "Error: step-baseline requires <step-name>" >&2; exit 1; }
+    step_name="$1"
+    case "$step_name" in
+      reviewing-requirements|creating-implementation-plans|implementing-plan-phases|executing-chores|executing-bug-fixes|finalizing-workflow|pr-creation)
+        _step_baseline "$step_name"
+        ;;
+      *)
+        echo "Error: unknown step-name '${step_name}'" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  step-baseline-locked)
+    [[ $# -ge 1 ]] || { echo "Error: step-baseline-locked requires <step-name>" >&2; exit 1; }
+    step_name="$1"
+    case "$step_name" in
+      reviewing-requirements|creating-implementation-plans|implementing-plan-phases|executing-chores|executing-bug-fixes|finalizing-workflow|pr-creation)
+        _step_baseline_locked "$step_name"
+        ;;
+      *)
+        echo "Error: unknown step-name '${step_name}'" >&2
+        exit 1
+        ;;
+    esac
     ;;
   classify-init)
     [[ $# -ge 1 ]] || { echo "Error: classify-init requires <ID> [doc-path]" >&2; exit 1; }
