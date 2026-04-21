@@ -1732,12 +1732,12 @@ describe('workflow-state.sh', () => {
           expect(run('step-baseline pr-creation')).toBe('haiku');
         });
 
-        it('exits 2 with a clear error for an unknown step-name', () => {
+        it('exits non-zero with a clear error for an unknown step-name', () => {
           const err = run('step-baseline bogus-step', { expectError: true });
           expect(err).toContain("unknown step-name 'bogus-step'");
         });
 
-        it('exits 2 when no step-name is provided', () => {
+        it('exits non-zero when no step-name is provided', () => {
           const err = run('step-baseline', { expectError: true });
           expect(err).toContain('step-baseline requires');
         });
@@ -1772,12 +1772,12 @@ describe('workflow-state.sh', () => {
           expect(run('step-baseline-locked pr-creation')).toBe('true');
         });
 
-        it('exits 2 with a clear error for an unknown step-name', () => {
+        it('exits non-zero with a clear error for an unknown step-name', () => {
           const err = run('step-baseline-locked bogus-step', { expectError: true });
           expect(err).toContain("unknown step-name 'bogus-step'");
         });
 
-        it('exits 2 when no step-name is provided', () => {
+        it('exits non-zero when no step-name is provided', () => {
           const err = run('step-baseline-locked', { expectError: true });
           expect(err).toContain('step-baseline-locked requires');
         });

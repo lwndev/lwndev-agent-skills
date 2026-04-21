@@ -1664,7 +1664,7 @@ case "$command" in
     cmd_record_model_selection "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8"
     ;;
   step-baseline)
-    [[ $# -ge 1 ]] || { echo "Error: step-baseline requires <step-name>" >&2; exit 2; }
+    [[ $# -ge 1 ]] || { echo "Error: step-baseline requires <step-name>" >&2; exit 1; }
     step_name="$1"
     case "$step_name" in
       reviewing-requirements|creating-implementation-plans|implementing-plan-phases|executing-chores|executing-bug-fixes|finalizing-workflow|pr-creation)
@@ -1672,12 +1672,12 @@ case "$command" in
         ;;
       *)
         echo "Error: unknown step-name '${step_name}'" >&2
-        exit 2
+        exit 1
         ;;
     esac
     ;;
   step-baseline-locked)
-    [[ $# -ge 1 ]] || { echo "Error: step-baseline-locked requires <step-name>" >&2; exit 2; }
+    [[ $# -ge 1 ]] || { echo "Error: step-baseline-locked requires <step-name>" >&2; exit 1; }
     step_name="$1"
     case "$step_name" in
       reviewing-requirements|creating-implementation-plans|implementing-plan-phases|executing-chores|executing-bug-fixes|finalizing-workflow|pr-creation)
@@ -1685,7 +1685,7 @@ case "$command" in
         ;;
       *)
         echo "Error: unknown step-name '${step_name}'" >&2
-        exit 2
+        exit 1
         ;;
     esac
     ;;

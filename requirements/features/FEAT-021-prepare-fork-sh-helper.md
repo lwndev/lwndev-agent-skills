@@ -191,9 +191,9 @@ haiku
 
 FR-2 Step 4 requires reading the step baseline and lock predicate from outside `workflow-state.sh`. Today, both are internal functions (`_step_baseline` and `_step_baseline_locked` at lines 163 and 179 respectively) and are not exposed as subcommands. This feature adds two trivial subcommands to `workflow-state.sh`:
 
-**`workflow-state.sh step-baseline <step-name>`** — Print the baseline tier (`haiku`, `sonnet`, or `opus`) for the named step on stdout. Exit `0` on valid step-name; exit `2` with `Error: unknown step-name '<value>'` on stderr for unknown names. Thin wrapper around `_step_baseline`.
+**`workflow-state.sh step-baseline <step-name>`** — Print the baseline tier (`haiku`, `sonnet`, or `opus`) for the named step on stdout. Exit `0` on valid step-name; exit `1` with `Error: unknown step-name '<value>'` on stderr for unknown names; exit `1` with a usage error on missing arg. Thin wrapper around `_step_baseline`. (`exit 1` matches the validation-error convention used by every other subcommand in this file.)
 
-**`workflow-state.sh step-baseline-locked <step-name>`** — Print the literal string `true` or `false` on stdout. Exit `0` on valid step-name; exit `2` on unknown. Thin wrapper around `_step_baseline_locked`.
+**`workflow-state.sh step-baseline-locked <step-name>`** — Print the literal string `true` or `false` on stdout. Exit `0` on valid step-name; exit `1` on unknown or missing arg. Thin wrapper around `_step_baseline_locked`.
 
 Both subcommands take exactly one argument. Both are additive (new dispatch branches in the case statement; no existing subcommand changes).
 
