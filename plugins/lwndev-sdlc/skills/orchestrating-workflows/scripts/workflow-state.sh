@@ -699,7 +699,7 @@ cmd_resolve_tier() {
 
   local cli_model=""
   local cli_complexity=""
-  local cli_model_for=""
+  local -a cli_model_for_list=()
   local state_override_flag=""
   local state_override_value=""
 
@@ -710,7 +710,10 @@ cmd_resolve_tier() {
       --cli-complexity)
         cli_complexity="${2:-}"; shift 2 ;;
       --cli-model-for)
-        cli_model_for="${2:-}"; shift 2 ;;
+        # --cli-model-for may be repeated; accumulate every occurrence so all
+        # per-step overrides survive. Pre-FEAT-021 fix this was a scalar that
+        # silently discarded all but the last flag.
+        cli_model_for_list+=("${2:-}"); shift 2 ;;
       --state-override)
         state_override_flag="set"
         state_override_value="${2:-}"; shift 2 ;;
@@ -755,14 +758,20 @@ cmd_resolve_tier() {
   fi
 
   # Resolve the per-step value for --cli-model-for. Format: step:tier.
+  # Walk every accumulated flag; first occurrence matching the step name wins
+  # and later occurrences for the same step are ignored (FEAT-021 Edge Case 6).
+  # Flags for other steps are skipped silently.
   local per_step_value=""
-  if [[ -n "$cli_model_for" ]]; then
-    local mf_step="${cli_model_for%%:*}"
-    local mf_tier="${cli_model_for##*:}"
+  local cli_model_for_entry mf_step mf_tier
+  for cli_model_for_entry in "${cli_model_for_list[@]+"${cli_model_for_list[@]}"}"; do
+    [[ -z "$cli_model_for_entry" ]] && continue
+    mf_step="${cli_model_for_entry%%:*}"
+    mf_tier="${cli_model_for_entry##*:}"
     if [[ "$mf_step" == "$step_name" ]]; then
       per_step_value="$mf_tier"
+      break
     fi
-  fi
+  done
 
   # Chain entries: (value, kind). Walk in order; first non-empty wins.
   # Both arrays MUST stay the same length — the walker below uses

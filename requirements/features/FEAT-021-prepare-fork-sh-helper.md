@@ -332,7 +332,7 @@ No new runtime dependencies beyond what `workflow-state.sh` already requires (`b
 
 5. **`--mode` and `--phase` both passed**: exit `2` with `Error: --mode and --phase are mutually exclusive`. Current skill map has no step that takes both.
 
-6. **`--cli-model-for` repeated with the same step name but different tiers**: the script forwards each occurrence to `resolve-tier`. `resolve-tier` itself decides precedence among repeated flags (its existing behavior — the script does not re-implement that logic).
+6. **`--cli-model-for` repeated**: the script accumulates every occurrence into an array and forwards each through to `resolve-tier`. `resolve-tier` walks the flag list in argv order: **the first flag whose step name matches the current target wins**; later flags for the same step are ignored. Flags for unrelated steps pass through silently without altering resolution. This applies whether the repeats target the same step (same-step disambiguation) or different steps (cross-step coverage in a single invocation). The script does not re-implement this logic — it only preserves all occurrences so the resolver can make the precedence decision.
 
 7. **Subshell executing `prepare-fork.sh` cannot see `CLAUDE_PLUGIN_ROOT`**: the script falls back to deriving the root from its own path (FR-2 step 1). This path is deterministic because plugin-shared scripts live at `${CLAUDE_PLUGIN_ROOT}/scripts/prepare-fork.sh` by the FEAT-020 contract.
 

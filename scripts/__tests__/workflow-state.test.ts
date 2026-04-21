@@ -1591,6 +1591,56 @@ describe('workflow-state.sh', () => {
           ).toBe('haiku');
         });
 
+        // --- Multi-flag --cli-model-for accumulation (FEAT-021 Edge Case 6) ---
+        // Pre-FEAT-021 fix, resolve-tier stored --cli-model-for in a scalar
+        // that silently discarded all but the last flag. The array
+        // accumulation preserves every occurrence; first-matching-step wins.
+        it('multiple --cli-model-for: flag matching the target step wins', () => {
+          runJSON('init FEAT-001 feature');
+          expect(
+            run(
+              'resolve-tier FEAT-001 reviewing-requirements ' +
+                '--cli-model-for reviewing-requirements:opus ' +
+                '--cli-model-for implementing-plan-phases:haiku'
+            )
+          ).toBe('opus');
+        });
+
+        it('multiple --cli-model-for: different target step picks its own flag', () => {
+          runJSON('init FEAT-001 feature');
+          expect(
+            run(
+              'resolve-tier FEAT-001 implementing-plan-phases ' +
+                '--cli-model-for reviewing-requirements:opus ' +
+                '--cli-model-for implementing-plan-phases:haiku'
+            )
+          ).toBe('haiku');
+        });
+
+        it('multiple --cli-model-for: unmatched target falls back to baseline', () => {
+          runJSON('init FEAT-001 feature');
+          // finalizing-workflow is baseline-locked at haiku; neither flag targets it.
+          expect(
+            run(
+              'resolve-tier FEAT-001 finalizing-workflow ' +
+                '--cli-model-for reviewing-requirements:opus ' +
+                '--cli-model-for implementing-plan-phases:haiku'
+            )
+          ).toBe('haiku');
+        });
+
+        it('multiple --cli-model-for for the same step: first occurrence wins', () => {
+          runJSON('init FEAT-001 feature');
+          // Per Edge Case 6: first-occurrence-wins for same-step disambiguation.
+          expect(
+            run(
+              'resolve-tier FEAT-001 reviewing-requirements ' +
+                '--cli-model-for reviewing-requirements:opus ' +
+                '--cli-model-for reviewing-requirements:haiku'
+            )
+          ).toBe('opus');
+        });
+
         // --- Soft overrides (FR-5 #3 and #4) ---
         it('soft --cli-complexity low on computed opus tier is a no-op (upgrade-only)', () => {
           runJSON('init FEAT-001 feature');
