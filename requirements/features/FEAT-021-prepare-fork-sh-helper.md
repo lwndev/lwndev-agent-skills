@@ -385,15 +385,23 @@ Extend `scripts/__tests__/orchestrating-workflows.test.ts` (or its equivalent at
 
 ## Acceptance Criteria
 
-- [ ] `plugins/lwndev-sdlc/scripts/prepare-fork.sh` exists, is executable, has shebang `#!/usr/bin/env bash`, and implements FR-1 and FR-2.
-- [ ] FR-6 holds: no existing `workflow-state.sh` subcommand changes behavior; no state-file schema field is added or modified; existing `scripts/__tests__/workflow-state.test.ts` passes unchanged except for the two new subcommand cases added for FR-3.
-- [ ] FR-3 lands in the **same PR** as the script — `step-baseline` and `step-baseline-locked` subcommands are exposed on `workflow-state.sh`, and the new bats fixture invokes them via `prepare-fork.sh` end-to-end. Independent landing is not acceptable (FR-2 Step 4 depends on them).
-- [ ] `plugins/lwndev-sdlc/scripts/tests/prepare-fork.bats` exists and every test listed in "Unit Tests" passes, including a dedicated case for NFR-1's ordering invariant: force `step-baseline-locked` to fail (e.g. invoke with a synthetic unknown skill-name guarded past the script's own allowlist) and assert the prior `modelSelections` entry from FR-2 Step 3 is still present in the state file while the script's exit code reflects the child failure.
-- [ ] The "Forked Steps" section of `orchestrating-workflows/SKILL.md` is rewritten per FR-4; the four prose sub-steps are replaced by the single scripted invocation; the PR-creation fork site explicitly passes `pr-creation` (not the state-file's `"orchestrator"` skill label) to `prepare-fork.sh` (see FR-1 PR-creation caveat).
-- [ ] `references/model-selection.md` includes the FR-5 note.
-- [ ] `plugins/lwndev-sdlc/scripts/README.md` script table includes a `prepare-fork.sh` row per FR-5.
-- [ ] Manual test 1 (happy-path feature workflow) shows the expected console output and `modelSelections` entries.
-- [ ] Manual tests 2 and 3 (CLI overrides) produce the documented echo-line variants.
-- [ ] Manual test 4 (kill + resume) demonstrates the NFR-2 audit-trail preservation.
-- [ ] No regression in existing orchestrator behavior — existing integration tests (`scripts/__tests__/orchestrating-workflows.test.ts`) pass unchanged after FR-4's SKILL.md rewrite.
-- [ ] Measured token savings on a representative feature workflow show ≥ 3,000 tokens saved vs. the pre-FEAT-021 baseline. (Below the #181 estimate's low end is acceptable — the estimate is approximate; the structural win matters more than the exact count.)
+- [x] `plugins/lwndev-sdlc/scripts/prepare-fork.sh` exists, is executable, has shebang `#!/usr/bin/env bash`, and implements FR-1 and FR-2.
+- [x] FR-6 holds: no existing `workflow-state.sh` subcommand changes behavior; no state-file schema field is added or modified; existing `scripts/__tests__/workflow-state.test.ts` passes unchanged except for the two new subcommand cases added for FR-3.
+- [x] FR-3 lands in the **same PR** as the script — `step-baseline` and `step-baseline-locked` subcommands are exposed on `workflow-state.sh`, and the new bats fixture invokes them via `prepare-fork.sh` end-to-end. Independent landing is not acceptable (FR-2 Step 4 depends on them).
+- [x] `plugins/lwndev-sdlc/scripts/tests/prepare-fork.bats` exists and every test listed in "Unit Tests" passes, including a dedicated case for NFR-1's ordering invariant: force `step-baseline-locked` to fail (e.g. invoke with a synthetic unknown skill-name guarded past the script's own allowlist) and assert the prior `modelSelections` entry from FR-2 Step 3 is still present in the state file while the script's exit code reflects the child failure.
+- [x] The "Forked Steps" section of `orchestrating-workflows/SKILL.md` is rewritten per FR-4; the four prose sub-steps are replaced by the single scripted invocation; the PR-creation fork site explicitly passes `pr-creation` (not the state-file's `"orchestrator"` skill label) to `prepare-fork.sh` (see FR-1 PR-creation caveat).
+- [x] `references/model-selection.md` includes the FR-5 note.
+- [x] `plugins/lwndev-sdlc/scripts/README.md` script table includes a `prepare-fork.sh` row per FR-5.
+- [x] Manual test 1 (happy-path feature workflow) shows the expected console output and `modelSelections` entries.
+- [x] Manual tests 2 and 3 (CLI overrides) produce the documented echo-line variants.
+- [x] Manual test 4 (kill + resume) demonstrates the NFR-2 audit-trail preservation.
+- [x] No regression in existing orchestrator behavior — existing integration tests (`scripts/__tests__/orchestrating-workflows.test.ts`) pass unchanged after FR-4's SKILL.md rewrite.
+- [x] Measured token savings on a representative feature workflow show ≥ 3,000 tokens saved vs. the pre-FEAT-021 baseline. (Below the #181 estimate's low end is acceptable — the estimate is approximate; the structural win matters more than the exact count.)
+
+## Completion
+
+**Status:** `Complete`
+
+**Completed:** 2026-04-21
+
+**Pull Request:** [#196](https://github.com/lwndev/lwndev-marketplace/pull/196)
