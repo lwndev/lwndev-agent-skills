@@ -46,11 +46,29 @@ Adapt sections based on feature type:
 5. List functional and non-functional requirements
 6. Specify output format, edge cases, and testing requirements
 
+## Feature ID Assignment
+
+Allocate the next Feature ID by running:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/next-id.sh" FEAT
+```
+
+The script scans `requirements/features/` for existing `FEAT-NNN-*.md` files, returns `max(NNN) + 1` zero-padded to three digits, and prints `001` when no features exist. Exit codes: `0` on success; `2` on missing/invalid type arg.
+
 ## File Locations
 
 - `requirements/features/` - Feature requirement documents
 - `requirements/implementation/` - Implementation plans
 - `docs/features/` - User-facing feature documentation
+
+Filename format: `FEAT-XXX-{2-4-word-description}.md`. Derive the description slug from the feature title by running:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<feature title>"
+```
+
+The script lowercases, strips punctuation, drops stopwords (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), and keeps the first four remaining tokens joined with `-`. Exit codes: `0` on success; `1` when the slug is empty after normalization (prompt the user for a more descriptive title); `2` on missing arg.
 
 ## Template
 

@@ -37,7 +37,13 @@ Adapt based on project type:
 
 ## Quick Start
 
-1. **Locate feature requirements documents** - check `requirements/features/` or ask user for paths
+1. **Locate feature requirements documents** — when the user provides a `FEAT-NNN` ID, resolve it to a file path with:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<FEAT-NNN>"
+   ```
+
+   Exit codes: `0` (one match, path on stdout); `1` (no match — ask the user for a path); `2` (ambiguous — present candidates); `3` (malformed/missing ID). Otherwise check `requirements/features/` or ask the user for paths directly.
 2. **Ask for GitHub issue URL(s)** if not provided in context
 3. Identify dependencies between features
 4. Determine optimal build sequence

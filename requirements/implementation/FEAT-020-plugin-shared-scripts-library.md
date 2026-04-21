@@ -334,7 +334,7 @@ The checkbox scripts (`check-acceptance.sh`, `checkbox-flip-all.sh`) are the mos
 ### Phase 4: Adopter Prose Replacements (AC-11 through AC-20)
 
 **Feature:** [FEAT-020](../features/FEAT-020-plugin-shared-scripts-library.md) | [#180](https://github.com/lwndev/lwndev-marketplace/issues/180)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 
@@ -412,18 +412,18 @@ The replacement pattern in every skill is: identify the smallest prose paragraph
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/documenting-features/SKILL.md` — AC-11 (`next-id.sh`) + AC-12 (`slugify.sh`)
-- [ ] `plugins/lwndev-sdlc/skills/documenting-chores/SKILL.md` — AC-11 + AC-12
-- [ ] `plugins/lwndev-sdlc/skills/documenting-bugs/SKILL.md` — AC-11 + AC-12
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` — AC-13 (all three modes)
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/SKILL.md` — AC-13
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/SKILL.md` — AC-12, AC-13, AC-14, AC-15, AC-16, AC-19
-- [ ] `plugins/lwndev-sdlc/skills/executing-chores/SKILL.md` — AC-12, AC-13, AC-14, AC-15, AC-16, AC-18, AC-19
-- [ ] `plugins/lwndev-sdlc/skills/executing-bug-fixes/SKILL.md` — AC-12, AC-13, AC-14, AC-15, AC-16, AC-18, AC-19
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` — AC-13
-- [ ] `plugins/lwndev-sdlc/skills/finalizing-workflow/SKILL.md` — AC-13, AC-16, AC-17, AC-20
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — AC-20
-- [ ] `npm run validate` passes
+- [x] `plugins/lwndev-sdlc/skills/documenting-features/SKILL.md` — AC-11 (`next-id.sh`) + AC-12 (`slugify.sh`)
+- [x] `plugins/lwndev-sdlc/skills/documenting-chores/SKILL.md` — AC-11 + AC-12
+- [x] `plugins/lwndev-sdlc/skills/documenting-bugs/SKILL.md` — AC-11 + AC-12
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` — AC-13 (all three modes)
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/SKILL.md` — AC-13
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/SKILL.md` — AC-12, AC-13, AC-14, AC-15, AC-16, AC-19
+- [x] `plugins/lwndev-sdlc/skills/executing-chores/SKILL.md` — AC-12, AC-13, AC-14, AC-15, AC-16, AC-18, AC-19
+- [x] `plugins/lwndev-sdlc/skills/executing-bug-fixes/SKILL.md` — AC-12, AC-13, AC-14, AC-15, AC-16, AC-18, AC-19
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` — AC-13
+- [x] `plugins/lwndev-sdlc/skills/finalizing-workflow/SKILL.md` — AC-13, AC-16, AC-17, AC-20
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — AC-20
+- [x] `npm run validate` passes
 
 #### Acceptance Criteria Closed
 

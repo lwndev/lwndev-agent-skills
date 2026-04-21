@@ -64,20 +64,28 @@ Wait for user confirmation. If the user declines, abort before running any bookk
 
 ### BK-1 — Derive Work Item ID From Branch Name (FR-2)
 
-Parse the branch name captured in Pre-Flight Check 2 using the following patterns (no new shell call required):
+Classify the branch name captured in Pre-Flight Check 2 with:
 
-- `^feat/(FEAT-[0-9]+)-` → derived ID `FEAT-NNN`, directory `requirements/features/`
-- `^chore/(CHORE-[0-9]+)-` → derived ID `CHORE-NNN`, directory `requirements/chores/`
-- `^fix/(BUG-[0-9]+)-` → derived ID `BUG-NNN`, directory `requirements/bugs/`
-- Any other pattern → skip all bookkeeping with info-level message (see Error Handling row 1); continue to `## Execution`.
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/branch-id-parse.sh" "<branch>"
+```
+
+The script applies the three regexes (`^feat/(FEAT-[0-9]+)-`, `^chore/(CHORE-[0-9]+)-`, `^fix/(BUG-[0-9]+)-`) and emits JSON `{"id": "...", "type": "...", "dir": "..."}` on stdout (`jq` when available; hand-assembled JSON otherwise). Exit codes: `0` on match — parse the JSON and use `id` / `dir` for BK-2; `1` on no match — skip all bookkeeping with info-level message (see Error Handling row 1) and continue to `## Execution`; `2` on missing arg.
 
 ### BK-2 — Locate the Requirement Document (FR-3)
 
-Using the derived ID and directory from BK-1, locate the doc via Glob pattern `{directory}/{ID}-*.md`:
+Using the derived ID from BK-1, resolve the doc path with:
 
-- Zero matches → skip all bookkeeping with warning (Error Handling row 2); continue to `## Execution`.
-- Two or more matches → skip all bookkeeping with error-level warning ("workspace inconsistency — investigate"); continue to `## Execution`.
-- Exactly one match → store the resolved path for BK-3 and BK-4.
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<ID>"
+```
+
+Map the script's exit codes to the existing behaviors:
+
+- Exit `0` → exactly-one match; store the path on stdout for BK-3 and BK-4.
+- Exit `1` → zero matches; skip all bookkeeping with warning (Error Handling row 2); continue to `## Execution`.
+- Exit `2` → multiple matches; skip all bookkeeping with error-level warning ("workspace inconsistency — investigate"); continue to `## Execution`.
+- Exit `3` → malformed/missing ID; emit a warning (BK-1 parsed a malformed ID — should not happen) and skip bookkeeping.
 
 ### BK-3 — Idempotency Check (FR-4)
 
@@ -99,7 +107,13 @@ If any fails → proceed to BK-4.
 
 Execute the following sub-steps in order:
 
-**BK-4.1 (FR-5.1): Acceptance Criteria Checkoff** — Read the doc; for every `- [ ]` line within `## Acceptance Criteria` (up to the next `## ` heading outside a fenced code block, or EOF), replace with `- [x]`. Preserve text verbatim. Do NOT flip `- [ ]` lines inside fenced code blocks — those are illustrative examples. If the section is absent, skip silently.
+**BK-4.1 (FR-5.1): Acceptance Criteria Checkoff** — Run:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/checkbox-flip-all.sh" "<resolved-doc-path>" "Acceptance Criteria"
+```
+
+The script locates the `## Acceptance Criteria` heading, walks the section body to the next `## ` heading (fence-aware — `## Something` inside a fenced block is skipped), flips every `- [ ]` outside fenced blocks to `- [x]`, and prints `checked N lines` to stdout. Exit codes: `0` always on success; the `checked 0 lines` output is idempotent (a re-run after all boxes are already ticked emits `checked 0 lines` and exits `0`). Exit `1` means the section is absent — skip silently per the prior behavior. Exit `2` on missing arg. If a single criterion needs flipping (rather than the whole section), use `bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-acceptance.sh" "<doc>" "<matcher>"` (literal substring match, fence-aware; exit `0` on `checked`/`already checked`, `1` on not-found, `2` on ambiguous, `3` on missing arg).
 
 **BK-4.2 (FR-5.2): Completion Section Upsert** — Construct the block below. If `## Completion` exists, replace its body in place (heading preserved, all sub-sections replaced). If absent, append (preceded by a blank line) at end of doc.
 

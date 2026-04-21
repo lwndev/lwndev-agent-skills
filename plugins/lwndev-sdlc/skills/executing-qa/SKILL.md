@@ -154,10 +154,13 @@ Populate the artifact's `## Exploratory Mode` section with a `Reason:` line expl
 
 After the run completes, read the requirements document. **This is the one and only time the requirements doc is consulted** — the planning skill (`documenting-qa`) is explicitly forbidden from reading it, so the delta here is the audit trail showing what the spec demanded vs. what QA tested.
 
-Requirements-doc paths by prefix:
-- `FEAT-` → `requirements/features/{ID}-*.md`
-- `CHORE-` → `requirements/chores/{ID}-*.md`
-- `BUG-` → `requirements/bugs/{ID}-*.md`
+Resolve the requirements-doc path from the ID with:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<ID>"
+```
+
+The script maps the prefix (`FEAT-`, `CHORE-`, `BUG-`) to the correct directory (`requirements/features/`, `requirements/chores/`, `requirements/bugs/`) and globs `{ID}-*.md`. Exit codes: `0` on exactly-one match (path on stdout); `1` on zero matches — in this skill, exit 1 triggers **edge case 7** (reconciliation delta skipped with reason, continue to Step 8); `2` on ambiguous (multiple files for the same ID signals workspace inconsistency — log a warning and pick the first alphabetically); `3` on malformed/missing ID.
 
 Produce a **bidirectional** delta:
 

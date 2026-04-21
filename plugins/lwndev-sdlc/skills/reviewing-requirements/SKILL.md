@@ -57,25 +57,17 @@ If no input is provided, ask the user for a document path or requirement ID.
 
 If the user provided a file path, verify it exists and use it directly.
 
-If the user provided a requirement ID, resolve it to a file path:
+If the user provided a requirement ID, resolve it to a file path by running:
 
-| ID Prefix | Type | Search Directories |
-|-----------|------|--------------------|
-| `FEAT-` | Feature | `requirements/features/`, `requirements/implementation/` |
-| `CHORE-` | Chore | `requirements/chores/` |
-| `BUG-` | Bug | `requirements/bugs/` |
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<ID>"
+```
 
-Search for files matching the pattern `{PREFIX}-{NNN}*.md` in the appropriate directory using Glob.
+The script maps the prefix (`FEAT-`, `CHORE-`, `BUG-`) to the correct directory (`requirements/features/`, `requirements/chores/`, `requirements/bugs/`), globs `{ID}-*.md`, and prints the single matching path on stdout. Exit codes: `0` on exactly-one match; `1` on zero matches (print the `No requirement document found for ID "{ID}"` error and the directory searched); `2` on multiple matches (list the candidates and ask the user to disambiguate); `3` on malformed or missing ID.
 
-**If the ID matches files in multiple directories** (e.g., a FEAT-XXX has both a feature doc and an implementation plan), review all matching documents together. The feature requirements document is the primary target; the implementation plan is reviewed as a secondary document.
+For `FEAT-` IDs, additionally Glob `requirements/implementation/{ID}-*.md` — the script covers only the primary requirements directory. **If the ID matches files in multiple directories** (e.g., a FEAT-XXX has both a feature doc and an implementation plan), review all matching documents together. The feature requirements document is the primary target; the implementation plan is reviewed as a secondary document.
 
 **Self-referential documents**: If the resolved document describes this skill itself (e.g., FEAT-006), proceed normally but note in the summary that findings about missing references or gaps may reflect the document describing features not yet implemented rather than actual errors. Use **Info** severity for ambiguous cases.
-
-**If no match is found**, display an error listing the directories searched:
-```
-No requirement document found for ID "FEAT-099".
-Searched: requirements/features/, requirements/implementation/
-```
 
 ## Step 1.5: Detect Review Mode
 
@@ -245,7 +237,7 @@ When a QA test plan exists for the requirement ID, validate bidirectional consis
 
 ### Step R1: Load Documents
 
-Load the requirement document (already resolved), the QA test plan at `qa/test-plans/QA-plan-{ID}.md`, and the implementation plan if one exists. Extract all traceability IDs (FR-N, RC-N, NFR-N, acceptance criteria) from requirements, and all entries (Code Path Verification, New Test Analysis, Coverage Gap Analysis, Deliverable Verification, Verification Checklist) from the test plan.
+Load the requirement document (already resolved via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<ID>"` in Step 1 — exit codes `0`/`1`/`2`/`3`), the QA test plan at `qa/test-plans/QA-plan-{ID}.md`, and the implementation plan if one exists. Extract all traceability IDs (FR-N, RC-N, NFR-N, acceptance criteria) from requirements, and all entries (Code Path Verification, New Test Analysis, Coverage Gap Analysis, Deliverable Verification, Verification Checklist) from the test plan.
 
 ### Step R2: Bidirectional Cross-Reference Check
 
@@ -279,7 +271,7 @@ When a PR exists for the requirement ID, produce an advisory drift report. This 
 
 ### Step CR1: Load PR Context
 
-Fetch the PR diff using `gh pr diff <number>`. If `gh` is unavailable, fall back to `git diff <base-branch>...HEAD`. Load the requirement document (already resolved in Step 1). Load the test plan from `qa/test-plans/QA-plan-{ID}.md` if it exists — if not, skip CR2 and note as **Info** ("No test plan found; test plan staleness detection skipped"). If the PR diff is very large (> 100 changed files), warn the user and focus on files referenced in requirements and test plan. Fork PRs are supported — `gh pr diff` works normally for PRs from forks.
+Fetch the PR diff using `gh pr diff <number>`. If `gh` is unavailable, fall back to `git diff <base-branch>...HEAD`. Load the requirement document (already resolved in Step 1 via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<ID>"` — exit codes `0`/`1`/`2`/`3`). Load the test plan from `qa/test-plans/QA-plan-{ID}.md` if it exists — if not, skip CR2 and note as **Info** ("No test plan found; test plan staleness detection skipped"). If the PR diff is very large (> 100 changed files), warn the user and focus on files referenced in requirements and test plan. Fork PRs are supported — `gh pr diff` works normally for PRs from forks.
 
 ### Step CR2: Test Plan Staleness Detection
 

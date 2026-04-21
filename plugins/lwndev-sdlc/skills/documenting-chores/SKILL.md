@@ -42,6 +42,14 @@ All chore documents go in: `requirements/chores/`
 
 Naming format: `CHORE-XXX-{2-4-word-description}.md`
 
+Derive the description slug from the chore title by running:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<chore title>"
+```
+
+The script lowercases, strips punctuation, drops stopwords (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), and keeps the first four remaining tokens joined with `-`. Exit codes: `0` on success; `1` when the slug is empty after normalization (prompt the user for a more descriptive title); `2` on missing arg.
+
 Examples:
 - `CHORE-001-update-dependencies.md`
 - `CHORE-002-fix-readme-typos.md`
@@ -49,12 +57,13 @@ Examples:
 
 ## Chore ID Assignment
 
-To assign the next Chore ID:
+Allocate the next Chore ID by running:
 
-1. Check existing files in `requirements/chores/`
-2. Find the highest `CHORE-XXX` number
-3. Increment by 1 for the new chore
-4. If no chores exist, start with `CHORE-001`
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/next-id.sh" CHORE
+```
+
+The script scans `requirements/chores/` for existing `CHORE-NNN-*.md` files, returns `max(NNN) + 1` zero-padded to three digits, and prints `001` when no chores exist. Exit codes: `0` on success; `2` on missing/invalid type arg.
 
 ## Template
 
