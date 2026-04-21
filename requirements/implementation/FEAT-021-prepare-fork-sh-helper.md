@@ -37,7 +37,7 @@ FR-2 Step 4 of `prepare-fork.sh` requires reading the step baseline and the base
 
 ### Phase 2: prepare-fork.sh + bats Fixture
 **Feature:** [FEAT-021](../features/FEAT-021-prepare-fork-sh-helper.md) | [#181](https://github.com/lwndev/lwndev-marketplace/issues/181)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 With the `step-baseline` / `step-baseline-locked` subcommands from Phase 1 in place, the script has a complete set of primitives to compose over. Building the script and its bats fixture together in one phase keeps the contract and its test suite in lockstep, and matches the acceptance criterion that FR-2 and FR-3 land in the same PR. The bats fixture follows the existing FEAT-020 layout (`plugins/lwndev-sdlc/scripts/tests/`), where ten sibling scripts already ship their test fixtures today.
@@ -59,8 +59,8 @@ With the `step-baseline` / `step-baseline-locked` subcommands from Phase 1 in pl
 14. Run `npm test` and confirm the full suite still passes (the new bats fixture should be picked up by the existing scripts test harness used for FEAT-020).
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/scripts/prepare-fork.sh` — executable, shebang `#!/usr/bin/env bash`, implements FR-1 and FR-2 per the requirements doc
-- [ ] `plugins/lwndev-sdlc/scripts/tests/prepare-fork.bats` — unit tests covering every case in "Unit Tests" plus the NFR-1 ordering-invariant case
+- [x] `plugins/lwndev-sdlc/scripts/prepare-fork.sh` — executable, shebang `#!/usr/bin/env bash`, implements FR-1 and FR-2 per the requirements doc
+- [x] `plugins/lwndev-sdlc/scripts/tests/prepare-fork.bats` — unit tests covering every case in "Unit Tests" plus the NFR-1 ordering-invariant case
 
 ---
 

@@ -5,13 +5,14 @@ import { spawnSync } from 'node:child_process';
 
 // ---------------------------------------------------------------------------
 // FEAT-020 integration test — plugin-shared scripts library (AC-7)
+// Extended by FEAT-021 to cover prepare-fork.sh.
 //
 // Asserts filesystem-level invariants of plugins/lwndev-sdlc/scripts/:
 //   * directory exists and is non-empty
 //   * every canonical script file exists and has the owner-execute bit set
 //   * running each script with no args exits non-zero with a usage message
 //   * pr-body.tmpl asset exists and is non-empty
-//   * the bats-fixture count matches the script count (ten)
+//   * the bats-fixture count matches the script count
 // ---------------------------------------------------------------------------
 
 const SCRIPTS_DIR = 'plugins/lwndev-sdlc/scripts';
@@ -30,6 +31,7 @@ const CANONICAL_SCRIPTS = [
   'commit-work.sh',
   'create-pr.sh',
   'branch-id-parse.sh',
+  'prepare-fork.sh',
 ] as const;
 
 describe('shared-scripts library: directory layout', () => {
@@ -90,11 +92,11 @@ describe('shared-scripts library: pr-body.tmpl asset', () => {
 });
 
 describe('shared-scripts library: bats fixture count', () => {
-  it('should contain exactly ten .bats files, one per script', () => {
+  it('should contain exactly eleven .bats files, one per script', () => {
     expect(existsSync(TESTS_DIR)).toBe(true);
     const batsFiles = readdirSync(TESTS_DIR).filter((f) => f.endsWith('.bats'));
     expect(batsFiles.length).toBe(CANONICAL_SCRIPTS.length);
-    expect(batsFiles.length).toBe(10);
+    expect(batsFiles.length).toBe(11);
   });
 
   it('should have a .bats fixture for every canonical script', () => {
