@@ -1,12 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  readFileSync,
-  existsSync,
-  readdirSync,
-  mkdtempSync,
-  writeFileSync,
-  mkdirSync,
-} from 'node:fs';
+import { readFileSync, mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
@@ -248,36 +241,107 @@ describe('[QA CHORE-034] Cross-cutting: every fork-invocation spec points to the
 // ---------- State transitions dimension: state-file schema compat (SC-P0) ----------
 
 describe('[QA CHORE-034] State transitions: state-file schema backwards compatibility', () => {
-  it('live CHORE-034 state file parses and carries all post-FEAT-014 fields', () => {
-    const statePath = join(REPO_ROOT, '.sdlc/workflows/CHORE-034.json');
-    expect(existsSync(statePath)).toBe(true);
-    const parsed = JSON.parse(readFileSync(statePath, 'utf8')) as Record<string, unknown>;
-    // Core schema
-    expect(parsed.id).toBe('CHORE-034');
+  // These tests build synthetic fixtures rather than depending on
+  // `.sdlc/workflows/` (which is gitignored and absent in CI). The property
+  // under test is FR-13: the workflow-state.sh read path migrates pre-FEAT-014
+  // state files in place — missing `complexity`, `complexityStage`,
+  // `modelOverride`, `modelSelections` are silently added with init defaults.
+
+  const WORKFLOW_STATE = join(
+    REPO_ROOT,
+    'plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh'
+  );
+
+  it('post-FEAT-014 state file (complete schema) parses and round-trips through status', () => {
+    const workdir = mkdtempSync(join(tmpdir(), 'qa-chore-034-schema-'));
+    mkdirSync(join(workdir, '.sdlc/workflows'), { recursive: true });
+    const complete = {
+      id: 'CHORE-999',
+      type: 'chore',
+      currentStep: 0,
+      status: 'in-progress',
+      pauseReason: null,
+      gate: null,
+      steps: [
+        {
+          name: 'Document chore',
+          skill: 'documenting-chores',
+          context: 'main',
+          status: 'pending',
+          artifact: null,
+          completedAt: null,
+        },
+      ],
+      phases: { total: 0, completed: 0 },
+      prNumber: null,
+      branch: null,
+      startedAt: '2026-04-21T00:00:00Z',
+      lastResumedAt: null,
+      complexity: 'medium',
+      complexityStage: 'init',
+      modelOverride: null,
+      modelSelections: [],
+    };
+    writeFileSync(
+      join(workdir, '.sdlc/workflows/CHORE-999.json'),
+      JSON.stringify(complete, null, 2)
+    );
+    const res = spawnSync('bash', [WORKFLOW_STATE, 'status', 'CHORE-999'], {
+      cwd: workdir,
+      encoding: 'utf8',
+    });
+    expect(res.status).toBe(0);
+    const parsed = JSON.parse(res.stdout) as Record<string, unknown>;
+    expect(parsed.id).toBe('CHORE-999');
     expect(parsed.type).toBe('chore');
-    expect(Array.isArray(parsed.steps)).toBe(true);
-    // FEAT-014 additions (must survive the pilot — the chore promised "no
-    // behavioral changes")
-    expect(parsed.complexity).toBeDefined();
-    expect(parsed.complexityStage).toBeDefined();
-    expect(parsed.modelSelections).toBeDefined();
+    expect(parsed.complexity).toBe('medium');
+    expect(parsed.complexityStage).toBe('init');
     expect(Array.isArray(parsed.modelSelections)).toBe(true);
+    expect(Array.isArray(parsed.steps)).toBe(true);
   });
 
-  it('previous workflow state files (pre-CHORE-034) still parse without migration', () => {
-    const wfDir = join(REPO_ROOT, '.sdlc/workflows');
-    const entries = readdirSync(wfDir).filter(
-      (f) => f.match(/^(FEAT|CHORE|BUG)-\d+\.json$/) && f !== 'CHORE-034.json'
-    );
-    expect(entries.length).toBeGreaterThan(0);
-    for (const entry of entries) {
-      const body = readFileSync(join(wfDir, entry), 'utf8');
-      expect(() => JSON.parse(body)).not.toThrow();
-      const parsed = JSON.parse(body) as Record<string, unknown>;
-      expect(parsed.id).toBeDefined();
-      expect(parsed.type).toBeDefined();
-      expect(Array.isArray(parsed.steps)).toBe(true);
-    }
+  it('pre-FEAT-014 state file (missing FEAT-014 fields) is migrated in place on read (FR-13)', () => {
+    const workdir = mkdtempSync(join(tmpdir(), 'qa-chore-034-legacy-'));
+    mkdirSync(join(workdir, '.sdlc/workflows'), { recursive: true });
+    // Legacy shape — core fields only, no complexity/modelSelections/etc.
+    const legacy = {
+      id: 'CHORE-998',
+      type: 'chore',
+      currentStep: 0,
+      status: 'in-progress',
+      pauseReason: null,
+      steps: [
+        {
+          name: 'Document chore',
+          skill: 'documenting-chores',
+          context: 'main',
+          status: 'pending',
+          artifact: null,
+          completedAt: null,
+        },
+      ],
+      phases: { total: 0, completed: 0 },
+      prNumber: null,
+      branch: null,
+      startedAt: '2026-03-01T00:00:00Z',
+      lastResumedAt: null,
+    };
+    const statePath = join(workdir, '.sdlc/workflows/CHORE-998.json');
+    writeFileSync(statePath, JSON.stringify(legacy, null, 2));
+    const res = spawnSync('bash', [WORKFLOW_STATE, 'status', 'CHORE-998'], {
+      cwd: workdir,
+      encoding: 'utf8',
+    });
+    expect(res.status).toBe(0);
+    const parsed = JSON.parse(res.stdout) as Record<string, unknown>;
+    // Core schema survived
+    expect(parsed.id).toBe('CHORE-998');
+    expect(parsed.type).toBe('chore');
+    expect(Array.isArray(parsed.steps)).toBe(true);
+    // FEAT-014 fields were added with init defaults
+    expect(parsed.complexityStage).toBeDefined();
+    expect('modelOverride' in parsed).toBe(true);
+    expect(Array.isArray(parsed.modelSelections)).toBe(true);
   });
 });
 
