@@ -33,6 +33,14 @@ usage() {
   echo "  get-model <ID> <step-name>    Resolve model tier for a step (baseline + complexity + modelOverride)" >&2
   echo "  record-model-selection <ID> <stepIndex> <skill> <mode> <phase> <tier> <complexityStage> <startedAt>" >&2
   echo "                                Append an entry to the modelSelections audit trail" >&2
+  echo "  step-baseline <step-name>     FEAT-014 Axis 1. Echo the baseline tier (haiku|sonnet) for a known" >&2
+  echo "                                step-name. Exits 2 with an error for unknown names." >&2
+  echo "                                Example: workflow-state.sh step-baseline reviewing-requirements" >&2
+  echo "  step-baseline-locked <step-name>" >&2
+  echo "                                FEAT-014 Axis 1. Echo 'true' if the step-name is baseline-locked" >&2
+  echo "                                (finalizing-workflow, pr-creation) or 'false' otherwise. Exits 2" >&2
+  echo "                                with an error for unknown names." >&2
+  echo "                                Example: workflow-state.sh step-baseline-locked pr-creation" >&2
   echo "  classify-init <ID> [doc-path]" >&2
   echo "                                Compute init-stage work-item complexity (low|medium|high) from the" >&2
   echo "                                requirement document. Dispatches by chain type read from state." >&2
@@ -1645,6 +1653,32 @@ case "$command" in
   record-model-selection)
     [[ $# -ge 8 ]] || { echo "Error: record-model-selection requires <ID> <stepIndex> <skill> <mode> <phase> <tier> <complexityStage> <startedAt>" >&2; exit 1; }
     cmd_record_model_selection "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8"
+    ;;
+  step-baseline)
+    [[ $# -ge 1 ]] || { echo "Error: step-baseline requires <step-name>" >&2; exit 2; }
+    step_name="$1"
+    case "$step_name" in
+      reviewing-requirements|creating-implementation-plans|implementing-plan-phases|executing-chores|executing-bug-fixes|finalizing-workflow|pr-creation)
+        _step_baseline "$step_name"
+        ;;
+      *)
+        echo "Error: unknown step-name '${step_name}'" >&2
+        exit 2
+        ;;
+    esac
+    ;;
+  step-baseline-locked)
+    [[ $# -ge 1 ]] || { echo "Error: step-baseline-locked requires <step-name>" >&2; exit 2; }
+    step_name="$1"
+    case "$step_name" in
+      reviewing-requirements|creating-implementation-plans|implementing-plan-phases|executing-chores|executing-bug-fixes|finalizing-workflow|pr-creation)
+        _step_baseline_locked "$step_name"
+        ;;
+      *)
+        echo "Error: unknown step-name '${step_name}'" >&2
+        exit 2
+        ;;
+    esac
     ;;
   classify-init)
     [[ $# -ge 1 ]] || { echo "Error: classify-init requires <ID> [doc-path]" >&2; exit 1; }

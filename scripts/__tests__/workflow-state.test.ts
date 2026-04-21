@@ -1651,6 +1651,87 @@ describe('workflow-state.sh', () => {
           ).toBe('sonnet');
         });
       });
+
+      // --- FEAT-021 Phase 1: step-baseline / step-baseline-locked subcommands ---
+      describe('step-baseline (FEAT-021 Phase 1)', () => {
+        it('echoes sonnet for reviewing-requirements', () => {
+          expect(run('step-baseline reviewing-requirements')).toBe('sonnet');
+        });
+
+        it('echoes sonnet for creating-implementation-plans', () => {
+          expect(run('step-baseline creating-implementation-plans')).toBe('sonnet');
+        });
+
+        it('echoes sonnet for implementing-plan-phases', () => {
+          expect(run('step-baseline implementing-plan-phases')).toBe('sonnet');
+        });
+
+        it('echoes sonnet for executing-chores', () => {
+          expect(run('step-baseline executing-chores')).toBe('sonnet');
+        });
+
+        it('echoes sonnet for executing-bug-fixes', () => {
+          expect(run('step-baseline executing-bug-fixes')).toBe('sonnet');
+        });
+
+        it('echoes haiku for finalizing-workflow', () => {
+          expect(run('step-baseline finalizing-workflow')).toBe('haiku');
+        });
+
+        it('echoes haiku for pr-creation', () => {
+          expect(run('step-baseline pr-creation')).toBe('haiku');
+        });
+
+        it('exits 2 with a clear error for an unknown step-name', () => {
+          const err = run('step-baseline bogus-step', { expectError: true });
+          expect(err).toContain("unknown step-name 'bogus-step'");
+        });
+
+        it('exits 2 when no step-name is provided', () => {
+          const err = run('step-baseline', { expectError: true });
+          expect(err).toContain('step-baseline requires');
+        });
+      });
+
+      describe('step-baseline-locked (FEAT-021 Phase 1)', () => {
+        it('echoes false for reviewing-requirements', () => {
+          expect(run('step-baseline-locked reviewing-requirements')).toBe('false');
+        });
+
+        it('echoes false for creating-implementation-plans', () => {
+          expect(run('step-baseline-locked creating-implementation-plans')).toBe('false');
+        });
+
+        it('echoes false for implementing-plan-phases', () => {
+          expect(run('step-baseline-locked implementing-plan-phases')).toBe('false');
+        });
+
+        it('echoes false for executing-chores', () => {
+          expect(run('step-baseline-locked executing-chores')).toBe('false');
+        });
+
+        it('echoes false for executing-bug-fixes', () => {
+          expect(run('step-baseline-locked executing-bug-fixes')).toBe('false');
+        });
+
+        it('echoes true for finalizing-workflow', () => {
+          expect(run('step-baseline-locked finalizing-workflow')).toBe('true');
+        });
+
+        it('echoes true for pr-creation', () => {
+          expect(run('step-baseline-locked pr-creation')).toBe('true');
+        });
+
+        it('exits 2 with a clear error for an unknown step-name', () => {
+          const err = run('step-baseline-locked bogus-step', { expectError: true });
+          expect(err).toContain("unknown step-name 'bogus-step'");
+        });
+
+        it('exits 2 when no step-name is provided', () => {
+          const err = run('step-baseline-locked', { expectError: true });
+          expect(err).toContain('step-baseline-locked requires');
+        });
+      });
     });
 
     // --- FEAT-014 Phase 4: retry, resume, version compatibility helpers ---
