@@ -21,11 +21,13 @@ Pilot an input-token reduction pass on `orchestrating-workflows/SKILL.md` by com
 - `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — compress prose to lite style; keep as a thin dispatcher with heavy narrative sections pointing to `references/`
 - `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/chain-procedures.md` — receive any relocated chain-procedure narrative that was previously inlined in SKILL.md
 - `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/step-execution-details.md` — receive any relocated step-execution narrative that was previously inlined in SKILL.md
-- *(may create)* `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/*.md` — one or more new reference files if a relocated section does not fit an existing reference document
+- `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/forked-steps.md` — receive forked-steps recipe relocated from SKILL.md
+- `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/reviewing-requirements-flow.md` — receive reviewing-requirements decision flow relocated from SKILL.md
 - `requirements/chores/CHORE-035-input-token-optimization-pilot.md` — baseline + post-change measurements and learnings appended to the Notes section on completion
 - `qa/test-plans/QA-plan-CHORE-035.md` — adversarial QA test plan
 - `qa/test-results/QA-results-CHORE-035.md` — QA test results artifact
-- `scripts/__tests__/qa-CHORE-035.spec.ts` — QA test implementation (if applicable)
+- `scripts/__tests__/orchestrating-workflows.test.ts` — integration tests for orchestrating-workflows skill (modified to accommodate structural changes)
+- `scripts/__tests__/qa-CHORE-035.spec.ts` — QA test implementation
 
 ## Acceptance Criteria
 
@@ -46,9 +48,9 @@ Pilot an input-token reduction pass on `orchestrating-workflows/SKILL.md` by com
 
 ## Completion
 
-**Status:** `In Progress`
+**Status:** `Complete`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-04-21
 
 **Pull Request:** [#204](https://github.com/lwndev/lwndev-marketplace/pull/204)
 
