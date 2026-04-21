@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.15.2] - 2026-04-21
+
+### Documentation
+
+- **orchestrating-workflows:** Input token optimization pilot (CHORE-035). Sister effort to CHORE-034's output-token pass, this chore targets the per-invocation instruction surface loaded on every orchestrator invocation and every forked sub-agent spawn. `orchestrating-workflows/SKILL.md` prose compressed to lite style, two heavy numbered recipes relocated into new reference files (`references/forked-steps.md`, `references/reviewing-requirements-flow.md`) with single-sentence inline pointers preserved, and the three per-chain step-sequence tables (Feature / Chore / Bug) collapsed into one parameterized table plus a per-chain deltas note. Net effect on SKILL.md: −212 lines / −2240 words / −16622 chars (−43% char reduction, ~4155 input tokens saved per load). Behaviour-neutral refactor — all CHORE-034 load-bearing carve-outs (error messages, security warnings, interactive prompts, findings display, FR-14 Unicode-arrow echoes, `[info]`/`[warn]`/`[model]` tagged logs, user-visible state transitions) and the fork-to-orchestrator return contract are preserved verbatim; no skill frontmatter changes; no new or renamed skills; no state-file schema changes (step-index numbering invariant across the relocation). `scripts/__tests__/qa-CHORE-035.spec.ts` adds 47 regression guards covering inline-pointer integrity, consolidated-table row preservation, state-file step-index invariance, and CHORE-034 carve-out / fork-return-contract preservation. Rollout to the remaining twelve skills tracked in [#203](https://github.com/lwndev/lwndev-marketplace/issues/203).
+
+[1.15.2]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.15.1...lwndev-sdlc@1.15.2
+
 ## [1.15.1] - 2026-04-21
 
 ### Documentation
