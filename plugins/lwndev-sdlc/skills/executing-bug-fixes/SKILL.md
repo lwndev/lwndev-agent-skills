@@ -29,16 +29,47 @@ Execute bug fix workflows with root cause driven execution from branch creation 
 
 ## Quick Start
 
-1. Locate bug document in `requirements/bugs/`
+1. Locate the bug document — resolve a `BUG-NNN` ID to a file path with:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<BUG-NNN>"
+   ```
+
+   Exit codes: `0` on exactly-one match (path on stdout); `1` on zero matches; `2` on ambiguous (list candidates); `3` on malformed/missing ID.
 2. Extract Bug ID, severity, root cause(s), and review acceptance criteria
 3. Redeclare root causes from the bug document into the workflow context
-4. Create git branch: `fix/BUG-XXX-description`
+4. Create the git branch. Build the name and ensure checkout with:
+
+   ```bash
+   branch=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" fix "<BUG-NNN>" "<2-4 word description>")
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-branch.sh" "$branch"
+   ```
+
+   `build-branch-name.sh` calls `slugify.sh` internally (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<description>"`), handling lowercasing, punctuation stripping, stopword removal (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), and the 4-token cap. Exit codes: `build-branch-name.sh` returns `1` when slugify produces an empty slug (ask for a more descriptive title) and `2` on invalid type. `ensure-branch.sh` returns `0` on success, `2` on missing arg, `3` on dirty working tree (stash or commit first).
 5. Address each root cause systematically, implementing fixes and tracking with todos
-6. **Check off each acceptance criterion** in the bug document (`- [ ]` → `- [x]`) as it is verified
-7. Commit changes with `fix(category): description` messages
+6. **Check off each acceptance criterion** in the bug document with:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-acceptance.sh" "<bug-doc>" "<AC matcher>"
+   ```
+
+   Literal substring match (not regex), fence-aware. Exit codes: `0` on `checked` / `already checked` (idempotent); `1` on criterion not found; `2` on ambiguous; `3` on missing arg.
+7. Commit changes with:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/commit-work.sh" fix <category> "<description>"
+   ```
+
+   **The script does not stage files** — run `git add <paths>` first. It runs `git commit -m "fix(<category>): <description>"` and prints the short SHA on success. Exit codes: `0` on success (SHA on stdout); `1` on commit failure (git stderr passes through); `2` on missing/invalid type arg.
 8. Verify reproduction steps no longer trigger the bug
 9. Run tests/build verification
-10. Create pull request **(MUST include `Closes #N` if issue exists)**
+10. Create the pull request with:
+
+    ```bash
+    bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-pr.sh" fix "<BUG-NNN>" "<summary>" [--closes <issueRef>]
+    ```
+
+    Does `git push -u origin <branch>` then `gh pr create` against `scripts/assets/pr-body.tmpl`. **MUST include `--closes #N` if an issue exists** — auto-closes the linked issue on merge. Exit codes: `0` on success (PR URL on stdout); `1` on push or PR-creation failure; `2` on missing/invalid args.
 11. Update bug document completion section (status, date, PR link)
 
 > **Note:** Issue tracking (start/completion comments) is handled by the orchestrator via `managing-work-items`. This skill focuses on root cause driven execution and verification.
@@ -87,10 +118,9 @@ If a new root cause is discovered during execution:
 
 ## Branch Naming
 
-Format: `fix/BUG-XXX-{2-4-word-description}`
+Format: `fix/BUG-XXX-{2-4-word-description}`. Always assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" fix "<BUG-NNN>" "<description>"` (see Quick Start step 4) rather than hand-kebabing — the script applies slugify normalization uniformly.
 
 - Uses Bug ID (not GitHub issue number) for consistent naming
-- Description should be lowercase with hyphens
 - Keep description brief but descriptive (2-4 words)
 
 Examples:
@@ -100,7 +130,7 @@ Examples:
 
 ## Commit Message Format
 
-Format: `fix(category): brief description`
+Format: `fix(category): brief description`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/commit-work.sh" fix <category> "<description>"` (see Quick Start step 7). **Callers must `git add` relevant paths before invoking** — the script does not auto-stage.
 
 | Category | Use When |
 |----------|----------|

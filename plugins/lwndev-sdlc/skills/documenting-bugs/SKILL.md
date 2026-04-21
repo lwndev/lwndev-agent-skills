@@ -43,6 +43,14 @@ All bug documents go in: `requirements/bugs/`
 
 Naming format: `BUG-XXX-{2-4-word-description}.md`
 
+Derive the description slug from the bug title by running:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<bug title>"
+```
+
+The script lowercases, strips punctuation, drops stopwords (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), and keeps the first four remaining tokens joined with `-`. Exit codes: `0` on success; `1` when the slug is empty after normalization (prompt the user for a more descriptive title); `2` on missing arg.
+
 Examples:
 - `BUG-001-auth-token-expired.md`
 - `BUG-002-broken-csv-export.md`
@@ -50,12 +58,13 @@ Examples:
 
 ## Bug ID Assignment
 
-To assign the next Bug ID:
+Allocate the next Bug ID by running:
 
-1. Check existing files in `requirements/bugs/`
-2. Find the highest `BUG-XXX` number
-3. Increment by 1 for the new bug
-4. If no bugs exist, start with `BUG-001`
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/next-id.sh" BUG
+```
+
+The script scans `requirements/bugs/` for existing `BUG-NNN-*.md` files, returns `max(NNN) + 1` zero-padded to three digits, and prints `001` when no bugs exist. Exit codes: `0` on success; `2` on missing/invalid type arg.
 
 ## Template
 

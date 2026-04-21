@@ -29,14 +29,45 @@ Execute chore task workflows with systematic tracking from branch creation throu
 
 ## Quick Start
 
-1. Locate chore document in `requirements/chores/`
+1. Locate the chore document — resolve a `CHORE-NNN` ID to a file path with:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<CHORE-NNN>"
+   ```
+
+   Exit codes: `0` on exactly-one match (path on stdout); `1` on zero matches; `2` on ambiguous (list candidates); `3` on malformed/missing ID.
 2. Extract Chore ID and review acceptance criteria
-3. Create git branch: `chore/CHORE-XXX-description`
+3. Create the git branch. Build the name and ensure checkout with:
+
+   ```bash
+   branch=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" chore "<CHORE-NNN>" "<2-4 word description>")
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-branch.sh" "$branch"
+   ```
+
+   `build-branch-name.sh` calls `slugify.sh` internally (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<description>"`), handling lowercasing, punctuation stripping, stopword removal (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), and the 4-token cap. Exit codes: `build-branch-name.sh` returns `1` when slugify produces an empty slug (ask for a more descriptive title) and `2` on invalid type. `ensure-branch.sh` returns `0` on success, `2` on missing arg, `3` on dirty working tree (stash or commit first).
 4. Execute the defined changes, tracking with todos
-5. **Check off each acceptance criterion** in the chore document (`- [ ]` → `- [x]`) as it is verified
-6. Commit changes with descriptive messages
+5. **Check off each acceptance criterion** in the chore document with:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-acceptance.sh" "<chore-doc>" "<AC matcher>"
+   ```
+
+   Literal substring match (not regex), fence-aware. Exit codes: `0` on `checked` / `already checked` (idempotent); `1` on criterion not found; `2` on ambiguous; `3` on missing arg.
+6. Commit changes with:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/commit-work.sh" chore <category> "<description>"
+   ```
+
+   **The script does not stage files** — run `git add <paths>` first. It runs `git commit -m "chore(<category>): <description>"` and prints the short SHA on success. Exit codes: `0` on success (SHA on stdout); `1` on commit failure (git stderr passes through); `2` on missing/invalid type arg.
 7. Run tests/build verification
-8. Create pull request **(MUST include `Closes #N` if issue exists)**
+8. Create the pull request with:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-pr.sh" chore "<CHORE-NNN>" "<summary>" [--closes <issueRef>]
+   ```
+
+   Does `git push -u origin <branch>` then `gh pr create` against `scripts/assets/pr-body.tmpl`. **MUST include `--closes #N` if an issue exists** — auto-closes the linked issue on merge. Exit codes: `0` on success (PR URL on stdout); `1` on push or PR-creation failure; `2` on missing/invalid args.
 9. Update chore document completion section (status, date, PR link)
 
 > **Note:** Issue tracking (start/completion comments) is handled by the orchestrator via `managing-work-items`. This skill focuses on chore execution and verification.
@@ -64,10 +95,9 @@ See [references/workflow-details.md](references/workflow-details.md) for detaile
 
 ## Branch Naming
 
-Format: `chore/CHORE-XXX-{2-4-word-description}`
+Format: `chore/CHORE-XXX-{2-4-word-description}`. Always assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" chore "<CHORE-NNN>" "<description>"` (see Quick Start step 3) rather than hand-kebabing — the script applies slugify normalization uniformly.
 
 - Uses Chore ID (not GitHub issue number) for consistent naming
-- Description should be lowercase with hyphens
 - Keep description brief but descriptive (2-4 words)
 
 Examples:
@@ -77,7 +107,7 @@ Examples:
 
 ## Commit Message Format
 
-Format: `chore(category): brief description`
+Format: `chore(category): brief description`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/commit-work.sh" chore <category> "<description>"` (see Quick Start step 6). **Callers must `git add` relevant paths before invoking** — the script does not auto-stage.
 
 Categories: `dependencies`, `documentation`, `refactoring`, `configuration`, `cleanup`
 

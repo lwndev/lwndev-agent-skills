@@ -28,19 +28,43 @@ Execute implementation plan phases with systematic tracking and verification.
 
 ## Quick Start
 
-1. Locate implementation plan in `requirements/implementation/`
+1. Locate the implementation plan — when the user supplies a `FEAT-NNN` ID, resolve it via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<FEAT-NNN>"` (exit `0`/`1`/`2`/`3`) and then Glob `requirements/implementation/{ID}-*.md` for the implementation plan specifically.
 2. Identify target phase (user-specified or next pending)
 3. Update plan status to "🔄 In Progress"
    ```markdown
    **Status:** 🔄 In Progress
    ```
-4. Create feature branch (if not already exists): `feat/{Feature ID}-{2-3-word-summary}`
+4. Create the feature branch (if not already on it). Build the name with:
+
+   ```bash
+   branch=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<2-3 word summary>")
+   ```
+
+   (The script internally calls `slugify.sh` — `bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<summary>"` — so lowercasing, punctuation stripping, stopword removal, and the 4-token cap are all handled. Exit `1` means the summary produced an empty slug; prompt for a more descriptive summary. Exit `2` means invalid type.) Then ensure the branch is current with:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-branch.sh" "$branch"
+   ```
+
+   Exit codes: `0` on success (`on <branch>` / `switched to <branch>` / `created <branch>` on stdout); `2` on missing arg; `3` on dirty working tree — stash or commit first, then retry.
 5. Load implementation steps into todos
-6. Execute each step, **checking off each deliverable** in the implementation plan (`- [ ]` → `- [x]`) as it is completed
+6. Execute each step, **checking off each deliverable** in the implementation plan as it is completed with:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-acceptance.sh" "<plan-path>" "<deliverable-matcher>"
+   ```
+
+   The script finds the first `- [ ] ` line outside a fenced code block containing the literal (non-regex) matcher substring and flips it to `- [x] `. Exit codes: `0` on `checked` or `already checked` (idempotent); `1` on criterion not found; `2` on ambiguous (multiple matches); `3` on missing arg.
 7. Verify deliverables (tests pass, build succeeds)
 8. **Always** commit and push changes to remote — do not ask the user for confirmation
 9. Update plan status to "✅ Complete"
-10. **After all phases complete:** Create pull request **(MUST include `Closes #N` if issue exists)**
+10. **After all phases complete:** Create pull request **(MUST include `Closes #N` if issue exists)** with:
+
+    ```bash
+    bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-pr.sh" feat "<FEAT-NNN>" "<summary>" [--closes <issueRef>]
+    ```
+
+    The script reads the current branch, runs `git push -u origin <branch>`, assembles the PR title as `feat(<FEAT-NNN>): <summary>`, substitutes into `scripts/assets/pr-body.tmpl`, and runs `gh pr create`. Pass `--closes #N` when a GitHub issue exists — this auto-closes the linked issue on merge. Exit codes: `0` on success (PR URL on stdout); `1` on `git push` or `gh pr create` failure; `2` on missing/invalid required args or malformed `--closes` token.
 
 > **Note:** Issue tracking (start/completion comments) is handled by the orchestrator via `managing-work-items`. This skill focuses on implementation, verification, and status tracking.
 
@@ -92,7 +116,7 @@ The GitHub issue number `[#N]` is used for the `Closes #N` PR reference when cre
 
 ## Branch Naming
 
-Format: `feat/{Feature ID}-{2-3-word-summary}`
+Format: `feat/{Feature ID}-{2-3-word-summary}`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<summary>"` (see Step 4 above) rather than hand-kebabing.
 
 Examples:
 - `feat/FEAT-001-scaffold-skill-command`
