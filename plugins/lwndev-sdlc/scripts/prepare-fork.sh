@@ -86,9 +86,11 @@ done
 
 # --- Step 0b: jq availability -------------------------------------------------
 # jq is required for Steps 3 and 4. Checking up front gives a deterministic
-# exit 4 before any side effect is written.
+# exit 4 before any side effect is written. The message deliberately differs
+# from Step 3's message so a caller can tell "jq absent" apart from "jq
+# installed but state-file read failed".
 if ! command -v jq >/dev/null 2>&1; then
-  echo "Error: cannot read complexityStage from state file — is jq installed?" >&2
+  echo "Error: jq is not installed or not on PATH — cannot continue" >&2
   exit 4
 fi
 
@@ -366,8 +368,12 @@ elif [[ -n "$phase" ]]; then
   slot=", phase=${phase}"
 fi
 
-# Emit the echo line.
-if [[ "$locked" == "true" ]]; then
+# Emit the echo line. Edge Case 9: when a hard override pushed a baseline-locked
+# step off its baseline, tier != baseline and we fall through to the non-locked
+# format so the override surfaces via the `override=` token. Soft overrides on
+# locked steps are ignored by resolve-tier (tier stays at baseline), so this
+# check correctly keeps the baseline-locked format for those cases.
+if [[ "$locked" == "true" && "$tier" == "$baseline" ]]; then
   echo "[model] step ${step_index} (${skill}) → ${tier} (baseline=${baseline}, baseline-locked)" >&2
 else
   echo "[model] step ${step_index} (${skill}${slot}) → ${tier} (baseline=${baseline}, wi-complexity=${wi_complexity}, override=${override_token})" >&2

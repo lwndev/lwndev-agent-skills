@@ -185,7 +185,10 @@ write_stub_workflow_state() {
   BASH_ABS="$(command -v bash)"
   run env PATH="${TMPDIR_TEST}/empty-bin" "$BASH_ABS" "$PREPARE_FORK" FEAT-TEST 1 reviewing-requirements --mode standard
   [ "$status" -eq 4 ]
-  [[ "$output" == *"jq"* ]]
+  # Step 0b's message must be distinguishable from Step 3's state-file-read
+  # message so a caller can tell the two failure modes apart.
+  [[ "$output" == *"jq is not installed or not on PATH"* ]]
+  [[ "$output" != *"complexityStage"* ]]
 }
 
 # --- Propagation (exit 1+) ---------------------------------------------------
@@ -293,6 +296,38 @@ STUB
   run cat "$stderr_file"
   [[ "$output" == *"[model] step 9 (pr-creation) → haiku (baseline=haiku, baseline-locked)"* ]]
   [[ "$output" != *"cannot be read"* ]]
+}
+
+# --- Edge Case 9: baseline-locked step + hard override -----------------------
+# Per FEAT-021 Edge Case 9, a hard override (--cli-model or --cli-model-for)
+# that pushes a baseline-locked step off its baseline flips the echo to the
+# non-locked variant. The override surfaces in the `override=` token.
+@test "Edge Case 9: finalizing-workflow + --cli-model opus emits non-locked line" {
+  seed_state
+  stderr_file="${TMPDIR_TEST}/stderr.log"
+  bash "$PREPARE_FORK" FEAT-TEST 9 finalizing-workflow --cli-model opus 2>"$stderr_file" > "${TMPDIR_TEST}/stdout.log"
+  status_code=$?
+  [ "$status_code" -eq 0 ]
+  tier=$(cat "${TMPDIR_TEST}/stdout.log")
+  [ "$tier" = "opus" ]
+  run cat "$stderr_file"
+  [[ "$output" == *"wi-complexity="* ]]
+  [[ "$output" == *"override=cli-model:opus"* ]]
+  [[ "$output" != *"baseline-locked"* ]]
+}
+
+@test "Edge Case 9: pr-creation + --cli-model opus emits non-locked line" {
+  seed_state
+  stderr_file="${TMPDIR_TEST}/stderr.log"
+  bash "$PREPARE_FORK" FEAT-TEST 9 pr-creation --cli-model opus 2>"$stderr_file" > "${TMPDIR_TEST}/stdout.log"
+  status_code=$?
+  [ "$status_code" -eq 0 ]
+  tier=$(cat "${TMPDIR_TEST}/stdout.log")
+  [ "$tier" = "opus" ]
+  run cat "$stderr_file"
+  [[ "$output" == *"wi-complexity="* ]]
+  [[ "$output" == *"override=cli-model:opus"* ]]
+  [[ "$output" != *"baseline-locked"* ]]
 }
 
 # --- Happy path Edge Case 11 -------------------------------------------------
