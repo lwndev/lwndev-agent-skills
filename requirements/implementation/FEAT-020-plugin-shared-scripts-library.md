@@ -213,7 +213,7 @@ None — this is the first phase.
 ### Phase 3: Checkbox + Commit/PR Scripts
 
 **Feature:** [FEAT-020](../features/FEAT-020-plugin-shared-scripts-library.md) | [#180](https://github.com/lwndev/lwndev-marketplace/issues/180)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 
@@ -306,15 +306,15 @@ The checkbox scripts (`check-acceptance.sh`, `checkbox-flip-all.sh`) are the mos
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/scripts/check-acceptance.sh` — executable, FR-6 compliant, fence-aware
-- [ ] `plugins/lwndev-sdlc/scripts/checkbox-flip-all.sh` — executable, FR-7 compliant, fence-aware
-- [ ] `plugins/lwndev-sdlc/scripts/commit-work.sh` — executable, FR-8 compliant, no auto-staging
-- [ ] `plugins/lwndev-sdlc/scripts/assets/pr-body.tmpl` — template with typed placeholders
-- [ ] `plugins/lwndev-sdlc/scripts/create-pr.sh` — executable, FR-9 compliant, uses pr-body.tmpl
-- [ ] `plugins/lwndev-sdlc/scripts/tests/check-acceptance.bats` — happy + already-checked + fence + ambiguous + metachar
-- [ ] `plugins/lwndev-sdlc/scripts/tests/checkbox-flip-all.bats` — happy + idempotent + fence + boundary
-- [ ] `plugins/lwndev-sdlc/scripts/tests/commit-work.bats` — happy + nothing-staged + format
-- [ ] `plugins/lwndev-sdlc/scripts/tests/create-pr.bats` — happy + closes + push-fail + gh-fail
+- [x] `plugins/lwndev-sdlc/scripts/check-acceptance.sh` — executable, FR-6 compliant, fence-aware
+- [x] `plugins/lwndev-sdlc/scripts/checkbox-flip-all.sh` — executable, FR-7 compliant, fence-aware
+- [x] `plugins/lwndev-sdlc/scripts/commit-work.sh` — executable, FR-8 compliant, no auto-staging
+- [x] `plugins/lwndev-sdlc/scripts/assets/pr-body.tmpl` — template with typed placeholders
+- [x] `plugins/lwndev-sdlc/scripts/create-pr.sh` — executable, FR-9 compliant, uses pr-body.tmpl
+- [x] `plugins/lwndev-sdlc/scripts/tests/check-acceptance.bats` — happy + already-checked + fence + ambiguous + metachar
+- [x] `plugins/lwndev-sdlc/scripts/tests/checkbox-flip-all.bats` — happy + idempotent + fence + boundary
+- [x] `plugins/lwndev-sdlc/scripts/tests/commit-work.bats` — happy + nothing-staged + format
+- [x] `plugins/lwndev-sdlc/scripts/tests/create-pr.bats` — happy + closes + push-fail + gh-fail
 
 #### Acceptance Criteria Closed
 
