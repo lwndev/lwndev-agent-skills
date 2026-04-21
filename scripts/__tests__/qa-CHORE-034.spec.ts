@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import {
+  readFileSync,
+  existsSync,
+  readdirSync,
+  mkdtempSync,
+  writeFileSync,
+  mkdirSync,
+} from 'node:fs';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 
 // ---------------------------------------------------------------------------
@@ -24,17 +32,11 @@ import { spawnSync } from 'node:child_process';
 // ---------------------------------------------------------------------------
 
 const REPO_ROOT = process.cwd();
-const ORCH_DIR = join(
-  REPO_ROOT,
-  'plugins/lwndev-sdlc/skills/orchestrating-workflows'
-);
+const ORCH_DIR = join(REPO_ROOT, 'plugins/lwndev-sdlc/skills/orchestrating-workflows');
 const SKILL_MD = join(ORCH_DIR, 'SKILL.md');
 const STEP_EXEC_MD = join(ORCH_DIR, 'references/step-execution-details.md');
 const CHAIN_PROC_MD = join(ORCH_DIR, 'references/chain-procedures.md');
-const PREPARE_FORK = join(
-  REPO_ROOT,
-  'plugins/lwndev-sdlc/scripts/prepare-fork.sh'
-);
+const PREPARE_FORK = join(REPO_ROOT, 'plugins/lwndev-sdlc/scripts/prepare-fork.sh');
 
 function readSkill(): string {
   return readFileSync(SKILL_MD, 'utf8');
@@ -72,23 +74,17 @@ describe('[QA CHORE-034] Inputs: Output Style section documentation integrity', 
     // Shape 2: failed
     expect(body).toMatch(/`failed \| <one-sentence reason>`/);
     // Shape 3: reviewing-requirements findings summary (retained shape)
-    expect(body).toMatch(
-      /`Found \*\*N errors\*\*, \*\*N warnings\*\*, \*\*N info\*\*`/
-    );
+    expect(body).toMatch(/`Found \*\*N errors\*\*, \*\*N warnings\*\*, \*\*N info\*\*`/);
   });
 
   it('contract explicitly disambiguates reviewing-requirements (resolves contract-ambiguity cross-cutting CX-P0 #2)', () => {
     const body = readSkill();
-    expect(body).toMatch(
-      /`reviewing-requirements` does not emit the `done \| \.\.\.` shape/
-    );
+    expect(body).toMatch(/`reviewing-requirements` does not emit the `done \| \.\.\.` shape/);
   });
 
   it('contract precedence over lite rules is stated explicitly', () => {
     const body = readSkill();
-    expect(body).toMatch(
-      /the return contract takes precedence over the lite rules/i
-    );
+    expect(body).toMatch(/the return contract takes precedence over the lite rules/i);
   });
 });
 
@@ -102,10 +98,7 @@ describe('[QA CHORE-034] Cross-cutting: load-bearing carve-outs regression guard
     ['fail errors', /\*\*Error messages from `fail` calls\*\*/],
     ['security warnings', /\*\*Security-sensitive warnings\*\*/],
     ['interactive prompts', /\*\*Interactive prompts\*\*/],
-    [
-      'findings display',
-      /\*\*Findings display from `reviewing-requirements`\*\*/,
-    ],
+    ['findings display', /\*\*Findings display from `reviewing-requirements`\*\*/],
     ['FR-14 echo', /\*\*FR-14 console echo lines\*\*/],
     ['tagged structured logs', /\*\*Tagged structured logs\*\*/],
     ['state transitions', /\*\*User-visible state transitions\*\*/],
@@ -133,9 +126,7 @@ describe('[QA CHORE-034] Inputs: FR-14 echo documented format matches prepare-fo
     const body = readSkill();
     // The carve-out example must use → (U+2192), not ASCII "->".
     // Regression guard for the CHORE-034 code-review fix.
-    const carveoutLine = body.match(
-      /\*\*FR-14 console echo lines\*\*[^\n]*/
-    )?.[0];
+    const carveoutLine = body.match(/\*\*FR-14 console echo lines\*\*[^\n]*/)?.[0];
     expect(carveoutLine).toBeDefined();
     expect(carveoutLine).toContain('→');
     expect(carveoutLine).not.toMatch(/->\s*\{tier\}/);
@@ -158,16 +149,12 @@ describe('[QA CHORE-034] Inputs: FR-14 echo documented format matches prepare-fo
     const body = readSkill();
     // The lite rule must acknowledge the script-emitted exception so it does
     // not conflict with the FR-14 carve-out's Unicode format.
-    expect(body).toMatch(
-      /Script-emitted structured logs are out of scope for this rule/i
-    );
+    expect(body).toMatch(/Script-emitted structured logs are out of scope for this rule/i);
   });
 
   it('prepare-fork.sh emitter format matches a live invocation', () => {
     // End-to-end: create a minimal state file, invoke prepare-fork.sh, and
     // assert the FR-14 echo on stderr matches the `→` format.
-    const { mkdtempSync, writeFileSync, mkdirSync } = require('node:fs');
-    const { tmpdir } = require('node:os');
     const workdir = mkdtempSync(join(tmpdir(), 'qa-chore-034-fr14-'));
     mkdirSync(join(workdir, '.sdlc/workflows'), { recursive: true });
     mkdirSync(join(workdir, 'requirements/chores'), { recursive: true });
@@ -181,8 +168,22 @@ describe('[QA CHORE-034] Inputs: FR-14 echo documented format matches prepare-fo
       pauseReason: null,
       gate: null,
       steps: [
-        { name: 'x', skill: 'x', context: 'main', status: 'pending', artifact: null, completedAt: null },
-        { name: 'Review requirements (standard)', skill: 'reviewing-requirements', context: 'fork', status: 'pending', artifact: null, completedAt: null },
+        {
+          name: 'x',
+          skill: 'x',
+          context: 'main',
+          status: 'pending',
+          artifact: null,
+          completedAt: null,
+        },
+        {
+          name: 'Review requirements (standard)',
+          skill: 'reviewing-requirements',
+          context: 'fork',
+          status: 'pending',
+          artifact: null,
+          completedAt: null,
+        },
       ],
       phases: { total: 0, completed: 0 },
       prNumber: null,
@@ -194,10 +195,7 @@ describe('[QA CHORE-034] Inputs: FR-14 echo documented format matches prepare-fo
       modelOverride: null,
       modelSelections: [],
     };
-    writeFileSync(
-      join(workdir, `.sdlc/workflows/${stateId}.json`),
-      JSON.stringify(state, null, 2)
-    );
+    writeFileSync(join(workdir, `.sdlc/workflows/${stateId}.json`), JSON.stringify(state, null, 2));
     const res = spawnSync(
       'bash',
       [PREPARE_FORK, stateId, '1', 'reviewing-requirements', '--mode', 'standard'],
@@ -207,7 +205,9 @@ describe('[QA CHORE-034] Inputs: FR-14 echo documented format matches prepare-fo
     // FR-14 echo is on stderr; tier is on stdout
     expect(res.stderr).toContain('→');
     expect(res.stderr).not.toMatch(/->\s+sonnet/);
-    expect(res.stderr).toMatch(/\[model\] step 1 \(reviewing-requirements, mode=standard\) → sonnet/);
+    expect(res.stderr).toMatch(
+      /\[model\] step 1 \(reviewing-requirements, mode=standard\) → sonnet/
+    );
   });
 });
 
@@ -240,9 +240,7 @@ describe('[QA CHORE-034] Cross-cutting: every fork-invocation spec points to the
       expect(idx).toBeGreaterThan(-1);
       // Look at the 800-char window following the site name
       const window = body.slice(idx, idx + 800);
-      expect(window).toMatch(
-        /canonical contract shape.*Output Style/is
-      );
+      expect(window).toMatch(/canonical contract shape.*Output Style/is);
     });
   }
 });
@@ -253,10 +251,7 @@ describe('[QA CHORE-034] State transitions: state-file schema backwards compatib
   it('live CHORE-034 state file parses and carries all post-FEAT-014 fields', () => {
     const statePath = join(REPO_ROOT, '.sdlc/workflows/CHORE-034.json');
     expect(existsSync(statePath)).toBe(true);
-    const parsed = JSON.parse(readFileSync(statePath, 'utf8')) as Record<
-      string,
-      unknown
-    >;
+    const parsed = JSON.parse(readFileSync(statePath, 'utf8')) as Record<string, unknown>;
     // Core schema
     expect(parsed.id).toBe('CHORE-034');
     expect(parsed.type).toBe('chore');
