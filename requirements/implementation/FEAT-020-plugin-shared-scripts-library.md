@@ -451,7 +451,7 @@ The replacement pattern in every skill is: identify the smallest prose paragraph
 ### Phase 5: Integration Test
 
 **Feature:** [FEAT-020](../features/FEAT-020-plugin-shared-scripts-library.md) | [#180](https://github.com/lwndev/lwndev-marketplace/issues/180)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 
@@ -490,9 +490,9 @@ The vitest integration test is authored last because it asserts the existence an
 
 #### Deliverables
 
-- [ ] `scripts/__tests__/shared-scripts.test.ts` — existence + executable-bit + usage-error + asset + bats-count tests
-- [ ] `npm test` exits 0 (all suites green)
-- [ ] `npm run validate` exits 0
+- [x] `scripts/__tests__/shared-scripts.test.ts` — existence + executable-bit + usage-error + asset + bats-count tests
+- [x] `npm test` exits 0 (all suites green)
+- [x] `npm run validate` exits 0
 
 #### Acceptance Criteria Closed
 
