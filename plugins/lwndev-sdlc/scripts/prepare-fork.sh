@@ -223,10 +223,16 @@ if [[ ! -f "$state_file_path" ]]; then
 fi
 
 # --- Step 1 (FR-2): SKILL.md readability check -------------------------------
-skill_md_path="${CLAUDE_PLUGIN_ROOT}/skills/${skill}/SKILL.md"
-if [[ ! -r "$skill_md_path" ]]; then
-  echo "Error: SKILL.md for '${skill}' cannot be read at ${skill_md_path}" >&2
-  exit 3
+# pr-creation is an inline orchestrator operation, not a forked skill — it has
+# no skills/ directory. The name is reserved in the Fork Step-Name Map purely
+# so baseline resolution (FEAT-014) can lock it to the haiku tier. Skip the
+# readability check for this one canonical exception.
+if [[ "$skill" != "pr-creation" ]]; then
+  skill_md_path="${CLAUDE_PLUGIN_ROOT}/skills/${skill}/SKILL.md"
+  if [[ ! -r "$skill_md_path" ]]; then
+    echo "Error: SKILL.md for '${skill}' cannot be read at ${skill_md_path}" >&2
+    exit 3
+  fi
 fi
 
 workflow_state_sh="${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh"

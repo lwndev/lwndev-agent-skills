@@ -280,6 +280,21 @@ STUB
   [[ "$output" != *"override="* ]]
 }
 
+# pr-creation is an inline orchestrator operation with no skills/ directory;
+# the SKILL.md readability check must be skipped for this canonical exception.
+@test "happy path baseline-locked: pr-creation skips SKILL.md check" {
+  seed_state
+  stderr_file="${TMPDIR_TEST}/stderr.log"
+  bash "$PREPARE_FORK" FEAT-TEST 9 pr-creation 2>"$stderr_file" > "${TMPDIR_TEST}/stdout.log"
+  status_code=$?
+  [ "$status_code" -eq 0 ]
+  tier=$(cat "${TMPDIR_TEST}/stdout.log")
+  [ "$tier" = "haiku" ]
+  run cat "$stderr_file"
+  [[ "$output" == *"[model] step 9 (pr-creation) → haiku (baseline=haiku, baseline-locked)"* ]]
+  [[ "$output" != *"cannot be read"* ]]
+}
+
 # --- Happy path Edge Case 11 -------------------------------------------------
 
 @test "happy path Edge Case 11: creating-implementation-plans + --cli-model haiku emits warning" {
