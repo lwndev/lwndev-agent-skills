@@ -66,7 +66,7 @@ With the `step-baseline` / `step-baseline-locked` subcommands from Phase 1 in pl
 
 ### Phase 3: Orchestrator SKILL.md Rewrite + Downstream Docs
 **Feature:** [FEAT-021](../features/FEAT-021-prepare-fork-sh-helper.md) | [#181](https://github.com/lwndev/lwndev-marketplace/issues/181)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 With the script and its test surface in place (Phase 2), the orchestrator prose is the single remaining production-critical edit. This phase rewrites the "Forked Steps" section to call the script at every fork site and updates three downstream references so no stale prose survives. Crucially, the PR-creation fork call site must pass the literal `pr-creation` (not the state-file's `"orchestrator"` skill label) per the FR-1 PR-creation caveat — this is a documentation-correctness requirement that has no code backstop, so the review needs to verify it explicitly.
@@ -82,10 +82,10 @@ With the script and its test surface in place (Phase 2), the orchestrator prose 
 8. Run `npm run validate` to confirm the plugin still passes the plugin-validation pipeline (SKILL.md frontmatter parses, assets resolve, reference links are well-formed).
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — "Forked Steps" section rewritten per FR-4; PR-creation call site explicitly passes `pr-creation`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/model-selection.md` — FR-5 note added after the FR-3 pseudocode section
-- [ ] `plugins/lwndev-sdlc/scripts/README.md` — new row in the Script Table for `prepare-fork.sh`
-- [ ] `requirements/features/FEAT-014-adaptive-model-selection.md` — post-FEAT-014 note linking to FEAT-021
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — "Forked Steps" section rewritten per FR-4; PR-creation call site explicitly passes `pr-creation`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/model-selection.md` — FR-5 note added after the FR-3 pseudocode section
+- [x] `plugins/lwndev-sdlc/scripts/README.md` — new row in the Script Table for `prepare-fork.sh`
+- [x] `requirements/features/FEAT-014-adaptive-model-selection.md` — post-FEAT-014 note linking to FEAT-021
 
 ---
 

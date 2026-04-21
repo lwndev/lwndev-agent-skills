@@ -644,3 +644,7 @@ Issue #130's Open Question 3 (baseline-locked steps) is resolved in the PR as fi
 ### Stale reference fix
 
 The Dependencies section previously cited SKILL.md line numbers (`:320`, `:327`, `:421`, `:464`, `:532`) as fork call sites. These were valid in the pre-Phase-3 SKILL.md but no longer map after Phase 3's mutations grew the file to ~950 lines. Reconciliation replaced the line list with symbolic per-chain references pointing at the Forked Steps sections, which are now the authoritative fork-site inventory.
+
+## Post-FEAT-014 Notes
+
+**FEAT-021 (merged 2026-04-20)** — the four-step pre-fork ceremony that this requirements doc's FR-14, FR-3, FR-7, and NFR-3 collectively describe as prose is now invoked via `plugins/lwndev-sdlc/scripts/prepare-fork.sh`. FEAT-014's behavioral spec is unchanged; `prepare-fork.sh` is a scripted composer over the existing `workflow-state.sh resolve-tier` and `record-model-selection` subcommands — no new classifier, state-file, or audit-trail logic was introduced. Per-fork call sites in `orchestrating-workflows/SKILL.md` and its `references/step-execution-details.md` now invoke the script instead of re-describing the four-step ceremony inline. See `requirements/features/FEAT-021-prepare-fork-sh-helper.md` for the script contract.
