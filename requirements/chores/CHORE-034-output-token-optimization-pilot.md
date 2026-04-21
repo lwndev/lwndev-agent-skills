@@ -22,6 +22,9 @@ Pilot an output-token reduction pass on `orchestrating-workflows` by adding an e
 - `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/step-execution-details.md` — align fork-invocation language with the new return contract
 - `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/chain-procedures.md` — align orchestrator narration language with lite rules
 - `requirements/chores/CHORE-034-output-token-optimization-pilot.md` — baseline + post-change measurements appended to the Notes section on completion
+- `qa/test-plans/QA-plan-CHORE-034.md` — adversarial QA test plan
+- `qa/test-results/QA-results-CHORE-034.md` — QA test results artifact
+- `scripts/__tests__/qa-CHORE-034.spec.ts` — QA test implementation
 - *(out of pilot scope)* The skill has no `assets/` directory; artifact templates live in the sub-skills invoked by the orchestrator and are deferred to the rollout chore. See Notes.
 
 ## Acceptance Criteria
@@ -40,9 +43,12 @@ Pilot an output-token reduction pass on `orchestrating-workflows` by adding an e
 
 ## Completion
 
-**Status:** `In Progress`
-**Completed:**
+**Status:** `Complete`
+
+**Completed:** 2026-04-21
+
 **Pull Request:** [#201](https://github.com/lwndev/lwndev-marketplace/pull/201)
+
 **Follow-up rollout issue:** [#200](https://github.com/lwndev/lwndev-marketplace/issues/200)
 
 ## Notes
