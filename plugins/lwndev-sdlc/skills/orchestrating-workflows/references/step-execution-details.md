@@ -1,8 +1,10 @@
 ### Feature Chain Step-Specific Fork Instructions
 
-**Step 2 — `reviewing-requirements` (standard review)**: Append `{ID}` as argument. The skill auto-detects standard review mode. Run the FEAT-014 pre-fork sequence with step-name `reviewing-requirements` and mode `standard`.
+Every fork site below expects the subagent to return the canonical contract shape as its final line. See the Fork-to-orchestrator return contract in SKILL.md `## Output Style`. `reviewing-requirements` uses the `Found **N errors**, ...` shape; all other forks use `done | artifact=<path> | <note>` on success or `failed | <reason>` on failure.
 
-**Step 3 — `creating-implementation-plans`**: Append `{ID}` as argument. Expected artifact: `requirements/implementation/{ID}-*.md`. Run the FEAT-014 pre-fork sequence with step-name `creating-implementation-plans`.
+**Step 2 — `reviewing-requirements` (standard review)**: Append `{ID}` as argument. The skill auto-detects standard review mode. Run the FEAT-014 pre-fork sequence with step-name `reviewing-requirements` and mode `standard`. Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
+
+**Step 3 — `creating-implementation-plans`**: Append `{ID}` as argument. Expected artifact: `requirements/implementation/{ID}-*.md`. Run the FEAT-014 pre-fork sequence with step-name `creating-implementation-plans`. Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
 
 **Post-step-3 re-classification (FEAT-014 FR-2b)**: Immediately after step 3's artifact is validated and before `advance` returns control to the next fork, trigger the post-plan re-classification. This runs exactly once per feature chain and must precede any fork that resolves a tier:
 
@@ -18,7 +20,7 @@ If the plan file is missing or malformed, `classify-post-plan` retains the init-
 
 **Step 5+N+1 — Create PR**: See PR Creation below.
 
-**Step 5+N+4 — `finalizing-workflow`**: No special argument needed. The skill merges the current PR and resets to main. Run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow`. This step is **baseline-locked** at `haiku` — the pre-fork echo uses the `baseline-locked` tag, and only a hard override (`--model`, `--model-for`) can push it off its baseline.
+**Step 5+N+4 — `finalizing-workflow`**: No special argument needed. The skill merges the current PR and resets to main. Run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow`. This step is **baseline-locked** at `haiku` — the pre-fork echo uses the `baseline-locked` tag, and only a hard override (`--model`, `--model-for`) can push it off its baseline. Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
 
 ### Chore Chain Step-Specific Fork Instructions
 
@@ -28,13 +30,13 @@ Steps 2, 4, and 7 follow the same fork pattern as the feature chain without chor
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
 ```
-Otherwise, append `{ID}` as argument. Pre-fork step-name `reviewing-requirements`, mode `standard`.
+Otherwise, append `{ID}` as argument. Pre-fork step-name `reviewing-requirements`, mode `standard`. Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
 
 **Step 4 — `executing-chores` (fork)**:
 
 Before forking (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-start --context '{"workItemId": "{ID}"}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md) (read the `work-start` template from `references/github-templates.md` — or `references/jira-templates.md` for Jira — substitute context variables, and post via `gh issue comment` / Jira backend).
 
-Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) using step-name `executing-chores`, then fork via the Agent tool with `{ID}` as argument and the resolved tier passed as the `model` parameter. If `issueRef` is set, include the FR-6 issue link instruction in the subagent prompt: "Include `Closes #N` (or `PROJ-123` for Jira) in the PR body." After the subagent completes:
+Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) using step-name `executing-chores`, then fork via the Agent tool with `{ID}` as argument and the resolved tier passed as the `model` parameter. If `issueRef` is set, include the FR-6 issue link instruction in the subagent prompt: "Include `Closes #N` (or `PROJ-123` for Jira) in the PR body." Subagent must return the canonical contract shape; see SKILL.md `## Output Style`. After the subagent completes:
 1. Extract the PR number from the subagent output (the `executing-chores` skill creates a PR as its final step)
 2. If the PR number is not in the output, detect it via: `gh pr list --head {branch} --json number --jq '.[0].number'`
 3. Record the PR metadata:
@@ -45,7 +47,7 @@ Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-1
 
 After step 4 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md).
 
-**Step 7 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag).
+**Step 7 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag). Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
 
 ### Bug Chain Main-Context Steps (Steps 1, 3, 6)
 
@@ -71,13 +73,13 @@ Steps 2, 4, and 7 follow the same fork pattern as the chore chain. Every non-ski
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
 ```
-Otherwise, append `{ID}` as argument. Pre-fork step-name `reviewing-requirements`, mode `standard`.
+Otherwise, append `{ID}` as argument. Pre-fork step-name `reviewing-requirements`, mode `standard`. Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
 
 **Step 4 — `executing-bug-fixes` (fork)**:
 
 Before forking (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-start --context '{"workItemId": "{ID}"}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md) (read the `bug-start` template from `references/github-templates.md` — or `references/jira-templates.md` for Jira — substitute context variables, and post via `gh issue comment` / Jira backend).
 
-Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) using step-name `executing-bug-fixes`, then fork via the Agent tool with `{ID}` as argument and the resolved tier passed as the `model` parameter. If `issueRef` is set, include the FR-6 issue link instruction in the subagent prompt: "Include `Closes #N` (or `PROJ-123` for Jira) in the PR body." After the subagent completes:
+Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) using step-name `executing-bug-fixes`, then fork via the Agent tool with `{ID}` as argument and the resolved tier passed as the `model` parameter. If `issueRef` is set, include the FR-6 issue link instruction in the subagent prompt: "Include `Closes #N` (or `PROJ-123` for Jira) in the PR body." Subagent must return the canonical contract shape; see SKILL.md `## Output Style`. After the subagent completes:
 1. Extract the PR number from the subagent output (the `executing-bug-fixes` skill creates a PR as its final step)
 2. If the PR number is not in the output, detect it via: `gh pr list --head {branch} --json number --jq '.[0].number'`
 3. Record the PR metadata:
@@ -88,7 +90,7 @@ Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-1
 
 After step 4 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md).
 
-**Step 7 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag).
+**Step 7 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag). Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
 
 ### Pause Steps
 
@@ -159,6 +161,7 @@ After step 5 (documenting-qa) completes:
    - The SKILL.md content from `${CLAUDE_PLUGIN_ROOT}/skills/implementing-plan-phases/SKILL.md`
    - Argument: `{ID} {phase-number}`
    - **Critical**: Append this instruction to the prompt: "Do NOT create a pull request at the end — the orchestrator handles PR creation separately. Skip Step 12 (Create Pull Request) entirely."
+   - Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
 
    Pass the resolved `${tier}` as the Agent tool's `model` parameter (FEAT-014 FR-9).
 
@@ -196,6 +199,7 @@ After all phases complete (step 5+N+1):
    - Create a pull request from the current feature branch to main
    - If `issueRef` is set, use `managing-work-items` FR-6 to generate the issue link for the PR body: `Closes #N` for GitHub issues or `PROJ-123` for Jira issues. Include this link in the PR body. This `pr-link` operation is pure string generation, executed inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md) — the orchestrator builds the PR body in main context and passes it to `gh pr create --body` without forking
    - Return the PR number and branch name
+   - Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
 
 3. Record PR metadata:
    ```bash
