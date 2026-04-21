@@ -171,3 +171,17 @@ teardown() {
   [ "$status" -eq 0 ]
   grep -qF "Closes #7" "${STUBDIR}/gh.body"
 }
+
+@test "summary with '&' survives body substitution (bash 5.2+ patsub_replacement guard)" {
+  # Regression guard: bash 5.2 enables patsub_replacement by default, which
+  # makes `&' in the replacement of `${var//pat/rep}` refer to the matched
+  # text. create-pr.sh disables that shopt at entry so user-supplied summaries
+  # containing `&' stay literal. If someone removes the shopt line, this test
+  # catches the regression even before the vitest qa scenario runs.
+  run bash "$CREATE_PR" feat FEAT-020 "tests & fixtures & more"
+  [ "$status" -eq 0 ]
+  grep -qF "tests & fixtures & more" "${STUBDIR}/gh.body"
+  # And make sure the body does not contain any leaked placeholder fragment
+  # that would indicate the `&' re-expanded into the matched `${SUMMARY}`.
+  ! grep -qF '${SUMMARY}' "${STUBDIR}/gh.body"
+}
