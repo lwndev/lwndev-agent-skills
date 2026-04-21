@@ -57,6 +57,42 @@ For the full issue tracking protocol — extraction, invocation pattern, runnabl
 10. **Bug chain**: Pause at PR review only (step 5) — no plan-approval pause, same as chore chain
 11. On completion, mark workflow complete
 
+## Output Style
+
+The orchestrator and its forked subagents must follow the lite-narration rules below. These rules minimize output tokens without discarding load-bearing signals. Load-bearing carve-outs (listed below) MUST be emitted as specified; they are not narration.
+
+### Lite narration rules
+
+- No preamble before tool calls. Do not announce "let me check" or "I'll run" — issue the tool call.
+- No end-of-turn summaries beyond one short sentence. Do not recap what the user can read from tool output.
+- No emoji. ASCII punctuation only.
+- No restating what the user just said.
+- No status echoes that tools already show (e.g., the contents of a successful `git status`).
+- Prefer ASCII arrows (`->`) and punctuation over Unicode alternatives in orchestrator-authored prose. Existing Unicode em dashes in tables and reference docs are retained.
+- Short sentences over paragraphs. Bullet lists over prose when listing more than two items.
+
+### Load-bearing carve-outs (never strip)
+
+The following MUST always be emitted even when they resemble narration:
+
+- **Error messages from `fail` calls** — users need the reason the workflow halted.
+- **Security-sensitive warnings** — destructive-operation confirmations, credential prompts, baseline-bypass warnings.
+- **Interactive prompts** — plan-approval pause prompts, findings-decision prompts, review-findings prompts. These block the workflow and must be visible.
+- **Findings display from `reviewing-requirements`** — the full findings list must be shown to the user before any findings-decision prompt. Do not truncate.
+- **FR-14 console echo lines** — `[model] step {N} ({skill}) -> {tier} (...)` audit-trail lines emitted by `prepare-fork.sh`.
+- **Tagged structured logs** — any line prefixed `[info]`, `[warn]`, or `[model]` is a structured log, not narration. Emit verbatim.
+- **User-visible state transitions** — pause, advance, and resume announcements (at most one line each) so the user understands where the workflow is.
+
+### Fork-to-orchestrator return contract
+
+Subagents forked from this orchestrator MUST return a contract line as the **final line** of their response. The orchestrator parses the last matching line. Three canonical shapes are defined:
+
+- `done | artifact=<path> | <note-of-at-most-10-words>` — success. `<path>` is the artifact the fork produced; the note is optional context.
+- `failed | <one-sentence reason>` — failure. The orchestrator's FR-11 classifier treats an empty artifact or tool-loop exhaustion as failure; `failed |` is the explicit token a subagent emits to declare failure itself.
+- `Found **N errors**, **N warnings**, **N info**` — retained shape for `reviewing-requirements` forks **only**. This is the pre-existing findings shape; the orchestrator's Decision Flow (see Reviewing-Requirements Findings Handling) parses error/warning/info counts from it. `reviewing-requirements` does not emit the `done | ...` shape.
+
+**Precedence**: the return contract takes precedence over the lite rules when the two conflict. Subagents MUST emit the contract shape even if it reads like narration. For `reviewing-requirements`, the full findings block (which the orchestrator displays to the user) still precedes the `Found **N errors** ...` summary line.
+
 ## Feature Chain Step Sequence
 
 The feature chain has 5 + N + 4 steps where N = number of implementation phases:

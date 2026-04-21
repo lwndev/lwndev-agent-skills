@@ -10,13 +10,11 @@ mkdir -p .sdlc/workflows
 
 ### 2. Execute Step 1 — Document Requirements (Main Context)
 
-Run `documenting-features` directly in this conversation (main context). If the argument is a `#N` issue reference, pass it through. If it's a free-text title, pass it as the feature name.
-
-This step may prompt the user interactively for details. Wait for it to complete and produce an artifact at `requirements/features/FEAT-{ID}-*.md`.
+Run `documenting-features` directly in main context. Pass a `#N` issue reference through, or pass free-text as the feature name. This step may prompt the user interactively. Wait for it to produce an artifact at `requirements/features/FEAT-{ID}-*.md`.
 
 ### 3. Read Allocated ID and Extract Issue Reference
 
-After step 1 completes, read the allocated ID from the artifact filename. The `documenting-features` skill assigns the next sequential ID by scanning existing files. Use Glob to find the newest file:
+Read the allocated ID from the artifact filename. `documenting-features` assigns the next sequential ID. Use Glob to find the newest file:
 
 ```
 requirements/features/FEAT-*-*.md
@@ -65,11 +63,11 @@ mkdir -p .sdlc/workflows
 
 ### 2. Execute Step 1 — Document Chore (Main Context)
 
-Run `documenting-chores` directly in this conversation (main context). Pass the argument as the chore description. This step may prompt the user interactively for details. Wait for it to complete and produce an artifact at `requirements/chores/CHORE-{ID}-*.md`.
+Run `documenting-chores` directly in main context. Pass the argument as the chore description. This step may prompt the user interactively. Wait for it to produce an artifact at `requirements/chores/CHORE-{ID}-*.md`.
 
 ### 3. Read Allocated ID and Extract Issue Reference
 
-After step 1 completes, read the allocated ID from the artifact filename. Use Glob to find the newest file:
+Read the allocated ID from the artifact filename. Use Glob to find the newest file:
 
 ```
 requirements/chores/CHORE-*-*.md
@@ -118,11 +116,11 @@ mkdir -p .sdlc/workflows
 
 ### 2. Execute Step 1 — Document Bug (Main Context)
 
-Run `documenting-bugs` directly in this conversation (main context). Pass the argument as the bug description. This step may prompt the user interactively for details. Wait for it to complete and produce an artifact at `requirements/bugs/BUG-{ID}-*.md`.
+Run `documenting-bugs` directly in main context. Pass the argument as the bug description. This step may prompt the user interactively. Wait for it to produce an artifact at `requirements/bugs/BUG-{ID}-*.md`.
 
 ### 3. Read Allocated ID and Extract Issue Reference
 
-After step 1 completes, read the allocated ID from the artifact filename. Use Glob to find the newest file:
+Read the allocated ID from the artifact filename. Use Glob to find the newest file:
 
 ```
 requirements/bugs/BUG-*-*.md
