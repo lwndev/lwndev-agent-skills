@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.14.0] - 2026-04-21
+
+### Features
+
+- **FEAT-020:** New `plugins/lwndev-sdlc/scripts/` plugin-shared script layer with ten cross-cutting shell utilities ([#180](https://github.com/lwndev/lwndev-marketplace/issues/180)): `next-id.sh` (ID allocation), `slugify.sh` (title → kebab slug, stopword-aware), `resolve-requirement-doc.sh` (ID → doc path), `build-branch-name.sh` (type/ID/summary → canonical branch name), `ensure-branch.sh` (create-or-switch with dirty-tree guard), `check-acceptance.sh` (fence-aware single-checkbox flip with literal-substring matching), `checkbox-flip-all.sh` (fence-aware section-wide flip with CRLF-preserving rewrite), `commit-work.sh` (conventional-commit emitter — caller stages), `create-pr.sh` (push + `gh pr create` with envsubst-free `pr-body.tmpl` template), and `branch-id-parse.sh` (branch-name → `{id, type, dir}` JSON with `jq`-absent fallback). Each script has a `bats` fixture under `scripts/tests/` covering happy path, documented error exits, idempotency, fence-awareness, CRLF tolerance, and shell-metacharacter safety; the full suite is green under `shellcheck -S warning` and bash 3.2 (macOS default) and 5.2+ (Ubuntu CI).
+- **FEAT-020:** Eleven consumer skill SKILL.md files now invoke these scripts as one-line `bash "${CLAUDE_PLUGIN_ROOT}/scripts/<name>.sh" …` calls, replacing the 80–400-token prose recipes they previously duplicated. Adopters: `documenting-features`, `documenting-chores`, `documenting-bugs` (AC-11 next-id, AC-12 slugify); `reviewing-requirements` × 3 modes, `creating-implementation-plans`, `implementing-plan-phases`, `executing-chores`, `executing-bug-fixes`, `executing-qa`, `finalizing-workflow` (AC-13 resolve-requirement-doc); `implementing-plan-phases`, `executing-chores`, `executing-bug-fixes` (AC-14 build-branch-name, AC-15 ensure-branch); plus targeted replacements for `check-acceptance.sh`, `checkbox-flip-all.sh`, `commit-work.sh`, `create-pr.sh`, and `branch-id-parse.sh` in the skills that need them. The orchestrator's resume-from-branch fallback also uses `branch-id-parse.sh`.
+- **FEAT-020:** New `scripts/__tests__/shared-scripts.test.ts` vitest integration suite (35 cases) asserting filesystem-level invariants — directory layout, executable-bit on every script, usage-error sanity via `spawnSync`, `pr-body.tmpl` asset presence, and a one-to-one script-to-bats-fixture count. A companion adversarial suite `scripts/__tests__/qa-FEAT-020.spec.ts` (21 cases) probes CRLF round-trip preservation, language-tagged/tilde-fence awareness, regex-metachar literal matching, concurrent `next-id.sh` invocation, shell-metacharacter safety in body substitution, `jq`-absent fallback, symlinked `${BASH_SOURCE%/*}` resolution, and non-default-locale handling.
+
+### Bug Fixes
+
+- **FEAT-020:** `checkbox-flip-all.sh` now detects the input file's line-ending style on read and restores it on write (per the FEAT-019 "normalize on read and restore the original ending on write" rule). The initial implementation stripped CRLFs before the awk rewrite, silently downgrading Windows-authored docs to LF; this is fixed and backed by QA round-trip scenarios in `qa-FEAT-020.spec.ts`.
+- **FEAT-020:** `create-pr.sh` disables the `patsub_replacement` shopt at entry so literal `&` in user-supplied summaries survives body substitution on bash 5.2+ (Ubuntu CI default). Without this guard, bash 5.2's new sed-style `&` semantics re-expand ampersands into the matched `${SUMMARY}` placeholder and corrupt the PR body. A dedicated `bats` case and the qa shell-metacharacter-safety scenario both assert the fix.
+
+### Scope notes
+
+- `plugin.json` and this CHANGELOG are the release-surface changes. No skill frontmatter changes; no new or renamed skills; no agent changes.
+- Consumer skills that adopted the shared scripts retain identical observable behaviour — only prose is replaced with an equivalent `bash` invocation. Any workflow that worked against v1.13.0 continues to work against v1.14.0.
+
+[1.14.0]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.13.0...lwndev-sdlc@1.14.0
+
 ## [1.13.0] - 2026-04-20
 
 ### Features
