@@ -71,7 +71,14 @@ describe('orchestrating-workflows skill', () => {
       // All references should use ${CLAUDE_SKILL_DIR}/ prefix
       const prefixedRefs = body.match(/\$\{CLAUDE_SKILL_DIR\}\/scripts\/workflow-state\.sh/g);
       expect(prefixedRefs).not.toBeNull();
-      expect(prefixedRefs!.length).toBe(35);
+      // CHORE-035 relocated the detailed Forked Steps recipe and the
+      // Reviewing-Requirements Findings Handling flow into references/, which
+      // moved their inline `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh`
+      // references out of SKILL.md. The test's real guarantee is that every
+      // remaining in-body reference still uses the `${CLAUDE_SKILL_DIR}/`
+      // prefix (asserted by the bareRefs check above). The lower bound here
+      // is the post-relocation count; tighten if this drops further.
+      expect(prefixedRefs!.length).toBeGreaterThanOrEqual(9);
     });
 
     it('should include "When to Use This Skill" section', () => {
