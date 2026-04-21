@@ -46,11 +46,11 @@ Pilot an input-token reduction pass on `orchestrating-workflows/SKILL.md` by com
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `In Progress`
 
 **Completed:** YYYY-MM-DD
 
-**Pull Request:** [#N](https://github.com/lwndev/lwndev-marketplace/pull/N)
+**Pull Request:** [#204](https://github.com/lwndev/lwndev-marketplace/pull/204)
 
 ## Notes
 
