@@ -29,6 +29,12 @@
 
 set -euo pipefail
 
+# Bash 5.2+ enables patsub_replacement by default, which makes `&' in the
+# replacement of `${var//pat/rep}` refer to the matched text. We rely on
+# `&' staying literal when substituting user-supplied summaries that may
+# contain ampersands; disable the shopt here (no-op on older bash).
+shopt -u patsub_replacement 2>/dev/null || true
+
 usage() {
   echo "error: usage: create-pr.sh <type> <ID> <summary> [--closes <issueRef>]" >&2
   exit 2
@@ -118,8 +124,9 @@ generated_with='🤖 Generated with [Claude Code](https://claude.com/claude-code
 
 # Perform placeholder substitution via bash parameter expansion.
 # The literal placeholder in the template is `${VAR}`; we replace it as a fixed
-# string (no pattern interpretation). This is safe for all characters in the
-# replacement values because bash ${var//pat/rep} does not re-interpret `rep`.
+# string (no pattern interpretation). Bash 5.2+ adds `patsub_replacement` which
+# would re-interpret `&' in the replacement as the matched text — we disable it
+# at the top of this script so `&' stays literal in user-supplied summaries.
 body="$tmpl_body"
 body="${body//\$\{TYPE\}/$type}"
 body="${body//\$\{ID\}/$id}"
