@@ -124,7 +124,7 @@ None — this is the first phase.
 ### Phase 2: Requirement-Doc + Branch Surgery Scripts
 
 **Feature:** [FEAT-020](../features/FEAT-020-plugin-shared-scripts-library.md) | [#180](https://github.com/lwndev/lwndev-marketplace/issues/180)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 
@@ -189,12 +189,12 @@ None — this is the first phase.
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/scripts/resolve-requirement-doc.sh` — executable, FR-3 compliant
-- [ ] `plugins/lwndev-sdlc/scripts/build-branch-name.sh` — executable, FR-4 compliant, calls slugify via `${BASH_SOURCE%/*}`
-- [ ] `plugins/lwndev-sdlc/scripts/ensure-branch.sh` — executable, FR-5 compliant
-- [ ] `plugins/lwndev-sdlc/scripts/tests/resolve-requirement-doc.bats` — happy + error + ambiguous + AC-10
-- [ ] `plugins/lwndev-sdlc/scripts/tests/build-branch-name.bats` — happy + error paths
-- [ ] `plugins/lwndev-sdlc/scripts/tests/ensure-branch.bats` — happy + dirty-tree + idempotency
+- [x] `plugins/lwndev-sdlc/scripts/resolve-requirement-doc.sh` — executable, FR-3 compliant
+- [x] `plugins/lwndev-sdlc/scripts/build-branch-name.sh` — executable, FR-4 compliant, calls slugify via `${BASH_SOURCE%/*}`
+- [x] `plugins/lwndev-sdlc/scripts/ensure-branch.sh` — executable, FR-5 compliant
+- [x] `plugins/lwndev-sdlc/scripts/tests/resolve-requirement-doc.bats` — happy + error + ambiguous + AC-10
+- [x] `plugins/lwndev-sdlc/scripts/tests/build-branch-name.bats` — happy + error paths
+- [x] `plugins/lwndev-sdlc/scripts/tests/ensure-branch.bats` — happy + dirty-tree + idempotency
 
 #### Acceptance Criteria Closed
 
