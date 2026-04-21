@@ -42,7 +42,7 @@ Pilot an output-token reduction pass on `orchestrating-workflows` by adding an e
 
 **Status:** `In Progress`
 **Completed:**
-**Pull Request:**
+**Pull Request:** [#201](https://github.com/lwndev/lwndev-marketplace/pull/201)
 **Follow-up rollout issue:** [#200](https://github.com/lwndev/lwndev-marketplace/issues/200)
 
 ## Notes
