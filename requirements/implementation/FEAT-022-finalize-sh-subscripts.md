@@ -106,7 +106,7 @@ These two subscripts form the "inspection" pair: both read state (git status, br
 ### Phase 3: `completion-upsert.sh` + `reconcile-affected-files.sh` (FR-5, FR-6)
 
 **Feature:** [FEAT-022](../features/FEAT-022-finalize-sh-subscripts-full.md) | [#182](https://github.com/lwndev/lwndev-marketplace/issues/182)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 
@@ -158,10 +158,10 @@ These two are the "mutating" BK-4.2 and BK-4.3 sub-steps — both edit the requi
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/completion-upsert.sh`
-- [ ] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/reconcile-affected-files.sh`
-- [ ] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/tests/completion-upsert.bats`
-- [ ] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/tests/reconcile-affected-files.bats`
+- [x] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/completion-upsert.sh`
+- [x] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/reconcile-affected-files.sh`
+- [x] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/tests/completion-upsert.bats`
+- [x] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/tests/reconcile-affected-files.bats`
 
 ---
 
