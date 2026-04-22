@@ -274,7 +274,7 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 
 ### Phase 7: `reviewing-requirements` — forked skill, largest SKILL.md, three-mode dispatcher
 **Feature:** [FEAT-024](../features/FEAT-024-input-token-optimization-rollout.md) | [#203](https://github.com/lwndev/lwndev-marketplace/issues/203)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - Largest SKILL.md of the twelve (434 lines, 27 945 chars). `reviewing-requirements` operates in three distinct modes (standard review, test-plan reconciliation, code-review reconciliation) selected automatically from context — the SKILL.md must preserve all mode-selection logic and the per-mode findings display exactly.
@@ -296,13 +296,13 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 11. **Commit**: `feat(FEAT-024): apply input-token optimization to reviewing-requirements`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` — FR-1 compression applied; all three-mode logic, findings display, and interactive prompts preserved verbatim
-- [ ] New `references/` file(s) for relocated mode-procedure narrative OR FR-2 recorded as no-op
-- [ ] FR-3 outcome recorded in FEAT-024 Notes
-- [ ] Post-change measurements and delta recorded in FEAT-024 Notes
-- [ ] Any affected test assertions updated in same commit
-- [ ] `npm run validate` passes
-- [ ] `npm test -- --testPathPatterns=reviewing-requirements` passes
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` — FR-1 compression applied; all three-mode logic, findings display, and interactive prompts preserved verbatim
+- [x] New `references/` file(s) for relocated mode-procedure narrative OR FR-2 recorded as no-op
+- [x] FR-3 outcome recorded in FEAT-024 Notes
+- [x] Post-change measurements and delta recorded in FEAT-024 Notes
+- [x] Any affected test assertions updated in same commit
+- [x] `npm run validate` passes
+- [x] `npm test -- --testPathPatterns=reviewing-requirements` passes
 
 ---
 
