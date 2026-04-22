@@ -903,19 +903,41 @@ fi
     });
   });
 
-  describe('integration: non-matching branch name → bookkeeping skipped (FR-7 row 1)', () => {
-    it('release/lwndev-sdlc-v1.13.0 → null parse result, no doc edits, info message', () => {
-      const branch = 'release/lwndev-sdlc-v1.13.0';
-      const parsed = parseBranchName(branch);
+  describe('integration: branch-id-parse.sh classification (FR-7)', () => {
+    const BRANCH_ID_PARSE = 'plugins/lwndev-sdlc/scripts/branch-id-parse.sh';
 
-      // Assert: no parse result (bookkeeping skipped)
-      expect(parsed).toBeNull();
+    function runBranchIdParse(branch: string): { stdout: string; stderr: string; code: number } {
+      try {
+        const stdout = execSync(`bash ${BRANCH_ID_PARSE} ${JSON.stringify(branch)}`, {
+          encoding: 'utf-8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        return { stdout, stderr: '', code: 0 };
+      } catch (err) {
+        const e = err as { stdout?: Buffer | string; stderr?: Buffer | string; status?: number };
+        return {
+          stdout: e.stdout?.toString() ?? '',
+          stderr: e.stderr?.toString() ?? '',
+          code: e.status ?? -1,
+        };
+      }
+    }
 
-      // Assert: info message would be emitted with the branch name
-      const infoMessage = `[info] Branch ${branch} does not match workflow ID pattern; skipping bookkeeping.`;
-      expect(infoMessage).toContain(branch);
-      expect(infoMessage).toContain('[info]');
-      expect(infoMessage).toContain('skipping bookkeeping');
+    it('release/lwndev-sdlc-v1.13.0 → exit 0 with type="release", id/dir null (FR-7 row 1)', () => {
+      // Release branches are matched (type="release") and skipped silently by finalize.sh;
+      // no [info] or [warn] message is emitted — that is FR-7 row 1.
+      const { stdout, code } = runBranchIdParse('release/lwndev-sdlc-v1.13.0');
+      expect(code).toBe(0);
+      const json = JSON.parse(stdout.trim());
+      expect(json.type).toBe('release');
+      expect(json.id).toBeNull();
+      expect(json.dir).toBeNull();
+    });
+
+    it('adhoc/cleanup → exit 1, no stdout (FR-7 row 2 — finalize.sh emits [info] and skips)', () => {
+      const { stdout, code } = runBranchIdParse('adhoc/cleanup');
+      expect(code).toBe(1);
+      expect(stdout.trim()).toBe('');
     });
   });
 
