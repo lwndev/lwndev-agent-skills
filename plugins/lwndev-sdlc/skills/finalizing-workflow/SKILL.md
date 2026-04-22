@@ -23,6 +23,38 @@ Chores:   ... → executing-chores        → executing-qa → finalizing-workfl
 Bugs:     ... → executing-bug-fixes     → executing-qa → finalizing-workflow
 ```
 
+## Output Style
+
+Follow the lite-narration rules below. Load-bearing carve-outs MUST be emitted as specified; they are not narration. This skill is small and mostly mechanical (`gh` and `git` commands wrapped by `finalize.sh`) — the rules should be easy to honor here.
+
+### Lite narration rules
+
+- No preamble before tool calls. Do not announce "let me check" or "I'll run" -- issue the tool call.
+- No end-of-turn summaries beyond one short sentence. Do not recap what the user can read from tool output (e.g., the verbatim `finalize.sh` report).
+- No emoji. ASCII punctuation only.
+- No restating what the user just said.
+- No status echoes that tools already show (e.g., the contents of a successful `git status`).
+- Prefer ASCII arrows (`->`) and punctuation over Unicode alternatives in skill-authored prose. Existing Unicode em dashes in tables and reference docs are retained. **Script-emitted structured logs are out of scope** — `finalize.sh` stdout and `[error]` / `[warn]` stderr lines use their documented format and must be surfaced verbatim.
+- Short sentences over paragraphs. Bullet lists over prose when listing more than two items.
+
+### Load-bearing carve-outs (never strip)
+
+The following MUST always be emitted even when they resemble narration:
+
+- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface `finalize.sh` stderr verbatim.
+- **Security-sensitive warnings** -- destructive-operation confirmations, credential prompts.
+- **Interactive prompts** -- the single "Ready to merge PR #\<N\> ..." confirmation prompt is required and blocks the workflow; it must be visible.
+- **Findings display from `reviewing-requirements`** -- N/A for this skill (it does not consume reviewing-requirements findings); bullet retained for consistency with the canonical template.
+- **FR-14 console echo lines** -- `[model] step {N} ({skill}) → {tier} (...)` audit-trail lines emitted by `prepare-fork.sh`. The Unicode `→` is the documented emitter format; do not rewrite to ASCII.
+- **Tagged structured logs** -- any line prefixed `[info]`, `[warn]`, or `[model]` is a structured log, not narration. Emit verbatim.
+- **User-visible state transitions** -- pause, advance, and resume announcements (at most one line each).
+
+### Fork-to-orchestrator return contract
+
+This skill is forked by `orchestrating-workflows` as the terminal step of every chain (feature chain step `5+N+4`; chore and bug chain step 7). Emit `done | artifact=<note-or-empty> | <note-of-at-most-10-words>` as the **final line** on success, and `failed | <one-sentence reason>` on failure. The `Found **N errors**, **N warnings**, **N info**` shape is reserved for `reviewing-requirements` only and MUST NOT be emitted here.
+
+**Precedence**: the return contract takes precedence over the lite rules when the two conflict. The subagent MUST emit the contract shape as the final line of the response even if it reads like narration.
+
 ## Usage
 
 Capture the current branch name, confirm intent with the user up-front, and then delegate the full sequence (pre-flight, bookkeeping, merge, reset) to `finalize.sh`:
