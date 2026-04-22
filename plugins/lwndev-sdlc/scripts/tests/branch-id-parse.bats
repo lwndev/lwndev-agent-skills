@@ -36,8 +36,44 @@ setup() {
   [[ "$output" == *"error: branch name does not match any work-item pattern"* ]]
 }
 
-@test "release branch: exit 1" {
-  run bash "$PARSE" "release/lwndev-sdlc-v1.13.0"
+@test "happy path: release/lwndev-sdlc-v1.16.0" {
+  run bash "$PARSE" "release/lwndev-sdlc-v1.16.0"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"type":"release"'* ]]
+  [[ "$output" == *'"id":null'* ]]
+  [[ "$output" == *'"dir":null'* ]]
+}
+
+@test "happy path: release/foo-bar-v0.1.2" {
+  run bash "$PARSE" "release/foo-bar-v0.1.2"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"type":"release"'* ]]
+  [[ "$output" == *'"id":null'* ]]
+  [[ "$output" == *'"dir":null'* ]]
+}
+
+@test "happy path: release/x-v10.20.30" {
+  run bash "$PARSE" "release/x-v10.20.30"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"type":"release"'* ]]
+  [[ "$output" == *'"id":null'* ]]
+  [[ "$output" == *'"dir":null'* ]]
+}
+
+@test "malformed release: release/foo (no version) exit 1" {
+  run bash "$PARSE" "release/foo"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"error: branch name does not match any work-item pattern"* ]]
+}
+
+@test "malformed release: release/foo-v1.2 (incomplete version) exit 1" {
+  run bash "$PARSE" "release/foo-v1.2"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"error: branch name does not match any work-item pattern"* ]]
+}
+
+@test "malformed release: release/foo/bar-v1.0.0 (nested path) exit 1" {
+  run bash "$PARSE" "release/foo/bar-v1.0.0"
   [ "$status" -eq 1 ]
   [[ "$output" == *"error: branch name does not match any work-item pattern"* ]]
 }
@@ -87,6 +123,30 @@ EOF
   [[ "$output" == *'"id":"FEAT-001"'* ]]
   [[ "$output" == *'"type":"feature"'* ]]
   [[ "$output" == *'"dir":"requirements/features"'* ]]
+  # Output must be valid JSON (single object on single line).
+  echo "$output" | grep -Eq '^\{.*\}$'
+}
+
+@test "jq-absent fallback: release case emits literal null for id/dir" {
+  # Force the hand-assembled JSON fallback path by stripping jq from PATH
+  # (same strategy as the feature-case fallback test above).
+  empty_path="$(mktemp -d)"
+  for bin in bash env grep sed awk tr cut wc mktemp head tail cat printf chmod rm mkdir ls true false test dirname basename; do
+    if [ -x "/bin/$bin" ]; then
+      ln -s "/bin/$bin" "$empty_path/$bin" 2>/dev/null || true
+    elif [ -x "/usr/bin/$bin" ]; then
+      ln -s "/usr/bin/$bin" "$empty_path/$bin" 2>/dev/null || true
+    fi
+  done
+  PATH="$empty_path" run bash "$PARSE" "release/lwndev-sdlc-v1.16.0"
+  rm -rf "$empty_path"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"type":"release"'* ]]
+  # Must be literal JSON null, not the string "null".
+  [[ "$output" == *'"id":null'* ]]
+  [[ "$output" == *'"dir":null'* ]]
+  [[ "$output" != *'"id":"null"'* ]]
+  [[ "$output" != *'"dir":"null"'* ]]
   # Output must be valid JSON (single object on single line).
   echo "$output" | grep -Eq '^\{.*\}$'
 }
