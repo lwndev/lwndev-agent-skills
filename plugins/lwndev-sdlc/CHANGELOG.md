@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.16.0] - 2026-04-22
+
+### Features
+
+- **finalizing-workflow:** `finalize.sh` + subscripts full rewrite (FEAT-022). Collapses the skill's prose ceremony (Pre-Flight + BK-1..BK-5 bookkeeping + Execution — ~228 lines of SKILL.md) into a single user confirmation plus one top-level `finalize.sh` invocation. Ships five new skill-scoped scripts under `skills/finalizing-workflow/scripts/`: `finalize.sh` (top-level composition with no-rollback invariant and unexpected-exit fallthrough), `preflight-checks.sh` (parallel 3-check with UNKNOWN-retry-once), `check-idempotent.sh` (3-condition BK-3 check, fence/CRLF-aware), `completion-upsert.sh` (BK-4.2 in-place upsert with `upserted`/`appended` stdout token), and `reconcile-affected-files.sh` (BK-4.3 diff with `<appended> <annotated>` stdout counts). SKILL.md collapses from ~228 lines to 72 lines; all BK-* prose and the Error Handling table are replaced by a short `## Usage` section that captures the branch name, shows a PR-preview confirmation, runs `finalize.sh`, and surfaces stderr verbatim on non-zero exit. Ships 71 new bats cases (9 preflight + 15 check-idempotent + 10 completion-upsert + 13 reconcile-affected-files + 14 finalize composition + 10 finalize end-to-end) plus 16 adversarial vitest cases covering shell-metachar injection, unicode-lookalike regex rejection, PR-number boundary matching, non-ASCII / CRLF preservation, and trust-boundary arg handling. Wall-clock measured at ~600ms end-to-end on the E2E fixture (down from 30–60s of LLM-driven tool calls on the prose path). [#182](https://github.com/lwndev/lwndev-marketplace/issues/182), part of the [#179](https://github.com/lwndev/lwndev-marketplace/issues/179) prose-to-script backlog.
+- **branch-id-parse.sh:** add fourth classification for release branches (FEAT-022 / FR-3). Matches `^release/[a-z0-9-]+-v[0-9]+\.[0-9]+\.[0-9]+$` and emits `{"id": null, "type": "release", "dir": null}` with exit `0`. Release PRs produced by `npm run release` now finalize without the misleading `[info] … does not match workflow ID pattern` message. All three existing classifications (`feat/`, `chore/`, `fix/`) and their emitted JSON shapes are preserved unchanged — NFR-6 strict backward compatibility.
+
+[1.16.0]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.15.2...lwndev-sdlc@1.16.0
+
 ## [1.15.2] - 2026-04-21
 
 ### Documentation
