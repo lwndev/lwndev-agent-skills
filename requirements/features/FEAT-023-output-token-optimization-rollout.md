@@ -238,3 +238,24 @@ Per NFR-3, the `scripts/__tests__/finalizing-workflow.test.ts` "should be under 
 | `plugins/lwndev-sdlc/skills/managing-work-items/references/jira-templates.md` (baseline) | 715 | 2079 | 19135 |
 | `plugins/lwndev-sdlc/skills/managing-work-items/references/jira-templates.md` (post-change) | 715 | 2079 | 19135 |
 | **Δ** | 0 | 0 | 0 |
+
+### Phase 3 — documenting-features
+
+- FR-3 no-op for `references/feature-requirements-example-search-command.md` and `references/feature-requirements-example-episodes-command.md`: both are example requirement documents (prose feature specs / CLI specs) that document user-facing command behavior, not Agent-tool subagent spawning. No fork-invocation specs exist to annotate, so no pointer was added.
+- FR-4 decision for `assets/feature-requirements.md`: already-minimal. The template is a pure structural skeleton — headers (`## Overview`, `## Feature ID`, `## Priority`, `## User Story`, `## Command Syntax`, `## Functional Requirements`, etc.) with bracketed placeholders (`[1-2 sentence description ...]`, `[Feature Name]`, `[High/Medium/Low] - [Brief justification]`) and `...` continuation markers. No preamble prose, no "This document describes..." intro, no procedural narration to compress. Bracketed placeholder hints are load-bearing (they carry the author's guidance on what each section should contain) and removing them would break the template's purpose. No changes applied; recorded as already-minimal per FR-4 and Edge Case 4.
+- FR-5 scope: SKILL.md, both references files, and the assets template. `documenting-features` is a main-context skill (feature chain step 1) — its `## Output Style` section uses the main-context return-contract variant stating it returns to the user, not a parent orchestrator; the `done | ...` / `failed | ...` shapes do not apply. Lite rules and carve-outs still govern.
+
+| File | Lines | Words | Chars |
+|---|---:|---:|---:|
+| `plugins/lwndev-sdlc/skills/documenting-features/SKILL.md` (baseline) | 122 | 746 | 5655 |
+| `plugins/lwndev-sdlc/skills/documenting-features/SKILL.md` (post-change) | 154 | 1190 | 8648 |
+| **Δ** | +32 | +444 | +2993 |
+| `plugins/lwndev-sdlc/skills/documenting-features/references/feature-requirements-example-search-command.md` (baseline) | 228 | 1021 | 6872 |
+| `plugins/lwndev-sdlc/skills/documenting-features/references/feature-requirements-example-search-command.md` (post-change) | 228 | 1021 | 6872 |
+| **Δ** | 0 | 0 | 0 |
+| `plugins/lwndev-sdlc/skills/documenting-features/references/feature-requirements-example-episodes-command.md` (baseline) | 274 | 1278 | 8512 |
+| `plugins/lwndev-sdlc/skills/documenting-features/references/feature-requirements-example-episodes-command.md` (post-change) | 274 | 1278 | 8512 |
+| **Δ** | 0 | 0 | 0 |
+| `plugins/lwndev-sdlc/skills/documenting-features/assets/feature-requirements.md` (baseline) | 94 | 242 | 1715 |
+| `plugins/lwndev-sdlc/skills/documenting-features/assets/feature-requirements.md` (post-change) | 94 | 242 | 1715 |
+| **Δ** | 0 | 0 | 0 |

@@ -82,7 +82,7 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 
 ### Phase 3: `documenting-features` — main-context skill
 **Feature:** [FEAT-023](../features/FEAT-023-output-token-optimization-rollout.md) | [#200](https://github.com/lwndev/lwndev-marketplace/issues/200)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - `documenting-features` is a main-context skill (runs directly in the orchestrator's conversation, not as an Agent fork). Its return-contract subsection notes it returns to the user, not a parent orchestrator.
@@ -103,11 +103,11 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 8. **Emit fork return**: `done | artifact=plugins/lwndev-sdlc/skills/documenting-features/SKILL.md | Output Style section added`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/documenting-features/SKILL.md` — `## Output Style` section with main-context return-contract note
-- [ ] `assets/feature-requirements.md` — compressed or marked already-minimal in FEAT-023 Notes
-- [ ] Baseline + post-change measurements recorded in FEAT-023 Notes
-- [ ] FR-3 no-ops for both reference files recorded in FEAT-023 Notes
-- [ ] `npm run validate` passes
+- [x] `plugins/lwndev-sdlc/skills/documenting-features/SKILL.md` — `## Output Style` section with main-context return-contract note
+- [x] `assets/feature-requirements.md` — compressed or marked already-minimal in FEAT-023 Notes
+- [x] Baseline + post-change measurements recorded in FEAT-023 Notes
+- [x] FR-3 no-ops for both reference files recorded in FEAT-023 Notes
+- [x] `npm run validate` passes
 
 ---
 
