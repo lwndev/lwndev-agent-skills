@@ -162,7 +162,7 @@ These three scripts have no external dependencies (no network, no filesystem bey
 ### Phase 3: Composite Scripts -- `post-issue-comment.sh` + `fetch-issue.sh` (FR-5, FR-6)
 
 **Feature:** [FEAT-025](../features/FEAT-025-managing-work-items-full.md) | [#183](https://github.com/lwndev/lwndev-marketplace/issues/183)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 
@@ -225,10 +225,10 @@ These two scripts are the composite Layer-C scripts that depend on all of Layer 
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/managing-work-items/scripts/post-issue-comment.sh`
-- [ ] `plugins/lwndev-sdlc/skills/managing-work-items/scripts/fetch-issue.sh`
-- [ ] `plugins/lwndev-sdlc/skills/managing-work-items/scripts/tests/post-issue-comment.bats`
-- [ ] `plugins/lwndev-sdlc/skills/managing-work-items/scripts/tests/fetch-issue.bats`
+- [x] `plugins/lwndev-sdlc/skills/managing-work-items/scripts/post-issue-comment.sh`
+- [x] `plugins/lwndev-sdlc/skills/managing-work-items/scripts/fetch-issue.sh`
+- [x] `plugins/lwndev-sdlc/skills/managing-work-items/scripts/tests/post-issue-comment.bats`
+- [x] `plugins/lwndev-sdlc/skills/managing-work-items/scripts/tests/fetch-issue.bats`
 
 ---
 
