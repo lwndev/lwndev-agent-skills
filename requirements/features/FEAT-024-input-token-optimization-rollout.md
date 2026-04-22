@@ -216,11 +216,11 @@ After all twelve skills are complete, append a Summary subsection to this featur
 
 ## Completion
 
-**Status:** `In Progress`
+**Status:** `Complete`
 
-**Completed:** _(set on merge)_
+**Completed:** 2026-04-22
 
-**Pull Request:** _(set on PR creation)_
+**Pull Request:** [#215](https://github.com/lwndev/lwndev-marketplace/pull/215)
 
 ## Notes
 
