@@ -57,7 +57,7 @@ Dependabot alert #22 flags a critical vitest vulnerability (CVSS 9.7, CVE-2025-2
 
 **Completed:** 2026-04-22
 
-**Pull Request:** [#N](https://github.com/lwndev/lwndev-marketplace/pull/N)
+**Pull Request:** [#218](https://github.com/lwndev/lwndev-marketplace/pull/218)
 
 ## Notes
 
