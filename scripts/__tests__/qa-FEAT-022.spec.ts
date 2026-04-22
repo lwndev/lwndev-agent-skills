@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  existsSync,
+  chmodSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
@@ -204,23 +211,16 @@ describe('State transitions — idempotency', () => {
     const doc = join(dir, 'doc.md');
     writeFileSync(
       doc,
-      [
-        '## Affected Files',
-        '',
-        '- `a.md` (planned but not modified)',
-        '- `b.md`',
-        '',
-      ].join('\n')
+      ['## Affected Files', '', '- `a.md` (planned but not modified)', '- `b.md`', ''].join('\n')
     );
     // Stub gh via PATH
     const stubDir = join(dir, 'stub');
-    const { mkdirSync } = require('node:fs');
     mkdirSync(stubDir, { recursive: true });
     writeFileSync(
       join(stubDir, 'gh'),
       `#!/usr/bin/env bash\n# Stub: only b.md is in the PR.\nif [[ "$*" == *"--json files"* ]]; then\n  echo "b.md"\nfi\nexit 0\n`
     );
-    require('node:fs').chmodSync(join(stubDir, 'gh'), 0o755);
+    chmodSync(join(stubDir, 'gh'), 0o755);
     const r = run(RECONCILE_AFFECTED, [doc, '42'], {
       PATH: `${stubDir}:${process.env.PATH}`,
     });
@@ -274,12 +274,12 @@ describe('Dependency failure — gh failure is non-fatal in reconcile-affected-f
     const doc = join(dir, 'doc.md');
     writeFileSync(doc, '## Affected Files\n\n- `a.md`\n', 'utf8');
     const stubDir = join(dir, 'stub');
-    require('node:fs').mkdirSync(stubDir, { recursive: true });
+    mkdirSync(stubDir, { recursive: true });
     writeFileSync(
       join(stubDir, 'gh'),
       `#!/usr/bin/env bash\necho "gh: API unavailable" >&2\nexit 1\n`
     );
-    require('node:fs').chmodSync(join(stubDir, 'gh'), 0o755);
+    chmodSync(join(stubDir, 'gh'), 0o755);
     const r = run(RECONCILE_AFFECTED, [doc, '42'], {
       PATH: `${stubDir}:${process.env.PATH}`,
     });
