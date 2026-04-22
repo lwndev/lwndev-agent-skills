@@ -328,7 +328,7 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 
 ### Phase 11: `executing-chores` — forked skill, sibling to Phase 12
 **Feature:** [FEAT-023](../features/FEAT-023-output-token-optimization-rollout.md) | [#200](https://github.com/lwndev/lwndev-marketplace/issues/200)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - `executing-chores` is a forked skill (chore chain step 4) — standard `done | ...` return shape. Has one `references/` file (`workflow-details.md`, 277 lines) and one `assets/` file (`pr-template.md`, 118 lines).
@@ -349,11 +349,11 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 8. **Emit fork return**: `done | artifact=plugins/lwndev-sdlc/skills/executing-chores/SKILL.md | Output Style section added`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/executing-chores/SKILL.md` — `## Output Style` section added
-- [ ] `assets/pr-template.md` — compressed or marked already-minimal in FEAT-023 Notes
-- [ ] Baseline + post-change measurements recorded in FEAT-023 Notes
-- [ ] FR-3 outcome for `workflow-details.md` recorded in FEAT-023 Notes
-- [ ] `npm run validate` passes
+- [x] `plugins/lwndev-sdlc/skills/executing-chores/SKILL.md` — `## Output Style` section added
+- [x] `assets/pr-template.md` — compressed or marked already-minimal in FEAT-023 Notes
+- [x] Baseline + post-change measurements recorded in FEAT-023 Notes
+- [x] FR-3 outcome for `workflow-details.md` recorded in FEAT-023 Notes
+- [x] `npm run validate` passes
 
 ---
 
