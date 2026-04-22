@@ -409,7 +409,7 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 
 ### Phase 11: `executing-qa` — main-context, no references, two assets
 **Feature:** [FEAT-024](../features/FEAT-024-input-token-optimization-rollout.md) | [#203](https://github.com/lwndev/lwndev-marketplace/issues/203)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - Direct sibling to `documenting-qa` (Phase 10). Same main-context, no-references shape. Two assets (`test-results-template-v2.md`, `test-results-template.md`). At 270 lines, it is the second-largest SKILL.md of the twelve — the additional lines are primarily the QA execution procedure and the results artifact schema.
@@ -430,13 +430,13 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 11. **Commit**: `feat(FEAT-024): apply input-token optimization to executing-qa`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` — FR-1 compression applied
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/references/` — created with relocated content OR FR-2 recorded as no-op
-- [ ] FR-3 outcome recorded in FEAT-024 Notes
-- [ ] Post-change measurements and delta recorded in FEAT-024 Notes (Edge Case 9 noted)
-- [ ] Any affected test assertions updated in same commit
-- [ ] `npm run validate` passes
-- [ ] `npm test -- --testPathPatterns=executing-qa` passes
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` — FR-1 compression applied
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/references/` — created with relocated content OR FR-2 recorded as no-op
+- [x] FR-3 outcome recorded in FEAT-024 Notes
+- [x] Post-change measurements and delta recorded in FEAT-024 Notes (Edge Case 9 noted)
+- [x] Any affected test assertions updated in same commit
+- [x] `npm run validate` passes
+- [x] `npm test -- --testPathPatterns=executing-qa` passes
 
 ---
 
