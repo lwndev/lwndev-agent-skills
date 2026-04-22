@@ -477,7 +477,7 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 
 ### Phase 13: Grand-Total Aggregation, Summary, and Acceptance Criteria Verification
 **Feature:** [FEAT-024](../features/FEAT-024-input-token-optimization-rollout.md) | [#203](https://github.com/lwndev/lwndev-marketplace/issues/203)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - All twelve per-skill phases are complete. This phase aggregates measurements, computes the Summary subsection against the CHORE-035 prediction, runs full end-to-end verification, and closes the acceptance criteria.
@@ -501,20 +501,20 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 15. **Commit**: `feat(FEAT-024): aggregate measurements, Summary subsection, and full AC verification`.
 
 #### Deliverables
-- [ ] Baseline measurement table (per-file, per-skill subtotal, grand total) appended to FEAT-024 Notes → Baseline Measurements
-- [ ] Post-change measurement table appended to FEAT-024 Notes → Post-Change Measurements
-- [ ] Delta table appended to FEAT-024 Notes → Delta (SKILL.md input-token delta called out per skill)
-- [ ] FR-2 relocation registry complete in FEAT-024 Notes
-- [ ] FR-3 collapse registry complete in FEAT-024 Notes
-- [ ] FR-4 carve-out fidelity log complete in FEAT-024 Notes (three Unicode-arrow corrections documented)
-- [ ] FR-7 audit closure complete in FEAT-024 Notes
-- [ ] Summary subsection appended to FEAT-024 Notes (total savings + per-workflow compounding + CHORE-035 comparison)
-- [ ] `npm run validate` passes
-- [ ] `npm test` (full suite) passes
-- [ ] Manual spot-check outcome recorded in FEAT-024 Notes
-- [ ] Feature workflow chain end-to-end outcome recorded in FEAT-024 Notes
-- [ ] Chore workflow chain end-to-end outcome recorded in FEAT-024 Notes
-- [ ] All acceptance criteria checkboxes verified in FEAT-024 requirements doc
+- [x] Baseline measurement table (per-file, per-skill subtotal, grand total) appended to FEAT-024 Notes → Baseline Measurements
+- [x] Post-change measurement table appended to FEAT-024 Notes → Post-Change Measurements
+- [x] Delta table appended to FEAT-024 Notes → Delta (SKILL.md input-token delta called out per skill)
+- [x] FR-2 relocation registry complete in FEAT-024 Notes
+- [x] FR-3 collapse registry complete in FEAT-024 Notes
+- [x] FR-4 carve-out fidelity log complete in FEAT-024 Notes (three Unicode-arrow corrections documented)
+- [x] FR-7 audit closure complete in FEAT-024 Notes
+- [x] Summary subsection appended to FEAT-024 Notes (total savings + per-workflow compounding + CHORE-035 comparison)
+- [x] `npm run validate` passes
+- [x] `npm test` (full suite) passes
+- [x] Manual spot-check outcome recorded in FEAT-024 Notes
+- [x] Feature workflow chain end-to-end outcome recorded in FEAT-024 Notes
+- [x] Chore workflow chain end-to-end outcome recorded in FEAT-024 Notes
+- [x] All acceptance criteria checkboxes verified in FEAT-024 requirements doc
 
 ---
 

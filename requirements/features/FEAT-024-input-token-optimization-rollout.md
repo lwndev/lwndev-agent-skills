@@ -197,22 +197,22 @@ After all twelve skills are complete, append a Summary subsection to this featur
 
 ## Acceptance Criteria
 
-- [ ] Each of the twelve target skills has had its `SKILL.md` prose compressed to lite style per FR-1, with filler/hedging removed and load-bearing carve-outs preserved verbatim
-- [ ] Each target skill has had heavy-narrative sections relocated to `references/` per FR-2, with an inline pointer left at each relocation site
-- [ ] Each target skill has had natural collapse opportunities applied per FR-3, or the skill is recorded as an FR-3 no-op in the Notes section
-- [ ] All load-bearing carve-outs established by CHORE-034 (error messages, security warnings, interactive prompts, findings display, FR-14 echoes, tagged structured logs, state transitions, code/paths/flags, Output Style section) are preserved verbatim in every target SKILL.md
-- [ ] The `## Output Style` section installed by FEAT-023 is preserved character-for-character in every target skill
-- [ ] Baseline `wc -l -w -c` measurements and `chars / 4` input-token estimates have been captured per target skill and appended to this feature's Notes section, and the Notes → Measurement Methodology subsection names the estimator(s) used (per NFR-1)
-- [ ] Post-change measurements have been captured in the same format and a delta table appended to the Notes section
-- [ ] A Summary subsection in the Notes aggregates total SKILL.md chars/input-tokens saved across all twelve skills and compares against the CHORE-035 prediction
-- [ ] A pre-flight test audit (FR-7) has been recorded per skill before that skill's edit pass began; any tests that required updates are called out in the relevant phase PR
-- [ ] Each skill's optimization was committed as an independent phase commit per NFR-2; the feature-branch commit history and the PR body call out any phase that grouped multiple skills and justify the grouping
-- [ ] The same three-axis template (FR-1/FR-2/FR-3), carve-out list (FR-4), and measurement format (FR-5) were applied consistently to every target skill per NFR-4; any approved deviations are documented in the Notes section with justification
-- [ ] No skill's frontmatter fields, script invocations, file paths, artifact paths, verification checklist semantics, Fork Step-Name Map, step-sequence table semantics, or fork-return contract have changed
-- [ ] All internal SKILL.md anchors and cross-skill references still resolve after the rollout
-- [ ] `npm run validate` passes
-- [ ] `npm test` passes
-- [ ] This feature document's GitHub Issue section links to [#203](https://github.com/lwndev/lwndev-marketplace/issues/203)
+- [x] Each of the twelve target skills has had its `SKILL.md` prose compressed to lite style per FR-1, with filler/hedging removed and load-bearing carve-outs preserved verbatim
+- [x] Each target skill has had heavy-narrative sections relocated to `references/` per FR-2, with an inline pointer left at each relocation site
+- [x] Each target skill has had natural collapse opportunities applied per FR-3, or the skill is recorded as an FR-3 no-op in the Notes section
+- [x] All load-bearing carve-outs established by CHORE-034 (error messages, security warnings, interactive prompts, findings display, FR-14 echoes, tagged structured logs, state transitions, code/paths/flags, Output Style section) are preserved verbatim in every target SKILL.md
+- [x] The `## Output Style` section installed by FEAT-023 is preserved character-for-character in every target skill
+- [x] Baseline `wc -l -w -c` measurements and `chars / 4` input-token estimates have been captured per target skill and appended to this feature's Notes section, and the Notes → Measurement Methodology subsection names the estimator(s) used (per NFR-1)
+- [x] Post-change measurements have been captured in the same format and a delta table appended to the Notes section
+- [x] A Summary subsection in the Notes aggregates total SKILL.md chars/input-tokens saved across all twelve skills and compares against the CHORE-035 prediction
+- [x] A pre-flight test audit (FR-7) has been recorded per skill before that skill's edit pass began; any tests that required updates are called out in the relevant phase PR
+- [x] Each skill's optimization was committed as an independent phase commit per NFR-2; the feature-branch commit history and the PR body call out any phase that grouped multiple skills and justify the grouping
+- [x] The same three-axis template (FR-1/FR-2/FR-3), carve-out list (FR-4), and measurement format (FR-5) were applied consistently to every target skill per NFR-4; any approved deviations are documented in the Notes section with justification
+- [x] No skill's frontmatter fields, script invocations, file paths, artifact paths, verification checklist semantics, Fork Step-Name Map, step-sequence table semantics, or fork-return contract have changed
+- [x] All internal SKILL.md anchors and cross-skill references still resolve after the rollout
+- [x] `npm run validate` passes
+- [x] `npm test` passes
+- [x] This feature document's GitHub Issue section links to [#203](https://github.com/lwndev/lwndev-marketplace/issues/203)
 
 ## Completion
 
@@ -286,8 +286,8 @@ Captured on feature branch `feat/FEAT-024-input-token-optimization-rollout` at H
 | `implementing-plan-phases` | `references/workflow-example.md` | 327 | 977 | 8670 | — |
 | `implementing-plan-phases` | `assets/pr-template.md` | 163 | 616 | 4088 | — |
 | `implementing-plan-phases` | **subtotal** | **1067** | **4666** | **35178** | — |
-| **Grand total (all 12 skills, all in-scope files)** | — | **8225** | **44184** | **315269** | **38958** |
-| **Grand total (SKILL.md only, in-scope per-invocation surface)** | — | **2577** | **21095** | **149839** | **38958** |
+| **Grand total (all 12 skills, all in-scope files)** | — | **8225** | **44184** | **315269** | **38959** |
+| **Grand total (SKILL.md only, in-scope per-invocation surface)** | — | **2577** | **22095** | **155839** | **38959** |
 
 **Notes:**
 - `personas/` and `scripts/` directories under `documenting-qa` and `executing-qa` are out of scope for this rollout (only SKILL.md, references, and assets are measured per Phase 0 step 2).
@@ -304,11 +304,11 @@ Per-phase rows are appended as each phase lands. Format mirrors the Baseline Mea
 |-------|------|------:|------:|------:|--------------------------:|
 | `finalizing-workflow` | `SKILL.md` | 104 | 970 | 6754 | 1689 |
 | `finalizing-workflow` | **subtotal** | **104** | **970** | **6754** | — |
-| `documenting-features` | `SKILL.md` | 154 | 1109 | 8171 | 2043 |
+| `documenting-features` | `SKILL.md` | 154 | 1114 | 8196 | 2049 |
 | `documenting-features` | `references/feature-requirements-example-episodes-command.md` | 274 | 1278 | 8512 | — |
 | `documenting-features` | `references/feature-requirements-example-search-command.md` | 228 | 1021 | 6872 | — |
 | `documenting-features` | `assets/feature-requirements.md` | 94 | 242 | 1715 | — |
-| `documenting-features` | **subtotal** | **750** | **3650** | **25270** | — |
+| `documenting-features` | **subtotal** | **750** | **3655** | **25295** | — |
 | `documenting-chores` | `SKILL.md` | 145 | 983 | 7067 | 1767 |
 | `documenting-chores` | `references/categories.md` | 198 | 720 | 4785 | — |
 | `documenting-chores` | `assets/chore-document.md` | 109 | 356 | 2456 | — |
@@ -351,6 +351,8 @@ Per-phase rows are appended as each phase lands. Format mirrors the Baseline Mea
 | `implementing-plan-phases` | `references/workflow-example.md` | 327 | 977 | 8670 | — |
 | `implementing-plan-phases` | `assets/pr-template.md` | 163 | 616 | 4088 | — |
 | `implementing-plan-phases` | **subtotal** | **1062** | **4580** | **34670** | — |
+| **Grand total (all 12 skills, all in-scope files)** | — | **8173** | **43272** | **310052** | **36945** |
+| **Grand total (SKILL.md only, in-scope per-invocation surface)** | — | **2488** | **20813** | **147782** | **36945** |
 
 **Per-axis outcomes (Phase 1, `finalizing-workflow`):**
 - **FR-1**: lite-style prose compression applied to `## When to Use This Skill`, `## Workflow Position` intro, `## Usage` (steps 1–5 + intro), `## Expected output`, and `## Relationship to Other Skills` intro. The `## Output Style` section was preserved verbatim per FR-4 (FEAT-023 carve-out).
@@ -462,11 +464,11 @@ Per-phase rows are appended as each phase lands. Format mirrors the Baseline Mea
 |-------|------|--------:|--------:|--------:|--------:|--------:|--------:|------------:|
 | `finalizing-workflow` | `SKILL.md` | 0 | 0.00% | -34 | -3.39% | -177 | -2.55% | -44 |
 | `finalizing-workflow` | **subtotal** | **0** | **0.00%** | **-34** | **-3.39%** | **-177** | **-2.55%** | **-44** |
-| `documenting-features` | `SKILL.md` | 0 | 0.00% | -81 | -6.81% | -477 | -5.51% | -119 |
+| `documenting-features` | `SKILL.md` | 0 | 0.00% | -76 | -6.39% | -452 | -5.23% | -113 |
 | `documenting-features` | `references/feature-requirements-example-episodes-command.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
 | `documenting-features` | `references/feature-requirements-example-search-command.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
 | `documenting-features` | `assets/feature-requirements.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
-| `documenting-features` | **subtotal** | **0** | **0.00%** | **-81** | **-2.17%** | **-477** | **-1.85%** | **-119** |
+| `documenting-features` | **subtotal** | **0** | **0.00%** | **-76** | **-2.04%** | **-452** | **-1.76%** | **-113** |
 | `documenting-chores` | `SKILL.md` | -4 | -2.68% | -68 | -6.47% | -386 | -5.18% | -96 |
 | `documenting-chores` | `references/categories.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
 | `documenting-chores` | `assets/chore-document.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
@@ -509,6 +511,8 @@ Per-phase rows are appended as each phase lands. Format mirrors the Baseline Mea
 | `implementing-plan-phases` | `references/workflow-example.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
 | `implementing-plan-phases` | `assets/pr-template.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
 | `implementing-plan-phases` | **subtotal** | **-5** | **-0.47%** | **-86** | **-1.84%** | **-508** | **-1.44%** | **-127** |
+| **Grand total (all 12 skills, all in-scope files)** | — | **-52** | **-0.63%** | **-912** | **-2.06%** | **-5217** | **-1.66%** | **-2014** |
+| **Grand total (SKILL.md only, in-scope per-invocation surface)** | — | **-89** | **-3.45%** | **-1282** | **-5.80%** | **-8057** | **-5.17%** | **-2014** |
 
 **Phase 1 delta notes:**
 - Line count is unchanged at 104 because compression replaced longer phrasings with shorter ones on the same logical lines; no entire blocks were collapsed (FR-2 / FR-3 were both no-ops by design for this small surface).
@@ -636,7 +640,160 @@ Per-phase rows are appended as each phase lands. Format mirrors the Baseline Mea
 
 ### Summary (aggregate across all twelve skills)
 
-_(To be populated when all phases complete — compare against the CHORE-035 pilot prediction of `~5 + N` compounded per-workflow savings)_
+Captured at Phase 13 close on 2026-04-22 against branch `feat/FEAT-024-input-token-optimization-rollout`. All twelve target skills compressed; per-skill Phase 1–12 commits land independently per NFR-2.
+
+**Headline reductions (SKILL.md only — the per-invocation instruction surface):**
+
+| Aggregate | Lines | Words | Chars | chars / 4 (input tokens) |
+|---|---:|---:|---:|---:|
+| Baseline (12 SKILL.md) | 2577 | 22095 | 155839 | 38959 |
+| Post-change (12 SKILL.md) | 2488 | 20813 | 147782 | 36945 |
+| Δ (post − pre) | -89 | -1282 | -8057 | **-2014** |
+| % reduction | -3.45% | -5.80% | **-5.17%** | -5.17% |
+
+**Headline number**: the twelve target SKILL.md files together shed **8 057 chars / ~2 014 input tokens** (`chars / 4` estimator). Per-invocation surface reduced by **5.17%** in chars (-3.45% in lines, -5.80% in words). The relative reduction is intentionally smaller than the CHORE-035 pilot's single-skill **-43.0%** because the pilot targeted the largest skill (`orchestrating-workflows`, 466 lines / 38 653 chars) where heavy-narrative relocation alone moved ~212 lines into `references/`. This rollout's twelve skills had much smaller pre-change SKILL.md surfaces (104–434 lines), already-relocated reference files in most cases, and far fewer FR-2 relocation opportunities (only `reviewing-requirements` Phase 7 produced a new reference file). The dominant contributor here was FR-1 lite-style compression rather than FR-2 relocation.
+
+**Per-skill SKILL.md chars/4 reductions (FR-5 primary target):**
+
+| Skill | chars/4 baseline | chars/4 post | chars/4 Δ | chars % |
+|---|---:|---:|---:|---:|
+| `finalizing-workflow` | 1733 | 1689 | -44 | -2.55% |
+| `documenting-features` | 2162 | 2049 | -113 | -5.23% |
+| `documenting-chores` | 1863 | 1767 | -97 | -5.18% |
+| `documenting-bugs` | 2103 | 1994 | -109 | -5.18% |
+| `managing-work-items` | 5714 | 4981 | **-733** | **-12.83%** |
+| `creating-implementation-plans` | 1703 | 1656 | -48 | -2.77% |
+| `reviewing-requirements` | 6986 | 6543 | -443 | -6.34% |
+| `executing-chores` | 2806 | 2733 | -74 | -2.62% |
+| `executing-bug-fixes` | 3263 | 3211 | -52 | -1.60% |
+| `documenting-qa` | 3431 | 3339 | -93 | -2.71% |
+| `executing-qa` | 4349 | 4267 | -83 | -1.90% |
+| `implementing-plan-phases` | 2845 | 2718 | -127 | -4.46% |
+| **Sum (12 SKILL.md)** | **38958** | **36947** | **-2014** | **-5.17%** |
+
+`managing-work-items` (-733 chars/4) and `reviewing-requirements` (-443) carried the rollout, jointly accounting for **58.4%** of the total reduction. They share the two largest pre-change SKILL.md surfaces (390 and 434 lines) and were the only phases to invoke a non-FR-1 axis at scale (Phase 5 FR-3 collapse of the Graceful Degradation / Error Handling tables; Phase 7 FR-2 relocation of standard-review Steps 3-7 into a new `references/standard-review-steps.md`).
+
+**All-files aggregate (lossless view including new reference files):**
+
+| Aggregate | Lines | Words | Chars |
+|---|---:|---:|---:|
+| Baseline (all 12 in-scope file sets) | 8225 | 44184 | 315269 |
+| Post-change (all 12 in-scope file sets) | 8173 | 43272 | 310052 |
+| Δ | -52 | -912 | -5217 |
+| % | -0.63% | -2.06% | -1.66% |
+
+The all-files delta is smaller than the SKILL.md-only delta because FR-2's only relocation (Phase 7) added 37 lines / 2 840 chars of new reference content to `reviewing-requirements/references/standard-review-steps.md` — that text moved off the per-invocation surface but is still measured here. No content was dropped: the rollout shrinks the always-loaded surface and pushes relocated detail to on-demand reference files.
+
+**Per-workflow compounding (CHORE-035 prediction comparison):**
+
+Every workflow chain dispatches one main-context skill load plus per-step forks. CHORE-035's `~5 + N` formula assumed `4 + N` forks plus the orchestrator's own SKILL.md load (~1) = `5 + N` SKILL.md reads per workflow.
+
+For this rollout, each workflow chain is a mix of the twelve compressed skills. Per-workflow savings are roughly the sum of the per-fork SKILL.md savings for the skills the chain dispatches. For each chain type:
+
+| Chain | Forks (skills loaded) | Per-workflow SKILL.md token saving (chars/4) |
+|---|---|---:|
+| Feature chain (~10 forks, including reviewing-requirements ×3 reconciliation passes) | `documenting-features` + `reviewing-requirements` ×3 + `creating-implementation-plans` + `documenting-qa` + `implementing-plan-phases` ×N + `executing-qa` + `finalizing-workflow` + inline `managing-work-items` | ~`-113 + 3·(-443) + -48 + -93 + N·(-127) + -83 + -44 + -733` = **`~-2443 + (N · -127)` per workflow** |
+| Chore chain (~7 forks) | `documenting-chores` + `reviewing-requirements` ×2 + `documenting-qa` + `executing-chores` + `executing-qa` + `finalizing-workflow` + inline `managing-work-items` | ~`-97 + 2·(-443) + -93 + -74 + -83 + -44 + -733` = **`~-2010` per workflow** |
+| Bug chain (~7 forks) | `documenting-bugs` + `reviewing-requirements` ×2 + `documenting-qa` + `executing-bug-fixes` + `executing-qa` + `finalizing-workflow` + inline `managing-work-items` | ~`-109 + 2·(-443) + -93 + -52 + -83 + -44 + -733` = **`~-2000` per workflow** |
+
+(`managing-work-items` is invoked inline from main context several times per workflow rather than as a forked sub-agent — included once here as a conservative estimate. `reviewing-requirements` is dispatched up to three times per chain — once for standard review and twice for reconciliation. `implementing-plan-phases` is dispatched once per phase, so a feature chain with N implementation phases pays its savings N times.)
+
+A feature chain with the typical N = 3-5 implementation phases saves roughly **2 800-3 100 input tokens per workflow** purely from the SKILL.md compression. A chore or bug chain saves **~2 000 tokens per workflow**. These savings compound across every workflow run — across hundreds or thousands of `/workflow` invocations the aggregate user-side input-token cost reduction is material.
+
+**Comparison to CHORE-035 pilot:**
+
+- CHORE-035 single-skill reduction: **−4 155 chars/4 tokens** on `orchestrating-workflows/SKILL.md` alone (−43.0%); compounds `~5 + N` times per workflow because every fork re-loads that file.
+- FEAT-024 twelve-skill reduction: **−2 014 chars/4 tokens** spread across the twelve forked/inline skills; compounds *per dispatched skill* per workflow rather than `5 + N` times per workflow on a single file. Because each fork loads only its own SKILL.md (not all twelve), the pre-workflow saving is roughly the per-fork sum above (~2 000-3 100 tokens) rather than a multiplicative `12 × 2014`.
+- **Combined (CHORE-035 + FEAT-024)** per-workflow saving: a feature chain with N=3 implementation phases now saves `(5+3)·4155 + 2 824 ≈ 36 064` input tokens per workflow vs the pre-CHORE-034/CHORE-035 baseline (`orchestrating-workflows` compounding savings + per-skill fork savings). The pilot remains the single largest contributor; the rollout's value is in tightening the long tail of the twelve smaller skills so no individual fork carries surplus instruction surface.
+- **Prediction vs actuals**: the CHORE-035 Notes section predicted "the same pattern can be rolled out to the remaining twelve `lwndev-sdlc` skills"; the prediction did not commit to a specific aggregate reduction for the rollout because the twelve skills have substantially different sizes and topology than `orchestrating-workflows`. The per-skill 1.6-12.8% chars % reductions observed here are consistent with what the three-axis template can do on smaller already-tighter surfaces — the pilot's 43% reduction was an upper bound enabled by the unique combination of a very large pre-change file (466 lines) plus three near-duplicate tables and a long forked-steps recipe both eligible for FR-3 collapse and FR-2 relocation.
+
+**FR-3 / FR-2 yield distribution:**
+- **FR-1 (lite-style compression)**: applied in all twelve phases. Yield: small to medium (-1.60% to -6.47% chars per skill).
+- **FR-2 (heavy-narrative relocation)**: invoked once (Phase 7, `reviewing-requirements` standard-review Steps 3-7). Yield: -1772 chars on that SKILL.md (largest single-phase chars drop). All eleven other skills recorded FR-2 as a no-op — either no non-dispatcher section exceeded the ~25-line threshold, or the candidate sections were pinned by must-preserve test assertions (Phase 5 `managing-work-items` Jira Backend section being the canonical example).
+- **FR-3 (natural collapse)**: invoked once (Phase 5, `managing-work-items` Graceful Degradation + Error Handling tables). Yield: included in the -2 932 chars Phase 5 SKILL.md drop (alongside FR-1 compression). All eleven other skills recorded FR-3 as a no-op — either zero tables exist, or the existing tables address distinct axes with no near-duplication.
+
+The rollout's three-axis template held up: the same FR-1/FR-2/FR-3 mechanism that removed -43% from `orchestrating-workflows` also removed proportional chunks (1.6-12.8%) from the twelve smaller skills, with FR-2/FR-3 firing only when the topology genuinely supported it.
+
+**Verification (Phase 13 closing):**
+- `npm run validate`: ✅ all 13 lwndev-sdlc skills pass (12 target + `orchestrating-workflows`).
+- `npm test` (full suite): ✅ all tests pass.
+- `npm run lint`: ✅ clean.
+- `npm run format:check`: ✅ clean.
+- All SKILL.md anchors and cross-skill references resolve.
+- Manual spot-check (markdown render): `implementing-plan-phases` (forked), `executing-qa` (main-context), `managing-work-items` (cross-cutting inline) all read cleanly; dispatcher paragraphs are coherent and inline reference pointers resolve.
+- Feature workflow chain end-to-end: this rollout is itself the verification — the FEAT-024 plan was driven through `orchestrating-workflows` across all 14 phases, dispatching every compressed skill multiple times. No dispatch regressions observed across Phases 1-12 (`reviewing-requirements`, `creating-implementation-plans`, `documenting-qa`, `implementing-plan-phases` all dispatched normally; PR review and reconciliation pause-points worked).
+- Chore workflow chain end-to-end: covered by the existing CHORE-035 pilot itself (which exercised the chore chain on the predecessor skill via this same orchestrator). Phase 13 does not re-run a fresh chore chain — the per-skill `npm test` run after each phase plus the full-suite `npm test` here cover all the chore-chain dispatcher assertions (`executing-chores`, `documenting-chores` test files passed at every phase boundary).
+
+### FR-2 relocation registry (per-skill outcomes)
+
+| Phase | Skill | FR-2 outcome |
+|---|---|---|
+| 1 | `finalizing-workflow` | **No-op**. No non-dispatcher section >25 lines after FR-1; no `references/` directory created (Edge Case 1 — pre-existing absence preserved). |
+| 2 | `documenting-features` | **No-op**. No section >25 lines; existing `references/feature-requirements-example-*.md` are example documents, not procedural narrative. |
+| 3 | `documenting-chores` | **No-op**. No section >25 lines; existing `references/categories.md` is a reference table, not procedural narrative. |
+| 4 | `documenting-bugs` | **No-op**. No section >25 lines; existing `references/categories.md` is a reference table, not procedural narrative. |
+| 5 | `managing-work-items` | **No-op for relocation**. Largest section (`## Jira Backend (FR-3)`, ~115 lines pre-compression) is per-tier API call patterns pinned by must-preserve test assertions; relocating would either break the test contract or duplicate content. Existing two large reference files unchanged. |
+| 6 | `creating-implementation-plans` | **No-op**. No section >25 lines; existing `references/implementation-plan-example.md` is an example plan. |
+| 7 | `reviewing-requirements` | **Relocation applied**. Standard-review Steps 3-7 (~34 lines) moved to new `references/standard-review-steps.md` (37 lines / 370 words / 2 840 chars). SKILL.md retains a single `## Steps 3-7: Verification Checks` dispatcher with one-line per-step summaries and an inline pointer at the end of the dispatcher paragraph (Edge Case 8 compliant). |
+| 8 | `executing-chores` | **No-op**. Existing `references/workflow-details.md` (277 lines) already absorbs the heaviest procedural narrative; SKILL.md dispatches via inline pointer at end of `## Workflow Checklist`. |
+| 9 | `executing-bug-fixes` | **No-op**. Existing `references/workflow-details.md` (338 lines) already absorbs the heaviest procedural narrative; SKILL.md dispatches via inline pointer at end of `## Workflow Checklist` and re-listed under `## References`. |
+| 10 | `documenting-qa` | **No-op**. No `references/` directory pre-change; no section warranted relocation; pre-existing `references/`-absent state preserved (Edge Case 1 / Edge Case 9). |
+| 11 | `executing-qa` | **No-op**. Same as Phase 10 — no `references/` directory pre-change; no section warranted relocation. Edge Case 9 — `references/` row absent from per-skill subtotals in measurement tables. |
+| 12 | `implementing-plan-phases` | **No-op for additional relocation**. Existing `references/step-details.md` (399 lines) and `references/workflow-example.md` (327 lines) already absorb the heaviest procedural narrative; SKILL.md dispatches via post-Workflow-checklist `See [step-details.md](...)` pointer plus the `## References` block at end-of-file. |
+
+**Summary**: 1 of 12 skills triggered FR-2 relocation (Phase 7 only). Eleven recorded no-op with documented justification. Two skills (`documenting-qa`, `executing-qa`) had no pre-existing `references/` directory and no new relocation — Edge Case 1 no-op preserved.
+
+### FR-3 collapse registry (per-skill outcomes)
+
+| Phase | Skill | FR-3 outcome |
+|---|---|---|
+| 1 | `finalizing-workflow` | **No-op**. Only one table (`## Relationship to Other Skills` Task/Recommended Approach matrix). |
+| 2 | `documenting-features` | **No-op**. Only one table (`## Relationship to Other Skills` matrix). |
+| 3 | `documenting-chores` | **No-op**. Two tables (`## Categories` matrix + `## Relationship to Other Skills` matrix); distinct shapes/purposes; no near-duplication. |
+| 4 | `documenting-bugs` | **No-op**. Three tables (`## Categories` 6-row + `## Severity Levels` 4-row + `## Relationship to Other Skills` 4-row); distinct axes; no near-duplication. |
+| 5 | `managing-work-items` | **Collapse applied**. Two near-duplicate failure tables consolidated into one 12-row `## Graceful Degradation (NFR-1) and Error Handling (NFR-2)` table with a `Backend` column (GitHub / Jira / Any) as the lossless deltas dimension. One-line pointer to the canonical `## Jira-Specific Error Handling` per-tier table preserves the deeper Jira matrix. |
+| 6 | `creating-implementation-plans` | **No-op**. SKILL.md contains no tables (only structure-overview code blocks). |
+| 7 | `reviewing-requirements` | **No-op**. Five distinct tables (Step 1.5 mode-detection, Step 2 document-type, Step 8 severity-classification, Document-Type-Adaptations, Relationship-to-Other-Skills), each address a different axis with distinct row content. |
+| 8 | `executing-chores` | **No-op**. Tables are workflow-specific and distinct. |
+| 9 | `executing-bug-fixes` | **No-op**. Tables are workflow-specific and distinct. |
+| 10 | `documenting-qa` | **No-op**. Tables address distinct dimensions (priority tiers, dimension list, mode list); no near-duplication. |
+| 11 | `executing-qa` | **No-op**. Verdict-derivation list, framework-defaults bullets, and per-verdict structural-rules are dispatch-time-must-read inline structures, not near-duplicate tables. |
+| 12 | `implementing-plan-phases` | **No-op**. SKILL.md contains zero tables (only `## Workflow` checklist code block and `## Phase Structure` example markdown code block). |
+
+**Summary**: 1 of 12 skills triggered FR-3 collapse (Phase 5 only). Eleven recorded no-op with documented justification.
+
+### FR-4 carve-out fidelity log (Unicode arrow corrections)
+
+The three-skill carve-out fidelity fix corrected the self-contradictory FR-14 carve-out bullet's "Unicode `->`" reference to the canonical "Unicode `→`" form (per the FEAT-014 emitter format that `prepare-fork.sh` actually emits). The other nine skills' FR-14 carve-outs already used the canonical form and were left unchanged.
+
+| Phase | Skill | Correction site(s) | Status |
+|---|---|---|---|
+| 8 | `executing-chores` | FR-14 carve-out bullet — `[model]` echo example + trailing "Unicode `→`" reference (2 occurrences) | ✅ Applied; verified in commit `b68822c` |
+| 9 | `executing-bug-fixes` | FR-14 carve-out bullet — `[model]` echo example + trailing "Unicode `→`" reference (2 occurrences) | ✅ Applied; verified in commit `2abe545` |
+| 12 | `implementing-plan-phases` | FR-14 carve-out bullet — trailing "Unicode `→`" reference (1 occurrence at line 88 post-change) | ✅ Applied; verified in commit `9940724` |
+
+**Verification**: `prepare-fork.sh` itself is unchanged and continues to emit the Unicode `→` form. All twelve target SKILL.md FR-14 carve-out bullets now consistently document the emitter format as Unicode `→` (where applicable). The three corrections are independently observable in the per-phase commits and have been verified at Phase 13 close via spot-check of the three SKILL.md files.
+
+### FR-7 audit closure (per-skill disposition)
+
+The Phase 0 pre-flight audit walked all twelve `scripts/__tests__/<skill>.test.ts` files and identified the will-change vs must-preserve breakdown. Per-phase Step 1 confirmed and refined that audit before any SKILL.md edit. Per-phase Step 9 (or in-line within the FR-1 commit) updated any will-change assertion in the same commit as the SKILL.md edit. Disposition at Phase 13 close:
+
+| Phase | Skill | will-change updated | must-preserve verified |
+|---|---|---|---|
+| 1 | `finalizing-workflow` | None identified (all `toHaveLength`/`toBe` are checkbox-flip behavioral fixtures, not SKILL.md surface) | All structural anchors and exclusion guards confirmed present |
+| 2 | `documenting-features` | None | Heading anchors, literal phrases, frontmatter, no-Bash/Agent guard all confirmed |
+| 3 | `documenting-chores` | None | Heading anchors and frontmatter confirmed; cross-skill `argument-hint.test.ts` "When argument is provided" / "When no argument is provided" carve-out surfaced post-initial-edit and re-applied before commit |
+| 4 | `documenting-bugs` | Phase-0-flagged `documenting-bugs.test.ts:155 expect(matches!.length).toBe(6)` resolved as **must-preserve** (counts subsection headings in `references/categories.md`, not SKILL.md; categories.md unchanged) | Heading anchors, severity literals, frontmatter confirmed; cross-skill `argument-hint.test.ts` literals applied prospectively |
+| 5 | `managing-work-items` | None | All 54 assertions across 11 describe blocks confirmed; `Inline execution note` carve-out preserved verbatim; cross-skill `argument-hint.test.ts` N/A (skill not in `SKILLS_WITH_HINTS`) |
+| 6 | `creating-implementation-plans` | None | Frontmatter, anchors, literals confirmed; cross-skill `argument-hint.test.ts` literals applied prospectively |
+| 7 | `reviewing-requirements` | None | All mode-section step-name and findings-display literals confirmed; new `references/standard-review-steps.md` introduces no broken anchor; `Found **N errors** ...` exception return shape preserved; cross-skill `argument-hint.test.ts` literals applied prospectively |
+| 8 | `executing-chores` | None | Heading anchors, FR-14 echo (now corrected to Unicode `→`), frontmatter confirmed; cross-skill `argument-hint.test.ts` literals applied prospectively |
+| 9 | `executing-bug-fixes` | None | All Root Cause Driven Execution literals (`Redeclare root causes`, `Address root causes systematically`, `Verify per root cause`) confirmed; FR-14 echo corrected to Unicode `→`; cross-skill `argument-hint.test.ts` literals applied prospectively |
+| 10 | `documenting-qa` | None | Forbidden-reads-during-planning rule preserved verbatim; `Do NOT read \`?requirements/` regex assertion still matches; FR-N stop-hook guard documented at three sites; behavioral stop-hook tmpdir-fixture tests unaffected |
+| 11 | `executing-qa` | None | Edge-case ERROR carve-outs preserved (clean-vs-main `Reason: no changes to test relative to main`, missing-test-plan blockquote prompt, version-1-refusal blockquote prompt); P0 mode-branch reachability verified (both `test-framework` and `exploratory-only` branches documented and reachable); v1/v2 template heading assertions confirmed |
+| 12 | `implementing-plan-phases` | None | Status-tracking literals (`🔄 In Progress`, `✅ Complete`, `**After all phases complete:** Create pull request`, `Closes #N`, `feat/{Feature ID}`) preserved verbatim; FR-14 echo corrected to Unicode `→`; orchestrator-side Step 10 skip carve-out paragraph preserved |
+
+**Summary**: zero will-change assertion updates required across the rollout (only one Phase-0 candidate flagged in Phase 4, resolved as must-preserve on inspection). All must-preserve invariants verified passing at every phase boundary via per-phase `npm test -- <skill>` and the Phase 13 full-suite `npm test`.
 
 ### Per-skill FR-7 pre-flight audit findings
 
