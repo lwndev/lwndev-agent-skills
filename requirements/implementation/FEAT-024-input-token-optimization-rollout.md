@@ -208,7 +208,7 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 
 ### Phase 5: `managing-work-items` — inline cross-cutting skill, two large references, no assets
 **Feature:** [FEAT-024](../features/FEAT-024-input-token-optimization-rollout.md) | [#203](https://github.com/lwndev/lwndev-marketplace/issues/203)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - `managing-work-items` is the largest SKILL.md so far in the sequence (390 lines) but has no `assets/`. It has two large reference files: `github-templates.md` (740 lines) and `jira-templates.md` (715 lines). These reference files are API call patterns and template collections — they are reference material that stays in `references/` by definition; FR-2 is a no-op for them. The SKILL.md itself may contain procedural narrative that can be relocated.
@@ -229,13 +229,13 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 11. **Commit**: `feat(FEAT-024): apply input-token optimization to managing-work-items`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` — FR-1 compression applied
-- [ ] FR-2 outcome recorded in FEAT-024 Notes (relocation or no-op, with justification)
-- [ ] FR-3 outcome recorded in FEAT-024 Notes (collapse or no-op, with justification)
-- [ ] Post-change measurements and delta recorded in FEAT-024 Notes
-- [ ] Any affected test assertions updated in same commit
-- [ ] `npm run validate` passes
-- [ ] `npm test -- --testPathPatterns=managing-work-items` passes
+- [x] `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` — FR-1 compression applied
+- [x] FR-2 outcome recorded in FEAT-024 Notes (relocation or no-op, with justification)
+- [x] FR-3 outcome recorded in FEAT-024 Notes (collapse or no-op, with justification)
+- [x] Post-change measurements and delta recorded in FEAT-024 Notes
+- [x] Any affected test assertions updated in same commit
+- [x] `npm run validate` passes
+- [x] `npm test -- --testPathPatterns=managing-work-items` passes
 
 ---
 
