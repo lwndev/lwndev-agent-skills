@@ -331,9 +331,13 @@ describe('finalizing-workflow skill', () => {
       expect(skillMd).toContain('Merge PR and reset to main (and finalize requirement doc)');
     });
 
-    it('should be under 80 lines after the collapse', () => {
+    it('should be under 120 lines after the collapse (FEAT-022 collapse + FEAT-023 Output Style section)', () => {
+      // FEAT-022 collapsed the body to ~72 lines. FEAT-023 Phase 1 added the
+      // `## Output Style` section (lite rules + carve-outs + return contract),
+      // pushing the file to ~105 lines. The 120-line ceiling preserves the
+      // post-collapse intent while accommodating the rollout-wide section.
       const lineCount = skillMd.split('\n').length;
-      expect(lineCount).toBeLessThan(80);
+      expect(lineCount).toBeLessThan(120);
     });
   });
 

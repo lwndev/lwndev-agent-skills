@@ -218,3 +218,5 @@ Measurements will be appended here by the implementation phases.
 | `plugins/lwndev-sdlc/skills/finalizing-workflow/SKILL.md` (baseline) | 72 | 564 | 3982 |
 | `plugins/lwndev-sdlc/skills/finalizing-workflow/SKILL.md` (post-change) | 104 | 1004 | 6931 |
 | **Δ** | +32 | +440 | +2949 |
+
+Per NFR-3, the `scripts/__tests__/finalizing-workflow.test.ts` "should be under 80 lines after the collapse" assertion (originally set by FEAT-022 after the skill was collapsed to ~72 lines) was updated to a 120-line ceiling to accommodate the rollout-wide `## Output Style` section. No other tests required changes.
