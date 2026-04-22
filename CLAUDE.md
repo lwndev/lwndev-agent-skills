@@ -29,6 +29,8 @@ npm run format          # Format code with Prettier
 npm run format:check    # Check formatting
 ```
 
+When running tests, always scope to the relevant file (`--testPathPatterns=<pattern>`) and pipe output through `tail` (e.g. `| tail -50`) or redirect to a file to avoid flooding context with full run output.
+
 ## Architecture
 
 ### Plugin Validation Pipeline
