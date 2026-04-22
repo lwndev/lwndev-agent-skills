@@ -249,7 +249,7 @@ describe('finalizing-workflow skill', () => {
     skillMd = await readFile(SKILL_MD_PATH, 'utf-8');
   });
 
-  describe('SKILL.md structural assertions (Phase 1 verification)', () => {
+  describe('SKILL.md structural assertions (post-FEAT-022 collapse)', () => {
     it('should have frontmatter with name: finalizing-workflow', () => {
       expect(skillMd).toMatch(/^---\s*\n[\s\S]*?name:\s*finalizing-workflow[\s\S]*?---/);
     });
@@ -260,20 +260,19 @@ describe('finalizing-workflow skill', () => {
       expect(match![1].trim().length).toBeGreaterThan(0);
     });
 
-    it('should have allowed-tools containing Edit', () => {
-      const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
-      expect(frontmatter).toContain('- Edit');
-    });
-
-    it('should have allowed-tools containing Glob', () => {
-      const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
-      expect(frontmatter).toContain('- Glob');
-    });
-
-    it('should have allowed-tools containing Bash and Read', () => {
+    it('should have allowed-tools containing Bash', () => {
       const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
       expect(frontmatter).toContain('- Bash');
-      expect(frontmatter).toContain('- Read');
+    });
+
+    it('should NOT have Edit in allowed-tools (pruned per FR-10)', () => {
+      const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
+      expect(frontmatter).not.toContain('- Edit');
+    });
+
+    it('should NOT have Glob in allowed-tools (pruned per FR-10)', () => {
+      const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
+      expect(frontmatter).not.toContain('- Glob');
     });
 
     it('should NOT have Write in allowed-tools', () => {
@@ -281,105 +280,60 @@ describe('finalizing-workflow skill', () => {
       expect(frontmatter).not.toContain('- Write');
     });
 
-    it('should contain ## Pre-Flight Checks section', () => {
-      expect(skillMd).toContain('## Pre-Flight Checks');
+    it('should contain ## When to Use This Skill section', () => {
+      expect(skillMd).toContain('## When to Use This Skill');
     });
 
-    it('should contain ## Pre-Merge Bookkeeping section', () => {
-      expect(skillMd).toContain('## Pre-Merge Bookkeeping');
+    it('should contain ## Workflow Position section', () => {
+      expect(skillMd).toContain('## Workflow Position');
     });
 
-    it('should contain ## Execution section', () => {
-      expect(skillMd).toContain('## Execution');
+    it('should contain ## Usage section (post-collapse)', () => {
+      expect(skillMd).toContain('## Usage');
     });
 
-    it('should have ## Pre-Merge Bookkeeping appear before ## Execution', () => {
-      const bkIdx = skillMd.indexOf('## Pre-Merge Bookkeeping');
-      const execIdx = skillMd.indexOf('## Execution');
-      expect(bkIdx).toBeGreaterThan(-1);
-      expect(execIdx).toBeGreaterThan(-1);
-      expect(bkIdx).toBeLessThan(execIdx);
+    it('should reference the finalize.sh invocation', () => {
+      expect(skillMd).toContain(
+        'bash "${CLAUDE_PLUGIN_ROOT}/skills/finalizing-workflow/scripts/finalize.sh"'
+      );
     });
 
-    it('should have ## Pre-Flight Checks appear before ## Pre-Merge Bookkeeping', () => {
-      const preflightIdx = skillMd.indexOf('## Pre-Flight Checks');
-      const bkIdx = skillMd.indexOf('## Pre-Merge Bookkeeping');
-      expect(preflightIdx).toBeGreaterThan(-1);
-      expect(bkIdx).toBeGreaterThan(-1);
-      expect(preflightIdx).toBeLessThan(bkIdx);
+    it('should contain the single canonical confirmation prompt', () => {
+      expect(skillMd).toContain('Ready to merge PR');
+      expect(skillMd).toContain('finalize the requirement document');
     });
 
-    it('should contain BK-1 step', () => {
-      expect(skillMd).toContain('BK-1');
+    it('should NOT contain removed ## Pre-Flight Checks section', () => {
+      expect(skillMd).not.toContain('## Pre-Flight Checks');
     });
 
-    it('should contain BK-2 step', () => {
-      expect(skillMd).toContain('BK-2');
+    it('should NOT contain removed ## Pre-Merge Bookkeeping section', () => {
+      expect(skillMd).not.toContain('## Pre-Merge Bookkeeping');
     });
 
-    it('should contain BK-3 step', () => {
-      expect(skillMd).toContain('BK-3');
+    it('should NOT contain removed ## Execution section', () => {
+      expect(skillMd).not.toContain('## Execution');
     });
 
-    it('should contain BK-4 step', () => {
-      expect(skillMd).toContain('BK-4');
+    it('should NOT contain removed ## Error Handling section', () => {
+      expect(skillMd).not.toContain('## Error Handling');
     });
 
-    it('should contain BK-5 step', () => {
-      expect(skillMd).toContain('BK-5');
-    });
-
-    it('should contain Error Handling table row for non-matching branch pattern', () => {
-      expect(skillMd).toMatch(/Branch name does not match workflow ID pattern/);
-    });
-
-    it('should contain Error Handling table row for missing requirement doc', () => {
-      expect(skillMd).toMatch(/Requirement doc not found for derived ID/);
-    });
-
-    it('should contain Error Handling table row for already-finalized doc', () => {
-      expect(skillMd).toMatch(/Requirement doc already finalized/);
-    });
-
-    it('should contain Error Handling table row for bookkeeping commit or push failure', () => {
-      expect(skillMd).toMatch(/Bookkeeping commit or push fails/);
-    });
-
-    it('should contain updated Relationship to Other Skills row with "(and finalize requirement doc)"', () => {
-      expect(skillMd).toContain('Merge PR and reset to main (and finalize requirement doc)');
-    });
-
-    it('should still contain ## Error Handling section', () => {
-      expect(skillMd).toContain('## Error Handling');
+    it('should NOT reference BK-1 through BK-5 labels', () => {
+      expect(skillMd).not.toMatch(/\bBK-[1-5]\b/);
     });
 
     it('should still contain ## Relationship to Other Skills section', () => {
       expect(skillMd).toContain('## Relationship to Other Skills');
     });
 
-    it('should contain FR-2 reference in BK-1', () => {
-      const bkSection = skillMd.slice(skillMd.indexOf('## Pre-Merge Bookkeeping'));
-      expect(bkSection).toMatch(/FR-2/);
+    it('should preserve the "Merge PR and reset to main (and finalize requirement doc)" row', () => {
+      expect(skillMd).toContain('Merge PR and reset to main (and finalize requirement doc)');
     });
 
-    it('should contain FR-3 reference in BK-2', () => {
-      const bkSection = skillMd.slice(skillMd.indexOf('## Pre-Merge Bookkeeping'));
-      expect(bkSection).toMatch(/FR-3/);
-    });
-
-    it('should contain FR-4 reference in BK-3', () => {
-      const bkSection = skillMd.slice(skillMd.indexOf('## Pre-Merge Bookkeeping'));
-      expect(bkSection).toMatch(/FR-4/);
-    });
-
-    it('should contain FR-5 reference in BK-4', () => {
-      const bkSection = skillMd.slice(skillMd.indexOf('## Pre-Merge Bookkeeping'));
-      expect(bkSection).toMatch(/FR-5/);
-    });
-
-    it('should contain FR-6 reference in BK-5', () => {
-      const bkSection = skillMd.slice(skillMd.indexOf('## Pre-Merge Bookkeeping'));
-      expect(bkSection).toMatch(/FR-6/);
+    it('should be under 80 lines after the collapse', () => {
+      const lineCount = skillMd.split('\n').length;
+      expect(lineCount).toBeLessThan(80);
     });
   });
 

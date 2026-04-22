@@ -218,7 +218,7 @@ These two are the "mutating" BK-4.2 and BK-4.3 sub-steps — both edit the requi
 ### Phase 5: SKILL.md Prose Collapse (FR-10)
 
 **Feature:** [FEAT-022](../features/FEAT-022-finalize-sh-subscripts-full.md) | [#182](https://github.com/lwndev/lwndev-marketplace/issues/182)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 
@@ -244,8 +244,8 @@ The SKILL.md rewrite is the user-visible cutover: it switches the skill from dri
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/finalizing-workflow/SKILL.md` (rewritten per FR-10)
-- [ ] Passing `npm run validate` for the plugin
+- [x] `plugins/lwndev-sdlc/skills/finalizing-workflow/SKILL.md` (rewritten per FR-10)
+- [x] Passing `npm run validate` for the plugin
 
 ---
 
