@@ -105,7 +105,7 @@ These three scripts have no external dependencies (no network, no filesystem bey
 ### Phase 2: Template Renderer -- `render-issue-comment.sh` (FR-4)
 
 **Feature:** [FEAT-025](../features/FEAT-025-managing-work-items-full.md) | [#183](https://github.com/lwndev/lwndev-marketplace/issues/183)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 
@@ -154,8 +154,8 @@ These three scripts have no external dependencies (no network, no filesystem bey
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/managing-work-items/scripts/render-issue-comment.sh`
-- [ ] `plugins/lwndev-sdlc/skills/managing-work-items/scripts/tests/render-issue-comment.bats`
+- [x] `plugins/lwndev-sdlc/skills/managing-work-items/scripts/render-issue-comment.sh`
+- [x] `plugins/lwndev-sdlc/skills/managing-work-items/scripts/tests/render-issue-comment.bats`
 
 ---
 
