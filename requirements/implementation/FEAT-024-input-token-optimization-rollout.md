@@ -39,7 +39,7 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 
 ### Phase 0: Pre-flight — Branch Creation and Baseline Measurements
 **Feature:** [FEAT-024](../features/FEAT-024-input-token-optimization-rollout.md) | [#203](https://github.com/lwndev/lwndev-marketplace/issues/203)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 
 #### Rationale
 - Captures an immutable pre-change baseline across all twelve skills before any edits land.
@@ -64,12 +64,12 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 6. **Run `npm run validate`** to confirm all twelve skills are valid before the rollout starts.
 
 #### Deliverables
-- [ ] Feature branch `feat/FEAT-024-input-token-optimization-rollout` created
-- [ ] Baseline `wc -l -w -c` measurements for all twelve skills (per-file, per-skill subtotal, grand total) recorded in FEAT-024 Notes → Baseline Measurements
-- [ ] `chars / 4` input-token estimates for all twelve SKILL.md files recorded alongside baseline measurements
-- [ ] Top-level FR-7 audit findings (all twelve test files scanned) recorded in FEAT-024 Notes → Per-skill FR-7 pre-flight audit findings
-- [ ] `npm test` green baseline confirmed
-- [ ] `npm run validate` passes
+- [x] Feature branch `feat/FEAT-024-input-token-optimization-rollout` created
+- [x] Baseline `wc -l -w -c` measurements for all twelve skills (per-file, per-skill subtotal, grand total) recorded in FEAT-024 Notes → Baseline Measurements
+- [x] `chars / 4` input-token estimates for all twelve SKILL.md files recorded alongside baseline measurements
+- [x] Top-level FR-7 audit findings (all twelve test files scanned) recorded in FEAT-024 Notes → Per-skill FR-7 pre-flight audit findings
+- [x] `npm test` green baseline confirmed
+- [x] `npm run validate` passes
 
 ---
 

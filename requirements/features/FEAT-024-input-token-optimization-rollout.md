@@ -234,7 +234,67 @@ Measurements are captured via `wc -l -w -c` against the files in scope, matching
 
 ### Baseline Measurements
 
-_(To be populated in Phase 0 / before Phase 1 begins)_
+Captured on feature branch `feat/FEAT-024-input-token-optimization-rollout` at HEAD `1a01fc9` (commit `docs(FEAT-024): add feature, plan, and QA documents for input-token optimization rollout`) on 2026-04-22 via `wc -l -w -c`. The `chars / 4` column is the rule-of-thumb input-token estimate from the methodology subsection above, computed only for `SKILL.md` per FR-5 (reference and asset files contribute to baseline measurement totals but are not in the per-invocation instruction surface targeted by the rollout). `ANTHROPIC_API_KEY` was not available in the executor environment for this Phase 0 pre-flight, so the corroborating `/v1/messages/count_tokens` figures are not recorded; per the methodology subsection the `chars / 4` fallback stands.
+
+| Skill | File | Lines | Words | Chars | chars / 4 (SKILL.md only) |
+|-------|------|------:|------:|------:|--------------------------:|
+| `finalizing-workflow` | `SKILL.md` | 104 | 1004 | 6931 | 1733 |
+| `finalizing-workflow` | **subtotal** | **104** | **1004** | **6931** | — |
+| `documenting-features` | `SKILL.md` | 154 | 1190 | 8648 | 2162 |
+| `documenting-features` | `references/feature-requirements-example-episodes-command.md` | 274 | 1278 | 8512 | — |
+| `documenting-features` | `references/feature-requirements-example-search-command.md` | 228 | 1021 | 6872 | — |
+| `documenting-features` | `assets/feature-requirements.md` | 94 | 242 | 1715 | — |
+| `documenting-features` | **subtotal** | **750** | **3731** | **25747** | — |
+| `documenting-chores` | `SKILL.md` | 149 | 1051 | 7453 | 1863 |
+| `documenting-chores` | `references/categories.md` | 198 | 720 | 4785 | — |
+| `documenting-chores` | `assets/chore-document.md` | 109 | 356 | 2456 | — |
+| `documenting-chores` | **subtotal** | **456** | **2127** | **14694** | — |
+| `documenting-bugs` | `SKILL.md` | 168 | 1213 | 8411 | 2103 |
+| `documenting-bugs` | `references/categories.md` | 236 | 1134 | 7429 | — |
+| `documenting-bugs` | `assets/bug-document.md` | 181 | 707 | 4759 | — |
+| `documenting-bugs` | **subtotal** | **585** | **3054** | **20599** | — |
+| `managing-work-items` | `SKILL.md` | 390 | 3331 | 22857 | 5714 |
+| `managing-work-items` | `references/github-templates.md` | 740 | 2315 | 17196 | — |
+| `managing-work-items` | `references/jira-templates.md` | 715 | 2079 | 19135 | — |
+| `managing-work-items` | **subtotal** | **1845** | **7725** | **59188** | — |
+| `creating-implementation-plans` | `SKILL.md` | 139 | 939 | 6812 | 1703 |
+| `creating-implementation-plans` | `references/implementation-plan-example.md` | 499 | 2766 | 20322 | — |
+| `creating-implementation-plans` | `assets/implementation-plan.md` | 79 | 234 | 1771 | — |
+| `creating-implementation-plans` | **subtotal** | **717** | **3939** | **28905** | — |
+| `reviewing-requirements` | `SKILL.md` | 434 | 3929 | 27945 | 6986 |
+| `reviewing-requirements` | `references/review-example.md` | 95 | 525 | 3897 | — |
+| `reviewing-requirements` | `assets/review-findings-template.md` | 98 | 426 | 3178 | — |
+| `reviewing-requirements` | **subtotal** | **627** | **4880** | **35020** | — |
+| `executing-chores` | `SKILL.md` | 179 | 1527 | 11225 | 2806 |
+| `executing-chores` | `references/workflow-details.md` | 277 | 940 | 6249 | — |
+| `executing-chores` | `assets/pr-template.md` | 118 | 420 | 2726 | — |
+| `executing-chores` | **subtotal** | **574** | **2887** | **20200** | — |
+| `executing-bug-fixes` | `SKILL.md` | 212 | 1854 | 13054 | 3263 |
+| `executing-bug-fixes` | `references/workflow-details.md` | 338 | 1365 | 8649 | — |
+| `executing-bug-fixes` | `assets/pr-template.md` | 180 | 878 | 5825 | — |
+| `executing-bug-fixes` | **subtotal** | **730** | **4097** | **27528** | — |
+| `documenting-qa` | `SKILL.md` | 200 | 1971 | 13726 | 3431 |
+| `documenting-qa` | `assets/test-plan-template-v2.md` | 65 | 334 | 2252 | — |
+| `documenting-qa` | `assets/test-plan-template.md` | 65 | 422 | 2575 | — |
+| `documenting-qa` | **subtotal** | **330** | **2727** | **18553** | — |
+| `executing-qa` | `SKILL.md` | 270 | 2501 | 17396 | 4349 |
+| `executing-qa` | `assets/test-results-template-v2.md` | 81 | 380 | 2577 | — |
+| `executing-qa` | `assets/test-results-template.md` | 89 | 466 | 2753 | — |
+| `executing-qa` | **subtotal** | **440** | **3347** | **22726** | — |
+| `implementing-plan-phases` | `SKILL.md` | 178 | 1585 | 11381 | 2845 |
+| `implementing-plan-phases` | `references/step-details.md` | 399 | 1488 | 11039 | — |
+| `implementing-plan-phases` | `references/workflow-example.md` | 327 | 977 | 8670 | — |
+| `implementing-plan-phases` | `assets/pr-template.md` | 163 | 616 | 4088 | — |
+| `implementing-plan-phases` | **subtotal** | **1067** | **4666** | **35178** | — |
+| **Grand total (all 12 skills, all in-scope files)** | — | **8225** | **44184** | **315269** | **38958** |
+| **Grand total (SKILL.md only, in-scope per-invocation surface)** | — | **2577** | **21095** | **149839** | **38958** |
+
+**Notes:**
+- `personas/` and `scripts/` directories under `documenting-qa` and `executing-qa` are out of scope for this rollout (only SKILL.md, references, and assets are measured per Phase 0 step 2).
+- The `finalizing-workflow/scripts/` directory exists but is also out of scope (no `references/` or `assets/` for that skill).
+- The "chars / 4" column for non-SKILL.md rows is intentionally blank — only SKILL.md is the per-invocation instruction surface targeted by FR-1/FR-2/FR-3.
+- Phase 0 pre-flight green-baseline tests passed via the pre-commit hook on the `docs(FEAT-024)` commit: `36 test files, 1219 tests, 0 failures`.
+- Phase 0 pre-flight `npm run validate` passed: all 13 lwndev-sdlc skills (12 target + `orchestrating-workflows`) validated successfully.
 
 ### Post-Change Measurements
 
@@ -250,4 +310,56 @@ _(To be populated when all phases complete — compare against the CHORE-035 pil
 
 ### Per-skill FR-7 pre-flight audit findings
 
-_(To be populated per phase before that phase's edit pass begins)_
+The Phase 0 top-level audit walked all twelve `scripts/__tests__/<skill>.test.ts` files and inventoried every (a) hardcoded numeric count assertion (`toHaveLength(N)`, `toBe(N)`, `count == N`), (b) literal `## ` heading assertion (`toContain('## …')` / `not.toContain('## …')`), and (c) literal phrase assertion that constrains SKILL.md prose. Each finding is classified **must-preserve** (the assertion encodes a structural or behavioral invariant the rollout is required not to break — e.g., frontmatter `allowed-tools` checks, fork-return contract phrasing, dispatcher anchors used by the orchestrator) or **will-change** (the assertion may need an update during the per-skill phase if the optimization removes or relocates the asserted text). Per-phase pre-flight steps (each phase's step 1) confirm and refine these findings against the actual edit before any SKILL.md change lands.
+
+#### `finalizing-workflow` (`scripts/__tests__/finalizing-workflow.test.ts`)
+- **must-preserve**: `## When to Use This Skill`, `## Workflow Position`, `## Usage`, `## Relationship to Other Skills`, `## Completion` headings; the `not.toContain('## Pre-Flight Checks')` / `'## Pre-Merge Bookkeeping'` / `'## Execution'` / `'## Error Handling'` exclusion guards (these encode the post-CHORE-035 dispatcher shape); literal phrases `Ready to merge PR`, `finalize the requirement document`, `Merge PR and reset to main (and finalize requirement doc)`; `allowed-tools` frontmatter (`- Bash` only, no `- Edit`/`- Glob`/`- Write`).
+- **will-change**: none identified at the structural level — all numeric `toHaveLength` / `toBe` calls in this file are checkbox-flip behavioral tests on synthetic fixture markdown, not SKILL.md surface assertions.
+
+#### `documenting-features` (`scripts/__tests__/documenting-features.test.ts`)
+- **must-preserve**: `## When to Use This Skill`, `## Verification Checklist` headings; literal phrases `requirements/features/`, `#14`, `managing-work-items`; `allowed-tools` frontmatter (`Read`/`Write`/`Edit`/`Glob`/`Grep`, no `Bash` or `Agent`).
+- **will-change**: none — no numeric count assertions on SKILL.md content in this file.
+
+#### `documenting-chores` (`scripts/__tests__/documenting-chores.test.ts`)
+- **must-preserve**: `## When to Use This Skill`, `## Verification Checklist`, `## Relationship to Other Skills` headings; literal phrases `executing-chores`; `allowed-tools` frontmatter (`Read`/`Write`/`Edit`/`Glob`/`Grep`, no `Bash` or `Agent`).
+- **will-change**: none.
+
+#### `documenting-bugs` (`scripts/__tests__/documenting-bugs.test.ts`)
+- **must-preserve**: `## When to Use This Skill`, `## Verification Checklist`, `## Relationship to Other Skills` headings; literal phrases `executing-bug-fixes`, `requirements/bugs/`, `BUG-XXX`; severity-section literals `critical`/`high`/`medium`/`low`; `allowed-tools` frontmatter (no `Bash`/`Agent`).
+- **will-change-CANDIDATE**: line 155 `expect(matches!.length).toBe(6)` — this counts something in SKILL.md (severity entries or section markers); per-phase pre-flight in Phase 4 must read the surrounding test code and confirm whether the count is on a load-bearing list or on incidental prose. If the optimization removes any of the matched items, this assertion must be updated in the same commit per FR-7.
+
+#### `managing-work-items` (`scripts/__tests__/managing-work-items.test.ts`)
+- **must-preserve**: `## GitHub Issue` heading; references to `Backend Detection`, `#N`, `PROJ-123`, `GitHub Issues Backend`, `gh issue view`, `gh issue comment`, `Comment Type Routing`, comment-type literals (`phase-start`, `phase-completion`, `work-start`, `work-complete`, `bug-start`, `bug-complete`); reference-doc heading assertions on `references/github-templates.md` (`## Commit Messages`, `## Pull Request Templates`, `## Creating New Issues`); `allowed-tools` frontmatter; `argument-hint:`.
+- **will-change**: none — the `toContain('## GitHub Issue')` is a SKILL.md heading; reference assertions target unchanged reference files. No numeric count assertions on SKILL.md.
+
+#### `creating-implementation-plans` (`scripts/__tests__/creating-implementation-plans.test.ts`)
+- **must-preserve**: `## When to Use This Skill`, `## Verification Checklist` headings; literal phrase `requirements/implementation/`; `allowed-tools` frontmatter (no `Bash`/`Agent`).
+- **will-change**: none.
+
+#### `reviewing-requirements` (`scripts/__tests__/reviewing-requirements.test.ts`)
+- **must-preserve**: `## When to Use This Skill`, `## Verification Checklist`, `## Relationship to Other Skills`, `## Test-Plan Reconciliation Mode`, `## Code-Review Reconciliation Mode`, `## Step 1.5: Detect Review Mode` headings (all six are dispatcher and mode-routing anchors); literal phrases `FEAT-`, `CHORE-`, `BUG-`, `requirements/features/`, `requirements/chores/`, `requirements/bugs/`, `requirements/implementation/`, `Standard review`, `Steps 2-9`, `Step R1`, `Step R7`, `Step CR1`; mode-list frontmatter literals `standard review`, `test-plan reconciliation`, `code-review reconciliation`.
+- **will-change**: none — all assertions are structural anchors that the three-axis template explicitly preserves.
+
+#### `executing-chores` (`scripts/__tests__/executing-chores.test.ts`)
+- **must-preserve**: `## When to Use This Skill`, `## Quick Start`, `## Verification Checklist`, `## Relationship to Other Skills` headings; literal phrases `documenting-chores`, `chore/CHORE-XXX`, `Closes #N`, `managing-work-items`; PR-template assertion `Closes #N`; `not.toContain('github-templates.md')` exclusion guard (per managing-work-items extraction); `allowed-tools` frontmatter (`Bash` allowed, `Agent` excluded).
+- **will-change**: none.
+
+#### `executing-bug-fixes` (`scripts/__tests__/executing-bug-fixes.test.ts`)
+- **must-preserve**: `## When to Use This Skill`, `## Quick Start`, `## Verification Checklist`, `## Relationship to Other Skills` headings; literal phrases `documenting-bugs`, `fix/BUG-XXX`, `Root Cause Driven Execution`, `Redeclare root causes`, `Address root causes systematically`, `Verify per root cause`, `Closes #N`, `managing-work-items`; PR-template assertion `Root Cause(s)`; `allowed-tools` frontmatter.
+- **will-change**: none — Root-Cause-Driven-Execution literals are FR-4 carve-outs.
+
+#### `documenting-qa` (`scripts/__tests__/documenting-qa.test.ts`)
+- **must-preserve**: `## When to Use This Skill`, `## Verification Checklist`, `## Relationship to Other Skills` headings on SKILL.md; literal phrases `executing-qa`, `FEAT-`, `CHORE-`, `BUG-`, `requirements/features/`, `requirements/chores/`, `requirements/bugs/`, `qa/test-plans/QA-plan-`, `capability-discovery.sh`, `persona-loader.sh`, `test-plan-template-v2.md`, `version: 2`, `not.toContain('qa-verifier')` exclusion guard; v1 and v2 template heading assertions on the asset files (`## Metadata`, `## Existing Test Verification`, `## New Test Analysis`, `## Coverage Gap Analysis`, `## Code Path Verification`, `## Plan Completeness Checklist`, `## User Summary`, `## Capability Report`, `## Scenarios (by dimension)`, `## Non-applicable dimensions`); frontmatter literals `type: command`, `not.toContain('type: prompt')`; CLI-arg parser exit-code assertions (these are behavioral, not SKILL.md surface).
+- **will-change**: none — all CLI exit-code assertions are on the script binary, not on SKILL.md surface; template heading assertions target asset files which are NOT in the FR-2 relocation set.
+
+#### `executing-qa` (`scripts/__tests__/executing-qa.test.ts`)
+- **must-preserve**: `## When to Use This Skill`, `## Verification Checklist`, `## Relationship to Other Skills`, `## Reconciliation Delta` headings on SKILL.md; literal phrases `documenting-qa`, `FEAT-`, `CHORE-`, `BUG-`, `qa/test-plans/QA-plan-`, `qa/test-results/QA-results-`, `capability-discovery.sh`, `persona-loader.sh`, `test-results-template-v2.md`, verdict literals `PASS`, `ISSUES-FOUND`, `ERROR`, `EXPLORATORY-ONLY`, `not.toContain('qa-verifier')` exclusion guard; v1 and v2 template heading assertions on the asset files (`## Metadata`, `## Test Suite Results`, `## Summary`, `## Capability Report`, `## Execution Results`, `## Scenarios Run`, `## Findings`, `## Reconciliation Delta`, `## Exploratory Mode`); CLI exit-code assertions (behavioral, not SKILL.md surface); `allowed-tools` frontmatter (`Bash` allowed, `Agent` excluded).
+- **will-change**: none — same rationale as documenting-qa.
+
+#### `implementing-plan-phases` (`scripts/__tests__/implementing-plan-phases.test.ts`)
+- **must-preserve**: `## When to Use`, `## Quick Start`, `## Verification` headings; literal phrases `feat/{Feature ID}`, `🔄 In Progress`, `✅ Complete`, `**After all phases complete:** Create pull request`, `Closes #N`, `not.toContain('gh issue comment')` exclusion guard, `managing-work-items`, `not.toContain('github-templates.md')` exclusion guard; `not.toContain('GitHub issue comments')` frontmatter exclusion guard; PR-template assertion `Implementation Plan`; `allowed-tools` frontmatter (no `Agent`).
+- **will-change**: none — all assertions encode structural invariants that FR-1/FR-2/FR-3 preserve by design.
+
+#### Audit summary
+- Across all 12 test files, only **one** numeric-count assertion (`documenting-bugs.test.ts:155`, `expect(matches!.length).toBe(6)`) was flagged as a possible **will-change** candidate. Per-phase pre-flight in Phase 4 will inspect the surrounding test code and decide whether to update the literal `6` if the optimization removes any matched item.
+- Every other assertion across the twelve files encodes either a structural invariant (heading anchor, frontmatter, fork-return contract phrase, dispatcher anchor) or a behavioral exit code — both classes of assertion the three-axis template (FR-1 lite-prose / FR-2 narrative relocation / FR-3 natural-collapse) explicitly preserves per FR-4 carve-outs and the "no semantics changes" guard.
