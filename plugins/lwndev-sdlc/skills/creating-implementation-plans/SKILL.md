@@ -17,37 +17,37 @@ Transform feature requirements into actionable implementation plans with clear p
 ## When to Use This Skill
 
 - User requests an implementation plan, build plan, or roadmap
-- Planning a new feature with multiple components
+- Planning a feature with multiple components
 - Organizing work into logical phases
-- Need to identify dependencies between features
+- Identifying dependencies between features
 
 ## Flexibility
 
-Adapt based on project type:
+Adapt to project type:
 
-- **Single feature**: Simplified structure, may skip phases
-- **Multi-feature project**: Full phase breakdown with dependencies
-- **Refactoring**: Focus on risk assessment and rollback strategy
-- **Prototypes**: Lighter on testing, heavier on deliverables
+- **Single feature**: simplified structure, may skip phases
+- **Multi-feature project**: full phase breakdown with dependencies
+- **Refactoring**: focus on risk assessment and rollback strategy
+- **Prototypes**: lighter testing, heavier deliverables
 
 ## Arguments
 
-- **When argument is provided**: Match the argument against files in `requirements/features/` by ID prefix (e.g., `FEAT-003` matches `FEAT-003-skill-allowed-tools.md`). If no match is found, inform the user and fall back to interactive selection. If multiple matches are found, present the options and ask the user to choose.
-- **When no argument is provided**: Scan `requirements/features/` for requirement documents and prompt the user to select one, or ask for paths.
+- **When argument is provided**: Match against files in `requirements/features/` by ID prefix (e.g., `FEAT-003` matches `FEAT-003-skill-allowed-tools.md`). On no match, inform the user and fall back to interactive selection. On multiple matches, present options and ask the user to choose.
+- **When no argument is provided**: Scan `requirements/features/` and prompt the user to select one, or ask for paths.
 
 ## Quick Start
 
-1. **Locate feature requirements documents** — when the user provides a `FEAT-NNN` ID, resolve it to a file path with:
+1. **Locate feature requirements** — when the user provides a `FEAT-NNN` ID, resolve to a path with:
 
    ```bash
    bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<FEAT-NNN>"
    ```
 
-   Exit codes: `0` (one match, path on stdout); `1` (no match — ask the user for a path); `2` (ambiguous — present candidates); `3` (malformed/missing ID). Otherwise check `requirements/features/` or ask the user for paths directly.
-2. **Ask for GitHub issue URL(s)** if not provided in context
+   Exit codes: `0` (one match, path on stdout); `1` (no match — ask for a path); `2` (ambiguous — present candidates); `3` (malformed/missing ID). Otherwise check `requirements/features/` or ask for paths directly.
+2. **Ask for GitHub issue URL(s)** if not in context
 3. Identify dependencies between features
 4. Determine optimal build sequence
-5. Create the implementation plan using the template
+5. Create the plan using the template
 
 ## Output Style
 
@@ -87,7 +87,7 @@ This skill is forked by `orchestrating-workflows` as feature chain step 3. Emit 
 
 ### Filename Convention
 
-Use the primary Feature ID as the filename prefix:
+Use the primary Feature ID as the prefix:
 - Single feature: `FEAT-XXX-feature-name.md` (e.g., `FEAT-001-user-authentication.md`)
 - Multiple features: `FEAT-XXX-project-name.md` using the first/primary feature ID (e.g., `FEAT-001-podcast-cli-features.md`)
 
@@ -113,22 +113,22 @@ See [assets/implementation-plan.md](assets/implementation-plan.md) for the full 
 
 ### Sequencing Principles
 
-Order features by: **foundation patterns** → **dependencies** → **complexity progression** → **value delivery**
+Order features: **foundation patterns** -> **dependencies** -> **complexity progression** -> **value delivery**
 
-Each phase needs a rationale explaining why it comes at this point and what patterns it introduces.
+Each phase needs a rationale for its position and the patterns it introduces.
 
 ### Implementation Steps
 
 - Start with CLI/API/interface additions
 - Include validation and error handling
 - End with tests and documentation
-- Be specific enough to execute without ambiguity
+- Specific enough to execute without ambiguity
 
 ## Verification Checklist
 
 Before finalizing:
 
-- [ ] All features from requirements included
+- [ ] All requirement features included
 - [ ] Build sequence accounts for dependencies
 - [ ] Each phase has clear rationale and deliverables
 - [ ] Risks identified with mitigations

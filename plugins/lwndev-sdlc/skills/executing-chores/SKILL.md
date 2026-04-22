@@ -19,24 +19,24 @@ Execute chore task workflows with systematic tracking from branch creation throu
 
 - User says "execute chore", "implement this chore", or "run the chore workflow"
 - User references a chore document in `requirements/chores/`
-- User wants to implement documented maintenance work
-- Continuing chore work that was previously started
+- Implementing documented maintenance work
+- Continuing chore work previously started
 
 ## Arguments
 
-- **When argument is provided**: Match the argument against files in `requirements/chores/` by ID prefix (e.g., `CHORE-007` matches `CHORE-007-migrate-config.md`). If no match is found, inform the user and fall back to interactive selection. If multiple matches are found, present the options and ask the user to choose.
-- **When no argument is provided**: Scan `requirements/chores/` for chore documents and prompt the user to select one if multiple exist.
+- **When argument is provided**: Match against `requirements/chores/` files by ID prefix (e.g., `CHORE-007` matches `CHORE-007-migrate-config.md`). On no match, inform the user and fall back to interactive selection. On multiple matches, present options and ask the user to choose.
+- **When no argument is provided**: Scan `requirements/chores/` and prompt the user to select one if multiple exist.
 
 ## Quick Start
 
-1. Locate the chore document — resolve a `CHORE-NNN` ID to a file path with:
+1. Locate the chore document — resolve a `CHORE-NNN` ID with:
 
    ```bash
    bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<CHORE-NNN>"
    ```
 
    Exit codes: `0` on exactly-one match (path on stdout); `1` on zero matches; `2` on ambiguous (list candidates); `3` on malformed/missing ID.
-2. Extract Chore ID and review acceptance criteria
+2. Extract Chore ID and review acceptance criteria.
 3. Create the git branch. Build the name and ensure checkout with:
 
    ```bash
@@ -44,8 +44,8 @@ Execute chore task workflows with systematic tracking from branch creation throu
    bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-branch.sh" "$branch"
    ```
 
-   `build-branch-name.sh` calls `slugify.sh` internally (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<description>"`), handling lowercasing, punctuation stripping, stopword removal (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), and the 4-token cap. Exit codes: `build-branch-name.sh` returns `1` when slugify produces an empty slug (ask for a more descriptive title) and `2` on invalid type. `ensure-branch.sh` returns `0` on success, `2` on missing arg, `3` on dirty working tree (stash or commit first).
-4. Execute the defined changes, tracking with todos
+   `build-branch-name.sh` calls `slugify.sh` internally — lowercasing, punctuation stripping, stopword removal (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), 4-token cap. Exit codes: `build-branch-name.sh` returns `1` on empty slug (ask for a more descriptive title), `2` on invalid type. `ensure-branch.sh` returns `0` on success, `2` on missing arg, `3` on dirty working tree (stash or commit first).
+4. Execute the defined changes, tracking with todos.
 5. **Check off each acceptance criterion** in the chore document with:
 
    ```bash
@@ -59,8 +59,8 @@ Execute chore task workflows with systematic tracking from branch creation throu
    bash "${CLAUDE_PLUGIN_ROOT}/scripts/commit-work.sh" chore <category> "<description>"
    ```
 
-   **The script does not stage files** — run `git add <paths>` first. It runs `git commit -m "chore(<category>): <description>"` and prints the short SHA on success. Exit codes: `0` on success (SHA on stdout); `1` on commit failure (git stderr passes through); `2` on missing/invalid type arg.
-7. Run tests/build verification
+   **The script does not stage files** — run `git add <paths>` first. Runs `git commit -m "chore(<category>): <description>"` and prints the short SHA. Exit codes: `0` on success (SHA on stdout); `1` on commit failure (git stderr passes through); `2` on missing/invalid type arg.
+7. Run tests/build verification.
 8. Create the pull request with:
 
    ```bash
@@ -68,7 +68,7 @@ Execute chore task workflows with systematic tracking from branch creation throu
    ```
 
    Does `git push -u origin <branch>` then `gh pr create` against `scripts/assets/pr-body.tmpl`. **MUST include `--closes #N` if an issue exists** — auto-closes the linked issue on merge. Exit codes: `0` on success (PR URL on stdout); `1` on push or PR-creation failure; `2` on missing/invalid args.
-9. Update chore document completion section (status, date, PR link)
+9. Update chore document completion section (status, date, PR link).
 
 > **Note:** Issue tracking (start/completion comments) is handled by the orchestrator via `managing-work-items`. This skill focuses on chore execution and verification.
 
@@ -94,7 +94,7 @@ The following MUST always be emitted even when they resemble narration:
 - **Security-sensitive warnings** -- destructive-operation confirmations, credential prompts.
 - **Interactive prompts** -- any prompt that blocks the workflow and requires user input (e.g., disambiguation when multiple chore files match the provided ID, description re-prompt when `build-branch-name.sh` exits `1` on an empty slug, selection prompt when no chore argument is supplied and multiple chore documents exist).
 - **Findings display from `reviewing-requirements`** -- N/A for this skill (it does not consume reviewing-requirements findings); bullet retained for consistency with the canonical template.
-- **FR-14 console echo lines** -- `[model] step {N} ({skill}) -> {tier} (...)` audit-trail lines emitted by `prepare-fork.sh`. The Unicode `->` is the documented emitter format; do not rewrite to ASCII.
+- **FR-14 console echo lines** -- `[model] step {N} ({skill}) → {tier} (...)` audit-trail lines emitted by `prepare-fork.sh`. The Unicode `→` is the documented emitter format; do not rewrite to ASCII.
 - **Tagged structured logs** -- any line prefixed `[info]`, `[warn]`, or `[model]` is a structured log, not narration. Emit verbatim.
 - **User-visible state transitions** -- pause, advance, and resume announcements (at most one line each).
 
@@ -131,10 +131,10 @@ See [references/workflow-details.md](references/workflow-details.md) for detaile
 
 ## Branch Naming
 
-Format: `chore/CHORE-XXX-{2-4-word-description}`. Always assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" chore "<CHORE-NNN>" "<description>"` (see Quick Start step 3) rather than hand-kebabing — the script applies slugify normalization uniformly.
+Format: `chore/CHORE-XXX-{2-4-word-description}`. Always assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" chore "<CHORE-NNN>" "<description>"` (see Quick Start step 3) — the script applies slugify normalization uniformly.
 
 - Uses Chore ID (not GitHub issue number) for consistent naming
-- Keep description brief but descriptive (2-4 words)
+- Brief but descriptive (2-4 words)
 
 Examples:
 - `chore/CHORE-001-update-dependencies`
@@ -143,7 +143,7 @@ Examples:
 
 ## Commit Message Format
 
-Format: `chore(category): brief description`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/commit-work.sh" chore <category> "<description>"` (see Quick Start step 6). **Callers must `git add` relevant paths before invoking** — the script does not auto-stage.
+Format: `chore(category): brief description`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/commit-work.sh" chore <category> "<description>"` (Quick Start step 6). **Callers must `git add` relevant paths before invoking** — the script does not auto-stage.
 
 Categories: `dependencies`, `documentation`, `refactoring`, `configuration`, `cleanup`
 
@@ -159,7 +159,7 @@ Before creating the PR, verify:
 - [ ] All acceptance criteria from chore document are met
 - [ ] Tests pass (if applicable)
 - [ ] Build succeeds
-- [ ] Changes match the scope defined in chore document
+- [ ] Changes match the chore document scope
 - [ ] No unintended side effects
 
 ## References
@@ -176,4 +176,4 @@ Before creating the PR, verify:
 | New feature with requirements | Use `documenting-features` -> `creating-implementation-plans` -> `implementing-plan-phases` |
 | Quick fix (no tracking needed) | Direct implementation |
 
-After executing a chore, consider running `/reviewing-requirements` for code-review reconciliation after PR review (optional but recommended), then `/executing-qa` to verify the implementation against the test plan, and `/finalizing-workflow` to merge.
+After executing a chore, consider `/reviewing-requirements` for code-review reconciliation after PR review (optional but recommended), then `/executing-qa` to verify against the test plan, and `/finalizing-workflow` to merge.

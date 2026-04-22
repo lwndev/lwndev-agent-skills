@@ -12,29 +12,29 @@ argument-hint: "[bug-title]"
 
 # Documenting Bugs
 
-Create structured bug report documents that capture defects with reproduction steps, severity classification, root cause analysis, and traceable acceptance criteria linking each fix back to its underlying cause.
+Create structured bug reports that capture defects with reproduction steps, severity, root-cause analysis, and acceptance criteria traceable to each underlying cause.
 
 ## When to Use This Skill
 
-- Documenting reported bugs or unexpected behavior
-- Recording regressions in previously working functionality
-- Tracking UI/UX defects or visual glitches
-- Capturing performance issues or resource problems
-- Documenting security vulnerabilities or auth bypasses
+- Reported bugs or unexpected behavior
+- Regressions in previously working functionality
+- UI/UX defects or visual glitches
+- Performance issues or resource problems
+- Security vulnerabilities or auth bypasses
 - Any defect that requires root cause analysis before fixing
 
 ## Arguments
 
-- **When argument is provided**: Use the argument as a pre-filled bug title for the document being created.
-- **When no argument is provided**: Prompt the user interactively for the bug details.
+- **When argument is provided**: use it as a pre-filled bug title.
+- **When no argument is provided**: prompt interactively for the bug details.
 
 ## Quick Start
 
-1. Check for existing bugs in `requirements/bugs/` to determine the next Bug ID
-2. **Ask for GitHub issue URL** if not provided (optional but recommended for traceability)
+1. Check `requirements/bugs/` for the next Bug ID
+2. **Ask for GitHub issue URL** if not provided (optional, recommended for traceability)
 3. Identify the bug category (see [references/categories.md](references/categories.md))
-4. **Investigate the codebase** — read files, trace call paths, and identify root causes before finalizing the document
-5. Create bug document using the template
+4. **Investigate the codebase** — read files, trace call paths, identify root causes before finalizing
+5. Create the bug document from the template
 6. Save to `requirements/bugs/BUG-XXX-description.md`
 
 ## Output Style
@@ -71,17 +71,13 @@ The following MUST always be emitted even when they resemble narration:
 
 ## File Location
 
-All bug documents go in: `requirements/bugs/`
-
-Naming format: `BUG-XXX-{2-4-word-description}.md`
-
-Derive the description slug from the bug title by running:
+All bug documents live in `requirements/bugs/`. Filename format: `BUG-XXX-{2-4-word-description}.md`. Derive the slug:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<bug title>"
 ```
 
-The script lowercases, strips punctuation, drops stopwords (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), and keeps the first four remaining tokens joined with `-`. Exit codes: `0` on success; `1` when the slug is empty after normalization (prompt the user for a more descriptive title); `2` on missing arg.
+Lowercases, strips punctuation, drops stopwords (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), keeps the first four remaining tokens joined with `-`. Exit codes: `0` success; `1` empty slug after normalization (prompt for a more descriptive title); `2` missing arg.
 
 Examples:
 - `BUG-001-auth-token-expired.md`
@@ -90,13 +86,13 @@ Examples:
 
 ## Bug ID Assignment
 
-Allocate the next Bug ID by running:
+Allocate the next Bug ID:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/next-id.sh" BUG
 ```
 
-The script scans `requirements/bugs/` for existing `BUG-NNN-*.md` files, returns `max(NNN) + 1` zero-padded to three digits, and prints `001` when no bugs exist. Exit codes: `0` on success; `2` on missing/invalid type arg.
+Scans `requirements/bugs/` for `BUG-NNN-*.md`, returns `max(NNN) + 1` zero-padded to three digits, prints `001` when none exist. Exit codes: `0` success; `2` missing/invalid type arg.
 
 ## Template
 
@@ -120,7 +116,7 @@ See [assets/bug-document.md](assets/bug-document.md) for the full template.
 
 ## Categories
 
-Six bug categories with specific guidance:
+Six supported categories:
 
 | Category | Use For |
 |----------|---------|
@@ -131,7 +127,7 @@ Six bug categories with specific guidance:
 | `security` | Vulnerabilities, auth bypasses, data exposure |
 | `regression` | Previously working functionality that broke |
 
-See [references/categories.md](references/categories.md) for detailed guidance on each category.
+See [references/categories.md](references/categories.md) for per-category guidance.
 
 ## Severity Levels
 
@@ -144,15 +140,15 @@ See [references/categories.md](references/categories.md) for detailed guidance o
 
 ## Verification Checklist
 
-Before finalizing, verify:
+Before finalizing:
 
-- [ ] Bug ID is unique (not already used)
+- [ ] Bug ID is unique
 - [ ] Category matches the type of defect
-- [ ] Severity accurately reflects the impact
+- [ ] Severity reflects actual impact
 - [ ] Steps to reproduce are clear and complete
 - [ ] Root causes are investigated and documented with file references
 - [ ] Every root cause has at least one corresponding acceptance criterion
-- [ ] Every acceptance criterion references at least one root cause using `(RC-N)` tags
+- [ ] Every acceptance criterion references at least one root cause via `(RC-N)` tags
 - [ ] Affected files list is complete
 - [ ] GitHub issue is linked (if one exists)
 
@@ -165,4 +161,4 @@ Before finalizing, verify:
 | Bug or defect report | Use this skill (`documenting-bugs`) |
 | Quick fix (no tracking needed) | Direct implementation |
 
-After documenting a bug, run `/reviewing-requirements` to verify the document against the codebase and docs, then `/documenting-qa` to create a test plan. Optionally run `/reviewing-requirements` again for test-plan reconciliation. Then use `/executing-bug-fixes` to implement the fix. After PR review, optionally run `/reviewing-requirements` for code-review reconciliation, then `/executing-qa` to verify, and `/finalizing-workflow` to merge.
+After documenting, run `/reviewing-requirements` to verify against codebase and docs, then `/documenting-qa` for the test plan. Optionally run `/reviewing-requirements` again for test-plan reconciliation. Then `/executing-bug-fixes` to implement. After PR review, optionally `/reviewing-requirements` for code-review reconciliation, then `/executing-qa` to verify, and `/finalizing-workflow` to merge.

@@ -18,22 +18,22 @@ argument-hint: <requirement-id>
 
 # Executing QA
 
-Write and run adversarial tests against the change on the current branch. Grade the run on what the tests produce, not on what you say about them. When no supported test framework is detected, fall through to a structured exploratory review covering the five adversarial dimensions.
+Write and run adversarial tests against the change on the current branch. Grade the run on what the tests produce, not on what is said about them. With no supported test framework detected, fall through to a structured exploratory review covering the five adversarial dimensions.
 
 ## When to Use This Skill
 
-- After `documenting-qa` has produced a v2 plan at `qa/test-plans/QA-plan-{ID}.md`
+- After `documenting-qa` produces a v2 plan at `qa/test-plans/QA-plan-{ID}.md`
 - Invoked by the orchestrator at feature step `5+N+3` / chore-bug step 6 (post-FEAT-018 chain-table numbering)
 - Manually via `/executing-qa {ID}` against a checked-out feature branch
 
 ## Arguments
 
-- **When argument is provided**: Match the argument against requirement IDs by prefix. The ID prefix determines the type: `FEAT-` (feature), `CHORE-` (chore), `BUG-` (bug). Then load the corresponding test plan from `qa/test-plans/QA-plan-{ID}.md`.
+- **When argument is provided**: Match against requirement IDs by prefix. The prefix sets the type: `FEAT-` (feature), `CHORE-` (chore), `BUG-` (bug). Load the corresponding test plan from `qa/test-plans/QA-plan-{ID}.md`.
 - **When no argument is provided**: Ask the user for a requirement ID.
 
 ## Quick Start
 
-1. Accept a requirement ID as input
+1. Accept a requirement ID
 2. Run capability discovery and compose the `qa` persona overlay
 3. Load the v2 test plan
 4. Mode-route: test-framework (write + run) OR exploratory-only (structured review)
@@ -75,11 +75,11 @@ The following MUST always be emitted even when they resemble narration:
 
 ## State File Management
 
-At the start of this skill, create `.sdlc/qa/.executing-active` via the Write tool (empty file). This signals the stop hook that `executing-qa` is the active skill. The stop hook removes the state file on success. In orchestrated workflows the orchestrator cleans it up after this skill returns.
+At skill start, create `.sdlc/qa/.executing-active` via Write (empty file). This signals the stop hook that `executing-qa` is active. The stop hook removes it on success; in orchestrated workflows the orchestrator cleans it up after return.
 
 ## Important: Bash-for-scripts-only
 
-`Bash` is in `allowed-tools` so this skill can run `capability-discovery.sh`, `persona-loader.sh`, `git diff`, and the framework-specific `testCommand`. Do NOT use Bash for output formatting, status messages, progress echoes, or `echo` statements. All communication with the user happens through direct response text, not through shell `echo`.
+`Bash` is in `allowed-tools` so this skill can run `capability-discovery.sh`, `persona-loader.sh`, `git diff`, and the framework-specific `testCommand`. Do NOT use Bash for output formatting, status messages, progress echoes, or `echo` statements. All user communication goes through direct response text, not shell `echo`.
 
 ## Input
 
@@ -89,28 +89,28 @@ The user provides a requirement ID in one of these formats:
 - `CHORE-XXX` — Chore / maintenance task
 - `BUG-XXX` — Bug report
 
-If no ID is provided, ask the user for one.
+If no ID is provided, ask for one.
 
 ## Step 1: Run capability discovery and compose the persona
 
-1. **Resolve the consumer repo root** via `git rev-parse --show-toplevel`. This is the directory you will inspect for the test framework and test command.
+1. **Resolve the consumer repo root** via `git rev-parse --show-toplevel`. This is the directory inspected for test framework and test command.
 
-2. **Capability discovery**: if a fresh `/tmp/qa-capability-{ID}.json` already exists from this session (produced by `documenting-qa`) and its mtime is within the last hour, reuse it. Otherwise run:
+2. **Capability discovery**: if a fresh `/tmp/qa-capability-{ID}.json` already exists from this session (produced by `documenting-qa`) with mtime within the last hour, reuse it. Otherwise run:
    ```
    bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/capability-discovery.sh <consumer-root> <ID>
    ```
-   Capture the emitted JSON. The report has fields: `mode` (`test-framework` | `exploratory-only`), `framework`, `packageManager`, `testCommand`, `language`.
+   Capture the emitted JSON. Fields: `mode` (`test-framework` | `exploratory-only`), `framework`, `packageManager`, `testCommand`, `language`.
 
    If the plan's embedded capability report differs from the fresh one (e.g., framework changed since the plan was built), use the fresh one and note the drift in the artifact's `## Capability Report`.
 
-   If `capability-discovery.sh` exits non-zero, treat it as `mode: exploratory-only` with a recorded reason.
+   If `capability-discovery.sh` exits non-zero, treat as `mode: exploratory-only` with a recorded reason.
 
 3. **Compose the `qa` persona overlay**:
    ```
    source ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/persona-loader.sh
    load_persona qa ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa
    ```
-   If `load_persona` returns non-zero, abort with the error — do not silently substitute a default persona. The persona directives govern the tester mindset you apply to the run.
+   If `load_persona` returns non-zero, abort with the error — do not silently substitute a default persona. The persona directives govern the tester mindset for the run.
 
 ## Step 2: Load the test plan
 
@@ -118,7 +118,7 @@ Read `qa/test-plans/QA-plan-{ID}.md`. If it does not exist, stop with an actiona
 
 > No test plan found at `qa/test-plans/QA-plan-{ID}.md`. Run `documenting-qa` first.
 
-Validate the plan is version-2 (frontmatter contains `version: 2`). If the `version` field is absent or is `1`, refuse to proceed with a specific error:
+Validate the plan is version-2 (frontmatter contains `version: 2`). If the `version` field is absent or is `1`, refuse with a specific error:
 
 > Test plan is version 1 (pre-FEAT-018). Refusing to run the executable-oracle runner against a legacy closed-loop plan. Re-run `documenting-qa` to regenerate as version 2.
 
@@ -129,14 +129,14 @@ Validate the plan is version-2 (frontmatter contains `version: 2`). If the `vers
 
 ### Edge case 5: clean branch vs main → ERROR
 
-Before writing any tests, run `git diff main...HEAD`. If the diff is empty (no changes on the branch), set the verdict to `ERROR` with `Reason: no changes to test relative to main` and jump straight to Step 7 (reconciliation delta) and Step 8 (emit artifact). Do not write tests, do not run the framework.
+Before writing any tests, run `git diff main...HEAD`. If the diff is empty (no changes on the branch), set verdict to `ERROR` with `Reason: no changes to test relative to main` and jump to Step 7 (reconciliation delta) and Step 8 (emit artifact). Do not write tests; do not run the framework.
 
 ## Step 4: Test-framework mode — write and run
 
 For each P0/P1 scenario in the test plan whose `mode: test-framework` marker is set:
 
-1. **Write a test file** in the detected framework's conventions, under the framework's standard test root, with a `qa-` filename prefix tying the file to this run. Defaults by framework:
-   - vitest / jest: `__tests__/qa-<dimension>.spec.ts` (or `.test.ts` depending on project config)
+1. **Write a test file** in the framework's conventions, under its standard test root, with a `qa-` filename prefix tying the file to this run. Defaults by framework:
+   - vitest / jest: `__tests__/qa-<dimension>.spec.ts` (or `.test.ts` per project config)
    - pytest: `tests/test_qa_<dimension>.py`
    - go test: `qa_<dimension>_test.go` next to the package under test
 
@@ -154,24 +154,24 @@ For each P0/P1 scenario in the test plan whose `mode: test-framework` marker is 
 
 ### Verdict derivation (test-framework mode)
 
-The verdict is derived from the framework's actual output — never from self-report:
+Derive the verdict from the framework's actual output — never from self-report:
 
 - All written tests passed AND at least one scenario was exercised: `PASS`
 - Any written test failed: `ISSUES-FOUND`
-- Test runner could not compile/parse the written tests (non-zero exit with no test output, framework crash, import error): `ERROR`
+- Runner could not compile/parse the written tests (non-zero exit with no test output, framework crash, import error): `ERROR`
 - No tests were written because every scenario was `exploratory`: fall through to Step 5
 
 ### Edge case 3: compile errors → ERROR, no retry
 
-If the test runner fails to compile or parse the written tests, the verdict is `ERROR` and the error traces are included in the artifact's `## Findings` or `## Execution Results` section. **Do not retry** — the stop hook accepts a valid `ERROR` artifact as a complete run.
+If the runner fails to compile or parse the written tests, verdict is `ERROR` and error traces are included in the artifact's `## Findings` or `## Execution Results` section. **Do not retry** — the stop hook accepts a valid `ERROR` artifact as a complete run.
 
 ### Edge case 6: missing test directory
 
-If the conventional test directory for the detected framework does not exist, create it. This is normal for first-time QA runs on a fresh repo.
+If the conventional test directory for the detected framework does not exist, create it. Normal for first-time QA runs on a fresh repo.
 
 ## Step 5: Exploratory-only mode
 
-Produce a structured exploratory review. For each of the five adversarial dimensions, you MUST surface either at least one finding OR an explicit non-applicability justification. An empty dimension fails stop-hook validation.
+Produce a structured exploratory review. For each of the five adversarial dimensions, surface either at least one finding OR an explicit non-applicability justification. An empty dimension fails stop-hook validation.
 
 Dimensions:
 - **Inputs** — malformed, empty, boundary, encoding, excessive size, injection
@@ -180,11 +180,11 @@ Dimensions:
 - **Dependency failure** — external API 5xx/4xx/timeout, rate limiting, partial response
 - **Cross-cutting** — accessibility, internationalization, concurrency, permissions
 
-Populate the artifact's `## Exploratory Mode` section with a `Reason:` line explaining why the run fell back (e.g., `"No supported test framework detected in consumer repo. Detection attempted: vitest, jest, pytest, go test."`). Set verdict to `EXPLORATORY-ONLY`.
+Populate the artifact's `## Exploratory Mode` section with a `Reason:` line explaining the fallback (e.g., `"No supported test framework detected in consumer repo. Detection attempted: vitest, jest, pytest, go test."`). Set verdict to `EXPLORATORY-ONLY`.
 
 ## Step 6: Reconciliation Delta (FR-5)
 
-After the run completes, read the requirements document. **This is the one and only time the requirements doc is consulted** — the planning skill (`documenting-qa`) is explicitly forbidden from reading it, so the delta here is the audit trail showing what the spec demanded vs. what QA tested.
+After the run completes, read the requirements document. **This is the one and only time the requirements doc is consulted** — the planning skill (`documenting-qa`) is forbidden from reading it, so the delta here is the audit trail of spec-demanded vs. QA-tested.
 
 Resolve the requirements-doc path from the ID with:
 
@@ -192,7 +192,7 @@ Resolve the requirements-doc path from the ID with:
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<ID>"
 ```
 
-The script maps the prefix (`FEAT-`, `CHORE-`, `BUG-`) to the correct directory (`requirements/features/`, `requirements/chores/`, `requirements/bugs/`) and globs `{ID}-*.md`. Exit codes: `0` on exactly-one match (path on stdout); `1` on zero matches — in this skill, exit 1 triggers **edge case 7** (reconciliation delta skipped with reason, continue to Step 8); `2` on ambiguous (multiple files for the same ID signals workspace inconsistency — log a warning and pick the first alphabetically); `3` on malformed/missing ID.
+The script maps the prefix (`FEAT-`, `CHORE-`, `BUG-`) to the correct directory (`requirements/features/`, `requirements/chores/`, `requirements/bugs/`) and globs `{ID}-*.md`. Exit codes: `0` on exactly-one match (path on stdout); `1` on zero matches — exit 1 triggers **edge case 7** (reconciliation delta skipped with reason, continue to Step 8); `2` on ambiguous (multiple files for the same ID signals workspace inconsistency — log a warning and pick the first alphabetically); `3` on malformed/missing ID.
 
 Produce a **bidirectional** delta:
 
@@ -200,7 +200,7 @@ Produce a **bidirectional** delta:
 Enumerate scenarios exercised (or reported-on in exploratory mode) that do not correspond to any FR / NFR / AC / edge case in the spec. Not automatically bad — may indicate diligent adversarial testing or over-testing.
 
 ### Coverage gap
-Enumerate FRs / NFRs / ACs / edge cases in the spec that have **no** corresponding scenario in the plan. A gap signals either an incomplete plan or an over-detailed spec.
+Enumerate FRs / NFRs / ACs / edge cases in the spec with **no** corresponding scenario in the plan. A gap signals either an incomplete plan or an over-detailed spec.
 
 ### Summary counts
 Emit `coverage-surplus: N` and `coverage-gap: N` lines in the `## Reconciliation Delta` → `### Summary` block so downstream tooling can tally the delta size.
@@ -237,7 +237,7 @@ Per-verdict structural rules enforced by the stop hook:
 
 ## Step 8: Final message
 
-State the verdict, the artifact path, and a 1-line run summary in your last message. The stop hook reads the artifact on disk — if it blocks, revise the artifact and try again. Do not summarize by repeating the artifact contents.
+State the verdict, the artifact path, and a 1-line run summary in the last message. The stop hook reads the artifact on disk — if it blocks, revise the artifact and try again. Do not summarize by repeating the artifact contents.
 
 ## Verification Checklist
 
@@ -246,8 +246,8 @@ Before finishing, verify:
 - [ ] Capability discovery report produced (fresh or reused from `/tmp/qa-capability-{ID}.json`)
 - [ ] Persona overlay composed via `persona-loader.sh`
 - [ ] Mode routed to either test-framework or exploratory-only
-- [ ] In test-framework mode: tests written and executed; verdict derived from actual runner output
-- [ ] In exploratory-only mode: all five dimensions covered with findings or justifications; verdict `EXPLORATORY-ONLY`
+- [ ] Test-framework mode: tests written and executed; verdict derived from actual runner output
+- [ ] Exploratory-only mode: all five dimensions covered with findings or justifications; verdict `EXPLORATORY-ONLY`
 - [ ] Reconciliation delta produced (or skipped with reason per edge case 7)
 - [ ] v2 artifact written to `qa/test-results/QA-results-{ID}.md` with `version: 2` frontmatter
 - [ ] Verdict is one of `PASS | ISSUES-FOUND | ERROR | EXPLORATORY-ONLY`

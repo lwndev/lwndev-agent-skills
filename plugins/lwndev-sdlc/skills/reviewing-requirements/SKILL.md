@@ -14,33 +14,33 @@ argument-hint: <requirements-file>
 
 # Reviewing Requirements
 
-Validate requirement documents against the codebase and documentation. Operates in three modes:
+Validate requirement documents against the codebase and documentation. Three modes:
 
-- **Standard review** — validates requirements before QA planning begins (the default)
+- **Standard review** — validates requirements before QA planning (the default)
 - **Test-plan reconciliation** — validates bidirectional consistency between the QA test plan and upstream artifacts after QA planning
-- **Code-review reconciliation** — advisory drift report after a PR has been reviewed, covering test plan staleness, GitHub issue updates, and requirements drift
+- **Code-review reconciliation** — advisory drift report after a PR has been reviewed (test plan staleness, GitHub issue updates, requirements drift)
 
 ## When to Use This Skill
 
 - User says "review requirements", "validate requirements", or "check requirements"
 - User provides a requirement document path or ID for review
-- **Standard review**: After a `documenting-*` skill has produced a requirement document, before `documenting-qa`
-- **Test-plan reconciliation**: After `documenting-qa` has produced a test plan, before execution (`implementing-plan-phases`, `executing-chores`, `executing-bug-fixes`)
+- **Standard review**: After a `documenting-*` skill produces a requirement document, before `documenting-qa`
+- **Test-plan reconciliation**: After `documenting-qa` produces a test plan, before execution (`implementing-plan-phases`, `executing-chores`, `executing-bug-fixes`)
 - **Code-review reconciliation**: After a PR has been reviewed and its findings addressed, before `executing-qa`
 
 ## Arguments
 
-- **When argument is provided**: Match the argument against requirement files by ID prefix. Search across `requirements/features/`, `requirements/chores/`, and `requirements/bugs/` for a matching document (e.g., `FEAT-006` matches `FEAT-006-reviewing-requirements-skill.md`). If no match is found, inform the user and fall back to interactive selection. If multiple matches are found, present the options.
+- **When argument is provided**: Match the argument against requirement files by ID prefix. Search `requirements/features/`, `requirements/chores/`, and `requirements/bugs/` (e.g., `FEAT-006` matches `FEAT-006-reviewing-requirements-skill.md`). If no match, inform the user and fall back to interactive selection. If multiple matches, present the options.
 - **When no argument is provided**: Ask the user for a requirement document path or ID.
 
 ## Quick Start
 
 1. Accept a requirement document path or ID (supports `--pr <number>` flag for code-review reconciliation)
 2. Resolve to a file path if an ID was given
-3. **Detect mode**: Check for PR → test plan → default to standard review
-4. **If PR exists** → Code-review reconciliation: Run Steps CR1-CR5 (advisory drift report)
-5. **If test plan exists (no PR)** → Test-plan reconciliation: Run Steps R1-R7
-6. **If neither** → Standard review: Parse document, run Steps 3-7, present findings, offer fixes
+3. **Detect mode**: Check for PR -> test plan -> default to standard review
+4. **If PR exists** -> Code-review reconciliation: Run Steps CR1-CR5 (advisory drift report)
+5. **If test plan exists (no PR)** -> Test-plan reconciliation: Run Steps R1-R7
+6. **If neither** -> Standard review: Parse document, run Steps 3-7, present findings, offer fixes
 
 ## Output Style
 
@@ -90,7 +90,7 @@ The user provides either:
 - **A file path**: `requirements/features/FEAT-006-reviewing-requirements-skill.md`
 - **A requirement ID**: `FEAT-006`, `CHORE-003`, `BUG-001`
 
-An optional `--pr <number>` flag can be appended to force code-review reconciliation mode with a specific PR (e.g., `/reviewing-requirements FEAT-007 --pr 85`).
+An optional `--pr <number>` flag forces code-review reconciliation mode with a specific PR (e.g., `/reviewing-requirements FEAT-007 --pr 85`).
 
 If no input is provided, ask the user for a document path or requirement ID.
 
@@ -98,15 +98,15 @@ If no input is provided, ask the user for a document path or requirement ID.
 
 If the user provided a file path, verify it exists and use it directly.
 
-If the user provided a requirement ID, resolve it to a file path by running:
+If the user provided a requirement ID, resolve it via:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<ID>"
 ```
 
-The script maps the prefix (`FEAT-`, `CHORE-`, `BUG-`) to the correct directory (`requirements/features/`, `requirements/chores/`, `requirements/bugs/`), globs `{ID}-*.md`, and prints the single matching path on stdout. Exit codes: `0` on exactly-one match; `1` on zero matches (print the `No requirement document found for ID "{ID}"` error and the directory searched); `2` on multiple matches (list the candidates and ask the user to disambiguate); `3` on malformed or missing ID.
+The script maps the prefix (`FEAT-`, `CHORE-`, `BUG-`) to the correct directory (`requirements/features/`, `requirements/chores/`, `requirements/bugs/`), globs `{ID}-*.md`, and prints the matching path on stdout. Exit codes: `0` on exactly-one match; `1` on zero matches (print the `No requirement document found for ID "{ID}"` error and the directory searched); `2` on multiple matches (list candidates, ask user to disambiguate); `3` on malformed/missing ID.
 
-For `FEAT-` IDs, additionally Glob `requirements/implementation/{ID}-*.md` — the script covers only the primary requirements directory. **If the ID matches files in multiple directories** (e.g., a FEAT-XXX has both a feature doc and an implementation plan), review all matching documents together. The feature requirements document is the primary target; the implementation plan is reviewed as a secondary document.
+For `FEAT-` IDs, additionally Glob `requirements/implementation/{ID}-*.md` — the script covers only the primary requirements directory. **If the ID matches files in multiple directories** (e.g., a FEAT-XXX has both a feature doc and an implementation plan), review all matching documents together. The feature requirements document is the primary target; the implementation plan is reviewed as secondary.
 
 **Self-referential documents**: If the resolved document describes this skill itself (e.g., FEAT-006), proceed normally but note in the summary that findings about missing references or gaps may reflect the document describing features not yet implemented rather than actual errors. Use **Info** severity for ambiguous cases.
 
@@ -119,11 +119,11 @@ After resolving the requirement document, detect the mode in this order:
    - If `--pr <number>` was provided, use `gh pr view <number>` to load that PR. If the PR doesn't exist or the value is non-numeric, display an error and fall back to branch-based detection.
    - Otherwise, run `gh pr list --head <pattern> --json number,headRefName,state,isDraft` for patterns `feat/{ID}-*`, `chore/{ID}-*`, `fix/{ID}-*` (case-insensitive on the ID portion).
    - If multiple PRs match, use the most recently updated open PR. If no open PRs exist, list all matches and ask the user to specify.
-   - If a PR is found → Enter **code-review reconciliation mode**. Proceed to [Code-Review Reconciliation Mode](#code-review-reconciliation-mode).
+   - If a PR is found -> Enter **code-review reconciliation mode**. Proceed to [Code-Review Reconciliation Mode](#code-review-reconciliation-mode).
 3. **Check for a test plan** (test-plan reconciliation):
    - Use Glob to check for `qa/test-plans/QA-plan-{ID}.md`
-   - If found → Enter **test-plan reconciliation mode**. Proceed to [Test-Plan Reconciliation Mode](#test-plan-reconciliation-mode).
-4. **Default** → Continue with **standard review** (Steps 2-9 below).
+   - If found -> Enter **test-plan reconciliation mode**. Proceed to [Test-Plan Reconciliation Mode](#test-plan-reconciliation-mode).
+4. **Default** -> Continue with **standard review** (Steps 2-9 below).
 
 **Precedence**: If both a PR and a test plan exist, code-review reconciliation takes precedence (it is the later workflow step).
 
@@ -170,39 +170,15 @@ While parsing, collect all items that need verification:
 - **GitHub references**: Issue/PR numbers (e.g., `#38`, `PR #40`)
 - **External claims**: Assertions about framework behavior, library APIs, or tool capabilities
 
-## Step 3: Codebase Reference Verification
+## Steps 3-7: Verification Checks
 
-For each reference extracted in Step 2, use targeted searches (not exhaustive scans). Parallelize independent searches using the Agent tool when there are many references.
+Run the standard-review check sequence in order. See [references/standard-review-steps.md](references/standard-review-steps.md) for full per-step procedure.
 
-- **File paths**: Glob to check existence. If not found, search `**/{basename}` — classify as **Moved** (likely match found) or **Missing** (no match).
-- **Function/class names**: Grep for the definition. Classify as **Moved** (found in different file), **Ambiguous** (multiple locations), or **Missing**.
-- **Module/package refs**: Check `package.json` for npm packages; verify import paths exist for internal modules.
-
-## Step 4: Documentation Citation Verification
-
-For external claims about framework/library APIs: search `node_modules/<specific-package>/` type definitions, project READMEs, and `references/` directories. For behavior claims, verify against locally available documentation. Classify unverifiable claims as **Warning** (not Error). Do not fetch external URLs.
-
-## Step 5: Internal Consistency Checks
-
-**All types**: acceptance criteria must be testable; dependencies must match what's referenced; edge cases must have handling described elsewhere.
-
-**FEAT**: FR-N ↔ acceptance criteria bidirectional coverage; edge cases must not contradict FRs; output format consistent with FRs; command syntax/invocation matches FRs.
-
-**BUG**: RC-N ↔ acceptance criteria bidirectional coverage (with `(RC-N)` tags); steps to reproduce consistent with root causes; affected files align with RC locations.
-
-**CHORE**: scope boundaries clear; affected files exist in codebase (verify via Glob).
-
-**Implementation plans**: phase dependencies consistent (no circular refs); status markers valid (`Pending`/`🔄 In Progress`/`✅ Complete`); deliverable paths plausible; "Depends on Phase N" references valid earlier phases.
-
-## Step 6: Gap Analysis
-
-Identify what's missing: operations without error handling in Edge Cases/NFRs; FR-N entries without corresponding test cases; dependencies used but not listed; configuration/environment requirements not mentioned; implicit ordering constraints; common edge cases for the domain (empty input, boundary conditions, concurrent access, permission errors).
-
-## Step 7: Cross-Reference Validation
-
-- **Requirement docs**: Glob for referenced IDs in `requirements/` directories. **Error** if not found; **Info** if imprecise.
-- **GitHub issues**: `gh issue view N --json state,title` (validate up to 5). **Warning** if not found or inaccessible.
-- **Skill references**: Check skill directory exists under `plugins/lwndev-sdlc/skills/`. **Error** if not found.
+- **Step 3 — Codebase Reference Verification**: Glob/Grep each extracted reference; classify as Moved / Ambiguous / Missing. Parallelize via Agent when many references.
+- **Step 4 — Documentation Citation Verification**: Verify external claims against `node_modules/<package>/` types and local docs. Unverifiable -> **Warning** (never Error). No external URL fetches.
+- **Step 5 — Internal Consistency Checks**: type-specific consistency (FEAT FR-N <-> AC bidirectional; BUG RC-N <-> AC; CHORE scope; Implementation plans phase deps + status markers).
+- **Step 6 — Gap Analysis**: missing error handling, untested FR-N, undeclared deps, missing configuration/edge cases.
+- **Step 7 — Cross-Reference Validation**: Glob requirement IDs in `requirements/`; `gh issue view N --json state,title` for GitHub refs; check skill dirs exist.
 
 ## Step 8: Present Findings
 
@@ -249,7 +225,7 @@ No issues found in <filename>. The document looks ready for implementation plann
 
 ## Step 9: Apply Fixes
 
-After presenting findings, offer to apply fixes **only for findings that have clear, unambiguous corrections**:
+After presenting findings, offer to apply fixes **only for findings that have clear, unambiguous corrections**.
 
 ### Auto-fixable Issues
 - Incorrect file paths where the correct location was found (Moved classification)
@@ -282,7 +258,7 @@ Load the requirement document (already resolved via `bash "${CLAUDE_PLUGIN_ROOT}
 
 ### Step R2: Bidirectional Cross-Reference Check
 
-Validate every traceability ID maps in both directions. **Requirements → Test Plan**: each FR-N, RC-N, AC must have at least one test plan entry. **Test Plan → Requirements**: each test plan reference must point to an existing requirement ID. Classify: **Error** if test plan references non-existent ID; **Warning** if a requirement has no test plan coverage.
+Validate every traceability ID maps in both directions. **Requirements -> Test Plan**: each FR-N, RC-N, AC must have at least one test plan entry. **Test Plan -> Requirements**: each test plan reference must point to an existing requirement ID. Classify: **Error** if test plan references non-existent ID; **Warning** if a requirement has no test plan coverage.
 
 ### Step R3: Drift Detection
 
@@ -312,7 +288,7 @@ When a PR exists for the requirement ID, produce an advisory drift report. This 
 
 ### Step CR1: Load PR Context
 
-Fetch the PR diff using `gh pr diff <number>`. If `gh` is unavailable, fall back to `git diff <base-branch>...HEAD`. Load the requirement document (already resolved in Step 1 via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<ID>"` — exit codes `0`/`1`/`2`/`3`). Load the test plan from `qa/test-plans/QA-plan-{ID}.md` if it exists — if not, skip CR2 and note as **Info** ("No test plan found; test plan staleness detection skipped"). If the PR diff is very large (> 100 changed files), warn the user and focus on files referenced in requirements and test plan. Fork PRs are supported — `gh pr diff` works normally for PRs from forks.
+Fetch the PR diff using `gh pr diff <number>`. If `gh` is unavailable, fall back to `git diff <base-branch>...HEAD`. Load the requirement document (already resolved in Step 1 via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<ID>"` — exit codes `0`/`1`/`2`/`3`). Load the test plan from `qa/test-plans/QA-plan-{ID}.md` if it exists — if not, skip CR2 and note as **Info** ("No test plan found; test plan staleness detection skipped"). For very large PR diffs (> 100 changed files), warn the user and focus on files referenced in requirements and test plan. Fork PRs are supported — `gh pr diff` works normally for PRs from forks.
 
 ### Step CR2: Test Plan Staleness Detection
 
@@ -362,7 +338,7 @@ For findings that relate to `executing-qa`'s scope, note: "This drift will be ad
 |------|-----------|
 | **FEAT** | Run all steps (1-9) — most comprehensive |
 | **CHORE** | Skip Step 4 unless APIs referenced; emphasize Step 5 scope boundaries and Step 3 affected files |
-| **BUG** | Emphasize RC-N ↔ AC traceability (Step 5); verify affected files (Step 3); check reproduction steps |
+| **BUG** | Emphasize RC-N <-> AC traceability (Step 5); verify affected files (Step 3); check reproduction steps |
 | **Implementation Plan** | Emphasize phase dependency consistency and status markers (Step 5); verify deliverable paths (Step 3); check feature requirement refs (Step 7) |
 
 ## Verification Checklist
@@ -412,7 +388,7 @@ Before finishing a code-review reconciliation, verify:
 
 ## Relationship to Other Skills
 
-This skill appears at multiple points in each workflow chain. The mode is automatic: PR exists → code-review reconciliation; test plan exists (no PR) → test-plan reconciliation; otherwise → standard review. Reconciliation steps are optional but recommended.
+This skill appears at multiple points in each workflow chain. The mode is automatic: PR exists -> code-review reconciliation; test plan exists (no PR) -> test-plan reconciliation; otherwise -> standard review. Reconciliation steps are optional but recommended.
 
 ```
 Features: documenting-features → reviewing-requirements (standard) → creating-implementation-plans → documenting-qa → reviewing-requirements (test-plan) → implementing-plan-phases → PR review → reviewing-requirements (code-review) → executing-qa → finalizing-workflow

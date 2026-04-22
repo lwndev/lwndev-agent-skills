@@ -17,12 +17,12 @@ Centralized issue tracker operations for GitHub Issues and Jira, invoked by the 
 
 ## When to Use This Skill
 
-- Orchestrator needs to fetch issue data to pre-fill a requirements document
-- Orchestrator needs to post a status comment (phase start, phase completion, work start, work complete, bug start, bug complete) on an issue
-- Orchestrator needs to generate the PR body issue link (`Closes #N` or `PROJ-123`)
-- Orchestrator needs to extract the issue reference from a requirement document's `## GitHub Issue` section
+- Fetch issue data to pre-fill a requirements document
+- Post a status comment (phase-start, phase-completion, work-start, work-complete, bug-start, bug-complete)
+- Generate the PR body issue link (`Closes #N` or `PROJ-123`)
+- Extract the issue reference from a requirement document's `## GitHub Issue` section
 
-This skill's `SKILL.md` is a **reference document read inline by the orchestrator's main context** — the orchestrator `Read`s it once at workflow start, then executes the documented `gh issue view` / `gh issue comment` / Jira backend commands directly using its existing `Bash`, `Read`, and `Glob` tool access. It is **not** forked via the Agent tool and **not** invoked via the Skill tool. Users do not invoke it directly; the orchestrator handles all invocations inline per the "How to Invoke `managing-work-items`" subsection in `orchestrating-workflows/SKILL.md`. All operations remain **supplementary** to the workflow and must **never** block workflow progression on failure — graceful degradation (NFR-1) still governs every call site, so any backend or tool failure logs and skips rather than halting.
+This `SKILL.md` is a **reference document read inline by the orchestrator's main context** — the orchestrator `Read`s it once at workflow start and then executes the documented `gh` / Jira backend commands directly using its existing `Bash`, `Read`, and `Glob` access. It is **not** forked via the Agent tool and **not** invoked via the Skill tool; all invocations are inline per the "How to Invoke `managing-work-items`" subsection in `orchestrating-workflows/SKILL.md`. Operations are **supplementary** and must **never** block workflow progression — graceful degradation (NFR-1) governs every call site, so any backend or tool failure logs and skips rather than halting.
 
 ## Arguments
 
@@ -84,7 +84,7 @@ The following MUST always be emitted even when they resemble narration:
 
 ## Backend Detection (FR-1)
 
-Automatically detect the issue tracker backend from the issue reference format:
+Detect the backend from the issue reference format:
 
 | Format | Pattern | Backend |
 |--------|---------|---------|
@@ -94,41 +94,32 @@ Automatically detect the issue tracker backend from the issue reference format:
 
 ### Detection Logic
 
-1. **Parse the issue reference**:
-   - If it matches `^#(\d+)$` -- GitHub Issues. Extract the number `N`.
-   - If it matches `^([A-Z][A-Z0-9]*)-(\d+)$` -- Jira. Extract the project key and issue number.
-   - If the reference is empty, null, or absent -- log an info message ("No issue reference provided, skipping issue operations") and return immediately.
-2. **Route to the appropriate backend** based on the detected format.
+1. Parse the reference: `^#(\d+)$` -> GitHub (extract `N`); `^([A-Z][A-Z0-9]*)-(\d+)$` -> Jira (extract key + number); empty/null/absent -> log info ("No issue reference provided, skipping issue operations") and return.
+2. Route to the matching backend.
 
 ## GitHub Issues Backend (FR-2)
 
-All GitHub operations use the `gh` CLI. Before executing any operation, verify the CLI is available and authenticated.
+All GitHub operations use the `gh` CLI. Verify availability and auth before any operation.
 
 ### Fetch Operation
-
-Retrieve issue details and return structured data:
 
 ```bash
 gh issue view <N> --json title,body,labels,state,assignees
 ```
 
-**Returns**: JSON object with `title`, `body`, `labels`, `state`, `assignees` fields.
-
-**Usage**: Pre-fill requirements documents, verify issue exists before starting a workflow.
+Returns a JSON object with `title`, `body`, `labels`, `state`, `assignees`. Used to pre-fill requirements documents and verify the issue exists.
 
 ### Comment Operation
-
-Post a formatted comment to the issue:
 
 ```bash
 gh issue comment <N> --body "<formatted-comment>"
 ```
 
-The comment body is formatted using the appropriate template from [references/github-templates.md](references/github-templates.md) based on the `--type` argument. Template variables from the `--context` JSON are substituted into the template.
+The body is rendered from the matching template in [references/github-templates.md](references/github-templates.md) (selected by `--type`); `--context` JSON variables are substituted in.
 
 ## Comment Type Routing (FR-5)
 
-Map the `--type` argument to the correct template and populate it with context data:
+Map `--type` to the correct template and populate it with context data:
 
 | Comment Type | Template | Context Variables |
 |-------------|----------|-------------------|
@@ -141,17 +132,17 @@ Map the `--type` argument to the correct template and populate it with context d
 
 ### Rendering Process
 
-1. Look up the template in [references/github-templates.md](references/github-templates.md) (for GitHub) or [references/jira-templates.md](references/jira-templates.md) (for Jira/Rovo MCP) based on the `--type` value.
-2. Parse the `--context` JSON to extract template variables.
-3. Substitute variables into the template:
-   - **GitHub**: Replace `<PLACEHOLDER>` with actual values, expand list placeholders into formatted markdown lists.
-   - **Jira (Rovo MCP)**: Replace `{placeholder}` values in the ADF JSON structure. For list context variables (steps, deliverables, criteria, rootCauses), generate the appropriate ADF `listItem` nodes dynamically. The resulting JSON must be valid ADF.
-   - **Jira (acli)**: Use markdown format (same approach as GitHub). `acli` handles ADF conversion internally.
-4. Post the rendered comment via the appropriate backend.
+1. Look up the template in [references/github-templates.md](references/github-templates.md) (GitHub) or [references/jira-templates.md](references/jira-templates.md) (Jira/Rovo MCP) by `--type`.
+2. Parse `--context` JSON for variables.
+3. Substitute:
+   - **GitHub**: replace `<PLACEHOLDER>` with values; expand list placeholders into markdown lists.
+   - **Jira (Rovo MCP)**: replace `{placeholder}` values in ADF JSON; generate ADF `listItem` nodes for list variables (steps, deliverables, criteria, rootCauses). Output must be valid ADF.
+   - **Jira (acli)**: use markdown (same as GitHub). `acli` handles ADF conversion internally.
+4. Post the rendered comment via the matching backend.
 
 ## PR Body Issue Link Generation (FR-6)
 
-Generate the appropriate auto-close syntax for PR bodies based on the detected backend:
+Backend-specific auto-close syntax for PR bodies:
 
 | Backend | Output | Effect |
 |---------|--------|--------|
@@ -159,71 +150,59 @@ Generate the appropriate auto-close syntax for PR bodies based on the detected b
 | Jira | `PROJ-123` | Jira auto-transition relies on the branch name containing the issue key |
 | No reference | Empty string | No issue link in PR body |
 
-**Usage**: The orchestrator calls `pr-link` at PR creation to get the correct syntax, then includes it in the PR body's "Related" section.
+The orchestrator calls `pr-link` at PR creation and includes the result in the PR body's "Related" section.
 
 ## Issue Reference Extraction from Documents (FR-7)
 
-Extract the issue reference from a requirement document by reading the `## GitHub Issue` section (or `## Issue` / `## Issue Tracker` for future compatibility):
+Extract the issue reference from a requirement document's `## GitHub Issue` section (also accept `## Issue` / `## Issue Tracker`).
 
 ### Extraction Logic
 
 1. Read the requirement document.
-2. Find the `## GitHub Issue` section (also check `## Issue` and `## Issue Tracker`).
-3. Parse the section content for issue reference patterns:
-   - `[#N](URL)` -- extract `#N` (GitHub)
-   - `[PROJ-123](URL)` -- extract `PROJ-123` (Jira)
-4. Return the first match found, or `null` if the section is empty or missing.
+2. Find the `## GitHub Issue` section (also `## Issue`, `## Issue Tracker`).
+3. Parse for `[#N](URL)` -> `#N` (GitHub) or `[PROJ-123](URL)` -> `PROJ-123` (Jira).
+4. Return the first match, or `null` if the section is empty or missing.
 
-**Example document section**:
+**Example**:
 ```markdown
 ## GitHub Issue
 [#119](https://github.com/lwndev/lwndev-marketplace/issues/119)
 ```
 
-**Extracted reference**: `#119`
+Extracted: `#119`.
 
 ## Jira Backend (FR-3) -- Tiered Fallback
 
-Jira support uses a tiered fallback approach. The tiers are checked in order; the first available backend is used:
+Jira uses a tiered fallback. Tiers are tried in order; the first available backend wins:
 
-1. **Tier 1 -- Rovo MCP**: Check if the `rovo` MCP server is available. If present, use Rovo MCP tools for issue operations. Comments must be in Atlassian Document Format (ADF) JSON -- see [references/jira-templates.md](references/jira-templates.md).
-2. **Tier 2 -- Atlassian CLI (`acli`)**: Check if `acli` is on PATH (`which acli`). If present, use `acli jira workitem` subcommands. `acli` accepts markdown and handles ADF conversion internally.
-3. **Tier 3 -- Skip**: If neither backend is available, log a warning ("No Jira backend available (Rovo MCP not registered, acli not found). Skipping Jira operations.") and skip without failing.
+1. **Tier 1 -- Rovo MCP**: if the `rovo` MCP server is registered, use Rovo MCP tools. Comments must be in Atlassian Document Format (ADF) JSON -- see [references/jira-templates.md](references/jira-templates.md).
+2. **Tier 2 -- Atlassian CLI (`acli`)**: if `acli` is on PATH (`which acli`), use `acli jira workitem` subcommands. `acli` accepts markdown and handles ADF conversion internally.
+3. **Tier 3 -- Skip**: if neither is available, log "No Jira backend available (Rovo MCP not registered, acli not found). Skipping Jira operations." and return without failing.
 
 ### Tier Detection Logic
 
 ```
-1. Check Tier 1 (Rovo MCP):
-   - Verify the `rovo` MCP server is registered and responsive
-   - If available → use Rovo MCP tools for all Jira operations
-   - If unavailable or registration check fails → log "Rovo MCP server not available, trying acli fallback" → proceed to Tier 2
-
-2. Check Tier 2 (acli CLI):
-   - Run: which acli
-   - If found on PATH → use acli for all Jira operations
-   - If not found → log "acli CLI not found on PATH" → proceed to Tier 3
-
-3. Tier 3 (Skip):
-   - Log warning: "No Jira backend available (Rovo MCP not registered, acli not found). Skipping Jira operations."
-   - Return without failing — workflow continues normally
+1. Tier 1 (Rovo MCP): if rovo MCP is registered and responsive -> use it.
+   Otherwise log "Rovo MCP server not available, trying acli fallback" -> Tier 2.
+2. Tier 2 (acli): if `which acli` finds it -> use it.
+   Otherwise log "acli CLI not found on PATH" -> Tier 3.
+3. Tier 3: log the no-backend warning above and return.
 ```
 
 ### Jira Fetch Operation
 
-Retrieve Jira issue details (title/summary, description, labels/tags, status, assignees).
+Retrieve issue details (title/summary, description, labels, status, assignees).
 
 **Via Rovo MCP (Tier 1):**
-
-Use the `getJiraIssue` MCP tool:
 
 ```
 getJiraIssue(cloudId, issueIdOrKey)
 ```
 
-- `cloudId`: The Atlassian Cloud ID for the Jira instance (obtained from MCP server configuration or environment)
-- `issueIdOrKey`: The issue key, e.g., `PROJ-123` or `PROJ2-456`
+- `cloudId`: Atlassian Cloud ID (from MCP server config or env)
+- `issueIdOrKey`: e.g., `PROJ-123` or `PROJ2-456`
 
-The tool returns the issue object including `fields.summary`, `fields.description` (in ADF format), `fields.labels`, `fields.status.name`, and `fields.assignee`.
+Returns the issue object including `fields.summary`, `fields.description` (ADF), `fields.labels`, `fields.status.name`, `fields.assignee`.
 
 **Via acli (Tier 2):**
 
@@ -231,31 +210,25 @@ The tool returns the issue object including `fields.summary`, `fields.descriptio
 acli jira workitem view --key PROJ-123
 ```
 
-Returns issue details in a structured text format. Parse the output to extract title, description, status, assignee, and labels.
+Returns structured text — parse for title, description, status, assignee, labels.
 
-**On failure**: Log the error with full output and skip. Example:
-
-```
-Warning: Jira fetch failed for PROJ-123 via [Rovo MCP|acli]. Output: <error details>. Skipping.
-```
+**On failure**: log full output and skip. Example: `Warning: Jira fetch failed for PROJ-123 via [Rovo MCP|acli]. Output: <error details>. Skipping.`
 
 ### Jira Comment Operation
 
-Post a formatted comment to a Jira issue using the appropriate template from [references/jira-templates.md](references/jira-templates.md).
+Post a formatted comment using the matching template from [references/jira-templates.md](references/jira-templates.md).
 
 **Via Rovo MCP (Tier 1):**
-
-Use the `addCommentToJiraIssue` MCP tool:
 
 ```
 addCommentToJiraIssue(cloudId, issueIdOrKey, commentBody)
 ```
 
-- `cloudId`: The Atlassian Cloud ID
-- `issueIdOrKey`: The issue key, e.g., `PROJ-123`
-- `commentBody`: The comment in **ADF JSON format** (required by the Jira REST API)
+- `cloudId`: Atlassian Cloud ID
+- `issueIdOrKey`: e.g., `PROJ-123`
+- `commentBody`: comment in **ADF JSON format** (required by the Jira REST API)
 
-The `commentBody` must be a valid ADF document. Load the appropriate template from [references/jira-templates.md](references/jira-templates.md) based on the `--type` argument, substitute context variables into the ADF JSON structure, and pass the resulting ADF JSON as `commentBody`.
+`commentBody` must be valid ADF. Load the template by `--type` from [references/jira-templates.md](references/jira-templates.md), substitute context variables into the ADF JSON, and pass the result as `commentBody`.
 
 **Via acli (Tier 2):**
 
@@ -263,19 +236,19 @@ The `commentBody` must be a valid ADF document. Load the appropriate template fr
 acli jira workitem comment-create --key PROJ-123 --body "<markdown-comment>"
 ```
 
-When using `acli`, format the comment as **markdown** (not ADF). The `acli` tool handles ADF conversion internally. Use the equivalent markdown format from [references/github-templates.md](references/github-templates.md) as a reference for the markdown content structure, adapting the GitHub-specific references (issue numbers, PR links) to Jira equivalents (issue keys, PR URLs).
+`acli` takes **markdown** (not ADF) and handles ADF conversion internally. Use the markdown format from [references/github-templates.md](references/github-templates.md) as a reference, adapting GitHub references (issue numbers, PR links) to Jira equivalents (issue keys, PR URLs).
 
-**On failure**: Log the error and skip. If Tier 1 (Rovo MCP) fails, fall through to Tier 2 (acli) before skipping entirely.
+**On failure**: log and skip. If Tier 1 fails, fall through to Tier 2 before skipping entirely.
 
 ### Jira PR Body Link Generation (FR-6)
 
-For Jira issues, the PR body link is the issue key itself:
+For Jira, the PR body link is the issue key itself:
 
 ```
 PROJ-123
 ```
 
-Jira auto-transition relies on the **branch name** containing the issue key (e.g., `feat/PROJ-123-feature-name`), not on a `Closes` keyword. Including the issue key in the PR body provides traceability but does not trigger auto-transition directly.
+Auto-transition relies on the **branch name** containing the issue key (e.g., `feat/PROJ-123-feature-name`), not a `Closes` keyword. The issue key in the PR body is for traceability only.
 
 ### Jira-Specific Error Handling
 
@@ -294,31 +267,32 @@ Jira auto-transition relies on the **branch name** containing the issue key (e.g
 
 ### Alphanumeric Project Keys
 
-Jira project keys can contain numbers after the first character (e.g., `PROJ2-123`, `AB1-456`). The backend detection regex `^([A-Z][A-Z0-9]*)-(\d+)$` correctly handles these patterns. Examples of valid Jira references:
+Jira keys may contain digits after the first character (e.g., `PROJ2-123`, `AB1-456`). The detection regex `^([A-Z][A-Z0-9]*)-(\d+)$` covers these. Valid examples: `PROJ-123` (standard), `PROJ2-456` (alphanumeric), `AB1-789` (short alphanumeric), `MYTEAM-1` (longer key, single-digit number).
 
-- `PROJ-123` -- standard alphabetic key
-- `PROJ2-456` -- alphanumeric key (numbers allowed after first letter)
-- `AB1-789` -- short alphanumeric key
-- `MYTEAM-1` -- longer key with single digit issue number
+## Graceful Degradation (NFR-1) and Error Handling (NFR-2)
 
-## Graceful Degradation (NFR-1)
+Issue tracker operations are supplementary -- they must **never** block workflow progression. All failure modes degrade gracefully (NFR-1); NFR-2 reuses the same skip/fall-through responses with no separate behavior.
 
-Issue tracker operations are supplementary -- they must **never** block workflow progression. All failure modes degrade gracefully:
+| Failure | Backend | Response |
+|---------|---------|----------|
+| `gh` CLI not installed or not on PATH | GitHub | Log warning: "GitHub CLI (`gh`) not found on PATH. Skipping GitHub issue operations." Skip operation. |
+| `gh` not authenticated | GitHub | Log: "GitHub CLI not authenticated -- run `gh auth login` to enable issue tracking." Skip operation. |
+| Network unavailable | GitHub | Log: "Network request failed. Skipping issue operation." Skip operation. |
+| Rate limited | GitHub | Log: "GitHub API rate limit reached. Skipping issue operation." Skip operation. Do not retry. |
+| Issue does not exist | GitHub | Log: "`gh issue view` returned not found for #N. Skipping." Skip operation. |
+| Command failure (non-zero exit) | Any | Log error with full command output. Skip operation. Continue workflow. |
+| Timeout | Any | Log warning with timeout duration. Skip. |
+| Jira backend unavailable | Jira | Fall through tiered selection (Rovo MCP -> acli -> skip). Log which tier was attempted. |
+| MCP tool invocation failure | Jira | Log error with tool name and response. Fall through to `acli` tier. |
+| Rovo MCP authorization error | Jira | Log "Rovo MCP authorization failed -- check OAuth consent or API token configuration." Fall through to `acli`. |
+| MCP server disconnection | Jira | Log error with tool name. Fall through to `acli`. |
+| `acli` not authenticated | Jira | Log: "Atlassian CLI not authenticated -- check `acli` credentials configuration." Skip. |
 
-| Failure | Behavior |
-|---------|----------|
-| `gh` CLI not installed or not on PATH | Log warning: "GitHub CLI (`gh`) not found on PATH. Skipping GitHub issue operations." Skip operation. |
-| `gh` not authenticated | Log warning: "GitHub CLI not authenticated. Run `gh auth login` to enable issue tracking." Skip operation. |
-| Network unavailable | Log warning: "Network request failed. Skipping issue operation." Skip operation. |
-| Rate limited | Log warning: "GitHub API rate limit reached. Skipping issue operation." Skip operation. Do not retry. |
-| Issue does not exist | Log warning: "`gh issue view` returned not found for #N. Skipping." Skip operation. |
-| Jira backend unavailable | Fall through tiered selection (Rovo MCP -> acli -> skip). Log which tier was attempted. |
-| MCP tool invocation failure | Log error with tool name and response. Fall through to `acli` tier. |
-| Rovo MCP authorization error | Log "Rovo MCP authorization failed -- check OAuth consent or API token configuration." Fall through to `acli`. |
+(See "Jira-Specific Error Handling" above for the per-tier Jira matrix that this table summarizes.)
 
 ### Implementation Pattern
 
-Wrap every external command in a try/catch (or check exit code) pattern:
+Wrap every external command in an exit-code check (try/catch equivalent):
 
 ```bash
 # Example: GitHub comment with graceful degradation
@@ -337,54 +311,28 @@ if ! gh issue comment <N> --body "<comment>" 2>&1; then
 fi
 ```
 
-## Error Handling (NFR-2)
-
-| Error Type | Response |
-|-----------|----------|
-| Command failure (non-zero exit) | Log error with full command output. Skip operation. Continue workflow. |
-| Authentication error (GitHub) | Log: "GitHub CLI not authenticated -- run `gh auth login`". Skip. |
-| Authentication error (Jira/Rovo MCP) | Log: "Rovo MCP authorization failed -- check OAuth consent or API token configuration". Fall through to `acli`. |
-| Authentication error (Jira/acli) | Log: "Atlassian CLI not authenticated -- check `acli` credentials configuration". Skip. |
-| Rate limiting | Log warning. Skip. Do not retry. |
-| Timeout | Log warning with timeout duration. Skip. |
-| MCP server disconnection | Log error with tool name. Fall through to `acli`. |
-
 ## Idempotency (NFR-3)
 
-- **Comment operations are safe to retry.** Posting the same comment twice results in a duplicate comment, which is acceptable -- better than a missing comment.
-- **Fetch operations are inherently idempotent** -- reading issue data has no side effects.
-- **PR link generation is pure computation** -- no side effects, always returns the same result for the same input.
-- **If a workflow is re-run or resumed**, issue operations can be re-executed without concern. The orchestrator does not need to track which operations have already been performed.
+- **Comments are safe to retry.** A duplicate comment is acceptable -- better than a missing one.
+- **Fetch is inherently idempotent** -- read-only, no side effects.
+- **PR link generation is pure** -- same input always yields the same result.
+- **Workflow re-runs/resumes** can re-execute issue operations freely; the orchestrator does not need to track prior calls.
 
 ## Workflow
 
 ```
-1. Receive invocation: <operation> <issue-ref> [--type <type>] [--context <json>]
-2. Detect backend from issue reference format (FR-1)
-   - #N → GitHub Issues
-   - PROJ-123 (including PROJ2-123 alphanumeric keys) → Jira
-   - Empty/absent → skip all operations
-3. If no reference provided → log info, return
-4. If GitHub (#N):
-   a. Verify gh CLI available and authenticated
-   b. Execute operation (fetch/comment) via gh CLI
-   c. On failure → log warning, skip, return
+1. Receive: <operation> <issue-ref> [--type <type>] [--context <json>]
+2. Detect backend (FR-1): #N -> GitHub; PROJ-123 (incl. PROJ2-123) -> Jira; empty -> skip.
+3. If no reference -> log info, return.
+4. If GitHub (#N): verify gh available + authenticated; run operation (fetch/comment) via gh; on failure log warning + skip.
 5. If Jira (PROJ-123):
-   a. Check Tier 1 (Rovo MCP):
-      - If available → execute operation via MCP tools (getJiraIssue / addCommentToJiraIssue)
-      - For comment operations → load ADF template from jira-templates.md, substitute context variables, pass ADF JSON as commentBody
-      - On MCP failure (timeout, auth error, unexpected response, disconnection) → log error, fall through to Tier 2
-   b. Check Tier 2 (acli):
-      - If available → execute operation via acli CLI (acli jira workitem view / comment-create)
-      - For comment operations → use markdown format (acli converts to ADF internally)
-      - On acli failure → log error, fall through to Tier 3
-   c. Tier 3 (Skip):
-      - Log warning: "No Jira backend available. Skipping Jira operations."
-      - Return without failing
-6. Return result (fetch data, confirmation, or skip notice)
+   a. Tier 1 (Rovo MCP): if available, run via getJiraIssue / addCommentToJiraIssue; for comments, load ADF template, substitute, pass as commentBody. On MCP failure (timeout, auth, unexpected, disconnect) -> log + fall through to Tier 2.
+   b. Tier 2 (acli): if available, run via `acli jira workitem view` / `comment-create`; comments use markdown (acli converts to ADF). On failure -> fall through to Tier 3.
+   c. Tier 3: log "No Jira backend available. Skipping Jira operations." Return without failing.
+6. Return result (fetch data, confirmation, or skip notice).
 ```
 
 ## References
 
-- **GitHub comment templates**: [github-templates.md](references/github-templates.md) - Consolidated templates for all six comment types (markdown format), plus commit messages, PR body, and issue creation
-- **Jira comment templates**: [jira-templates.md](references/jira-templates.md) - Jira templates in ADF JSON format for all six comment types (used by Rovo MCP path; `acli` path uses markdown)
+- **GitHub comment templates**: [github-templates.md](references/github-templates.md) - markdown templates for all six comment types, plus commit messages, PR body, issue creation
+- **Jira comment templates**: [jira-templates.md](references/jira-templates.md) - ADF JSON templates for all six comment types (Rovo MCP path; `acli` path uses markdown)

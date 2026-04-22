@@ -12,28 +12,28 @@ argument-hint: "[chore-title]"
 
 # Documenting Chores
 
-Create lightweight chore task documents that capture maintenance work, dependency updates, refactoring, and minor fixes without the overhead of full feature requirements.
+Create lightweight chore task documents for maintenance work, dependency updates, refactoring, and minor fixes without full feature requirements overhead.
 
 ## When to Use This Skill
 
-- Documenting dependency updates or version bumps
-- Recording planned refactoring work
-- Tracking documentation fixes or README updates
-- Capturing configuration changes
-- Cleaning up dead code or unused files
+- Dependency updates or version bumps
+- Planned refactoring work
+- Documentation fixes or README updates
+- Configuration changes
+- Dead code or unused file cleanup
 - Any maintenance task that doesn't warrant full feature requirements
 
 ## Arguments
 
-- **When argument is provided**: Use the argument as a pre-filled chore title for the document being created.
-- **When no argument is provided**: Prompt the user interactively for the chore details.
+- **When argument is provided**: use it as a pre-filled chore title.
+- **When no argument is provided**: prompt interactively for chore details.
 
 ## Quick Start
 
-1. Check for existing chores in `requirements/chores/` to determine the next Chore ID
-2. **Ask for GitHub issue URL** if not provided (optional but recommended for traceability)
+1. Check `requirements/chores/` for the next Chore ID
+2. **Ask for GitHub issue URL** if not provided (optional, recommended for traceability)
 3. Identify the chore category (see [references/categories.md](references/categories.md))
-4. Create chore document using the template
+4. Create the chore document from the template
 5. Save to `requirements/chores/CHORE-XXX-description.md`
 
 ## Output Style
@@ -70,17 +70,13 @@ The following MUST always be emitted even when they resemble narration:
 
 ## File Location
 
-All chore documents go in: `requirements/chores/`
-
-Naming format: `CHORE-XXX-{2-4-word-description}.md`
-
-Derive the description slug from the chore title by running:
+All chore documents live in `requirements/chores/`. Filename format: `CHORE-XXX-{2-4-word-description}.md`. Derive the slug:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<chore title>"
 ```
 
-The script lowercases, strips punctuation, drops stopwords (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), and keeps the first four remaining tokens joined with `-`. Exit codes: `0` on success; `1` when the slug is empty after normalization (prompt the user for a more descriptive title); `2` on missing arg.
+Lowercases, strips punctuation, drops stopwords (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), keeps the first four remaining tokens joined with `-`. Exit codes: `0` success; `1` empty slug after normalization (prompt for a more descriptive title); `2` missing arg.
 
 Examples:
 - `CHORE-001-update-dependencies.md`
@@ -89,13 +85,13 @@ Examples:
 
 ## Chore ID Assignment
 
-Allocate the next Chore ID by running:
+Allocate the next Chore ID:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/next-id.sh" CHORE
 ```
 
-The script scans `requirements/chores/` for existing `CHORE-NNN-*.md` files, returns `max(NNN) + 1` zero-padded to three digits, and prints `001` when no chores exist. Exit codes: `0` on success; `2` on missing/invalid type arg.
+Scans `requirements/chores/` for `CHORE-NNN-*.md`, returns `max(NNN) + 1` zero-padded to three digits, prints `001` when none exist. Exit codes: `0` success; `2` missing/invalid type arg.
 
 ## Template
 
@@ -115,7 +111,7 @@ See [assets/chore-document.md](assets/chore-document.md) for the full template.
 
 ## Categories
 
-Five supported categories with specific guidance:
+Five supported categories:
 
 | Category | Use For |
 |----------|---------|
@@ -125,13 +121,13 @@ Five supported categories with specific guidance:
 | `configuration` | Config file updates, tooling changes, CI/CD modifications |
 | `cleanup` | Removing dead code, unused files, deprecated features |
 
-See [references/categories.md](references/categories.md) for detailed guidance on each category.
+See [references/categories.md](references/categories.md) for per-category guidance.
 
 ## Verification Checklist
 
-Before finalizing, verify:
+Before finalizing:
 
-- [ ] Chore ID is unique (not already used)
+- [ ] Chore ID is unique
 - [ ] Category matches the type of work
 - [ ] Description clearly explains the work
 - [ ] Affected files list is complete
@@ -146,4 +142,4 @@ Before finalizing, verify:
 | Chore/maintenance task | Use this skill (`documenting-chores`) |
 | Quick fix (no tracking needed) | Direct implementation |
 
-After documenting a chore, run `/reviewing-requirements` to verify the document against the codebase and docs, then `/documenting-qa` to create a test plan. Optionally run `/reviewing-requirements` again for test-plan reconciliation. Then use `/executing-chores` to implement it. After PR review, optionally run `/reviewing-requirements` for code-review reconciliation, then `/executing-qa` to verify, and `/finalizing-workflow` to merge.
+After documenting, run `/reviewing-requirements` to verify against codebase and docs, then `/documenting-qa` for the test plan. Optionally run `/reviewing-requirements` again for test-plan reconciliation. Then `/executing-chores` to implement. After PR review, optionally `/reviewing-requirements` for code-review reconciliation, then `/executing-qa` to verify, and `/finalizing-workflow` to merge.
