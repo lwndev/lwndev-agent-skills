@@ -32,8 +32,8 @@ Adapt sections to feature type:
 
 ## Arguments
 
-- **Argument provided**: use it as a pre-filled feature name. If it uses `#<number>` syntax (e.g., `#14`) or Jira format (e.g., `PROJ-123`), delegate to the orchestrator or `managing-work-items fetch #N` (or `managing-work-items fetch PROJ-123`) to retrieve issue data, then pre-fill the template with the returned title and body. On fetch failure (missing issue, network error, auth failure), warn and continue with manual input.
-- **No argument**: prompt interactively for scope, purpose, and details.
+- **When argument is provided**: use it as a pre-filled feature name. If it uses `#<number>` syntax (e.g., `#14`) or Jira format (e.g., `PROJ-123`), delegate to the orchestrator or `managing-work-items fetch #N` (or `managing-work-items fetch PROJ-123`) to retrieve issue data, then pre-fill the template with the returned title and body. On fetch failure (missing issue, network error, auth failure), warn and continue with manual input.
+- **When no argument is provided**: prompt interactively for scope, purpose, and details.
 
 > **Note:** Direct `gh` CLI usage for issue fetch is replaced by `managing-work-items`, which handles GitHub Issues (`#N`) and Jira (`PROJ-123`) with auto-detection and graceful degradation. This skill lacks Bash in allowed-tools, so issue fetching must be delegated.
 
