@@ -235,7 +235,7 @@ These two scripts are the composite Layer-C scripts that depend on all of Layer 
 ### Phase 4: SKILL.md Rewrite + Caller Updates (FR-7, FR-8)
 
 **Feature:** [FEAT-025](../features/FEAT-025-managing-work-items-full.md) | [#183](https://github.com/lwndev/lwndev-marketplace/issues/183)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 
@@ -276,10 +276,10 @@ The SKILL.md rewrite and caller updates are the user-visible cutover: they switc
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` (rewritten per FR-7; net line reduction >= 30%)
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/issue-tracking.md` (script-delegation examples; cross-reference updated)
-- [ ] `plugins/lwndev-sdlc/skills/documenting-features/SKILL.md` (fetch-issue.sh delegation note updated)
-- [ ] Passing `npm test` and `npm run validate`
+- [x] `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` (rewritten per FR-7; net line reduction >= 30%)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/issue-tracking.md` (script-delegation examples; cross-reference updated)
+- [x] `plugins/lwndev-sdlc/skills/documenting-features/SKILL.md` (fetch-issue.sh delegation note updated)
+- [x] Passing `npm test` and `npm run validate`
 
 ---
 

@@ -22,7 +22,7 @@ Centralized issue tracker operations for GitHub Issues and Jira, invoked by the 
 - Generate the PR body issue link (`Closes #N` or `PROJ-123`)
 - Extract the issue reference from a requirement document's `## GitHub Issue` section
 
-This `SKILL.md` is a **reference document read inline by the orchestrator's main context** — the orchestrator `Read`s it once at workflow start and then executes the documented `gh` / Jira backend commands directly using its existing `Bash`, `Read`, and `Glob` access. It is **not** forked via the Agent tool and **not** invoked via the Skill tool; all invocations are inline per the "How to Invoke `managing-work-items`" subsection in `orchestrating-workflows/SKILL.md`. Operations are **supplementary** and must **never** block workflow progression — graceful degradation (NFR-1) governs every call site, so any backend or tool failure logs and skips rather than halting.
+This `SKILL.md` is a **reference document read inline by the orchestrator's main context** — the orchestrator `Read`s it once at workflow start and then executes the skill-scoped scripts in `scripts/` directly using its existing `Bash` access. It is **not** forked via the Agent tool and **not** invoked via the Skill tool; all invocations are inline per the "How to Invoke `managing-work-items`" subsection in `orchestrating-workflows/SKILL.md`. Operations are **supplementary** and must **never** block workflow progression — graceful degradation (NFR-1) governs every call site, so any backend or tool failure logs and skips rather than halting.
 
 ## Arguments
 
@@ -92,30 +92,11 @@ Detect the backend from the issue reference format:
 | `PROJ-123` | Alphabetic/alphanumeric project key + `-` + digits | Jira (via tiered fallback) |
 | Empty/absent | No reference provided | Skip all operations gracefully |
 
-### Detection Logic
-
-1. Parse the reference: `^#(\d+)$` -> GitHub (extract `N`); `^([A-Z][A-Z0-9]*)-(\d+)$` -> Jira (extract key + number); empty/null/absent -> log info ("No issue reference provided, skipping issue operations") and return.
-2. Route to the matching backend.
+See `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/backend-detect.sh` for the detection implementation (emits `github` / `jira` JSON objects or the literal `null`).
 
 ## GitHub Issues Backend (FR-2)
 
-All GitHub operations use the `gh` CLI. Verify availability and auth before any operation.
-
-### Fetch Operation
-
-```bash
-gh issue view <N> --json title,body,labels,state,assignees
-```
-
-Returns a JSON object with `title`, `body`, `labels`, `state`, `assignees`. Used to pre-fill requirements documents and verify the issue exists.
-
-### Comment Operation
-
-```bash
-gh issue comment <N> --body "<formatted-comment>"
-```
-
-The body is rendered from the matching template in [references/github-templates.md](references/github-templates.md) (selected by `--type`); `--context` JSON variables are substituted in.
+All GitHub operations use the `gh` CLI (reference signature: `gh issue view <N> --json title,body,labels,state,assignees`). Fetch is implemented by `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/fetch-issue.sh`; comments are posted by `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/post-issue-comment.sh`. Both perform `gh` pre-flight (presence + auth) and exit `0` on any skip path with the matching `[warn]`/`[info]` line on stderr.
 
 ## Comment Type Routing (FR-5)
 
@@ -130,15 +111,7 @@ Map `--type` to the correct template and populate it with context data:
 | `bug-start` | Bug start template | `bugId` (BUG-XXX), `severity` (level), `rootCauses` (RC-N list), `criteria` (acceptance criteria list), `branch` (branch name) |
 | `bug-complete` | Bug complete template | `bugId` (BUG-XXX), `prNumber` (PR number), `rootCauseResolutions` (RC-N resolution table), `verificationResults` (list) |
 
-### Rendering Process
-
-1. Look up the template in [references/github-templates.md](references/github-templates.md) (GitHub) or [references/jira-templates.md](references/jira-templates.md) (Jira/Rovo MCP) by `--type`.
-2. Parse `--context` JSON for variables.
-3. Substitute:
-   - **GitHub**: replace `<PLACEHOLDER>` with values; expand list placeholders into markdown lists.
-   - **Jira (Rovo MCP)**: replace `{placeholder}` values in ADF JSON; generate ADF `listItem` nodes for list variables (steps, deliverables, criteria, rootCauses). Output must be valid ADF.
-   - **Jira (acli)**: use markdown (same as GitHub). `acli` handles ADF conversion internally.
-4. Post the rendered comment via the matching backend.
+See `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/render-issue-comment.sh` for template loading, variable substitution, markdown list expansion, and ADF JSON generation (selects `github-templates.md` for GitHub/Jira-`acli`, `jira-templates.md` for Jira-`rovo`).
 
 ## PR Body Issue Link Generation (FR-6)
 
@@ -146,30 +119,12 @@ Backend-specific auto-close syntax for PR bodies:
 
 | Backend | Output | Effect |
 |---------|--------|--------|
-| GitHub | `Closes #N` | Auto-closes the issue when the PR is merged |
-| Jira | `PROJ-123` | Jira auto-transition relies on the branch name containing the issue key |
-| No reference | Empty string | No issue link in PR body |
 
-The orchestrator calls `pr-link` at PR creation and includes the result in the PR body's "Related" section.
+See `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/pr-link.sh` for generation (emits `Closes #N` for GitHub, raw issue key for Jira, empty for unrecognized inputs). The orchestrator calls `pr-link` at PR creation and includes the result in the PR body's "Related" section.
 
 ## Issue Reference Extraction from Documents (FR-7)
 
-Extract the issue reference from a requirement document's `## GitHub Issue` section (also accept `## Issue` / `## Issue Tracker`).
-
-### Extraction Logic
-
-1. Read the requirement document.
-2. Find the `## GitHub Issue` section (also `## Issue`, `## Issue Tracker`).
-3. Parse for `[#N](URL)` -> `#N` (GitHub) or `[PROJ-123](URL)` -> `PROJ-123` (Jira).
-4. Return the first match, or `null` if the section is empty or missing.
-
-**Example**:
-```markdown
-## GitHub Issue
-[#119](https://github.com/lwndev/lwndev-marketplace/issues/119)
-```
-
-Extracted: `#119`.
+Extract the issue reference from a requirement document's `## GitHub Issue` section (also accept `## Issue` / `## Issue Tracker`). See `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/extract-issue-ref.sh` for the extraction implementation (scans accepted heading variants, emits first `[#N]` / `[PROJ-NNN]` markdown link match or empty on miss).
 
 ## Jira Backend (FR-3) -- Tiered Fallback
 
@@ -191,28 +146,7 @@ Jira uses a tiered fallback. Tiers are tried in order; the first available backe
 
 ### Jira Fetch Operation
 
-Retrieve issue details (title/summary, description, labels, status, assignees).
-
-**Via Rovo MCP (Tier 1):**
-
-```
-getJiraIssue(cloudId, issueIdOrKey)
-```
-
-- `cloudId`: Atlassian Cloud ID (from MCP server config or env)
-- `issueIdOrKey`: e.g., `PROJ-123` or `PROJ2-456`
-
-Returns the issue object including `fields.summary`, `fields.description` (ADF), `fields.labels`, `fields.status.name`, `fields.assignee`.
-
-**Via acli (Tier 2):**
-
-```bash
-acli jira workitem view --key PROJ-123
-```
-
-Returns structured text — parse for title, description, status, assignee, labels.
-
-**On failure**: log full output and skip. Example: `Warning: Jira fetch failed for PROJ-123 via [Rovo MCP|acli]. Output: <error details>. Skipping.`
+Handled by `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/fetch-issue.sh`. Tier 1 calls `getJiraIssue(cloudId, issueIdOrKey)`; Tier 2 runs `acli jira workitem view --key PROJ-123`. Both project into the normalized `{title, body, labels, state, assignees}` shape; Tier-3 skip is silent exit `0`.
 
 ### Jira Comment Operation
 
@@ -267,7 +201,7 @@ Auto-transition relies on the **branch name** containing the issue key (e.g., `f
 
 ### Alphanumeric Project Keys
 
-Jira keys may contain digits after the first character (e.g., `PROJ2-123`, `AB1-456`). The detection regex `^([A-Z][A-Z0-9]*)-(\d+)$` covers these. Valid examples: `PROJ-123` (standard), `PROJ2-456` (alphanumeric), `AB1-789` (short alphanumeric), `MYTEAM-1` (longer key, single-digit number).
+Jira keys may contain digits after the first character (e.g., `PROJ2-123`, `AB1-456`) -- `backend-detect.sh` covers these via `^([A-Z][A-Z0-9]*)-(\d+)$`.
 
 ## Graceful Degradation (NFR-1) and Error Handling (NFR-2)
 
@@ -290,47 +224,11 @@ Issue tracker operations are supplementary -- they must **never** block workflow
 
 (See "Jira-Specific Error Handling" above for the per-tier Jira matrix that this table summarizes.)
 
-### Implementation Pattern
-
-Wrap every external command in an exit-code check (try/catch equivalent):
-
-```bash
-# Example: GitHub comment with graceful degradation
-if ! command -v gh &>/dev/null; then
-  echo "Warning: gh CLI not found. Skipping issue comment."
-  return
-fi
-
-if ! gh auth status &>/dev/null 2>&1; then
-  echo "Warning: gh CLI not authenticated. Run 'gh auth login'. Skipping issue comment."
-  return
-fi
-
-if ! gh issue comment <N> --body "<comment>" 2>&1; then
-  echo "Warning: Failed to post issue comment. Continuing workflow."
-fi
-```
+See `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/post-issue-comment.sh` for the full graceful-degradation implementation.
 
 ## Idempotency (NFR-3)
 
-- **Comments are safe to retry.** A duplicate comment is acceptable -- better than a missing one.
-- **Fetch is inherently idempotent** -- read-only, no side effects.
-- **PR link generation is pure** -- same input always yields the same result.
-- **Workflow re-runs/resumes** can re-execute issue operations freely; the orchestrator does not need to track prior calls.
-
-## Workflow
-
-```
-1. Receive: <operation> <issue-ref> [--type <type>] [--context <json>]
-2. Detect backend (FR-1): #N -> GitHub; PROJ-123 (incl. PROJ2-123) -> Jira; empty -> skip.
-3. If no reference -> log info, return.
-4. If GitHub (#N): verify gh available + authenticated; run operation (fetch/comment) via gh; on failure log warning + skip.
-5. If Jira (PROJ-123):
-   a. Tier 1 (Rovo MCP): if available, run via getJiraIssue / addCommentToJiraIssue; for comments, load ADF template, substitute, pass as commentBody. On MCP failure (timeout, auth, unexpected, disconnect) -> log + fall through to Tier 2.
-   b. Tier 2 (acli): if available, run via `acli jira workitem view` / `comment-create`; comments use markdown (acli converts to ADF). On failure -> fall through to Tier 3.
-   c. Tier 3: log "No Jira backend available. Skipping Jira operations." Return without failing.
-6. Return result (fetch data, confirmation, or skip notice).
-```
+Comments are safe to retry (a duplicate is better than a miss); fetch is read-only; `pr-link` is pure. Workflow re-runs/resumes may re-execute issue operations freely. The end-to-end comment flow (detect -> pre-flight -> render -> post) is in `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/post-issue-comment.sh`.
 
 ## References
 
