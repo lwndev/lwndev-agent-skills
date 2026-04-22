@@ -12,7 +12,7 @@ argument-hint: "[feature-name or #issue-number]"
 
 # Documenting Features
 
-Create comprehensive feature requirement documents that capture user stories, functional requirements, edge cases, and acceptance criteria.
+Create feature requirement documents capturing user stories, functional requirements, edge cases, and acceptance criteria.
 
 ## When to Use This Skill
 
@@ -23,28 +23,28 @@ Create comprehensive feature requirement documents that capture user stories, fu
 
 ## Flexibility
 
-Adapt sections based on feature type:
+Adapt sections to feature type:
 
-- **CLI commands**: Include full Command Syntax section with arguments, options, examples
-- **API endpoints**: Include API Integration section, skip Command Syntax
-- **UI features**: Focus on user flows and interactions, skip command syntax
-- **Internal features**: May skip user-facing documentation sections
+- **CLI commands**: full Command Syntax with arguments, options, examples
+- **API endpoints**: API Integration section; skip Command Syntax
+- **UI features**: user flows and interactions; skip command syntax
+- **Internal features**: may skip user-facing sections
 
 ## Arguments
 
-- **When argument is provided**: Use the argument as a pre-filled feature name or title. If the argument uses `#<number>` syntax (e.g., `#14`) or Jira format (e.g., `PROJ-123`), delegate to the orchestrator or `managing-work-items fetch #N` (or `managing-work-items fetch PROJ-123`) to retrieve issue data, then use the returned title and body to pre-fill the requirements template. If the fetch fails (non-existent issue, network error, auth failure), warn the user and continue with manual input.
-- **When no argument is provided**: Prompt the user interactively for the feature scope, purpose, and details.
+- **Argument provided**: use it as a pre-filled feature name. If it uses `#<number>` syntax (e.g., `#14`) or Jira format (e.g., `PROJ-123`), delegate to the orchestrator or `managing-work-items fetch #N` (or `managing-work-items fetch PROJ-123`) to retrieve issue data, then pre-fill the template with the returned title and body. On fetch failure (missing issue, network error, auth failure), warn and continue with manual input.
+- **No argument**: prompt interactively for scope, purpose, and details.
 
-> **Note:** Direct `gh` CLI usage for issue fetch has been replaced by the centralized `managing-work-items` skill, which handles both GitHub Issues (`#N`) and Jira (`PROJ-123`) backends with automatic detection and graceful degradation. This skill does not have Bash in its allowed-tools, so issue fetching must be delegated.
+> **Note:** Direct `gh` CLI usage for issue fetch is replaced by `managing-work-items`, which handles GitHub Issues (`#N`) and Jira (`PROJ-123`) with auto-detection and graceful degradation. This skill lacks Bash in allowed-tools, so issue fetching must be delegated.
 
 ## Quick Start
 
-1. Identify the feature scope and purpose
-2. **Ask for GitHub issue URL** if not provided (optional but recommended for traceability)
-3. Define the user story and priority
-4. Document command syntax/API interface (if applicable)
+1. Identify scope and purpose
+2. **Ask for GitHub issue URL** if not provided (optional, recommended for traceability)
+3. Define user story and priority
+4. Document command syntax / API interface (if applicable)
 5. List functional and non-functional requirements
-6. Specify output format, edge cases, and testing requirements
+6. Specify output format, edge cases, testing requirements
 
 ## Output Style
 
@@ -80,13 +80,13 @@ The following MUST always be emitted even when they resemble narration:
 
 ## Feature ID Assignment
 
-Allocate the next Feature ID by running:
+Allocate the next Feature ID:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/next-id.sh" FEAT
 ```
 
-The script scans `requirements/features/` for existing `FEAT-NNN-*.md` files, returns `max(NNN) + 1` zero-padded to three digits, and prints `001` when no features exist. Exit codes: `0` on success; `2` on missing/invalid type arg.
+The script scans `requirements/features/` for `FEAT-NNN-*.md`, returns `max(NNN) + 1` zero-padded to three digits, and prints `001` when none exist. Exit codes: `0` success; `2` missing/invalid type arg.
 
 ## File Locations
 
@@ -94,13 +94,13 @@ The script scans `requirements/features/` for existing `FEAT-NNN-*.md` files, re
 - `requirements/implementation/` - Implementation plans
 - `docs/features/` - User-facing feature documentation
 
-Filename format: `FEAT-XXX-{2-4-word-description}.md`. Derive the description slug from the feature title by running:
+Filename format: `FEAT-XXX-{2-4-word-description}.md`. Derive the slug:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<feature title>"
 ```
 
-The script lowercases, strips punctuation, drops stopwords (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), and keeps the first four remaining tokens joined with `-`. Exit codes: `0` on success; `1` when the slug is empty after normalization (prompt the user for a more descriptive title); `2` on missing arg.
+Lowercases, strips punctuation, drops stopwords (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), keeps the first four remaining tokens joined with `-`. Exit codes: `0` success; `1` empty slug after normalization (prompt for a more descriptive title); `2` missing arg.
 
 ## Template
 
@@ -129,14 +129,14 @@ See [assets/feature-requirements.md](assets/feature-requirements.md) for the ful
 
 ## Verification Checklist
 
-Before finalizing, verify:
+Before finalizing:
 
 - [ ] User story captures "who, what, why"
 - [ ] All arguments/options documented with defaults
 - [ ] Output format specified with example
 - [ ] Error handling covers failure modes
 - [ ] Edge cases identified
-- [ ] Acceptance criteria are testable
+- [ ] Acceptance criteria testable
 
 ## Reference Examples
 
@@ -151,4 +151,4 @@ Before finalizing, verify:
 | Chore/maintenance task | Use `documenting-chores` skill |
 | Bug or defect report | Use `documenting-bugs` skill |
 
-After documenting a feature, run `/reviewing-requirements` to verify the document against the codebase and docs. Then use `/creating-implementation-plans` to plan the implementation, followed by `/documenting-qa` to create a test plan. Optionally run `/reviewing-requirements` again for test-plan reconciliation. After `/implementing-plan-phases` and PR review, optionally run `/reviewing-requirements` for code-review reconciliation, then `/executing-qa` to verify, and `/finalizing-workflow` to merge.
+After documenting, run `/reviewing-requirements` to verify against codebase and docs. Then `/creating-implementation-plans`, `/documenting-qa` for the test plan, optionally `/reviewing-requirements` again for test-plan reconciliation. After `/implementing-plan-phases` and PR review, optionally `/reviewing-requirements` for code-review reconciliation, then `/executing-qa` to verify, and `/finalizing-workflow` to merge.

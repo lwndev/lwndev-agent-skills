@@ -110,7 +110,7 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 
 ### Phase 2: `documenting-features` — main-context, two references, one asset
 **Feature:** [FEAT-024](../features/FEAT-024-input-token-optimization-rollout.md) | [#203](https://github.com/lwndev/lwndev-marketplace/issues/203)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - First of the three main-context documenting-* skills. At 154 lines, it is lightweight enough to establish the pattern cleanly.
@@ -132,13 +132,13 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 12. **Commit**: `feat(FEAT-024): apply input-token optimization to documenting-features`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/documenting-features/SKILL.md` — FR-1 compression applied
-- [ ] `plugins/lwndev-sdlc/skills/documenting-features/references/` — new file added for relocated narrative OR FR-2 recorded as no-op
-- [ ] FR-3 outcome recorded in FEAT-024 Notes
-- [ ] Post-change measurements and delta recorded in FEAT-024 Notes
-- [ ] Any affected test assertions updated in same commit
-- [ ] `npm run validate` passes
-- [ ] `npm test -- --testPathPatterns=documenting-features` passes
+- [x] `plugins/lwndev-sdlc/skills/documenting-features/SKILL.md` — FR-1 compression applied
+- [x] `plugins/lwndev-sdlc/skills/documenting-features/references/` — new file added for relocated narrative OR FR-2 recorded as no-op
+- [x] FR-3 outcome recorded in FEAT-024 Notes
+- [x] Post-change measurements and delta recorded in FEAT-024 Notes
+- [x] Any affected test assertions updated in same commit
+- [x] `npm run validate` passes
+- [x] `npm test -- --testPathPatterns=documenting-features` passes
 
 ---
 

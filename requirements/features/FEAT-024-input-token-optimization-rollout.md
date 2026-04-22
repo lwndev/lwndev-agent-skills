@@ -304,6 +304,11 @@ Per-phase rows are appended as each phase lands. Format mirrors the Baseline Mea
 |-------|------|------:|------:|------:|--------------------------:|
 | `finalizing-workflow` | `SKILL.md` | 104 | 970 | 6754 | 1689 |
 | `finalizing-workflow` | **subtotal** | **104** | **970** | **6754** | — |
+| `documenting-features` | `SKILL.md` | 154 | 1109 | 8171 | 2043 |
+| `documenting-features` | `references/feature-requirements-example-episodes-command.md` | 274 | 1278 | 8512 | — |
+| `documenting-features` | `references/feature-requirements-example-search-command.md` | 228 | 1021 | 6872 | — |
+| `documenting-features` | `assets/feature-requirements.md` | 94 | 242 | 1715 | — |
+| `documenting-features` | **subtotal** | **750** | **3650** | **25270** | — |
 
 **Per-axis outcomes (Phase 1, `finalizing-workflow`):**
 - **FR-1**: lite-style prose compression applied to `## When to Use This Skill`, `## Workflow Position` intro, `## Usage` (steps 1–5 + intro), `## Expected output`, and `## Relationship to Other Skills` intro. The `## Output Style` section was preserved verbatim per FR-4 (FEAT-023 carve-out).
@@ -312,17 +317,35 @@ Per-phase rows are appended as each phase lands. Format mirrors the Baseline Mea
 - **FR-4**: verified. All carve-out items present verbatim: `## Output Style` section intact (lite-narration rules, load-bearing carve-outs list including the FR-14 Unicode `→` echo line, fork-to-orchestrator return contract). `Ready to merge PR` confirmation prompt and `Merge PR and reset to main (and finalize requirement doc)` row preserved.
 - **FR-7**: confirmed Phase 0 audit findings. No will-change assertions; all `toHaveLength` / `toBe` calls in the test file are checkbox-flip behavioral tests on synthetic fixtures, not SKILL.md surface. No test assertion updates required.
 
+**Per-axis outcomes (Phase 2, `documenting-features`):**
+- **FR-1**: lite-style prose compression applied to `# Documenting Features` intro, `## Flexibility` intro and bullets, `## Arguments` bullets, `## Quick Start`, `## Feature ID Assignment`, `## File Locations`, `## Verification Checklist` intro, and `## Relationship to Other Skills` trailing chain summary. The `## Output Style` section (lines 49-79) was preserved verbatim per FR-4 (FEAT-023 carve-out). The `> **Note:**` paragraph about the `gh` CLI replacement was condensed without removing the substantive guidance about the `managing-work-items` delegation.
+- **FR-2**: no-op. No non-dispatcher section exceeded ~25 lines of procedural narrative. The `## Output Style` section (~31 lines) is doctrine/rules (FR-4 preservation target), not procedural narrative subject to relocation. The two existing `references/feature-requirements-example-*.md` files are example requirement documents, not procedural narrative — they remain untouched. No new files added under `references/`.
+- **FR-3**: no-op. Only one table exists (`## Relationship to Other Skills` → Task/Recommended Approach matrix, three rows). No repeated or near-duplicate tables to collapse.
+- **FR-4**: verified. All carve-out items present verbatim: `## Output Style` section intact (lite-narration rules, load-bearing carve-outs list, fork-to-orchestrator return contract, Precedence note). All FR-7 must-preserve items confirmed: `## When to Use This Skill` and `## Verification Checklist` headings, literal `requirements/features/`, `#14`, `#<number>`, `managing-work-items`, `managing-work-items fetch`, "warn ... continue with manual input" phrasing, no `gh issue view` or `gh api` backticks, frontmatter `allowed-tools` (Read/Write/Edit/Glob/Grep, no Bash/Agent).
+- **FR-7**: confirmed Phase 0 audit findings. No will-change assertions in `scripts/__tests__/documenting-features.test.ts`; all assertions are heading/literal/frontmatter checks against load-bearing surface preserved by the compression. No test assertion updates required.
+
 ### Delta (post − pre; negative = reduction, positive = growth)
 
 | Skill | File | Lines Δ | Lines % | Words Δ | Words % | Chars Δ | Chars % | chars / 4 Δ |
 |-------|------|--------:|--------:|--------:|--------:|--------:|--------:|------------:|
 | `finalizing-workflow` | `SKILL.md` | 0 | 0.00% | -34 | -3.39% | -177 | -2.55% | -44 |
 | `finalizing-workflow` | **subtotal** | **0** | **0.00%** | **-34** | **-3.39%** | **-177** | **-2.55%** | **-44** |
+| `documenting-features` | `SKILL.md` | 0 | 0.00% | -81 | -6.81% | -477 | -5.51% | -119 |
+| `documenting-features` | `references/feature-requirements-example-episodes-command.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
+| `documenting-features` | `references/feature-requirements-example-search-command.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
+| `documenting-features` | `assets/feature-requirements.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
+| `documenting-features` | **subtotal** | **0** | **0.00%** | **-81** | **-2.17%** | **-477** | **-1.85%** | **-119** |
 
 **Phase 1 delta notes:**
 - Line count is unchanged at 104 because compression replaced longer phrasings with shorter ones on the same logical lines; no entire blocks were collapsed (FR-2 / FR-3 were both no-ops by design for this small surface).
 - The `## Output Style` section (FR-4 carve-out) accounts for ~30 of the SKILL.md's 104 lines and is excluded from FR-1 compression — the achievable reduction is therefore bounded by the ~74 non-carve-out lines.
 - Post-change `npm test -- finalizing-workflow` passes (72 tests across 2 files); `npm run validate` passes (13/13 lwndev-sdlc skills).
+
+**Phase 2 delta notes:**
+- SKILL.md line count is unchanged at 154 — compression replaced longer phrasings with shorter ones on the same logical lines (FR-2 / FR-3 were no-ops). The reduction shows in word count (-6.81%) and char count (-5.51%).
+- The `## Output Style` section (FR-4 carve-out, lines 49-79, ~31 lines) is excluded from FR-1 compression — the achievable reduction is bounded by the ~123 non-carve-out lines plus the frontmatter (which itself is a must-preserve area).
+- The two `references/feature-requirements-example-*.md` files and the `assets/feature-requirements.md` template were not edited and contribute zero delta.
+- Post-change `npm test -- documenting-features` passes (14 tests across 1 file); `npm run validate` passes (13/13 lwndev-sdlc skills).
 
 ### Summary (aggregate across all twelve skills)
 
