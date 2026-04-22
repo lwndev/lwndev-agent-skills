@@ -376,7 +376,7 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 
 ### Phase 10: `documenting-qa` — main-context, no references, two assets
 **Feature:** [FEAT-024](../features/FEAT-024-input-token-optimization-rollout.md) | [#203](https://github.com/lwndev/lwndev-marketplace/issues/203)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - `documenting-qa` is a main-context skill (run in the orchestrator's conversation). At 200 lines, it is the second-largest of the main-context skills. It has no `references/` directory (Edge Cases 1 and 9 apply) and two assets (`test-plan-template-v2.md` and `test-plan-template.md`).
@@ -397,13 +397,13 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 11. **Commit**: `feat(FEAT-024): apply input-token optimization to documenting-qa`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/documenting-qa/SKILL.md` — FR-1 compression applied
-- [ ] `plugins/lwndev-sdlc/skills/documenting-qa/references/` — created with relocated content OR FR-2 recorded as no-op
-- [ ] FR-3 outcome recorded in FEAT-024 Notes
-- [ ] Post-change measurements and delta recorded in FEAT-024 Notes (Edge Case 9 noted)
-- [ ] Any affected test assertions updated in same commit
-- [ ] `npm run validate` passes
-- [ ] `npm test -- --testPathPatterns=documenting-qa` passes
+- [x] `plugins/lwndev-sdlc/skills/documenting-qa/SKILL.md` — FR-1 compression applied
+- [x] `plugins/lwndev-sdlc/skills/documenting-qa/references/` — created with relocated content OR FR-2 recorded as no-op
+- [x] FR-3 outcome recorded in FEAT-024 Notes
+- [x] Post-change measurements and delta recorded in FEAT-024 Notes (Edge Case 9 noted)
+- [x] Any affected test assertions updated in same commit
+- [x] `npm run validate` passes
+- [x] `npm test -- --testPathPatterns=documenting-qa` passes
 
 ---
 
