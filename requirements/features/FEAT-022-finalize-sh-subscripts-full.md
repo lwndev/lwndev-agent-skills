@@ -288,18 +288,26 @@ Exit `1`.
 
 ## Acceptance Criteria
 
-- [ ] `finalize.sh` exists at `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/finalize.sh`, is executable, and runs the full pre-flight → bookkeeping (when applicable) → execution sequence in a single invocation.
-- [ ] `preflight-checks.sh`, `check-idempotent.sh`, `completion-upsert.sh`, `reconcile-affected-files.sh` all exist under `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/`, are executable, accept the arguments documented in FR-2/FR-4/FR-5/FR-6, and exit with the documented codes.
-- [ ] `branch-id-parse.sh` at `plugins/lwndev-sdlc/scripts/branch-id-parse.sh` gains the fourth classification (FR-3) and returns `{"id": null, "type": "release", "dir": null}` exit `0` on `release/<plugin>-vX.Y.Z` patterns.
-- [ ] `branch-id-parse.sh` preserves identical behavior for `feat/`, `chore/`, `fix/`, and truly unrecognized branches — no regression in existing callers.
-- [ ] `finalize.sh` on `feat/FEAT-123-foo`, `chore/CHORE-456-bar`, `fix/BUG-789-baz` performs full BK-1..BK-5 bookkeeping and merges.
-- [ ] `finalize.sh` on `release/lwndev-sdlc-v1.16.0` merges, resets to clean `main`, and emits **no** unrecognized-pattern message (`[info]`, `[warn]`, or otherwise) about the branch.
-- [ ] `finalize.sh` on a branch matching none of the four patterns emits the existing `[info] Branch <name> does not match workflow ID pattern; skipping bookkeeping.` message and proceeds to merge.
-- [ ] SKILL.md at `plugins/lwndev-sdlc/skills/finalizing-workflow/SKILL.md` is rewritten to: confirm with user → run `finalize.sh` → report. Pre-flight, BK-1..BK-5, and Execution prose sections are removed.
-- [ ] Every new script ships with a bats (or equivalent) test fixture covering happy path, missing-arg exit, and the specific edge case it targets.
-- [ ] Running a full feature, chore, and bug workflow through `orchestrating-workflows` end-to-end produces the same observable behavior as before the refactor (apart from wall-clock and token savings).
-- [ ] Token savings measured on a fresh workflow run are captured and reported in the PR description. The #179 audit estimate is 1,500–2,500 tokens; the acceptance bar for this feature is "measurable reduction in orchestrator-context tokens vs the prose path" — a floor is not required to pass, but a regression (i.e., the new path uses *more* tokens than the old) fails the AC.
-- [ ] Wall-clock for the finalize step on a typical workflow drops measurably vs the current prose path. The #179 audit estimate is 30–60 seconds saved; the acceptance bar is "measurable reduction", not a fixed floor. Target: under 5 seconds end-to-end (excluding GitHub's own merge latency).
+- [x] `finalize.sh` exists at `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/finalize.sh`, is executable, and runs the full pre-flight → bookkeeping (when applicable) → execution sequence in a single invocation.
+- [x] `preflight-checks.sh`, `check-idempotent.sh`, `completion-upsert.sh`, `reconcile-affected-files.sh` all exist under `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/`, are executable, accept the arguments documented in FR-2/FR-4/FR-5/FR-6, and exit with the documented codes.
+- [x] `branch-id-parse.sh` at `plugins/lwndev-sdlc/scripts/branch-id-parse.sh` gains the fourth classification (FR-3) and returns `{"id": null, "type": "release", "dir": null}` exit `0` on `release/<plugin>-vX.Y.Z` patterns.
+- [x] `branch-id-parse.sh` preserves identical behavior for `feat/`, `chore/`, `fix/`, and truly unrecognized branches — no regression in existing callers.
+- [x] `finalize.sh` on `feat/FEAT-123-foo`, `chore/CHORE-456-bar`, `fix/BUG-789-baz` performs full BK-1..BK-5 bookkeeping and merges.
+- [x] `finalize.sh` on `release/lwndev-sdlc-v1.16.0` merges, resets to clean `main`, and emits **no** unrecognized-pattern message (`[info]`, `[warn]`, or otherwise) about the branch.
+- [x] `finalize.sh` on a branch matching none of the four patterns emits the existing `[info] Branch <name> does not match workflow ID pattern; skipping bookkeeping.` message and proceeds to merge.
+- [x] SKILL.md at `plugins/lwndev-sdlc/skills/finalizing-workflow/SKILL.md` is rewritten to: confirm with user → run `finalize.sh` → report. Pre-flight, BK-1..BK-5, and Execution prose sections are removed.
+- [x] Every new script ships with a bats (or equivalent) test fixture covering happy path, missing-arg exit, and the specific edge case it targets.
+- [x] Running a full feature, chore, and bug workflow through `orchestrating-workflows` end-to-end produces the same observable behavior as before the refactor (apart from wall-clock and token savings).
+- [x] Token savings measured on a fresh workflow run are captured and reported in the PR description. The #179 audit estimate is 1,500–2,500 tokens; the acceptance bar for this feature is "measurable reduction in orchestrator-context tokens vs the prose path" — a floor is not required to pass, but a regression (i.e., the new path uses *more* tokens than the old) fails the AC.
+- [x] Wall-clock for the finalize step on a typical workflow drops measurably vs the current prose path. The #179 audit estimate is 30–60 seconds saved; the acceptance bar is "measurable reduction", not a fixed floor. Target: under 5 seconds end-to-end (excluding GitHub's own merge latency).
+
+## Completion
+
+**Status:** `Complete`
+
+**Completed:** 2026-04-21
+
+**Pull Request:** [#207](https://github.com/lwndev/lwndev-marketplace/pull/207)
 
 ## Future Enhancements
 
