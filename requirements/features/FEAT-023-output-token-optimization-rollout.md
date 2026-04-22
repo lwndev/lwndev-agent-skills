@@ -187,20 +187,20 @@ The same `## Output Style` section structure (three subsections in the pilot's o
 
 ## Acceptance Criteria
 
-- [ ] Each of the twelve target skills has an `## Output Style` section in `SKILL.md` placed immediately after `## Quick Start` (or the first early-read section if no Quick Start exists).
-- [ ] Each `## Output Style` section contains the three subsections in the order: Lite narration rules → Load-bearing carve-outs → Fork-to-orchestrator return contract.
-- [ ] The `## Output Style` section wording (lite-narration rules and load-bearing carve-outs) is consistent across all twelve target skills; any deviations (e.g., main-context skills noting they return to the user, `managing-work-items` noting inline execution) are documented in the Notes section with justification.
-- [ ] Each forkable target skill documents which canonical return shape(s) it emits (per FR-2).
-- [ ] Main-context skills (`documenting-features`, `documenting-chores`, `documenting-bugs`, `documenting-qa`, `executing-qa`) note in the return-contract subsection that they return to the user, not a parent orchestrator.
-- [ ] `managing-work-items` notes inline execution from main context in its return-contract subsection.
-- [ ] Every forked-step invocation spec in a target skill's `references/` directory has a one-line pointer to `SKILL.md ## Output Style`.
-- [ ] For each of the ten target skills with an `assets/` directory, artifact templates have been reviewed and either compressed or flagged as already-minimal in the Notes section.
-- [ ] Baseline `wc -l -w -c` measurements have been captured for every target skill's `SKILL.md`, `references/*`, and `assets/*` and appended to the Notes section of this feature document.
-- [ ] Post-change measurements have been captured in the same format and a delta table appended to the Notes section.
-- [ ] `npm run validate` passes.
-- [ ] `npm test` passes.
-- [ ] No frontmatter fields were changed except where strictly necessary.
-- [ ] No Fork Step-Name Map entry or step-sequence table in `orchestrating-workflows` was modified.
+- [x] Each of the twelve target skills has an `## Output Style` section in `SKILL.md` placed immediately after `## Quick Start` (or the first early-read section if no Quick Start exists).
+- [x] Each `## Output Style` section contains the three subsections in the order: Lite narration rules → Load-bearing carve-outs → Fork-to-orchestrator return contract.
+- [x] The `## Output Style` section wording (lite-narration rules and load-bearing carve-outs) is consistent across all twelve target skills; any deviations (e.g., main-context skills noting they return to the user, `managing-work-items` noting inline execution) are documented in the Notes section with justification.
+- [x] Each forkable target skill documents which canonical return shape(s) it emits (per FR-2).
+- [x] Main-context skills (`documenting-features`, `documenting-chores`, `documenting-bugs`, `documenting-qa`, `executing-qa`) note in the return-contract subsection that they return to the user, not a parent orchestrator.
+- [x] `managing-work-items` notes inline execution from main context in its return-contract subsection.
+- [x] Every forked-step invocation spec in a target skill's `references/` directory has a one-line pointer to `SKILL.md ## Output Style`. (Satisfied as a no-op across all checked skills — see FR-3 no-op registry in Notes; no fork-invocation specs exist in any target skill's `references/` directory.)
+- [x] For each of the ten target skills with an `assets/` directory, artifact templates have been reviewed and either compressed or flagged as already-minimal in the Notes section.
+- [x] Baseline `wc -l -w -c` measurements have been captured for every target skill's `SKILL.md`, `references/*`, and `assets/*` and appended to the Notes section of this feature document.
+- [x] Post-change measurements have been captured in the same format and a delta table appended to the Notes section.
+- [x] `npm run validate` passes.
+- [x] `npm test` passes.
+- [x] No frontmatter fields were changed except where strictly necessary.
+- [x] No Fork Step-Name Map entry or step-sequence table in `orchestrating-workflows` was modified.
 - [ ] A Completion section is appended to this document on PR merge with the PR link.
 
 ## Notes
@@ -430,3 +430,134 @@ Per NFR-3, the `scripts/__tests__/finalizing-workflow.test.ts` "should be under 
 | `plugins/lwndev-sdlc/skills/executing-bug-fixes/assets/pr-template.md` (baseline) | 180 | 878 | 5825 |
 | `plugins/lwndev-sdlc/skills/executing-bug-fixes/assets/pr-template.md` (post-change) | 180 | 878 | 5825 |
 | **Δ** | 0 | 0 | 0 |
+
+### Grand Total
+
+Aggregates all twelve rolled-out skills. Per-skill SKILL.md post-change measurements were re-taken fresh for this phase to catch any drift (e.g., Phase 1's `finalizing-workflow.test.ts` ceiling relaxation, Phase 3+ prose-compression decisions) — zero drift was observed against the per-phase Notes tables. References and assets have not been modified in any phase (Δ 0/0/0 for every touched file per Phases 2–12), so the fresh re-measurement yields the same totals as the baselines.
+
+**Baseline totals** (sum across all twelve skills' `SKILL.md` + touched references + touched assets):
+
+| File set | Lines | Words | Chars |
+|---|---:|---:|---:|
+| SKILL.md (12 skills) | 2172 | 16027 | 114380 |
+| References (touched only, 12 files) | 4326 | 16608 | 122755 |
+| Assets (touched only, 12 files) | 1322 | 5481 | 36675 |
+| **Grand total** | **7820** | **38116** | **273810** |
+
+**Post-change totals** (fresh `wc -l -w -c` on 2026-04-21):
+
+| File set | Lines | Words | Chars |
+|---|---:|---:|---:|
+| SKILL.md (12 skills) | 2577 | 22095 | 155839 |
+| References (touched only, 12 files) | 4326 | 16608 | 122755 |
+| Assets (touched only, 12 files) | 1322 | 5481 | 36675 |
+| **Grand total** | **8225** | **44184** | **315269** |
+
+**Delta** (post − baseline; negative = reduction, positive = growth):
+
+| File set | Lines Δ | Lines % | Words Δ | Words % | Chars Δ | Chars % |
+|---|---:|---:|---:|---:|---:|---:|
+| SKILL.md (12 skills) | +405 | +18.65% | +6068 | +37.86% | +41459 | +36.25% |
+| References (touched only, 12 files) | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% |
+| Assets (touched only, 12 files) | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% |
+| **Grand total** | **+405** | **+5.18%** | **+6068** | **+15.92%** | **+41459** | **+15.14%** |
+
+#### Interpretation
+
+The static-file delta is net-positive by design: the instruction surface grew by ~41.5 KB of characters (~15% across the twelve-skill surface) because each skill's `## Output Style` section installs the lite-narration rules, load-bearing carve-outs, and a role-appropriate return-contract subsection. This matches the pilot's (CHORE-034) direction — the rollout trades a fixed one-time SKILL.md cost against a per-invocation runtime payoff.
+
+The runtime payoff is paid back on every invocation, not on install:
+
+- **Every fork response** (forked skills: `reviewing-requirements`, `creating-implementation-plans`, `implementing-plan-phases`, `executing-chores`, `executing-bug-fixes`, `finalizing-workflow`) loses preamble/postamble narration and collapses to the canonical `done | artifact=... | <note>` / `failed | <reason>` / `Found **N errors**, **N warnings**, **N info**` final-line shapes.
+- **Every main-context skill session** (`documenting-features`, `documenting-chores`, `documenting-bugs`, `documenting-qa`, `executing-qa`) loses end-of-turn recaps beyond one sentence.
+- **Every `reviewing-requirements` response** uses the structured findings-display shape followed by its summary line, instead of freeform narration.
+- **Every `managing-work-items` inline invocation** loses narration while preserving its WARNING-level mechanism-failure carve-outs.
+
+Per-phase decisions that shaped the total:
+
+- **Phase 1 (`finalizing-workflow`)** — SKILL.md-only scope (no `references/`, no `assets/`); the FEAT-022 `scripts/__tests__/finalizing-workflow.test.ts` "should be under 80 lines" assertion was relaxed to a 120-line ceiling per NFR-3 to accommodate the rollout-wide `## Output Style` section. The updated test currently passes at 104 lines.
+- **Phase 2 (`managing-work-items`)** — inline-execution variant: the return-contract subsection was replaced with an "Inline execution note" because the skill is invoked directly from main context (not as a forked step). WARNING-level mechanism-failure lines are explicitly load-bearing.
+- **Phases 3, 4, 5 (`documenting-features`/`-chores`/`-bugs`)** — main-context variant; three identical per-skill sections differing only in the chain-step preamble ("feature/chore/bug chain step 1"). All three `assets/` templates (`feature-requirements.md`, `chore-document.md`, `bug-document.md`) were flagged already-minimal per FR-4 + Edge Case 4: pure structural skeletons with bracketed/HTML-commented author guidance that is load-bearing. Reference files are example requirement docs / category tables — not fork-invocation specs — so FR-3 no-op.
+- **Phase 6 (`reviewing-requirements`)** — the exception variant: emits `Found **N errors**, **N warnings**, **N info**` as the final line (not `done | ...`), preceded by the full findings block. The findings-display carve-out is explicitly load-bearing for this skill. `assets/review-findings-template.md` is the structural schema the orchestrator's Decision Flow parses; flagged already-minimal.
+- **Phase 7 (`creating-implementation-plans`)** — forked-skill standard variant (first one in the feature chain). `references/implementation-plan-example.md` and `assets/implementation-plan.md` are both example/template skeletons — FR-3/FR-4 no-op.
+- **Phases 8, 9 (`documenting-qa`, `executing-qa`)** — main-context variant with an additional sentence documenting that structural conformance of the emitted artifact is enforced by the Stop hook (`scripts/stop-hook.sh`), not by the return contract. Both skills have no `references/` directory (Edge Case 1 exempt). Both v2 and v1 templates for each skill were flagged already-minimal — the v2 templates are parser-load-bearing (Stop-hook greps for exact keys/headers), and the v1 templates are legacy-preserved to keep pre-FEAT-018 artifacts parseable.
+- **Phase 10 (`implementing-plan-phases`)** — forked-skill variant with two extra paragraphs in the return-contract subsection: (1) artifact-path guidance (point `artifact=` at the most-representative file when phase deliverables span many), and (2) an **Orchestrator-side contract** clause documenting that `orchestrating-workflows` appends "Do NOT create a pull request..." to the fork prompt, so Step 10 is skipped under orchestration while retained in SKILL.md for standalone invocations. `assets/pr-template.md` flagged already-minimal (consumed by `scripts/create-pr.sh`; drift here risks PR-body divergence).
+- **Phase 11 (`executing-chores`)** — forked-skill variant with the artifact-path guidance clause but **without** the orchestrator-side skip-PR clause (chore chain has no separate PR-creation fork; Step 8 runs in both orchestrated and standalone modes). An explicit "PR creation is this skill's responsibility" paragraph prevents future maintainers from accidentally porting Phase 10 wording here. `assets/pr-template.md` flagged already-minimal.
+- **Phase 12 (`executing-bug-fixes`)** — forked-skill variant identical in shape to Phase 11 (artifact-path guidance included, no skip-PR clause), with per-skill error-message examples and interactive-prompt examples adjusted for the bug-fix workflow (root-cause redeclaration, per-RC fix-and-verify cycles, reproduction-step verification). Step number differs from Phase 11 (Step 10 vs Step 8) reflecting the longer bug-fix workflow. `assets/pr-template.md` flagged already-minimal — the bug-specific root-cause traceability table and per-RC testing checklist are load-bearing content tied to RC-N acceptance criteria.
+
+Across the twelve phases: all reference files with a fork-invocation check returned zero matches for `agent|fork|subagent|spawn` — no FR-3 pointers needed (confirmed no-op). All ten `assets/` directories were reviewed and every template (twelve files) was flagged already-minimal per Edge Case 4 — no FR-4 compression was applied. The full payoff of this rollout is therefore in the SKILL.md lite-narration rules and the canonical return-contract shapes, not in template compression.
+
+#### FR-3 no-op registry
+
+All nine skills with a `references/` directory were checked; none contained fork-invocation specs requiring a pointer.
+
+| Skill | Reference files checked | Outcome |
+|---|---|---|
+| `managing-work-items` | `github-templates.md`, `jira-templates.md` | No fork-invocation specs (API-interaction templates only); no pointer added |
+| `documenting-features` | `feature-requirements-example-search-command.md`, `feature-requirements-example-episodes-command.md` | No fork-invocation specs (example requirement documents); no pointer added |
+| `documenting-chores` | `categories.md` | No fork-invocation specs (category reference table); no pointer added |
+| `documenting-bugs` | `categories.md` | No fork-invocation specs (category reference table); no pointer added |
+| `reviewing-requirements` | `review-example.md` | No fork-invocation specs (annotated review output examples); no pointer added |
+| `creating-implementation-plans` | `implementation-plan-example.md` | No fork-invocation specs (concrete example plan); no pointer added |
+| `implementing-plan-phases` | `step-details.md`, `workflow-example.md` | No fork-invocation specs (per-step guidance; annotated workflow example); no pointer added |
+| `executing-chores` | `workflow-details.md` | No fork-invocation specs (per-phase workflow guidance); no pointer added |
+| `executing-bug-fixes` | `workflow-details.md` | No fork-invocation specs (per-phase workflow guidance); no pointer added |
+
+Three skills are exempt from FR-3 per Edge Case 1 (no `references/` directory): `documenting-qa`, `executing-qa`, `finalizing-workflow`.
+
+#### FR-4 outcomes registry
+
+All ten skills with an `assets/` directory were reviewed. Every artifact template (twelve files across the ten skills) was flagged already-minimal per Edge Case 4; no compression was applied.
+
+| Skill | Asset file(s) | Outcome |
+|---|---|---|
+| `documenting-features` | `feature-requirements.md` | already-minimal (structural skeleton with bracketed placeholders) |
+| `documenting-chores` | `chore-document.md` | already-minimal (structural skeleton; HTML-comment author guidance is load-bearing) |
+| `documenting-bugs` | `bug-document.md` | already-minimal (structural skeleton; RC-N traceability author guidance is load-bearing) |
+| `reviewing-requirements` | `review-findings-template.md` | already-minimal (structural schema parsed by orchestrator Decision Flow) |
+| `creating-implementation-plans` | `implementation-plan.md` | already-minimal (structural skeleton; placeholders + one-line hints) |
+| `documenting-qa` | `test-plan-template-v2.md`, `test-plan-template.md` | v2 already-minimal (Stop-hook-parsed schema); v1 legacy-preserved |
+| `executing-qa` | `test-results-template-v2.md`, `test-results-template.md` | v2 already-minimal (Stop-hook-parsed schema); v1 legacy-preserved (NFR-3: 34 legacy artifacts) |
+| `implementing-plan-phases` | `pr-template.md` | already-minimal (consumed by `scripts/create-pr.sh`) |
+| `executing-chores` | `pr-template.md` | already-minimal (consumed by `scripts/create-pr.sh`) |
+| `executing-bug-fixes` | `pr-template.md` | already-minimal (RC-traceability and per-RC checklist are load-bearing) |
+
+Two skills are N/A for FR-4 (no `assets/` directory): `managing-work-items`, `finalizing-workflow`.
+
+#### Main-context vs forked deviation record
+
+| Skill | Return-contract variant | Justification |
+|---|---|---|
+| `finalizing-workflow` | Forked standard (`done \| ... \| ...` / `failed \| ...`) | Feature/chore/bug chain final step; forked by `orchestrating-workflows` |
+| `managing-work-items` | Inline execution note | Cross-cutting inline skill invoked from orchestrator's main context, not as an Agent fork |
+| `documenting-features` | Main-context | Feature chain step 1; returns to user |
+| `documenting-chores` | Main-context | Chore chain step 1; returns to user |
+| `documenting-bugs` | Main-context | Bug chain step 1; returns to user |
+| `reviewing-requirements` | **Exception** (`Found **N errors**, **N warnings**, **N info**` final line) | Forked skill but emits findings-display block + structured summary line rather than `done \| ...` shape (preserved from CHORE-034 pilot) |
+| `creating-implementation-plans` | Forked standard | Feature chain step 3 |
+| `documenting-qa` | Main-context + Stop-hook note | Feature chain step 5 / chore/bug chain step 3; returns to user; artifact shape enforced by `scripts/stop-hook.sh` |
+| `executing-qa` | Main-context + Stop-hook note | Feature chain step 5+N+3 / chore/bug chain step 6; returns to user; artifact shape enforced by `scripts/stop-hook.sh` (per-verdict rules) |
+| `implementing-plan-phases` | Forked standard + artifact-path + orchestrator skip-PR clause | Feature chain steps 6…5+N; orchestrator appends skip-PR instruction to fork prompt |
+| `executing-chores` | Forked standard + artifact-path (no skip-PR) | Chore chain step 4; PR creation is this skill's responsibility |
+| `executing-bug-fixes` | Forked standard + artifact-path (no skip-PR) | Bug chain step 4; PR creation is this skill's responsibility |
+
+Variant distribution: 5 main-context (incl. 2 with Stop-hook note), 1 inline-execution, 1 exception (`reviewing-requirements`), 5 forked-standard (3 with per-skill additional clauses).
+
+#### Test-update callout (NFR-3)
+
+One test was updated during the rollout to match canonical narration:
+
+- `scripts/__tests__/finalizing-workflow.test.ts` — the "should be under 80 lines after the collapse" assertion (originally set by FEAT-022 after the skill was collapsed to ~72 lines) was relaxed to a 120-line ceiling in Phase 1 to accommodate the rollout-wide `## Output Style` section. Final post-change line count: 104. No other tests required narration-content updates.
+
+#### Manual spot-check
+
+Spot-checked in Phase 13 by re-reading the three representative SKILL.md files end-to-end:
+
+- `plugins/lwndev-sdlc/skills/executing-chores/SKILL.md` (forked skill) — `## Output Style` section reads cleanly, three subsections in correct order, forked-standard variant with artifact-path clause and "PR creation is this skill's responsibility" paragraph present.
+- `plugins/lwndev-sdlc/skills/documenting-qa/SKILL.md` (main-context skill) — `## Output Style` section reads cleanly, main-context variant present with the Stop-hook structural-conformance sentence.
+- `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` (cross-cutting inline skill) — `## Output Style` section reads cleanly, inline-execution note replaces the fork-return subsection; WARNING-level mechanism-failure carve-out retained.
+
+#### Verification summary
+
+- `npm run validate`: PASS (13/13 plugins) on 2026-04-21.
+- `npm test`: PASS (1130/1130 tests) on 2026-04-21.

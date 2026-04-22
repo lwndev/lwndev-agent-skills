@@ -389,7 +389,7 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 
 ### Phase 13: Grand-Total Aggregation and End-to-End Verification
 **Feature:** [FEAT-023](../features/FEAT-023-output-token-optimization-rollout.md) | [#200](https://github.com/lwndev/lwndev-marketplace/issues/200)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - All twelve per-skill phases are complete. This phase aggregates the measurements, runs end-to-end verification, and closes out the acceptance criteria.
@@ -408,15 +408,15 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 10. **Emit fork return**: `done | artifact=requirements/features/FEAT-023-output-token-optimization-rollout.md | Grand-total measurements and verification complete`.
 
 #### Deliverables
-- [ ] Baseline measurement table appended to FEAT-023 Notes (per-file, per-skill subtotal, grand total)
-- [ ] Post-change measurement table appended to FEAT-023 Notes
-- [ ] Delta table appended to FEAT-023 Notes (lines Δ/%, words Δ/%, chars Δ/%)
-- [ ] FR-3 no-op registry complete in FEAT-023 Notes (all nine skills with references checked, three exempt skills listed)
-- [ ] FR-4 outcomes complete in FEAT-023 Notes (ten skills with assets reviewed, two without listed as N/A)
-- [ ] Main-context vs forked deviation record complete in FEAT-023 Notes
-- [ ] `npm run validate` passes
-- [ ] `npm test` passes
-- [ ] Manual spot-check outcome recorded in FEAT-023 Notes
+- [x] Baseline measurement table appended to FEAT-023 Notes (per-file, per-skill subtotal, grand total)
+- [x] Post-change measurement table appended to FEAT-023 Notes
+- [x] Delta table appended to FEAT-023 Notes (lines Δ/%, words Δ/%, chars Δ/%)
+- [x] FR-3 no-op registry complete in FEAT-023 Notes (all nine skills with references checked, three exempt skills listed)
+- [x] FR-4 outcomes complete in FEAT-023 Notes (ten skills with assets reviewed, two without listed as N/A)
+- [x] Main-context vs forked deviation record complete in FEAT-023 Notes
+- [x] `npm run validate` passes
+- [x] `npm test` passes
+- [x] Manual spot-check outcome recorded in FEAT-023 Notes
 
 ---
 
