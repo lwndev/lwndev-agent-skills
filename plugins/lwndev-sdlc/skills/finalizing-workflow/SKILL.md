@@ -7,12 +7,12 @@ allowed-tools:
 
 # Finalizing Workflow
 
-Merge the current PR and reset to main in a single invocation. This is the terminal step in all three SDLC workflow chains.
+Merge the current PR and reset to main in one invocation. Terminal step in all three SDLC chains.
 
 ## When to Use This Skill
 
 - User says "finalize", "finalize workflow", "merge and reset", or "wrap up"
-- After QA verification passes and the PR is ready to merge
+- After QA passes and the PR is ready to merge
 - User wants to merge the current branch's PR and return to main
 
 ## Workflow Position
@@ -57,32 +57,32 @@ This skill is forked by `orchestrating-workflows` as the terminal step of every 
 
 ## Usage
 
-Capture the current branch name, confirm intent with the user up-front, and then delegate the full sequence (pre-flight, bookkeeping, merge, reset) to `finalize.sh`:
+Capture the branch, confirm intent up-front, then delegate the full sequence (pre-flight, bookkeeping, merge, reset) to `finalize.sh`:
 
 1. Capture the branch: `branch=$(git branch --show-current)`.
-2. Fetch the PR number and title for display: `gh pr view --json number,title`. This is for the confirmation prompt only — the real pre-flight (clean tree, PR state, mergeability) runs inside `finalize.sh`.
+2. Fetch PR number and title for the prompt: `gh pr view --json number,title`. Display only — the real pre-flight (clean tree, PR state, mergeability) runs inside `finalize.sh`.
 3. Ask the user exactly once:
 
    > Ready to merge PR #\<N\> ("\<title\>") and finalize the requirement document. Proceed?
 
-4. If the user replies no / n / empty, abort before invoking the script and report `Aborted — no changes made.` Do not run `finalize.sh`.
-5. On confirmation, run the script and report its stdout verbatim to the user:
+4. On no / n / empty, abort before invoking the script and report `Aborted — no changes made.` Do not run `finalize.sh`.
+5. On confirmation, run the script and report its stdout verbatim:
 
    ```bash
    bash "${CLAUDE_PLUGIN_ROOT}/skills/finalizing-workflow/scripts/finalize.sh" "$branch"
    ```
 
-`finalize.sh` itself does **not** prompt — the confirmation is owned entirely by this skill. The script runs unattended after confirmation.
+`finalize.sh` does **not** prompt — confirmation is owned entirely by this skill. The script runs unattended after confirmation.
 
 ### Expected output
 
-On success (exit `0`), the script prints a short multi-line report: merged PR number and title, a `Bookkeeping:` summary line (ran / skipped with reason), an optional `Pushed bookkeeping commit as <sha>` line when the requirement doc was updated, and a final `On main, up to date` line. Surface this stdout verbatim.
+On success (exit `0`), the script prints a short multi-line report: merged PR number and title, a `Bookkeeping:` summary line (ran / skipped with reason), an optional `Pushed bookkeeping commit as <sha>` line when the requirement doc was updated, and a final `On main, up to date` line. Surface stdout verbatim.
 
-On non-zero exit, `finalize.sh` emits a single `[error]` (or `[warn]`) line on stderr describing the failure (pre-flight abort, push failure, merge failure, etc.). Surface that stderr verbatim to the user — it is the sole error surface.
+On non-zero exit, `finalize.sh` emits a single `[error]` (or `[warn]`) stderr line describing the failure (pre-flight abort, push failure, merge failure, etc.). Surface that stderr verbatim — it is the sole error surface.
 
 ## Relationship to Other Skills
 
-This skill is the terminal step in all workflow chains. Reconciliation steps are optional but recommended.
+Terminal step in all workflow chains. Reconciliation steps are optional but recommended.
 
 ```
 Features: ... → implementing-plan-phases → PR review → reviewing-requirements → executing-qa → finalizing-workflow

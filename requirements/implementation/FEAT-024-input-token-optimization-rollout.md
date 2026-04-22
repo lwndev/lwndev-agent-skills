@@ -75,7 +75,7 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 
 ### Phase 1: `finalizing-workflow` — smallest surface, no references, no assets
 **Feature:** [FEAT-024](../features/FEAT-024-input-token-optimization-rollout.md) | [#203](https://github.com/lwndev/lwndev-marketplace/issues/203)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - Smallest SKILL.md of the twelve (104 lines). No `references/`, no `assets/` — FR-2 can only produce a no-op or create a new `references/` directory if narrative relocation is warranted; FR-3 is a guaranteed no-op (no repeated tables possible).
@@ -98,13 +98,13 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 12. **Commit**: `feat(FEAT-024): apply input-token optimization to finalizing-workflow` on feature branch.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/finalizing-workflow/SKILL.md` — FR-1 prose compression applied
-- [ ] `plugins/lwndev-sdlc/skills/finalizing-workflow/references/` — created with relocated content OR FR-2 recorded as no-op
-- [ ] FR-3 no-op recorded in FEAT-024 Notes with justification
-- [ ] Post-change measurements and delta recorded in FEAT-024 Notes
-- [ ] Any affected test assertions updated in same commit
-- [ ] `npm run validate` passes
-- [ ] `npm test -- --testPathPatterns=finalizing-workflow` passes
+- [x] `plugins/lwndev-sdlc/skills/finalizing-workflow/SKILL.md` — FR-1 prose compression applied
+- [x] `plugins/lwndev-sdlc/skills/finalizing-workflow/references/` — created with relocated content OR FR-2 recorded as no-op
+- [x] FR-3 no-op recorded in FEAT-024 Notes with justification
+- [x] Post-change measurements and delta recorded in FEAT-024 Notes
+- [x] Any affected test assertions updated in same commit
+- [x] `npm run validate` passes
+- [x] `npm test -- --testPathPatterns=finalizing-workflow` passes
 
 ---
 
