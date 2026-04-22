@@ -51,7 +51,10 @@ beforeAll(async () => {
 });
 
 function extractSection(body: string, heading: string): string | null {
-  const pattern = new RegExp(`^##\\s+${heading.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\s*$`, 'm');
+  const pattern = new RegExp(
+    `^##\\s+${heading.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\s*$`,
+    'm'
+  );
   const match = pattern.exec(body);
   if (!match) return null;
   const start = match.index + match[0].length;
@@ -62,7 +65,10 @@ function extractSection(body: string, heading: string): string | null {
 }
 
 function extractSubsection(section: string, heading: string): string | null {
-  const pattern = new RegExp(`^###\\s+${heading.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\s*$`, 'm');
+  const pattern = new RegExp(
+    `^###\\s+${heading.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\s*$`,
+    'm'
+  );
   const match = pattern.exec(section);
   if (!match) return null;
   const start = match.index + match[0].length;
@@ -116,28 +122,39 @@ describe('FEAT-023 rollout — Inputs dimension', () => {
   it.each(TARGET_SKILLS)('[P1] %s has exactly one Output Style heading', (name) => {
     const fx = fixtures.get(name)!;
     const matches = fx.content.match(/^##\s+Output Style\s*$/gm) ?? [];
-    expect(matches.length, `expected 1 "## Output Style" heading in ${name}, got ${matches.length}`).toBe(1);
+    expect(
+      matches.length,
+      `expected 1 "## Output Style" heading in ${name}, got ${matches.length}`
+    ).toBe(1);
   });
 
-  it.each(TARGET_SKILLS)('[P1] %s Output Style precedes any ## Step N heading (if present)', (name) => {
-    const fx = fixtures.get(name)!;
-    const osIdx = fx.content.search(/^##\s+Output Style\s*$/m);
-    const stepMatch = /^##\s+Step\s+\d+/m.exec(fx.content);
-    if (!stepMatch) return;
-    expect(osIdx).toBeGreaterThan(-1);
-    expect(osIdx, `Output Style must precede "## Step N" in ${name}`).toBeLessThan(stepMatch.index);
-  });
+  it.each(TARGET_SKILLS)(
+    '[P1] %s Output Style precedes any ## Step N heading (if present)',
+    (name) => {
+      const fx = fixtures.get(name)!;
+      const osIdx = fx.content.search(/^##\s+Output Style\s*$/m);
+      const stepMatch = /^##\s+Step\s+\d+/m.exec(fx.content);
+      if (!stepMatch) return;
+      expect(osIdx).toBeGreaterThan(-1);
+      expect(osIdx, `Output Style must precede "## Step N" in ${name}`).toBeLessThan(
+        stepMatch.index
+      );
+    }
+  );
 
-  it.each(TARGET_SKILLS)('[P2] %s lite-narration rules do not contain U+2192 outside script-log carve-out', (name) => {
-    const fx = fixtures.get(name)!;
-    const section = extractSection(fx.content, 'Output Style');
-    if (!section) return;
-    const liteSub = extractSubsection(section, 'Lite narration rules');
-    if (!liteSub) return;
-    const stripped = liteSub.replace(/Script-emitted structured logs[\s\S]*?(?=\n\n|$)/i, '');
-    const arrows = stripped.match(/→/g);
-    expect(arrows ?? []).toEqual([]);
-  });
+  it.each(TARGET_SKILLS)(
+    '[P2] %s lite-narration rules do not contain U+2192 outside script-log carve-out',
+    (name) => {
+      const fx = fixtures.get(name)!;
+      const section = extractSection(fx.content, 'Output Style');
+      if (!section) return;
+      const liteSub = extractSubsection(section, 'Lite narration rules');
+      if (!liteSub) return;
+      const stripped = liteSub.replace(/Script-emitted structured logs[\s\S]*?(?=\n\n|$)/i, '');
+      const arrows = stripped.match(/→/g);
+      expect(arrows ?? []).toEqual([]);
+    }
+  );
 });
 
 describe('FEAT-023 rollout — State transitions dimension', () => {
@@ -156,7 +173,6 @@ describe('FEAT-023 rollout — State transitions dimension', () => {
 
 describe('FEAT-023 rollout — Environment / Dependency-failure dimension', () => {
   it.each(TARGET_SKILLS)('[P0] %s passes ai-skills-manager validate()', async (name) => {
-    const fx = fixtures.get(name)!;
     const skillPath = join(SKILLS_DIR, name);
     const result = await validate(skillPath);
     const anyResult = result as unknown as { valid?: boolean; ok?: boolean; errors?: unknown[] };
@@ -167,7 +183,7 @@ describe('FEAT-023 rollout — Environment / Dependency-failure dimension', () =
   it('[P2] measurement table in requirements doc does not reference node_modules paths', async () => {
     const req = await readFile(
       'requirements/features/FEAT-023-output-token-optimization-rollout.md',
-      'utf-8',
+      'utf-8'
     );
     const notesIdx = req.search(/^##\s+Notes\s*$/m);
     const scope = notesIdx >= 0 ? req.slice(notesIdx) : req;
@@ -195,7 +211,7 @@ describe('FEAT-023 rollout — Cross-cutting dimension', () => {
             .replace(/—.*$/, '')
             .replace(/\s+/g, ' ')
             .replace(/\s+([.,;:])/g, '$1')
-            .trim(),
+            .trim()
         )
         .join('\n');
       const arr = skeletons.get(skeleton) ?? [];
@@ -204,7 +220,7 @@ describe('FEAT-023 rollout — Cross-cutting dimension', () => {
     }
     expect(
       skeletons.size,
-      `expected 1 canonical lite-rules bullet skeleton, got ${skeletons.size} variants: ${JSON.stringify([...skeletons.entries()])}`,
+      `expected 1 canonical lite-rules bullet skeleton, got ${skeletons.size} variants: ${JSON.stringify([...skeletons.entries()])}`
     ).toBe(1);
   });
 
