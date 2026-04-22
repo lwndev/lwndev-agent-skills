@@ -277,3 +277,21 @@ Per NFR-3, the `scripts/__tests__/finalizing-workflow.test.ts` "should be under 
 | `plugins/lwndev-sdlc/skills/documenting-chores/assets/chore-document.md` (baseline) | 109 | 356 | 2456 |
 | `plugins/lwndev-sdlc/skills/documenting-chores/assets/chore-document.md` (post-change) | 109 | 356 | 2456 |
 | **Δ** | 0 | 0 | 0 |
+
+### Phase 5 — documenting-bugs
+
+- FR-3 no-op for `references/categories.md`: the file is a reference table of bug categories (runtime-error, logic-error, ui-defect, performance, security, regression) with common use cases, typical affected files, suggested acceptance criteria, and category notes. It does not describe spawning subagents via the Agent tool. No fork-invocation specs exist to annotate, so no pointer was added.
+- FR-4 decision for `assets/bug-document.md`: already-minimal. The template is a pure structural skeleton — headers (`## Bug ID`, `## GitHub Issue`, `## Category`, `## Severity`, `## Description`, `## Steps to Reproduce`, `## Expected Behavior`, `## Actual Behavior`, `## Root Cause(s)`, `## Affected Files`, `## Acceptance Criteria`, `## Completion`, `## Notes`) with bracketed placeholders (`[Brief Title]`, `[1-2 sentences describing the defect]`, `[runtime-error|logic-error|ui-defect|performance|security|regression]`) and HTML-commented author guidance. No preamble prose, no "This document describes..." intro, no procedural narration to compress. The HTML comments carry load-bearing guidance (category choice hints, severity level definitions, RC-N traceability tagging rules, example acceptance criteria with RC references) and removing them would break the template's self-documentation. No changes applied; recorded as already-minimal per FR-4 and Edge Case 4.
+- FR-5 scope: SKILL.md, the references file, and the assets template. `documenting-bugs` is a main-context skill (bug chain step 1) — its `## Output Style` section uses the main-context return-contract variant stating it returns to the user, not a parent orchestrator; the `done | ...` / `failed | ...` shapes do not apply. Lite rules and carve-outs still govern. Wording matches Phases 3 and 4 exactly except for the one-sentence preamble ("bug chain step 1" vs "chore chain step 1" / "feature chain step 1") per NFR-4 consistency.
+
+| File | Lines | Words | Chars |
+|---|---:|---:|---:|
+| `plugins/lwndev-sdlc/skills/documenting-bugs/SKILL.md` (baseline) | 136 | 769 | 5432 |
+| `plugins/lwndev-sdlc/skills/documenting-bugs/SKILL.md` (post-change) | 168 | 1213 | 8411 |
+| **Δ** | +32 | +444 | +2979 |
+| `plugins/lwndev-sdlc/skills/documenting-bugs/references/categories.md` (baseline) | 236 | 1134 | 7429 |
+| `plugins/lwndev-sdlc/skills/documenting-bugs/references/categories.md` (post-change) | 236 | 1134 | 7429 |
+| **Δ** | 0 | 0 | 0 |
+| `plugins/lwndev-sdlc/skills/documenting-bugs/assets/bug-document.md` (baseline) | 181 | 707 | 4759 |
+| `plugins/lwndev-sdlc/skills/documenting-bugs/assets/bug-document.md` (post-change) | 181 | 707 | 4759 |
+| **Δ** | 0 | 0 | 0 |
