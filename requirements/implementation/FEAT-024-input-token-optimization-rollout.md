@@ -241,7 +241,7 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 
 ### Phase 6: `creating-implementation-plans` — forked skill, one reference, one asset
 **Feature:** [FEAT-024](../features/FEAT-024-input-token-optimization-rollout.md) | [#203](https://github.com/lwndev/lwndev-marketplace/issues/203)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - First of the forked skills in this sequence. At 139 lines, it is the smallest SKILL.md among the forked skills. It has one large reference file (`implementation-plan-example.md`, 499 lines — an annotated example plan) and one asset (`implementation-plan.md`, 79 lines — the structural skeleton used for plans like this document).
@@ -262,13 +262,13 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 11. **Commit**: `feat(FEAT-024): apply input-token optimization to creating-implementation-plans`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/SKILL.md` — FR-1 compression applied
-- [ ] FR-2 outcome recorded in FEAT-024 Notes
-- [ ] FR-3 outcome recorded in FEAT-024 Notes
-- [ ] Post-change measurements and delta recorded in FEAT-024 Notes
-- [ ] Any affected test assertions updated in same commit
-- [ ] `npm run validate` passes
-- [ ] `npm test -- --testPathPatterns=creating-implementation-plans` passes
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/SKILL.md` — FR-1 compression applied
+- [x] FR-2 outcome recorded in FEAT-024 Notes
+- [x] FR-3 outcome recorded in FEAT-024 Notes
+- [x] Post-change measurements and delta recorded in FEAT-024 Notes
+- [x] Any affected test assertions updated in same commit
+- [x] `npm run validate` passes
+- [x] `npm test -- --testPathPatterns=creating-implementation-plans` passes
 
 ---
 

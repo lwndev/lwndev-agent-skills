@@ -321,6 +321,10 @@ Per-phase rows are appended as each phase lands. Format mirrors the Baseline Mea
 | `managing-work-items` | `references/github-templates.md` | 740 | 2315 | 17196 | — |
 | `managing-work-items` | `references/jira-templates.md` | 715 | 2079 | 19135 | — |
 | `managing-work-items` | **subtotal** | **1793** | **7270** | **56256** | — |
+| `creating-implementation-plans` | `SKILL.md` | 139 | 906 | 6623 | 1656 |
+| `creating-implementation-plans` | `references/implementation-plan-example.md` | 499 | 2766 | 20322 | — |
+| `creating-implementation-plans` | `assets/implementation-plan.md` | 79 | 234 | 1771 | — |
+| `creating-implementation-plans` | **subtotal** | **717** | **3906** | **28716** | — |
 
 **Per-axis outcomes (Phase 1, `finalizing-workflow`):**
 - **FR-1**: lite-style prose compression applied to `## When to Use This Skill`, `## Workflow Position` intro, `## Usage` (steps 1–5 + intro), `## Expected output`, and `## Relationship to Other Skills` intro. The `## Output Style` section was preserved verbatim per FR-4 (FEAT-023 carve-out).
@@ -359,6 +363,15 @@ Per-phase rows are appended as each phase lands. Format mirrors the Baseline Mea
 - **Cross-skill carve-out (N/A)**: `managing-work-items` is excluded from `scripts/__tests__/argument-hint.test.ts`'s `SKILLS_WITH_HINTS` list (it is not a `documenting-*` / `executing-*` / `creating-*` / `reviewing-*` / `implementing-*` skill — it is the inline cross-cutting skill). The literal `When argument is provided` / `When no argument is provided` phrases are not required here and were not added during compression. Cross-skill `npm test -- argument-hint` confirmed unaffected (56/56 pass).
 - **FR-7**: confirmed Phase 0 audit findings for `scripts/__tests__/managing-work-items.test.ts` (54 assertions across 11 describe blocks: skill directory structure, frontmatter, FR-1 through FR-7 + NFR-1 through NFR-3 SKILL.md content, github-templates.md content, jira-templates.md content, Jira Phase 2 content, validation API). All assertions are heading / literal-phrase / frontmatter / reference-doc / validate-API checks against load-bearing surface preserved by the compression. No test assertion updates required.
 
+**Per-axis outcomes (Phase 6, `creating-implementation-plans`):**
+- **FR-1**: lite-style prose compression applied to `# Creating Implementation Plans` intro (unchanged in shape, dense), `## When to Use This Skill` bullets (removed redundant verb prefixes), `## Flexibility` intro and bullets (compressed adapt-to-project-type phrasing), `## Arguments` bullets (preserving the literal `When argument is provided` / `When no argument is provided` phrases verbatim per the cross-skill `argument-hint.test.ts` requirement), `## Quick Start` (steps 1-5 phrasings tightened; exit-code documentation retained verbatim), `### Filename Convention` intro, `### Sequencing Principles` (compressed ordering description and rationale-need sentence; retained the literal `->` ASCII arrows per the lite-narration rules), `### Implementation Steps` bullets, and `## Verification Checklist` intro/bullets. The `## Output Style` section (lines 52-82) was preserved verbatim per FR-4 (FEAT-023 carve-out for forked skills).
+- **FR-2**: no-op. No non-dispatcher section in SKILL.md exceeded ~25 lines of procedural narrative. The `## Output Style` section (~31 lines) is doctrine/rules (FR-4 preservation target), not procedural narrative subject to relocation. The `## Quick Start` section is ~13 lines and the `## Template` section is ~30 lines but consists of a structure-overview code block and pointer prose, not standalone procedural narrative. The existing `references/implementation-plan-example.md` (499 lines) is an example plan, not procedural narrative — already in `references/`, no relocation source. No new files added under `references/`.
+- **FR-3**: no-op. SKILL.md contains no tables (the only table-shaped content is the `### Structure Overview` fenced code block, which is a single bulleted outline). No repeated or near-duplicate tables to collapse.
+- **FR-4**: verified. All carve-outs intact: `## Output Style` section preserved verbatim including (a) `### Lite narration rules` (no-preamble, no-emoji, ASCII-arrows clause), (b) `### Load-bearing carve-outs` (error messages, security warnings, interactive prompts, FR-14 echo lines with the documented Unicode `->` emitter format, tagged structured logs, user-visible state transitions), (c) `### Fork-to-orchestrator return contract` (feature chain step 3, `done | artifact=requirements/implementation/<ID>-*.md | <note>` shape, `failed | <reason>` shape, the `Found **N errors** ...` exclusion clause), and (d) the `Precedence` note. All FR-7 must-preserve items confirmed: `## When to Use This Skill`, `## Verification Checklist` headings; literal phrase `requirements/implementation/`; `argument-hint:` frontmatter; `allowed-tools` (Read/Write/Edit/Glob/Grep, no Bash/Agent); literal phrases `When argument is provided` / `When no argument is provided` (cross-skill `argument-hint.test.ts` requirement).
+- **Cross-skill carve-out (confirmed)**: the `## Arguments` bullets retain `When argument is provided` / `When no argument is provided` verbatim — required by `scripts/__tests__/argument-hint.test.ts` (creating-implementation-plans is in `SKILLS_WITH_HINTS`).
+- **Phase 6 carve-out note (Unicode arrow)**: creating-implementation-plans is NOT in the three-skill carve-out-fix set (`executing-chores`, `executing-bug-fixes`, `implementing-plan-phases`); the FR-14 line in this SKILL.md uses `Unicode \`->\`` as the documented emitter format and is intentionally retained — the self-contradictory form correction is reserved for Phases 8/9/12.
+- **FR-7**: confirmed Phase 0 audit findings for `scripts/__tests__/creating-implementation-plans.test.ts` (10 assertions across 5 describe blocks: SKILL.md headings/literals, allowed-tools frontmatter, template existence, validate-API). All assertions are heading / literal-phrase / frontmatter / template-existence / validate-API checks against load-bearing surface preserved by the compression. No test assertion updates required.
+
 ### Delta (post − pre; negative = reduction, positive = growth)
 
 | Skill | File | Lines Δ | Lines % | Words Δ | Words % | Chars Δ | Chars % | chars / 4 Δ |
@@ -382,6 +395,10 @@ Per-phase rows are appended as each phase lands. Format mirrors the Baseline Mea
 | `managing-work-items` | `references/github-templates.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
 | `managing-work-items` | `references/jira-templates.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
 | `managing-work-items` | **subtotal** | **-52** | **-2.82%** | **-455** | **-5.89%** | **-2932** | **-4.95%** | **-733** |
+| `creating-implementation-plans` | `SKILL.md` | 0 | 0.00% | -33 | -3.51% | -189 | -2.77% | -47 |
+| `creating-implementation-plans` | `references/implementation-plan-example.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
+| `creating-implementation-plans` | `assets/implementation-plan.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
+| `creating-implementation-plans` | **subtotal** | **0** | **0.00%** | **-33** | **-0.84%** | **-189** | **-0.65%** | **-47** |
 
 **Phase 1 delta notes:**
 - Line count is unchanged at 104 because compression replaced longer phrasings with shorter ones on the same logical lines; no entire blocks were collapsed (FR-2 / FR-3 were both no-ops by design for this small surface).
@@ -420,6 +437,15 @@ Per-phase rows are appended as each phase lands. Format mirrors the Baseline Mea
 - `references/github-templates.md` and `references/jira-templates.md` were not edited and contribute zero delta to per-file rows; per-skill subtotal still reflects the SKILL.md reduction (-52 / -455 / -2932 across lines/words/chars).
 - Cross-skill `argument-hint.test.ts` does NOT include `managing-work-items` in `SKILLS_WITH_HINTS` (it is the inline cross-cutting skill, not a documenting-* / executing-* / creating-* / reviewing-* / implementing-* skill); the `When argument is provided` / `When no argument is provided` literal-phrase requirement is N/A here.
 - Post-change `npm test -- managing-work-items` passes (54/54); cross-skill `npm test -- argument-hint` passes (56/56); `npm run validate` passes (13/13 lwndev-sdlc skills).
+
+**Phase 6 delta notes:**
+- SKILL.md line count is unchanged at 139 — compression replaced longer phrasings with shorter ones on the same logical lines (FR-2 / FR-3 were both no-ops by design for this small forked-skill surface). Word count drops 3.51% and char count drops 2.77% (chars/4 estimate -47 tokens, from 1703 to 1656).
+- The reduction is the smallest of any phase so far in absolute and relative chars terms — expected, because creating-implementation-plans had the smallest pre-change SKILL.md (139 lines, 6812 chars) of any forked skill in the rollout, and the `## Output Style` section (FR-4 carve-out, lines 52-82, ~31 lines) plus the `## Quick Start` and `## Template` code blocks together account for a high fraction of the surface that compression cannot touch.
+- This is the first forked-skill phase in the rollout; the standard `done | artifact=... | <note>` return shape (no `Found **N errors** ...` exception, unlike `reviewing-requirements`) was preserved verbatim in the `### Fork-to-orchestrator return contract` subsection.
+- The existing `references/implementation-plan-example.md` (499 lines) and `assets/implementation-plan.md` (79 lines) were not edited and contribute zero delta.
+- The `## Arguments` bullets retain the literal phrases `When argument is provided` and `When no argument is provided` verbatim — applied prospectively from the Phase 3 cross-skill audit lesson (`scripts/__tests__/argument-hint.test.ts`); creating-implementation-plans is in `SKILLS_WITH_HINTS`.
+- Phase 6 is NOT in the three-skill Unicode-arrow carve-out-fix set; the documented `Unicode \`->\`` form at line 74 is the canonical FR-14 emitter format for this skill and is intentionally retained per the FEAT-023 install. The corrective fix is reserved for Phases 8 / 9 / 12.
+- Post-change `npm test -- creating-implementation-plans` passes (10/10); cross-skill `npm test -- argument-hint` passes (56/56); `npm run validate` passes (13/13 lwndev-sdlc skills).
 
 ### Summary (aggregate across all twelve skills)
 
