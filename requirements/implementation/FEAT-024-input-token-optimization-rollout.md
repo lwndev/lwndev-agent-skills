@@ -442,7 +442,7 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 
 ### Phase 12: `implementing-plan-phases` — forked skill, largest combined surface, carve-out fix
 **Feature:** [FEAT-024](../features/FEAT-024-input-token-optimization-rollout.md) | [#203](https://github.com/lwndev/lwndev-marketplace/issues/203)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - `implementing-plan-phases` has the largest combined file surface of all twelve skills: 178-line SKILL.md, two reference files totaling 726 lines (`step-details.md` 399 lines + `workflow-example.md` 327 lines), and one asset (`pr-template.md`). Deferring it to last among the forked skills ensures the three-axis template is well-calibrated before the highest-risk edit.
@@ -465,13 +465,13 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 12. **Commit**: `feat(FEAT-024): apply input-token optimization to implementing-plan-phases; fix FR-14 carve-out Unicode arrow`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/SKILL.md` — FR-1 compression applied; "Unicode `→`" carve-out fidelity fix applied and called out in commit
-- [ ] FR-2 outcome recorded in FEAT-024 Notes (SKILL.md-to-references pointer verification or additional relocation)
-- [ ] FR-3 outcome recorded in FEAT-024 Notes
-- [ ] Post-change measurements and delta recorded in FEAT-024 Notes
-- [ ] Any affected test assertions updated in same commit
-- [ ] `npm run validate` passes
-- [ ] `npm test -- --testPathPatterns=implementing-plan-phases` passes
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/SKILL.md` — FR-1 compression applied; "Unicode `→`" carve-out fidelity fix applied and called out in commit
+- [x] FR-2 outcome recorded in FEAT-024 Notes (SKILL.md-to-references pointer verification or additional relocation)
+- [x] FR-3 outcome recorded in FEAT-024 Notes
+- [x] Post-change measurements and delta recorded in FEAT-024 Notes
+- [x] Any affected test assertions updated in same commit
+- [x] `npm run validate` passes
+- [x] `npm test -- --testPathPatterns=implementing-plan-phases` passes
 
 ---
 
