@@ -204,7 +204,7 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 
 ### Phase 7: `creating-implementation-plans` — forked skill, meta (this very skill)
 **Feature:** [FEAT-023](../features/FEAT-023-output-token-optimization-rollout.md) | [#200](https://github.com/lwndev/lwndev-marketplace/issues/200)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - `creating-implementation-plans` is the skill being used to produce this plan — updating it mid-rollout is intentionally deferred until Phase 7 so the plan-producing invocation runs on the pre-change version.
@@ -225,11 +225,11 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 8. **Emit fork return**: `done | artifact=plugins/lwndev-sdlc/skills/creating-implementation-plans/SKILL.md | Output Style section added`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/SKILL.md` — `## Output Style` section added
-- [ ] `assets/implementation-plan.md` — compressed or marked already-minimal in FEAT-023 Notes
-- [ ] Baseline + post-change measurements recorded in FEAT-023 Notes
-- [ ] FR-3 no-op for `implementation-plan-example.md` recorded in FEAT-023 Notes
-- [ ] `npm run validate` passes
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/SKILL.md` — `## Output Style` section added
+- [x] `assets/implementation-plan.md` — compressed or marked already-minimal in FEAT-023 Notes
+- [x] Baseline + post-change measurements recorded in FEAT-023 Notes
+- [x] FR-3 no-op for `implementation-plan-example.md` recorded in FEAT-023 Notes
+- [x] `npm run validate` passes
 
 ---
 

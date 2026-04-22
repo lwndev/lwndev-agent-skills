@@ -313,3 +313,21 @@ Per NFR-3, the `scripts/__tests__/finalizing-workflow.test.ts` "should be under 
 | `plugins/lwndev-sdlc/skills/reviewing-requirements/assets/review-findings-template.md` (baseline) | 98 | 426 | 3178 |
 | `plugins/lwndev-sdlc/skills/reviewing-requirements/assets/review-findings-template.md` (post-change) | 98 | 426 | 3178 |
 | **Δ** | 0 | 0 | 0 |
+
+### Phase 7 — creating-implementation-plans
+
+- FR-3 no-op for `references/implementation-plan-example.md`: the file is a concrete example implementation plan (Podcast Index CLI Features) showing phase structure, rationale prose, implementation steps, deliverables, and risk assessments across five features. It does NOT describe spawning subagents via the Agent tool — `creating-implementation-plans` is itself forked by `orchestrating-workflows` but does not fork further work of its own. No fork-invocation specs exist to annotate, so no pointer was added.
+- FR-4 decision for `assets/implementation-plan.md`: already-minimal. The template is a pure structural skeleton — `## Overview`, `## Features Summary` table, `### Phase N` blocks with `#### Rationale` / `#### Implementation Steps` / `#### Deliverables` sub-headers, `## Shared Infrastructure`, `## Testing Strategy`, `## Dependencies and Prerequisites`, `## Risk Assessment` table, `## Success Criteria`, `## Code Organization` code-fence. Every line is a header, a bracketed placeholder, or a one-line hint (e.g., `[1-2 paragraph summary of what's being built and why]`, `[Why build this first]`). No preamble prose, no "This template describes..." intro, no procedural narration to compress. No changes applied; recorded as already-minimal per FR-4 and Edge Case 4.
+- FR-5 scope: SKILL.md only (example and template both unchanged). `creating-implementation-plans` is a forked skill (feature chain step 3) with the **standard** `done | artifact=<path> | <note>` return shape — no reviewing-requirements-style findings-display carve-out. The carve-out list is the canonical seven bullets with the findings-display bullet retained as N/A per NFR-4.
+
+| File | Lines | Words | Chars |
+|---|---:|---:|---:|
+| `plugins/lwndev-sdlc/skills/creating-implementation-plans/SKILL.md` (baseline) | 107 | 529 | 3981 |
+| `plugins/lwndev-sdlc/skills/creating-implementation-plans/SKILL.md` (post-change) | 139 | 939 | 6812 |
+| **Δ** | +32 | +410 | +2831 |
+| `plugins/lwndev-sdlc/skills/creating-implementation-plans/references/implementation-plan-example.md` (baseline) | 499 | 2766 | 20322 |
+| `plugins/lwndev-sdlc/skills/creating-implementation-plans/references/implementation-plan-example.md` (post-change) | 499 | 2766 | 20322 |
+| **Δ** | 0 | 0 | 0 |
+| `plugins/lwndev-sdlc/skills/creating-implementation-plans/assets/implementation-plan.md` (baseline) | 79 | 234 | 1771 |
+| `plugins/lwndev-sdlc/skills/creating-implementation-plans/assets/implementation-plan.md` (post-change) | 79 | 234 | 1771 |
+| **Δ** | 0 | 0 | 0 |
