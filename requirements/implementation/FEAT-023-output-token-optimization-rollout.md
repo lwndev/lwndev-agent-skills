@@ -266,7 +266,7 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 
 ### Phase 9: `executing-qa` — main-context skill, no references
 **Feature:** [FEAT-023](../features/FEAT-023-output-token-optimization-rollout.md) | [#200](https://github.com/lwndev/lwndev-marketplace/issues/200)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - `executing-qa` is a main-context skill (runs in the orchestrator's conversation). Like `documenting-qa`, it has no `references/` directory — FR-3 is a no-op.
@@ -287,11 +287,11 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 8. **Emit fork return**: `done | artifact=plugins/lwndev-sdlc/skills/executing-qa/SKILL.md | Output Style section added`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` — `## Output Style` section with main-context return-contract note
-- [ ] Both `assets/` template files — compressed or marked already-minimal in FEAT-023 Notes
-- [ ] Baseline + post-change measurements recorded in FEAT-023 Notes
-- [ ] FR-3 no-op recorded in FEAT-023 Notes
-- [ ] `npm run validate` passes
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` — `## Output Style` section with main-context return-contract note
+- [x] Both `assets/` template files — compressed or marked already-minimal in FEAT-023 Notes
+- [x] Baseline + post-change measurements recorded in FEAT-023 Notes
+- [x] FR-3 no-op recorded in FEAT-023 Notes
+- [x] `npm run validate` passes
 
 ---
 
