@@ -313,6 +313,10 @@ Per-phase rows are appended as each phase lands. Format mirrors the Baseline Mea
 | `documenting-chores` | `references/categories.md` | 198 | 720 | 4785 | — |
 | `documenting-chores` | `assets/chore-document.md` | 109 | 356 | 2456 | — |
 | `documenting-chores` | **subtotal** | **452** | **2059** | **14308** | — |
+| `documenting-bugs` | `SKILL.md` | 164 | 1137 | 7975 | 1994 |
+| `documenting-bugs` | `references/categories.md` | 236 | 1134 | 7429 | — |
+| `documenting-bugs` | `assets/bug-document.md` | 181 | 707 | 4759 | — |
+| `documenting-bugs` | **subtotal** | **581** | **2978** | **20163** | — |
 
 **Per-axis outcomes (Phase 1, `finalizing-workflow`):**
 - **FR-1**: lite-style prose compression applied to `## When to Use This Skill`, `## Workflow Position` intro, `## Usage` (steps 1–5 + intro), `## Expected output`, and `## Relationship to Other Skills` intro. The `## Output Style` section was preserved verbatim per FR-4 (FEAT-023 carve-out).
@@ -335,6 +339,14 @@ Per-phase rows are appended as each phase lands. Format mirrors the Baseline Mea
 - **FR-4**: verified. All carve-out items present verbatim: `## Output Style` section intact (lite-narration rules, load-bearing carve-outs list including the FR-14 Unicode `→` echo line, fork-to-orchestrator return contract that documents this skill runs in main context, Precedence note). All FR-7 must-preserve items confirmed: `## When to Use This Skill`, `## Verification Checklist`, `## Relationship to Other Skills` headings, literal `executing-chores`, frontmatter `allowed-tools` (Read/Write/Edit/Glob/Grep, no Bash/Agent), `argument-hint:`.
 - **FR-7**: confirmed Phase 0 audit findings for `scripts/__tests__/documenting-chores.test.ts` (all 12 assertions are heading / literal-phrase / frontmatter / template-existence / validate-API checks; all preserved). Additionally identified a cross-skill must-preserve audit gap: `scripts/__tests__/argument-hint.test.ts` requires every skill with `argument-hint` frontmatter to contain the literal phrases `When argument is provided` and `When no argument is provided` in body content. The initial Phase 3 compression shortened the `## Arguments` bullets to `Argument provided` / `No argument` and was reverted to the literal phrases before the final commit. The Phase 0 audit was scoped per-skill and missed this cross-skill assertion file — future phases should treat the literal phrases as must-preserve.
 
+**Per-axis outcomes (Phase 4, `documenting-bugs`):**
+- **FR-1**: lite-style prose compression applied to `# Documenting Bugs` intro, `## When to Use This Skill` bullets (removed redundant verb prefixes), `## Arguments` bullets, `## Quick Start` (compressed step phrasings while preserving the investigate-codebase emphasis and slug filename pattern), `## File Location` (collapsed the multi-paragraph slug-script preamble into a single intro + slug script + examples block, mirroring the Phase 3 sibling pattern), `## Bug ID Assignment` (tightened script description), `## Categories` intro, `## Verification Checklist` items, and the `## Relationship to Other Skills` trailing chain summary. The `## Output Style` section (lines 41-71 of the pre-change file) was preserved verbatim per FR-4 (FEAT-023 carve-out). All `slugify.sh` / `next-id.sh` exit-code documentation, all literal paths (`requirements/bugs/`, `BUG-XXX-...`), the six-row category table, and the four-row severity table were preserved verbatim.
+- **FR-2**: no-op. No non-dispatcher section in SKILL.md exceeded ~25 lines of procedural narrative. The `## Output Style` section (~31 lines) is doctrine/rules (FR-4 preservation target), not procedural narrative subject to relocation. `references/categories.md` is an existing reference table (per-category guidance with six categories × four subsections) — already in `references/`, no relocation source. No new files added under `references/`.
+- **FR-3**: no-op. Three tables exist (`## Categories` six-row matrix, `## Severity Levels` four-row matrix, `## Relationship to Other Skills` four-row matrix). All three have distinct shapes and purposes (category→use-case, severity→definition, task-type→approach) and no repetition or near-duplication exists between them. Nothing to collapse.
+- **FR-4**: verified. All carve-out items present verbatim: `## Output Style` section intact (lite-narration rules, load-bearing carve-outs list including the FR-14 Unicode `→` echo line, fork-to-orchestrator return contract that documents this skill runs in main context, Precedence note). All FR-7 must-preserve items confirmed: `## When to Use This Skill`, `## Verification Checklist`, `## Relationship to Other Skills` headings; literal `executing-bug-fixes`, `requirements/bugs/`, `BUG-XXX`; severity-section literals `critical`/`high`/`medium`/`low`; frontmatter `allowed-tools` (Read/Write/Edit/Glob/Grep, no Bash/Agent), `argument-hint:`.
+- **Cross-skill carve-out (confirmed)**: the `## Arguments` bullets retain the literal phrases `When argument is provided` and `When no argument is provided` verbatim — required by `scripts/__tests__/argument-hint.test.ts` (cross-skill must-preserve assertion surfaced post-Phase-3, now applied prospectively).
+- **FR-7**: confirmed Phase 0 audit findings for `scripts/__tests__/documenting-bugs.test.ts`. The lone will-change-CANDIDATE (`expect(matches!.length).toBe(6)` at line 155) was inspected and resolved as **must-preserve**: it counts `### Notes` (and three sibling subsection headings) in `references/categories.md`, not in SKILL.md, and `categories.md` is unchanged this phase. All other assertions are heading / literal-phrase / frontmatter / template-existence / validate-API checks against load-bearing surface preserved by the compression. No test assertion updates required.
+
 ### Delta (post − pre; negative = reduction, positive = growth)
 
 | Skill | File | Lines Δ | Lines % | Words Δ | Words % | Chars Δ | Chars % | chars / 4 Δ |
@@ -350,6 +362,10 @@ Per-phase rows are appended as each phase lands. Format mirrors the Baseline Mea
 | `documenting-chores` | `references/categories.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
 | `documenting-chores` | `assets/chore-document.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
 | `documenting-chores` | **subtotal** | **-4** | **-0.88%** | **-68** | **-3.20%** | **-386** | **-2.63%** | **-96** |
+| `documenting-bugs` | `SKILL.md` | -4 | -2.38% | -76 | -6.27% | -436 | -5.18% | -109 |
+| `documenting-bugs` | `references/categories.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
+| `documenting-bugs` | `assets/bug-document.md` | 0 | 0.00% | 0 | 0.00% | 0 | 0.00% | — |
+| `documenting-bugs` | **subtotal** | **-4** | **-0.68%** | **-76** | **-2.49%** | **-436** | **-2.12%** | **-109** |
 
 **Phase 1 delta notes:**
 - Line count is unchanged at 104 because compression replaced longer phrasings with shorter ones on the same logical lines; no entire blocks were collapsed (FR-2 / FR-3 were both no-ops by design for this small surface).
@@ -369,6 +385,15 @@ Per-phase rows are appended as each phase lands. Format mirrors the Baseline Mea
 - `references/categories.md` and `assets/chore-document.md` were not edited and contribute zero delta.
 - The `## Arguments` bullets retain the literal phrases `When argument is provided` and `When no argument is provided` verbatim — required by `scripts/__tests__/argument-hint.test.ts` (cross-skill must-preserve assertion not previously inventoried in the Phase 0 audit, surfaced via post-Phase-3 `npm test`).
 - Post-change `npm test -- documenting-chores` passes (12/12); cross-skill `npm test -- argument-hint` passes for documenting-chores (4/4 documenting-chores assertions); `npm run validate` passes (13/13 lwndev-sdlc skills).
+
+**Phase 4 delta notes:**
+- SKILL.md drops from 168 to 164 lines (-4, -2.38%) — same four-line reduction as Phase 3, driven by the same Phase-3 collapse pattern in `## File Location` (multi-paragraph slug-script preamble condensed into intro + script + examples).
+- Word count drops 6.27% and char count drops 5.18% — chars % is identical to Phase 3 to two decimal places, confirming the sibling-skill compression pattern is now reproducible across all three documenting-* skills (Phase 2 documenting-features -5.51%, Phase 3 documenting-chores -5.18%, Phase 4 documenting-bugs -5.18%).
+- The `## Output Style` section (FR-4 carve-out, lines 41-71 of the pre-change file, ~31 lines) is excluded from FR-1 compression — the achievable reduction is bounded by the ~137 non-carve-out lines plus the frontmatter. documenting-bugs has the largest absolute char drop of the three siblings (-436) because the pre-change SKILL.md was the largest of the three (168 vs 154/149).
+- `references/categories.md` (236 lines, 6 categories × 4 subsections) and `assets/bug-document.md` (181 lines) were not edited and contribute zero delta.
+- The `## Arguments` bullets retain the literal phrases `When argument is provided` and `When no argument is provided` verbatim — applied prospectively from the Phase 3 cross-skill audit lesson (`scripts/__tests__/argument-hint.test.ts`).
+- The Phase 0 will-change-CANDIDATE assertion (`documenting-bugs.test.ts:155 expect(matches!.length).toBe(6)`) was inspected during Phase 4 pre-flight and resolved as **must-preserve**: it counts subsection headings (`### Common Use Cases`, `### Typical Affected Files`, `### Suggested Acceptance Criteria`, `### Notes`) in `references/categories.md`, not in SKILL.md. categories.md is unchanged this phase, and the assertion still passes.
+- Post-change `npm test -- documenting-bugs` passes (39/39 across 1 file); cross-skill `npm test -- argument-hint` passes (56/56); `npm run validate` passes (13/13 lwndev-sdlc skills).
 
 ### Summary (aggregate across all twelve skills)
 
