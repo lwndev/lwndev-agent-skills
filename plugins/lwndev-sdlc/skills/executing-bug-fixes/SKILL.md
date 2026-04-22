@@ -20,16 +20,16 @@ Execute bug fix workflows with root cause driven execution from branch creation 
 - User says "execute bug fix", "fix this bug", or "run the bug fix workflow"
 - User references a bug document in `requirements/bugs/`
 - User wants to implement a documented bug fix
-- Continuing bug fix work that was previously started
+- Continuing previously-started bug fix work
 
 ## Arguments
 
-- **When argument is provided**: Match the argument against files in `requirements/bugs/` by ID prefix (e.g., `BUG-003` matches `BUG-003-login-timeout-error.md`). If no match is found, inform the user and fall back to interactive selection. If multiple matches are found, present the options and ask the user to choose.
-- **When no argument is provided**: Scan `requirements/bugs/` for bug documents and prompt the user to select one if multiple exist.
+- **When argument is provided**: Match against files in `requirements/bugs/` by ID prefix (e.g., `BUG-003` matches `BUG-003-login-timeout-error.md`). On no match, inform the user and fall back to interactive selection. On multiple matches, present options and ask the user to choose.
+- **When no argument is provided**: Scan `requirements/bugs/` and prompt the user to select if multiple exist.
 
 ## Quick Start
 
-1. Locate the bug document — resolve a `BUG-NNN` ID to a file path with:
+1. Locate the bug document — resolve a `BUG-NNN` ID with:
 
    ```bash
    bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<BUG-NNN>"
@@ -45,7 +45,7 @@ Execute bug fix workflows with root cause driven execution from branch creation 
    bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-branch.sh" "$branch"
    ```
 
-   `build-branch-name.sh` calls `slugify.sh` internally (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<description>"`), handling lowercasing, punctuation stripping, stopword removal (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), and the 4-token cap. Exit codes: `build-branch-name.sh` returns `1` when slugify produces an empty slug (ask for a more descriptive title) and `2` on invalid type. `ensure-branch.sh` returns `0` on success, `2` on missing arg, `3` on dirty working tree (stash or commit first).
+   `build-branch-name.sh` calls `slugify.sh` internally (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<description>"`) — handles lowercasing, punctuation stripping, stopword removal (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), and the 4-token cap. Exit codes: `build-branch-name.sh` returns `1` on empty slug (ask for a more descriptive title) and `2` on invalid type. `ensure-branch.sh` returns `0` on success, `2` on missing arg, `3` on dirty working tree (stash or commit first).
 5. Address each root cause systematically, implementing fixes and tracking with todos
 6. **Check off each acceptance criterion** in the bug document with:
 
@@ -70,7 +70,7 @@ Execute bug fix workflows with root cause driven execution from branch creation 
     ```
 
     Does `git push -u origin <branch>` then `gh pr create` against `scripts/assets/pr-body.tmpl`. **MUST include `--closes #N` if an issue exists** — auto-closes the linked issue on merge. Exit codes: `0` on success (PR URL on stdout); `1` on push or PR-creation failure; `2` on missing/invalid args.
-11. Update bug document completion section (status, date, PR link)
+11. Update the bug document completion section (status, date, PR link)
 
 > **Note:** Issue tracking (start/completion comments) is handled by the orchestrator via `managing-work-items`. This skill focuses on root cause driven execution and verification.
 
@@ -96,7 +96,7 @@ The following MUST always be emitted even when they resemble narration:
 - **Security-sensitive warnings** -- destructive-operation confirmations, credential prompts.
 - **Interactive prompts** -- any prompt that blocks the workflow and requires user input (e.g., disambiguation when multiple bug files match the provided ID, description re-prompt when `build-branch-name.sh` exits `1` on an empty slug, selection prompt when no bug argument is supplied and multiple bug documents exist).
 - **Findings display from `reviewing-requirements`** -- N/A for this skill (it does not consume reviewing-requirements findings); bullet retained for consistency with the canonical template.
-- **FR-14 console echo lines** -- `[model] step {N} ({skill}) -> {tier} (...)` audit-trail lines emitted by `prepare-fork.sh`. The Unicode `->` is the documented emitter format; do not rewrite to ASCII.
+- **FR-14 console echo lines** -- `[model] step {N} ({skill}) → {tier} (...)` audit-trail lines emitted by `prepare-fork.sh`. The Unicode `→` is the documented emitter format; do not rewrite to ASCII.
 - **Tagged structured logs** -- any line prefixed `[info]`, `[warn]`, or `[model]` is a structured log, not narration. Emit verbatim.
 - **User-visible state transitions** -- pause, advance, and resume announcements (at most one line each).
 
@@ -135,18 +135,18 @@ See [references/workflow-details.md](references/workflow-details.md) for detaile
 
 ## Root Cause Driven Execution
 
-Bug fixes are organized around root causes identified in the bug document. This ensures systematic coverage and traceability.
+Bug fixes are organized around root causes identified in the bug document for systematic coverage and traceability.
 
 ### Workflow
 
-1. **Redeclare root causes at start** — Load the root causes from the bug document into the todo list as trackable work items
-2. **Address root causes systematically** — Work through each root cause in order, implementing the fix for that specific cause before moving to the next
-3. **Verify per root cause** — After addressing each root cause, verify that the corresponding `(RC-N)` acceptance criteria pass
-4. **Confirm full coverage** — Before creating the PR, confirm that every `RC-N` has been addressed and its acceptance criteria are met
+1. **Redeclare root causes at start** — load them from the bug document into the todo list as trackable work items
+2. **Address root causes systematically** — work each in order, completing the fix for one cause before moving to the next
+3. **Verify per root cause** — after each fix, confirm the corresponding `(RC-N)` acceptance criteria pass
+4. **Confirm full coverage** — before the PR, confirm every `RC-N` is addressed and its acceptance criteria are met
 
 ### Discovering New Root Causes
 
-If a new root cause is discovered during execution:
+If a new root cause surfaces during execution:
 
 - Document it in the bug document as a new `RC-N` entry
 - Add corresponding acceptance criteria with the `(RC-N)` tag
@@ -154,10 +154,10 @@ If a new root cause is discovered during execution:
 
 ## Branch Naming
 
-Format: `fix/BUG-XXX-{2-4-word-description}`. Always assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" fix "<BUG-NNN>" "<description>"` (see Quick Start step 4) rather than hand-kebabing — the script applies slugify normalization uniformly.
+Format: `fix/BUG-XXX-{2-4-word-description}`. Always assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" fix "<BUG-NNN>" "<description>"` (see Quick Start step 4) — the script applies slugify normalization uniformly.
 
 - Uses Bug ID (not GitHub issue number) for consistent naming
-- Keep description brief but descriptive (2-4 words)
+- Keep the description brief but descriptive (2-4 words)
 
 Examples:
 - `fix/BUG-001-null-pointer-crash`
@@ -186,12 +186,12 @@ Examples:
 
 Before creating the PR, verify:
 
-- [ ] All root causes from bug document are addressed
+- [ ] All root causes from the bug document are addressed
 - [ ] Each `(RC-N)` tagged acceptance criterion is met
 - [ ] Reproduction steps no longer trigger the bug
 - [ ] Tests pass (if applicable)
 - [ ] Build succeeds
-- [ ] Changes match the scope defined in bug document
+- [ ] Changes match the scope defined in the bug document
 - [ ] No unintended side effects or regressions
 
 ## References

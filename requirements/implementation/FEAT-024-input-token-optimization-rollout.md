@@ -342,7 +342,7 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 
 ### Phase 9: `executing-bug-fixes` — forked skill, one reference, one asset, carve-out fix
 **Feature:** [FEAT-024](../features/FEAT-024-input-token-optimization-rollout.md) | [#203](https://github.com/lwndev/lwndev-marketplace/issues/203)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - Direct sibling to `executing-chores` (Phase 8). Same forked-skill shape: one reference (`workflow-details.md`, 338 lines — slightly larger than the chores equivalent) and one asset (`pr-template.md`).
@@ -364,13 +364,13 @@ Phase ordering follows the same risk-sequencing logic used in FEAT-023: smallest
 12. **Commit**: `feat(FEAT-024): apply input-token optimization to executing-bug-fixes; fix FR-14 carve-out Unicode arrow`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/executing-bug-fixes/SKILL.md` — FR-1 compression applied; "Unicode `→`" carve-out fidelity fix applied and called out in commit
-- [ ] FR-2 outcome recorded in FEAT-024 Notes
-- [ ] FR-3 outcome recorded in FEAT-024 Notes
-- [ ] Post-change measurements and delta recorded in FEAT-024 Notes
-- [ ] Any affected test assertions updated in same commit
-- [ ] `npm run validate` passes
-- [ ] `npm test -- --testPathPatterns=executing-bug-fixes` passes
+- [x] `plugins/lwndev-sdlc/skills/executing-bug-fixes/SKILL.md` — FR-1 compression applied; "Unicode `→`" carve-out fidelity fix applied and called out in commit
+- [x] FR-2 outcome recorded in FEAT-024 Notes
+- [x] FR-3 outcome recorded in FEAT-024 Notes
+- [x] Post-change measurements and delta recorded in FEAT-024 Notes
+- [x] Any affected test assertions updated in same commit
+- [x] `npm run validate` passes
+- [x] `npm test -- --testPathPatterns=executing-bug-fixes` passes
 
 ---
 
