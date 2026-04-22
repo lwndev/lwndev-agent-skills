@@ -50,6 +50,38 @@ managing-work-items <operation> <issue-ref> [--type <comment-type>] [--context <
 | `pr-link` | Generate the auto-close syntax for a PR body | `managing-work-items pr-link #119` |
 | `extract-ref` | Extract issue reference from a requirement document | `managing-work-items extract-ref requirements/features/FEAT-012.md` |
 
+## Output Style
+
+Follow the lite-narration rules below. Load-bearing carve-outs MUST be emitted as specified; they are not narration. This skill is executed inline from the orchestrator's main context (not forked via the Agent tool), so its output flows directly through the main conversation.
+
+### Lite narration rules
+
+- No preamble before tool calls. Do not announce "let me check" or "I'll run" -- issue the tool call.
+- No end-of-turn summaries beyond one short sentence. Do not recap what the user can read from tool output (e.g., `gh issue view` JSON, `gh issue comment` confirmation URLs).
+- No emoji. ASCII punctuation only.
+- No restating what the user just said.
+- No status echoes that tools already show (e.g., the contents of a successful `gh auth status`).
+- Prefer ASCII arrows (`->`) and punctuation over Unicode alternatives in skill-authored prose. Existing Unicode em dashes in tables and reference docs are retained. **Tool-emitted output is out of scope** — `gh` / `acli` / Rovo MCP stdout and JSON responses use their documented format and must be surfaced verbatim when load-bearing.
+- Short sentences over paragraphs. Bullet lists over prose when listing more than two items.
+
+### Load-bearing carve-outs (never strip)
+
+The following MUST always be emitted even when they resemble narration:
+
+- **Error messages from `fail` calls** -- users need the reason the operation halted. Surface `gh` / `acli` / Rovo MCP stderr verbatim.
+- **Security-sensitive warnings** -- destructive-operation confirmations, credential prompts, auth-failure notices (`gh auth login`, Rovo OAuth consent, `acli` credentials).
+- **Interactive prompts** -- any prompt that blocks workflow progression must be visible. (Typically none for this skill; issue operations are non-interactive.)
+- **Findings display from `reviewing-requirements`** -- N/A for this skill (it does not consume reviewing-requirements findings); bullet retained for consistency with the canonical template.
+- **FR-14 console echo lines** -- `[model] step {N} ({skill}) → {tier} (...)` audit-trail lines emitted by `prepare-fork.sh`. The Unicode `→` is the documented emitter format; do not rewrite to ASCII. (Typically not emitted here since this skill is inline, not forked, but retained for cross-skill consistency.)
+- **Tagged structured logs** -- any line prefixed `[info]`, `[warn]`, or `[model]` is a structured log, not narration. Emit verbatim. Per `orchestrating-workflows/references/issue-tracking.md`, WARNING-level mechanism-failure lines (e.g., `[warn] gh CLI not found on PATH`, `[warn] Rovo MCP authorization failed`) are load-bearing and MUST be emitted verbatim.
+- **User-visible state transitions** -- skip notices (graceful-degradation info lines), tier fall-through notices, and operation confirmations (at most one line each).
+
+### Inline execution note
+
+`managing-work-items` is invoked **inline from the orchestrator's main context** (per `orchestrating-workflows/references/issue-tracking.md`), NOT spawned via the Agent tool. The fork-to-orchestrator return contract (`done | artifact=<path> | <note>` / `failed | <reason>`) does **not** apply here — there is no subagent boundary. Tool-call results (`gh issue comment` exit codes, `gh issue view` JSON payloads, `acli` stdout, Rovo MCP responses) are consumed directly by the main context.
+
+**Precedence (in spirit)**: when a `[warn]` mechanism-failure line needs to be emitted (per the issue-tracking.md mechanism-failure table), that line is load-bearing and MUST be emitted verbatim even if it reads like narration. The lite rules do not override WARNING-level structured-log emission.
+
 ## Backend Detection (FR-1)
 
 Automatically detect the issue tracker backend from the issue reference format:

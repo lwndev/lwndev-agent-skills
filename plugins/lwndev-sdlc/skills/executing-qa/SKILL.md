@@ -41,6 +41,38 @@ Write and run adversarial tests against the change on the current branch. Grade 
 6. Emit the version-2 results artifact
 7. Exit; the stop hook validates structural conformance
 
+## Output Style
+
+Follow the lite-narration rules below. Load-bearing carve-outs MUST be emitted as specified; they are not narration. This skill runs in the orchestrator's main conversation (feature chain step 5+N+3; chore/bug chain step 6), so its output flows directly to the user.
+
+### Lite narration rules
+
+- No preamble before tool calls. Do not announce "let me check" or "I'll run" -- issue the tool call.
+- No end-of-turn summaries beyond one short sentence. Do not recap what the user can read from tool output (e.g., the written requirement document).
+- No emoji. ASCII punctuation only.
+- No restating what the user just said.
+- No status echoes that tools already show (e.g., successful `Write` confirmations).
+- Prefer ASCII arrows (`->`) and punctuation over Unicode alternatives in skill-authored prose. Existing Unicode em dashes in tables and reference docs are retained.
+- Short sentences over paragraphs. Bullet lists over prose when listing more than two items.
+
+### Load-bearing carve-outs (never strip)
+
+The following MUST always be emitted even when they resemble narration:
+
+- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface script and tool stderr verbatim (e.g., `capability-discovery.sh` / `persona-loader.sh` / `git diff` / `testCommand` failures) and the stop-hook block message when structural validation fails.
+- **Security-sensitive warnings** -- destructive-operation confirmations, credential prompts.
+- **Interactive prompts** -- any prompt that blocks the workflow and requires user input (e.g., the requirement ID prompt when no argument is provided, the missing-test-plan error pointing to `documenting-qa`, the pointer prompt when there are no branch changes to test).
+- **Findings display from `reviewing-requirements`** -- N/A for this skill (it does not consume reviewing-requirements findings); bullet retained for consistency with the canonical template.
+- **FR-14 console echo lines** -- `[model] step {N} ({skill}) -> {tier} (...)` audit-trail lines emitted by `prepare-fork.sh`. The Unicode `->` is the documented emitter format; do not rewrite to ASCII. (Typically not emitted here since this skill runs in main context, not forked, but retained for cross-skill consistency.)
+- **Tagged structured logs** -- any line prefixed `[info]`, `[warn]`, or `[model]` is a structured log, not narration. Emit verbatim.
+- **User-visible state transitions** -- pause, advance, and resume announcements (at most one line each).
+
+### Fork-to-orchestrator return contract
+
+`executing-qa` runs in **main context** (feature chain step 5+N+3; chore/bug chain step 6), **not** as an Agent fork. It returns its result directly to the user, not to a parent orchestrator. The `done | artifact=<path> | <note>` / `failed | <reason>` shapes do **not** apply to this skill -- there is no subagent boundary. Structural conformance of the emitted artifact (`qa/test-results/QA-results-{ID}.md`) is enforced by the Stop hook at `scripts/stop-hook.sh`, which validates frontmatter fields, the verdict enum, required sections, and per-verdict structural rules (`Failed: 0` for PASS, failing-test names for ISSUES-FOUND, stack trace for ERROR, `Reason:` line for EXPLORATORY-ONLY). The lite narration rules and load-bearing carve-outs above still govern the skill's output.
+
+**Precedence**: when a load-bearing carve-out (error message, `[warn]` structured log, interactive prompt, etc.) conflicts with a lite-narration rule, the carve-out wins and MUST be emitted verbatim even if it reads like narration.
+
 ## State File Management
 
 At the start of this skill, create `.sdlc/qa/.executing-active` via the Write tool (empty file). This signals the stop hook that `executing-qa` is the active skill. The stop hook removes the state file on success. In orchestrated workflows the orchestrator cleans it up after this skill returns.

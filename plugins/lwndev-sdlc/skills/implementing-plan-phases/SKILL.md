@@ -68,6 +68,42 @@ Execute implementation plan phases with systematic tracking and verification.
 
 > **Note:** Issue tracking (start/completion comments) is handled by the orchestrator via `managing-work-items`. This skill focuses on implementation, verification, and status tracking.
 
+## Output Style
+
+Follow the lite-narration rules below. Load-bearing carve-outs MUST be emitted as specified; they are not narration. This skill is forked by `orchestrating-workflows` once per phase (feature chain steps 6…5+N), so its output flows to a parent orchestrator rather than directly to the user.
+
+### Lite narration rules
+
+- No preamble before tool calls. Do not announce "let me check" or "I'll run" -- issue the tool call.
+- No end-of-turn summaries beyond one short sentence. Do not recap what the user can read from tool output (e.g., the per-phase commit/push trail or the plan status checkmark edit).
+- No emoji. ASCII punctuation only.
+- No restating what the user just said.
+- No status echoes that tools already show (e.g., successful `Edit` confirmations, `git push` tracking lines).
+- Prefer ASCII arrows (`->`) and punctuation over Unicode alternatives in skill-authored prose. Existing Unicode em dashes in tables and reference docs are retained.
+- Short sentences over paragraphs. Bullet lists over prose when listing more than two items.
+
+### Load-bearing carve-outs (never strip)
+
+The following MUST always be emitted even when they resemble narration:
+
+- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface script and tool stderr verbatim (e.g., `resolve-requirement-doc.sh`, `build-branch-name.sh`, `ensure-branch.sh`, `check-acceptance.sh`, `create-pr.sh` failures; `npm test` / `npm run build` failing output).
+- **Security-sensitive warnings** -- destructive-operation confirmations, credential prompts.
+- **Interactive prompts** -- any prompt that blocks the workflow and requires user input (e.g., disambiguation when multiple plan files match the provided ID, phase-selection prompt when the supplied phase number exceeds the plan's phase count, summary re-prompt when `build-branch-name.sh` exits `1` on an empty slug).
+- **Findings display from `reviewing-requirements`** -- N/A for this skill (it does not consume reviewing-requirements findings); bullet retained for consistency with the canonical template.
+- **FR-14 console echo lines** -- `[model] step {N} ({skill}) -> {tier} (...)` audit-trail lines emitted by `prepare-fork.sh`. The Unicode `->` is the documented emitter format; do not rewrite to ASCII.
+- **Tagged structured logs** -- any line prefixed `[info]`, `[warn]`, or `[model]` is a structured log, not narration. Emit verbatim.
+- **User-visible state transitions** -- pause, advance, and resume announcements (at most one line each).
+
+### Fork-to-orchestrator return contract
+
+This skill is forked by `orchestrating-workflows` once per phase (feature chain steps 6…5+N; one invocation per `### Phase N` block in the plan). Emit `done | artifact=<path> | <note-of-at-most-10-words>` as the **final line** on success, and `failed | <one-sentence reason>` on failure. The `Found **N errors**, **N warnings**, **N info**` shape is reserved for `reviewing-requirements` only and MUST NOT be emitted here.
+
+`artifact=` points to the file(s) the phase actually produced. Because a phase typically commits to multiple files (source + tests + plan-document checkmark edits), use the most-representative single path: the main source/skill file modified by the phase when the phase delivers a focused change, or the implementation plan path (`requirements/implementation/<ID>-*.md`) when deliverables genuinely span many files and no single one dominates. Example: `done | artifact=plugins/lwndev-sdlc/skills/<edited-skill>/SKILL.md | phase N complete, <note>`.
+
+**Orchestrator-side contract**: when this skill is invoked by `orchestrating-workflows`, the parent appends an instruction to the fork prompt saying "Do NOT create a pull request at the end -- the orchestrator handles PR creation separately. Skip Step 10 (Create Pull Request) entirely." The subagent MUST honor that carve-out. This SKILL.md still documents Step 10 in full for standalone (non-orchestrated) invocations, where the user runs the skill directly and the PR must be created by the skill itself.
+
+**Precedence**: the return contract takes precedence over the lite rules when the two conflict. The subagent MUST emit the contract shape as the final line of the response even if it reads like narration.
+
 ## Workflow
 
 Copy this checklist and track progress:

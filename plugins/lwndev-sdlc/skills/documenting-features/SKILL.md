@@ -46,6 +46,38 @@ Adapt sections based on feature type:
 5. List functional and non-functional requirements
 6. Specify output format, edge cases, and testing requirements
 
+## Output Style
+
+Follow the lite-narration rules below. Load-bearing carve-outs MUST be emitted as specified; they are not narration. This skill runs in the orchestrator's main conversation (feature chain step 1), so its output flows directly to the user.
+
+### Lite narration rules
+
+- No preamble before tool calls. Do not announce "let me check" or "I'll run" -- issue the tool call.
+- No end-of-turn summaries beyond one short sentence. Do not recap what the user can read from tool output (e.g., the written requirement document).
+- No emoji. ASCII punctuation only.
+- No restating what the user just said.
+- No status echoes that tools already show (e.g., successful `Write` confirmations).
+- Prefer ASCII arrows (`->`) and punctuation over Unicode alternatives in skill-authored prose. Existing Unicode em dashes in tables and reference docs are retained.
+- Short sentences over paragraphs. Bullet lists over prose when listing more than two items.
+
+### Load-bearing carve-outs (never strip)
+
+The following MUST always be emitted even when they resemble narration:
+
+- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface script and tool stderr verbatim (e.g., `next-id.sh` / `slugify.sh` failures).
+- **Security-sensitive warnings** -- destructive-operation confirmations, credential prompts.
+- **Interactive prompts** -- any prompt that blocks the workflow and requires user input (e.g., the GitHub issue URL prompt, the feature scope prompt when no argument is provided, a re-slug prompt when `slugify.sh` returns empty).
+- **Findings display from `reviewing-requirements`** -- N/A for this skill (it does not consume reviewing-requirements findings); bullet retained for consistency with the canonical template.
+- **FR-14 console echo lines** -- `[model] step {N} ({skill}) -> {tier} (...)` audit-trail lines emitted by `prepare-fork.sh`. The Unicode `->` is the documented emitter format; do not rewrite to ASCII. (Typically not emitted here since this skill runs in main context, not forked, but retained for cross-skill consistency.)
+- **Tagged structured logs** -- any line prefixed `[info]`, `[warn]`, or `[model]` is a structured log, not narration. Emit verbatim.
+- **User-visible state transitions** -- pause, advance, and resume announcements (at most one line each).
+
+### Fork-to-orchestrator return contract
+
+`documenting-features` runs in **main context** (feature chain step 1), **not** as an Agent fork. It returns its result directly to the user, not to a parent orchestrator. The `done | artifact=<path> | <note>` / `failed | <reason>` shapes do **not** apply to this skill -- there is no subagent boundary. The lite narration rules and load-bearing carve-outs above still govern the skill's output.
+
+**Precedence**: when a load-bearing carve-out (error message, `[warn]` structured log, interactive prompt, etc.) conflicts with a lite-narration rule, the carve-out wins and MUST be emitted verbatim even if it reads like narration.
+
 ## Feature ID Assignment
 
 Allocate the next Feature ID by running:
