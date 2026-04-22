@@ -295,3 +295,21 @@ Per NFR-3, the `scripts/__tests__/finalizing-workflow.test.ts` "should be under 
 | `plugins/lwndev-sdlc/skills/documenting-bugs/assets/bug-document.md` (baseline) | 181 | 707 | 4759 |
 | `plugins/lwndev-sdlc/skills/documenting-bugs/assets/bug-document.md` (post-change) | 181 | 707 | 4759 |
 | **Δ** | 0 | 0 | 0 |
+
+### Phase 6 — reviewing-requirements
+
+- FR-3 no-op for `references/review-example.md`: the file is two annotated example review outputs (a Standard Review Example for FEAT-006 and a Test-Plan Reconciliation Example for CHORE-015). It demonstrates the findings-block and fix-summary format produced by the skill; it does NOT describe spawning subagents via the Agent tool. No fork-invocation specs exist to annotate, so no pointer was added. This is noteworthy because `reviewing-requirements` is one of the few target skills whose frontmatter includes `Agent` in `allowed-tools` (for parallelizing targeted searches in Step 3), making it theoretically possible for its `references/` to describe a sub-fork. The actual content does not.
+- FR-4 decision for `assets/review-findings-template.md`: already-minimal. The template is a pure structural skeleton in two variants (Standard Review Format and Test-Plan Reconciliation Format) — headers (`## Summary`, `### Errors`, `### Warnings`, `### Info`, `### Fix Summary`, `### Update Summary`), per-severity placeholder rows (`**[E1] {Category} — {Section Reference}**` / `{Description}` / `Suggestion:`), and HTML comments documenting which format to use when and the reconciliation category ordering. Every line is load-bearing: the bracketed placeholders are the format the orchestrator's Decision Flow parses (severity prefixes, `Found **N errors** ...` summary line, `Would you like me to apply ...` prompt), and the HTML comments carry the format-selection guidance. No preamble prose, no "This template describes..." intro, no procedural narration to compress. No changes applied; recorded as already-minimal per FR-4 and Edge Case 4.
+- FR-5 scope: SKILL.md, the references file, and the assets template. `reviewing-requirements` is a forked skill (invoked at three points in each chain: standard review, test-plan reconciliation, code-review reconciliation) and is the **one exception** to the `done | artifact=... | <note>` return shape. Its `## Output Style` Fork-to-orchestrator return contract subsection states that on success it emits the full findings block followed by `Found **N errors**, **N warnings**, **N info**` as the final line (or `No issues found in <filename>. ...` on zero counts), and on failure emits `failed | <one-sentence reason>`. The findings-display carve-out is explicitly marked load-bearing for this skill (the orchestrator displays the full block to the user), with a precedence clause confirming the summary line is the LAST line of the response even when a load-bearing findings block precedes it.
+
+| File | Lines | Words | Chars |
+|---|---:|---:|---:|
+| `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` (baseline) | 393 | 3385 | 24386 |
+| `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` (post-change) | 434 | 3929 | 27945 |
+| **Δ** | +41 | +544 | +3559 |
+| `plugins/lwndev-sdlc/skills/reviewing-requirements/references/review-example.md` (baseline) | 95 | 525 | 3897 |
+| `plugins/lwndev-sdlc/skills/reviewing-requirements/references/review-example.md` (post-change) | 95 | 525 | 3897 |
+| **Δ** | 0 | 0 | 0 |
+| `plugins/lwndev-sdlc/skills/reviewing-requirements/assets/review-findings-template.md` (baseline) | 98 | 426 | 3178 |
+| `plugins/lwndev-sdlc/skills/reviewing-requirements/assets/review-findings-template.md` (post-change) | 98 | 426 | 3178 |
+| **Δ** | 0 | 0 | 0 |

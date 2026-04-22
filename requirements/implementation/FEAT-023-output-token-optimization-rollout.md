@@ -173,7 +173,7 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 
 ### Phase 6: `reviewing-requirements` — forked skill, exception return shape
 **Feature:** [FEAT-023](../features/FEAT-023-output-token-optimization-rollout.md) | [#200](https://github.com/lwndev/lwndev-marketplace/issues/200)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - `reviewing-requirements` is the one skill with a non-standard return shape: it emits `Found **N errors**, **N warnings**, **N info**` rather than `done | ...`. This exception must be documented carefully.
@@ -194,11 +194,11 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 8. **Emit fork return**: `done | artifact=plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md | Output Style section added with exception return shape`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` — `## Output Style` section with `Found **N errors** ...` exception documented
-- [ ] `assets/review-findings-template.md` — compressed or marked already-minimal in FEAT-023 Notes
-- [ ] Baseline + post-change measurements recorded in FEAT-023 Notes
-- [ ] FR-3 no-op for `review-example.md` recorded in FEAT-023 Notes
-- [ ] `npm run validate` passes
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` — `## Output Style` section with `Found **N errors** ...` exception documented
+- [x] `assets/review-findings-template.md` — compressed or marked already-minimal in FEAT-023 Notes
+- [x] Baseline + post-change measurements recorded in FEAT-023 Notes
+- [x] FR-3 no-op for `review-example.md` recorded in FEAT-023 Notes
+- [x] `npm run validate` passes
 
 ---
 

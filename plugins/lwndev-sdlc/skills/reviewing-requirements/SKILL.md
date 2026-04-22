@@ -42,6 +42,47 @@ Validate requirement documents against the codebase and documentation. Operates 
 5. **If test plan exists (no PR)** → Test-plan reconciliation: Run Steps R1-R7
 6. **If neither** → Standard review: Parse document, run Steps 3-7, present findings, offer fixes
 
+## Output Style
+
+Follow the lite-narration rules below. Load-bearing carve-outs MUST be emitted as specified; they are not narration. This skill's full findings block (Step 8 / R6 / CR5) is itself a load-bearing carve-out — it is the payload the orchestrator displays to the user before the findings-decision prompt and must never be truncated.
+
+### Lite narration rules
+
+- No preamble before tool calls. Do not announce "let me check" or "I'll run" -- issue the tool call.
+- No end-of-turn summaries beyond one short sentence. Do not recap what the user can read from tool output.
+- No emoji. ASCII punctuation only.
+- No restating what the user just said.
+- No status echoes that tools already show.
+- Prefer ASCII arrows (`->`) and punctuation over Unicode alternatives in skill-authored prose. Existing Unicode em dashes in tables and reference docs are retained.
+- Short sentences over paragraphs. Bullet lists over prose when listing more than two items.
+
+### Load-bearing carve-outs (never strip)
+
+The following MUST always be emitted even when they resemble narration:
+
+- **Error messages from `fail` calls** -- users need the reason the skill halted.
+- **Security-sensitive warnings** -- destructive-operation confirmations, credential prompts.
+- **Interactive prompts** -- any prompt that blocks the workflow and requires user input (e.g., the "Would you like me to apply the auto-fixable corrections?" prompt in Step 9 / R7).
+- **Findings display from `reviewing-requirements`** -- load-bearing for THIS skill. The full findings block (severity-ordered, category-grouped, per-finding `[E1] / [W1] / [I1]` rows) is the payload that the orchestrator displays to the user before the findings-decision prompt. It MUST be emitted in full and MUST NEVER be truncated, collapsed, or summarized away — lite rules do not override it.
+- **FR-14 console echo lines** -- audit-trail lines using the documented Unicode `→` emitter format; do not rewrite to ASCII.
+- **Tagged structured logs** -- any line prefixed `[info]`, `[warn]`, or `[model]` is a structured log, not narration. Emit verbatim.
+- **User-visible state transitions** -- pause, advance, and resume announcements (at most one line each).
+
+### Fork-to-orchestrator return contract
+
+This skill is forked by `orchestrating-workflows` at three points in each chain (standard review, test-plan reconciliation, code-review reconciliation). It emits a **non-standard** return shape — the `done | artifact=... | <note>` shape used by other forked skills is NOT produced by this skill.
+
+- **On success**: emit the full findings block (severity-ordered, category-grouped per Step 8 / R6 / CR5) followed by the canonical summary line as the **final line** of the response:
+
+  ```
+  Found **N errors**, **N warnings**, **N info**
+  ```
+
+  Or, when zero counts across all severities: `No issues found in <filename>. The document looks ready for implementation planning.` The orchestrator's Decision Flow parses this final line directly (not a `done | artifact=...` payload).
+- **On failure**: emit `failed | <one-sentence reason>` as the final line (same shape as other forked skills).
+
+**Precedence**: the return contract takes precedence over the lite rules when the two conflict. The summary line (`Found **N errors** ...` on success, `failed | <reason>` on failure) MUST be the LAST line of the response even though a load-bearing findings block precedes it. Lite rules govern the findings block and all other prose, but never override the final-line contract or the findings-display carve-out.
+
 ## Input
 
 The user provides either:
