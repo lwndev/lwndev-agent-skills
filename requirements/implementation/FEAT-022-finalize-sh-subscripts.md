@@ -46,7 +46,7 @@ The plugin-shared `branch-id-parse.sh` gains a fourth classification (`release/<
 ### Phase 2: `preflight-checks.sh` + `check-idempotent.sh` (FR-2, FR-4)
 
 **Feature:** [FEAT-022](../features/FEAT-022-finalize-sh-subscripts-full.md) | [#182](https://github.com/lwndev/lwndev-marketplace/issues/182)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 
@@ -96,10 +96,10 @@ These two subscripts form the "inspection" pair: both read state (git status, br
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/preflight-checks.sh`
-- [ ] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/check-idempotent.sh`
-- [ ] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/tests/preflight-checks.bats`
-- [ ] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/tests/check-idempotent.bats`
+- [x] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/preflight-checks.sh`
+- [x] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/check-idempotent.sh`
+- [x] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/tests/preflight-checks.bats`
+- [x] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/tests/check-idempotent.bats`
 
 ---
 
