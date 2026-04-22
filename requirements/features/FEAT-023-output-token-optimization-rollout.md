@@ -259,3 +259,21 @@ Per NFR-3, the `scripts/__tests__/finalizing-workflow.test.ts` "should be under 
 | `plugins/lwndev-sdlc/skills/documenting-features/assets/feature-requirements.md` (baseline) | 94 | 242 | 1715 |
 | `plugins/lwndev-sdlc/skills/documenting-features/assets/feature-requirements.md` (post-change) | 94 | 242 | 1715 |
 | **Δ** | 0 | 0 | 0 |
+
+### Phase 4 — documenting-chores
+
+- FR-3 no-op for `references/categories.md`: the file is a reference table of chore categories (dependencies, documentation, refactoring, configuration, cleanup) with common use cases, typical affected files, suggested acceptance criteria, and category notes. It does not describe spawning subagents via the Agent tool. No fork-invocation specs exist to annotate, so no pointer was added.
+- FR-4 decision for `assets/chore-document.md`: already-minimal. The template is a pure structural skeleton — headers (`## Chore ID`, `## GitHub Issue`, `## Category`, `## Description`, `## Affected Files`, `## Acceptance Criteria`, `## Completion`, `## Notes`) with bracketed placeholders (`[Brief Title]`, `[1-2 sentences describing the work to be done]`, `[dependencies|documentation|refactoring|configuration|cleanup]`) and HTML-commented author guidance. No preamble prose, no "This document describes..." intro, no procedural narration to compress. The HTML comments carry load-bearing guidance (category choice hints, status progression, example acceptance criteria) and removing them would break the template's self-documentation. No changes applied; recorded as already-minimal per FR-4 and Edge Case 4.
+- FR-5 scope: SKILL.md, the references file, and the assets template. `documenting-chores` is a main-context skill (chore chain step 1) — its `## Output Style` section uses the main-context return-contract variant stating it returns to the user, not a parent orchestrator; the `done | ...` / `failed | ...` shapes do not apply. Lite rules and carve-outs still govern. Wording matches Phase 3 (`documenting-features`) exactly except for the one-sentence preamble ("chore chain step 1" vs "feature chain step 1") per NFR-4 consistency.
+
+| File | Lines | Words | Chars |
+|---|---:|---:|---:|
+| `plugins/lwndev-sdlc/skills/documenting-chores/SKILL.md` (baseline) | 117 | 607 | 4466 |
+| `plugins/lwndev-sdlc/skills/documenting-chores/SKILL.md` (post-change) | 149 | 1051 | 7453 |
+| **Δ** | +32 | +444 | +2987 |
+| `plugins/lwndev-sdlc/skills/documenting-chores/references/categories.md` (baseline) | 198 | 720 | 4785 |
+| `plugins/lwndev-sdlc/skills/documenting-chores/references/categories.md` (post-change) | 198 | 720 | 4785 |
+| **Δ** | 0 | 0 | 0 |
+| `plugins/lwndev-sdlc/skills/documenting-chores/assets/chore-document.md` (baseline) | 109 | 356 | 2456 |
+| `plugins/lwndev-sdlc/skills/documenting-chores/assets/chore-document.md` (post-change) | 109 | 356 | 2456 |
+| **Δ** | 0 | 0 | 0 |

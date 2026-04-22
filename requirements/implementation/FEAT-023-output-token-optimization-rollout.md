@@ -113,7 +113,7 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 
 ### Phase 4: `documenting-chores` — main-context skill, sibling to Phase 3
 **Feature:** [FEAT-023](../features/FEAT-023-output-token-optimization-rollout.md) | [#200](https://github.com/lwndev/lwndev-marketplace/issues/200)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - Same shape as `documenting-features`: main-context, one `assets/` file, one `references/` file. Phase 3 establishes the pattern; this is a straight replication.
@@ -133,11 +133,11 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 8. **Emit fork return**: `done | artifact=plugins/lwndev-sdlc/skills/documenting-chores/SKILL.md | Output Style section added`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/documenting-chores/SKILL.md` — `## Output Style` section with main-context return-contract note
-- [ ] `assets/chore-document.md` — compressed or marked already-minimal in FEAT-023 Notes
-- [ ] Baseline + post-change measurements recorded in FEAT-023 Notes
-- [ ] FR-3 no-op for `categories.md` recorded in FEAT-023 Notes
-- [ ] `npm run validate` passes
+- [x] `plugins/lwndev-sdlc/skills/documenting-chores/SKILL.md` — `## Output Style` section with main-context return-contract note
+- [x] `assets/chore-document.md` — compressed or marked already-minimal in FEAT-023 Notes
+- [x] Baseline + post-change measurements recorded in FEAT-023 Notes
+- [x] FR-3 no-op for `categories.md` recorded in FEAT-023 Notes
+- [x] `npm run validate` passes
 
 ---
 
