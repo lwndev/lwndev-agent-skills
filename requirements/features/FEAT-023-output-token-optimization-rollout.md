@@ -220,3 +220,21 @@ Measurements will be appended here by the implementation phases.
 | **Δ** | +32 | +440 | +2949 |
 
 Per NFR-3, the `scripts/__tests__/finalizing-workflow.test.ts` "should be under 80 lines after the collapse" assertion (originally set by FEAT-022 after the skill was collapsed to ~72 lines) was updated to a 120-line ceiling to accommodate the rollout-wide `## Output Style` section. No other tests required changes.
+
+### Phase 2 — managing-work-items
+
+- `[input]` FR-3 no-op for `github-templates.md` and `jira-templates.md`: both reference files are API-interaction templates (`gh issue view` / `gh issue comment` / Rovo MCP ADF / `acli` commands). They document external API call patterns, not Agent-tool subagent spawning, so no fork-invocation specs exist to annotate.
+- FR-4 no-op: `managing-work-items` has no `assets/` directory; no artifact templates to compress.
+- FR-5 scope: SKILL.md only. `managing-work-items` is a cross-cutting inline skill — invoked directly from the orchestrator's main context per `orchestrating-workflows/references/issue-tracking.md`, NOT forked via the Agent tool. The `## Output Style` section's return-contract subsection was replaced with an "Inline execution note" stating the `done | artifact=...` / `failed | ...` shapes do not apply; tool-call results are consumed directly. WARNING-level mechanism-failure lines remain load-bearing.
+
+| File | Lines | Words | Chars |
+|---|---:|---:|---:|
+| `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` (baseline) | 358 | 2811 | 19210 |
+| `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` (post-change) | 390 | 3331 | 22857 |
+| **Δ** | +32 | +520 | +3647 |
+| `plugins/lwndev-sdlc/skills/managing-work-items/references/github-templates.md` (baseline) | 740 | 2315 | 17196 |
+| `plugins/lwndev-sdlc/skills/managing-work-items/references/github-templates.md` (post-change) | 740 | 2315 | 17196 |
+| **Δ** | 0 | 0 | 0 |
+| `plugins/lwndev-sdlc/skills/managing-work-items/references/jira-templates.md` (baseline) | 715 | 2079 | 19135 |
+| `plugins/lwndev-sdlc/skills/managing-work-items/references/jira-templates.md` (post-change) | 715 | 2079 | 19135 |
+| **Δ** | 0 | 0 | 0 |

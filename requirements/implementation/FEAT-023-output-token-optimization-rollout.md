@@ -51,7 +51,7 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 
 ### Phase 2: `managing-work-items` — cross-cutting inline skill, no assets
 **Feature:** [FEAT-023](../features/FEAT-023-output-token-optimization-rollout.md) | [#200](https://github.com/lwndev/lwndev-marketplace/issues/200)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - `managing-work-items` has no `assets/` directory — FR-4 is a no-op. It does have two `references/` files (`github-templates.md`, `jira-templates.md`) to check for FR-3.
@@ -72,11 +72,11 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 8. **Emit fork return**: `done | artifact=plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md | Output Style section added`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` — `## Output Style` section added with inline-execution contract note
-- [ ] Baseline + post-change measurements recorded in FEAT-023 Notes
-- [ ] FR-3 no-ops for both reference files recorded in FEAT-023 Notes
-- [ ] FR-4 no-op recorded in FEAT-023 Notes
-- [ ] `npm run validate` passes
+- [x] `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` — `## Output Style` section added with inline-execution contract note
+- [x] Baseline + post-change measurements recorded in FEAT-023 Notes
+- [x] FR-3 no-ops for both reference files recorded in FEAT-023 Notes
+- [x] FR-4 no-op recorded in FEAT-023 Notes
+- [x] `npm run validate` passes
 
 ---
 
