@@ -297,7 +297,7 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 
 ### Phase 10: `implementing-plan-phases` — forked skill, longest SKILL.md
 **Feature:** [FEAT-023](../features/FEAT-023-output-token-optimization-rollout.md) | [#200](https://github.com/lwndev/lwndev-marketplace/issues/200)
-**Status:** Pending
+**Status:** ✅ Complete
 
 #### Rationale
 - `implementing-plan-phases` has the largest combined surface of the forked skills: 142-line SKILL.md, two `references/` files totaling 726 lines, and one `assets/` file (`pr-template.md`, 163 lines).
@@ -318,11 +318,11 @@ Phase ordering follows the risk-ordering suggestion from the skill guidance: sma
 8. **Emit fork return**: `done | artifact=plugins/lwndev-sdlc/skills/implementing-plan-phases/SKILL.md | Output Style section added`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/SKILL.md` — `## Output Style` section added
-- [ ] `assets/pr-template.md` — compressed or marked already-minimal in FEAT-023 Notes
-- [ ] Baseline + post-change measurements recorded in FEAT-023 Notes
-- [ ] FR-3 outcome for both reference files recorded in FEAT-023 Notes
-- [ ] `npm run validate` passes
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/SKILL.md` — `## Output Style` section added
+- [x] `assets/pr-template.md` — compressed or marked already-minimal in FEAT-023 Notes
+- [x] Baseline + post-change measurements recorded in FEAT-023 Notes
+- [x] FR-3 outcome for both reference files recorded in FEAT-023 Notes
+- [x] `npm run validate` passes
 
 ---
 
