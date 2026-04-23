@@ -1,19 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { execFileSync, spawnSync } from 'node:child_process';
-import {
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-  readFileSync,
-  mkdirSync,
-  chmodSync,
-} from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 const SCRIPTS_DIR = join(
   process.cwd(),
-  'plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts',
+  'plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts'
 );
 const NEXT_PENDING = join(SCRIPTS_DIR, 'next-pending-phase.sh');
 const STATUS_MARKER = join(SCRIPTS_DIR, 'plan-status-marker.sh');
@@ -28,11 +21,7 @@ type RunResult = {
   stderr: string;
 };
 
-function run(
-  script: string,
-  args: string[],
-  env?: NodeJS.ProcessEnv,
-): RunResult {
+function run(script: string, args: string[], env?: NodeJS.ProcessEnv): RunResult {
   const result = spawnSync('bash', [script, ...args], {
     encoding: 'utf-8',
     env: env ?? process.env,
@@ -163,7 +152,7 @@ describe('FEAT-027 — Inputs dimension', () => {
         expect(r.status).toBe(2);
         const after = readFileSync(path, 'utf-8');
         expect(after).toBe(plan);
-      },
+      }
     );
   });
 
@@ -247,13 +236,14 @@ describe('FEAT-027 — Inputs dimension', () => {
       expect(r.status).toBe(2);
     });
 
-    it.each([['FEAT-027', '1.5', 'name'], ['FEAT-027', '0', 'name'], ['FEAT-027', '-1', 'name']])(
-      'rejects non-integer / non-positive phase-N %s with exit 2',
-      (id, p, n) => {
-        const r = run(COMMIT_PUSH, [id, p, n]);
-        expect(r.status).toBe(2);
-      },
-    );
+    it.each([
+      ['FEAT-027', '1.5', 'name'],
+      ['FEAT-027', '0', 'name'],
+      ['FEAT-027', '-1', 'name'],
+    ])('rejects non-integer / non-positive phase-N %s with exit 2', (id, p, n) => {
+      const r = run(COMMIT_PUSH, [id, p, n]);
+      expect(r.status).toBe(2);
+    });
 
     it('rejects empty phase-name with exit 2', () => {
       const r = run(COMMIT_PUSH, ['FEAT-027', '1', '']);
@@ -448,7 +438,7 @@ describe('FEAT-027 — Dependency failure dimension', () => {
             '  *)           echo "unexpected npm invocation: $*" >&2; exit 99 ;;',
             'esac',
             '',
-          ].join('\n'),
+          ].join('\n')
         );
         chmodSync(npmStub, 0o755);
 
@@ -464,7 +454,7 @@ describe('FEAT-027 — Dependency failure dimension', () => {
         expect(r.status).toBe(1);
         const outputBuild =
           typeof parsed.output === 'object' && parsed.output !== null
-            ? parsed.output.build ?? ''
+            ? (parsed.output.build ?? '')
             : '';
         expect(outputBuild).toContain('build ERROR');
       } finally {
