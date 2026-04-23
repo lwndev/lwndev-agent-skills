@@ -112,7 +112,7 @@ No external tools beyond `bash` + basic POSIX utilities are required, so these s
 ### Phase 2: Core Verification — `verify-references.sh` (FR-3) + `detect-review-mode.sh` (FR-1)
 
 **Feature:** [FEAT-026](../features/FEAT-026-reviewing-requirements-scripts.md) | [#184](https://github.com/lwndev/lwndev-marketplace/issues/184)
-**Status:** Pending
+**Status:** ✅ Complete
 **Depends on:** Phase 1
 
 #### Rationale
@@ -212,10 +212,10 @@ Together, Phase 2 delivers the two scripts that represent the highest per-script
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/verify-references.sh`
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/detect-review-mode.sh`
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/verify-references.bats`
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/detect-review-mode.bats`
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/verify-references.sh`
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/detect-review-mode.sh`
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/verify-references.bats`
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/detect-review-mode.bats`
 
 ---
 
