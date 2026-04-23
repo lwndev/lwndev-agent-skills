@@ -32,8 +32,8 @@ managing-work-items <operation> <issueRef> [--type <comment-type>] [--context <j
 `managing-work-items` is a **cross-cutting reference document**, not a forkable step. The orchestrator **executes it inline from its own main context** using its existing `Bash`, `Read`, and `Glob` tool access. Concretely:
 
 1. **Once per workflow, at workflow start**, the orchestrator `Read`s `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/SKILL.md` plus whichever template reference it will need (`references/github-templates.md` for `#N` issues or `references/jira-templates.md` for `PROJ-123` issues). The file is a reference document — the orchestrator consults it the way a function looks up an argument table, not the way it forks a sub-skill.
-2. **At every call site below**, the orchestrator runs the documented `gh` / `acli` / Rovo MCP command directly from main context. No Agent tool fork. No Skill tool call. No sub-conversation.
-3. **Graceful degradation** (NFR-1) still applies — every external command is wrapped in the try/skip pattern from `managing-work-items/SKILL.md:287-306`. Failures are logged and the workflow continues.
+2. **At every call site below**, the orchestrator invokes the matching skill-scoped script (`backend-detect.sh`, `fetch-issue.sh`, `post-issue-comment.sh`, `pr-link.sh`, `extract-issue-ref.sh`, `render-issue-comment.sh`) via `Bash`. No Agent tool fork. No Skill tool call. No sub-conversation.
+3. **Graceful degradation** (NFR-1) still applies — the composite scripts wrap every external command in the try/skip pattern. See `plugins/lwndev-sdlc/skills/managing-work-items/scripts/post-issue-comment.sh` for the canonical implementation. Failures are logged and the workflow continues.
 
 **Note on cross-cutting skills**: `managing-work-items` is deliberately not in any chain step table (Feature, Chore, or Bug). Cross-cutting skills — skills invoked between steps rather than as a step — do **not** follow the Forked Steps recipe in SKILL.md. They follow this "How to Invoke" subsection instead. This distinction matters because the Forked Steps recipe is scoped to "steps marked **fork** in the step sequence", and cross-cutting invocations have no such marker.
 
@@ -52,70 +52,43 @@ Each example assumes the orchestrator has already `Read` the `managing-work-item
 
 **Operation 1: `extract-ref` (parse issue reference from requirements document)**
 
-Use `Read` on the requirements document and search for the `## GitHub Issue` section. Pseudocode:
-
-```
-content = Read("requirements/features/FEAT-042-my-feature.md")
-# Find the "## GitHub Issue" heading and the next non-empty line
-# Match patterns: [#N](URL) or [PROJ-123](URL)
-# Example content under the heading:
-#   ## GitHub Issue
-#   [#131](https://github.com/lwndev/lwndev-marketplace/issues/131)
-issueRef = "#131"  # extracted; store for the rest of the workflow
-```
-
-Concretely, `Grep` the file for `^\[#[0-9]+\]` or `^\[[A-Z][A-Z0-9]*-[0-9]+\]` within the `## GitHub Issue` section, or (equivalently) `Read` the file and string-search in the orchestrator's head. If the section is missing or empty, set `issueRef` to empty and log the info-level skip message; do **not** warn.
-
-**Operation 2: `fetch` (retrieve issue data via `gh issue view`)**
-
-For a GitHub `#N` reference:
+Invoke the skill-scoped script:
 
 ```bash
-gh issue view 131 --json title,body,labels,state,assignees
+bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/extract-issue-ref.sh" "requirements/features/FEAT-042-my-feature.md"
 ```
 
-The orchestrator runs this via its `Bash` tool and parses the returned JSON. For a Jira `PROJ-123` reference, the orchestrator follows the tiered fallback documented in `managing-work-items/SKILL.md` — first try Rovo MCP (`getJiraIssue(cloudId, "PROJ-123")`), then `acli jira workitem view --key PROJ-123`, then skip with a warning if both are unavailable. The orchestrator executes whichever tier succeeds directly; no subagent fork.
+The script scans the accepted heading variants (`## GitHub Issue`, `## Issue`, `## Issue Tracker`) and emits the first `[#N](URL)` or `[PROJ-123](URL)` match on stdout, or empty stdout when the section is missing/empty. Capture stdout into `issueRef`. If the output is empty, log the info-level skip message; do **not** warn.
 
-**Operation 3: `comment` (post a lifecycle comment via `gh issue comment`)**
+**Operation 2: `fetch` (retrieve issue data via `fetch-issue.sh`)**
 
-For a phase-start comment on a GitHub issue:
+For either a GitHub `#N` or Jira `PROJ-123` reference:
 
-1. `Read` the appropriate template from `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/references/github-templates.md` — select the `phase-start` section.
-2. Substitute context variables (`phase`, `totalPhases`, `workItemId`, phase name, steps, deliverables) into the template to produce the rendered markdown body.
-3. Run the following command. Use the plain multi-line double-quoted string form (matching the canonical templates in `github-templates.md`); do **not** wrap the body in a `$(cat <<'EOF' ... EOF)"` heredoc — the closing `EOF` delimiter must be at column 0, which conflicts with markdown list-continuation indentation and breaks copy-paste from raw source:
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/fetch-issue.sh" "$issueRef"
+```
 
-   ```bash
-   gh issue comment 131 --body "## Phase 1 Started: GitHub Backend
+The script performs backend detection, runs the appropriate pre-flight checks, and -- for GitHub -- executes `gh issue view <N> --json title,body,labels,state,assignees`. For Jira refs it routes through the tiered fallback (Rovo MCP `getJiraIssue`, then `acli jira workitem view`) and projects into the normalized `{title, body, labels, state, assignees}` shape. On any skip path the script exits `0` with empty stdout and emits the matching `[warn]`/`[info]` line on stderr.
 
-   **FEAT-014** — Phase 1 of 4
+**Operation 3: `comment` (post a lifecycle comment via `post-issue-comment.sh`)**
 
-   ### Steps
-   - Implement classifier script
-   - Wire up state-file fields
-   ..."
-   ```
+For any lifecycle comment (phase-start, phase-completion, work-start, work-complete, bug-start, bug-complete):
 
-   If the rendered body contains literal `$`, backticks, or backslashes that you do not want bash to interpret, use single quotes instead: `gh issue comment 131 --body '...'`. For dynamic substitution, build the body in a shell variable first (`body="..."; gh issue comment 131 --body "$body"`).
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/post-issue-comment.sh" \
+  "$issueRef" phase-start \
+  '{"phase":1,"totalPhases":4,"workItemId":"FEAT-014","name":"GitHub Backend","steps":["Implement classifier script","Wire up state-file fields"],"deliverables":["..."]}'
+```
 
-4. On failure (non-zero exit), emit a warning-level skip message (see "Mechanism-Failure Logging" below) and continue the workflow.
-
-For a Jira `PROJ-123` reference, the orchestrator instead reads `jira-templates.md`, renders the ADF JSON (for Rovo MCP) or markdown (for `acli`), and invokes the matching backend tier. The template and backend selection are the only differences — the inline-execution pattern is the same.
+The script performs backend detection, pre-flight, template rendering (via `render-issue-comment.sh`), and posting (via `gh issue comment` or the Jira tiered fallback). All `[info]` / `[warn]` skip lines from the SKILL.md tables are emitted verbatim. On failure the script exits `0` with the matching warning on stderr so the workflow continues.
 
 **Operation 4: `pr-link` (generate PR body issue link)**
 
-For GitHub, hand-write the syntax when constructing the PR body:
-
-```
-Closes #131
+```bash
+pr_link=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/pr-link.sh" "$issueRef")
 ```
 
-For Jira, write the issue key:
-
-```
-PROJ-123
-```
-
-This is pure string generation — the orchestrator does not need to shell out for it. It builds the PR body in main context and passes it to `gh pr create --body` alongside all other PR metadata.
+The script emits `Closes #N` for GitHub refs, the raw issue key (e.g., `PROJ-123`) for Jira refs, or empty stdout when the ref is unrecognized. The orchestrator concatenates `pr_link` into the PR body and passes it to `gh pr create --body` alongside all other PR metadata.
 
 #### Mechanism-Failure Logging (WARNING level)
 
@@ -124,11 +97,10 @@ Graceful degradation (NFR-1) tells the orchestrator to skip issue operations on 
 | Failure mode | Warning message format |
 |--------------|------------------------|
 | `managing-work-items/SKILL.md` cannot be read at workflow start | `[warn] managing-work-items reference document unreadable at ${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/SKILL.md — issue tracking disabled for this workflow.` |
-| `gh` CLI missing when `issueRef` is a `#N` reference | `[warn] gh CLI not found on PATH — cannot invoke managing-work-items for GitHub issue ${issueRef}. Skipping issue tracking.` |
-| `gh` CLI not authenticated when `issueRef` is `#N` | `[warn] gh CLI not authenticated (run \`gh auth login\`) — cannot invoke managing-work-items for GitHub issue ${issueRef}. Skipping issue tracking.` |
-| Jira tiered fallback exhausts all three tiers | `[warn] No Jira backend available (Rovo MCP not registered, acli not found) — cannot invoke managing-work-items for Jira issue ${issueRef}. Skipping issue tracking.` |
-| GitHub template file unreadable | `[warn] managing-work-items GitHub template file unreadable at references/github-templates.md — cannot render ${commentType} comment. Skipping.` |
-| Jira template file unreadable | `[warn] managing-work-items Jira template file unreadable at references/jira-templates.md — cannot render ${commentType} comment. Skipping.` |
+| `gh` CLI missing when `issueRef` is a `#N` reference | ``[warn] GitHub CLI (`gh`) not found on PATH. Skipping GitHub issue operations.`` |
+| `gh` CLI not authenticated when `issueRef` is `#N` | ``[warn] GitHub CLI not authenticated -- run `gh auth login` to enable issue tracking.`` |
+| Jira tiered fallback exhausts all three tiers | `[warn] No Jira backend available (Rovo MCP not registered, acli not found). Skipping Jira operations.` |
+| Template render fails (e.g., template file unreadable) | `[warn] Failed to render ${commentType} comment for ${issueRef}: ${stderr}. Skipping.` |
 
 Contrast with the INFO-level skip (legitimate empty-`issueRef`):
 
