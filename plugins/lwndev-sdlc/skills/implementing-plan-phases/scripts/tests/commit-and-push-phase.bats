@@ -37,6 +37,7 @@ teardown() {
 
 write_git_stub() {
   # GIT_STATUS_STDOUT  — `git status --porcelain=v1` stdout (default one change)
+  # GIT_ADD_RC         — exit for `git add -A`         (default 0)
   # GIT_COMMIT_RC      — exit for `git commit`        (default 0)
   # GIT_COMMIT_ERR     — stderr for `git commit`       (printed when RC != 0)
   # GIT_BRANCH_STDOUT  — `git rev-parse --abbrev-ref HEAD` stdout
@@ -54,7 +55,7 @@ case "$1" in
     exit 0
     ;;
   add)
-    exit 0
+    exit "${GIT_ADD_RC:-0}"
     ;;
   commit)
     if [ "${GIT_COMMIT_RC:-0}" -ne 0 ]; then
@@ -200,6 +201,17 @@ EOF
   GIT_STATUS_STDOUT="" PATH="${STUB_DIR}:${PATH}" run bash "$SCRIPT" "FEAT-027" "1" "scaffold"
   [ "$status" -eq 1 ]
   [[ "$output" == *"error: no changes to commit"* ]]
+}
+
+@test "git add fails -> stderr [error] git add failed, exit 1" {
+  write_git_stub
+  err_file="${FIXTURE_DIR}/err"
+  GIT_ADD_RC=1 PATH="${STUB_DIR}:${PATH}" \
+    bash "$SCRIPT" "FEAT-027" "1" "scaffold" 2>"$err_file" || rc=$?
+  rc=${rc:-0}
+  err="$(cat "$err_file")"
+  [ "$rc" -eq 1 ]
+  [[ "$err" == *"[error] git add failed"* ]]
 }
 
 @test "git commit fails (hook rejection) -> exit 1, hook stderr surfaced" {

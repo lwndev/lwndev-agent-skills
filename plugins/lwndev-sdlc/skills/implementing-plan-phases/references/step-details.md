@@ -72,7 +72,7 @@ Create a feature branch following the naming convention:
 git checkout -b feat/{Feature ID}-{2-3-word-summary}
 ```
 
-In practice, assemble the name via `build-branch-name.sh` (which calls `slugify.sh` internally) and create/switch with `ensure-branch.sh`:
+Assemble the name via `build-branch-name.sh` and create/switch with `ensure-branch.sh`:
 
 ```bash
 branch=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<summary>")
@@ -186,7 +186,7 @@ Run `verify-phase-deliverables.sh` — one call replaces the old `npm test` + `n
 bash "$SCRIPTS/verify-phase-deliverables.sh" "<plan-path>" <phase-N>
 ```
 
-The script parses the phase's `#### Deliverables` subsection, extracts backticked paths (`- [x] \`<path>\``), and checks each file exists. It then runs `npm test` and `npm run build` sequentially (fail-fast: the first failing check short-circuits), and runs `npm run test:coverage` only when the plan mentions `coverage` or a `[0-9]+%` threshold. Non-file deliverable lines (no leading backtick) are skipped from the file-existence check.
+The script parses the phase's `#### Deliverables` subsection, extracts backticked paths from both `- [ ]` and `- [x]` lines, and checks each file exists. It then runs `npm test` and `npm run build` sequentially (fail-fast: the first failing check short-circuits), and runs `npm run test:coverage` only when the plan mentions `coverage` or a `[0-9]+%` threshold. Non-file deliverable lines (no leading backtick) are skipped from the file-existence check.
 
 JSON stdout shape:
 
@@ -216,7 +216,7 @@ bash "$SCRIPTS/commit-and-push-phase.sh" "<FEAT-NNN>" <phase-N> "<phase-name>"
 
 The script:
 1. Runs `git status --porcelain=v1` — empty output → stderr `error: no changes to commit`, exit `1`.
-2. Stages with `git add -A`.
+2. Stages with `git add -A`. On failure → stderr `[error] git add failed`, exit `1`.
 3. Commits with the canonical message `<type>(<ID>): complete phase <N> - <phase-name>`. Type prefix is derived from the ID: `FEAT-` → `feat`, `CHORE-` → `chore`, `BUG-` → `fix`.
 4. Determines current branch via `git rev-parse --abbrev-ref HEAD`.
 5. Checks upstream via `git rev-parse --abbrev-ref --symbolic-full-name @{u}`; pushes with `git push -u origin <branch>` on first push, bare `git push` thereafter.
@@ -268,7 +268,7 @@ Transition to `✅ Complete` via the same `plan-status-marker.sh` used in Step 3
 bash "$SCRIPTS/plan-status-marker.sh" "<plan-path>" <phase-N> complete
 ```
 
-Stdout `transitioned` on a real write, `already set` if the phase is already `✅ Complete` (idempotent). Exit `1` on missing plan or no matching phase block.
+Stdout `transitioned` on a real write, `already set` if the phase is already `✅ Complete` (idempotent). Exit `1` on missing plan, no matching phase block, or no `**Status:**` line.
 
 Confirm that all deliverable checkboxes were flipped during Step 6. If any were missed, run `check-deliverable.sh` for each now as a final catch.
 
@@ -286,7 +286,7 @@ Before creating the PR, gate on `verify-all-phases-complete.sh`:
 bash "$SCRIPTS/verify-all-phases-complete.sh" "<plan-path>"
 ```
 
-Exit `0` with stdout `all phases complete` when every phase is `✅ Complete`. Otherwise exit `1` with JSON `{"incomplete":[{"phase":<N>,"name":"...","status":"Pending|in-progress"},...]}` on stdout — finish the listed phases before proceeding. The script is fence-aware; `**Status:**` lines inside fenced blocks are ignored.
+Exit `0` with stdout `all phases complete` when every phase is `✅ Complete`. Otherwise exit `1` with JSON `{"incomplete":[{"phase":<N>,"name":"...","status":"Pending|in-progress"},...]}` on stdout — finish the listed phases before proceeding. Exit `1` with stderr `[error] no phase blocks found in plan` (no JSON) when the plan has no `### Phase` blocks. The script is fence-aware; `**Status:**` lines inside fenced blocks are ignored.
 
 ### Create the Pull Request
 
