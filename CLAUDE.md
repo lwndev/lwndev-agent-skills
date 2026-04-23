@@ -102,3 +102,14 @@ Thirteen skills exist that form three workflow chains. The `orchestrating-workfl
 - Tests run sequentially (`fileParallelism: false` in `vitest.config.ts`) to prevent race conditions with shared `plugins/` directories
 - Plugin discovery is filesystem-driven: directories under `plugins/` with `.claude-plugin/plugin.json` are treated as plugins
 - No build output — plugins live in their final structure under `plugins/` and marketplace source paths point directly to them
+
+## Skill Authoring: Prefer Scripts Over Prose
+
+Push behavior into deterministic scripts, not SKILL.md prose. This is a first-class authoring principle for every skill in this repo — it keeps runs reproducible, keeps token cost down, and makes behavior testable.
+
+- **Logic lives in `skills/<name>/scripts/`, not in SKILL.md.** SKILL.md describes the contract (inputs, outputs, when to invoke); scripts implement it. Prefer a single script entry point the skill calls (e.g. `workflow-state.sh <subcommand>`) over inline `jq`, `git`, `date`, or arithmetic in SKILL.md.
+- **Derived data must be computed in scripts.** Durations, counts, gaps, aggregations, totals, rendered reports — anything the model could "reconstruct" — is computed by the script and emitted as the source of truth. Do not rely on the model to do the math.
+- **Every script behavior needs bats coverage.** New subcommands and branches land alongside the existing bats suites (`*.bats` next to the script). If a behavior matters, it has a test. If it has a test, the model doesn't need to remember it.
+- **Keep SKILL.md lean.** SKILL.md is a hot path for token cost on every invocation. Long-form logic belongs in scripts; long-form detail belongs under `references/`. A SKILL.md change should typically be a one-line invocation swap plus a contract note — not a procedure rewrite.
+- **Load-bearing output from scripts is contract.** Tagged lines (`[info]`, `[warn]`, `[model]`, FR-14 echoes, report paths) are the script's structured log and the skill emits them verbatim. Do not paraphrase.
+- **Write prose at Caveman "Lite" grunt level to cut tokens.** Adopt the style described at https://github.com/juliusbrussee/caveman: drop filler, keep grammar. Professional tone, no fluff. Contrast: *"Your component re-renders because you create a new object reference each render. Inline object props fail shallow comparison every time. Wrap it in `useMemo`."* (Lite) vs. the Full-grunt *"New object ref each render. Inline object prop = new ref = re-render. Wrap in `useMemo`."* Lite keeps articles and full sentences so the guidance still reads as technical writing, but strips hedges, restatements, and narration. Apply this to SKILL.md bodies, `references/` docs, issue descriptions, commit messages, and PR bodies in this repo. Load-bearing carve-outs (orchestrator error messages, security warnings, interactive prompts, structured log lines) stay verbatim — Lite does not override contracts.

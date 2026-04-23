@@ -28,12 +28,11 @@ Execute implementation plan phases with systematic tracking and verification.
 
 ## Quick Start
 
-1. Locate the implementation plan. For a `FEAT-NNN` ID, resolve via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<FEAT-NNN>"` (exit `0`/`1`/`2`/`3`), then Glob `requirements/implementation/{ID}-*.md`.
-2. Identify target phase (user-specified or next pending).
-3. Update plan status to "🔄 In Progress":
-   ```markdown
-   **Status:** 🔄 In Progress
-   ```
+Script paths below are relative to `${CLAUDE_PLUGIN_ROOT}/skills/implementing-plan-phases/scripts/` (abbreviated `$SCRIPTS/` in the snippets).
+
+1. Locate the plan. Resolve a `FEAT-NNN` ID via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<FEAT-NNN>"` (exit `0`/`1`/`2`/`3`), then Glob `requirements/implementation/{ID}-*.md`.
+2. Identify target phase. If the user named one, use it; otherwise run `bash "$SCRIPTS/next-pending-phase.sh" "<plan-path>"` and dispatch on JSON stdout: `{"phase":<N>,"name":"..."}` → implement; `...,"reason":"resume-in-progress"}` → resume; `{"phase":null,"reason":"all-complete"}` → jump to Step 10; `{"phase":null,"reason":"blocked","blockedOn":[...]}` → halt, surface the blocker.
+3. Transition status to "🔄 In Progress": `bash "$SCRIPTS/plan-status-marker.sh" "<plan-path>" <phase-N> in-progress`. Stdout: `transitioned` or `already set` (idempotent). Exit `1` on missing phase block.
 4. Create the feature branch (if not already on it):
 
    ```bash
@@ -41,27 +40,27 @@ Execute implementation plan phases with systematic tracking and verification.
    bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-branch.sh" "$branch"
    ```
 
-   `build-branch-name.sh` calls `slugify.sh` internally (lowercasing, punctuation stripping, stopword removal, 4-token cap). Exit `1` = empty slug (re-prompt for a more descriptive summary); exit `2` = invalid type. `ensure-branch.sh` exits `0` on success (`on <branch>` / `switched to <branch>` / `created <branch>` on stdout); `2` on missing arg; `3` on dirty working tree (stash or commit first, then retry).
+   `build-branch-name.sh`: exit `1` = empty slug (re-prompt for a more descriptive summary); `2` = invalid type. `ensure-branch.sh`: `0` on success (`on <branch>` / `switched to <branch>` / `created <branch>`); `2` missing arg; `3` dirty tree (stash or commit first, then retry).
 5. Load implementation steps into todos.
-6. Execute each step, **checking off each deliverable** as completed:
+6. Execute each step and check off each deliverable as it completes: `bash "$SCRIPTS/check-deliverable.sh" "<plan-path>" <phase-N> "<idx-or-text>"`. Third arg dispatches: digits → 1-based deliverable index; any non-digit → literal substring. Exit `0` `checked` / `already checked` (idempotent); `1` not-found or out-of-range; `2` ambiguous (multi-match on `- [ ]` lines); `3` missing arg. Phase-scoped, fence-aware.
+7. Verify deliverables: `bash "$SCRIPTS/verify-phase-deliverables.sh" "<plan-path>" <phase-N>`. Extracts backticked paths from the phase's `#### Deliverables`, checks existence, then runs `npm test`, `npm run build`, and (when the plan mentions `coverage` or a `[0-9]+%` threshold) `npm run test:coverage`. Fail-fast: a failing stage leaves downstream stages reported `skipped` (e.g. `test:"fail"` → `build:"skipped"`, `coverage:"skipped"`). JSON stdout: `{"files":{"ok":[...],"missing":[...]},"test":"pass|fail|skipped","build":"...","coverage":"...","output":{...}}`. Exit `0` only when `files.missing` is empty AND every check is `pass` or `skipped`; else `1`. Gracefully degrades when `npm` is absent (`[warn]` to stderr; all three reported `skipped`).
+8. Commit and push — always, no confirmation prompt: `bash "$SCRIPTS/commit-and-push-phase.sh" "<FEAT-NNN>" <phase-N> "<phase-name>"`. Produces canonical commit `<type>(<ID>): complete phase <N> - <name>` (`FEAT-`→`feat`, `CHORE-`→`chore`, `BUG-`→`fix`). Runs `git add -A` + commit, detects upstream, pushes (`-u origin <branch>` on first push; bare `git push` after). Stdout `pushed <branch>`. Exit `1` on `no changes to commit`, `git add` failure (stderr `[error] git add failed`), hook rejection, or push failure (git stderr verbatim + `[error] push failed; see Push Failure Recovery in SKILL.md`). Exit `2` on malformed args.
 
-   ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-acceptance.sh" "<plan-path>" "<deliverable-matcher>"
-   ```
-
-   Finds the first `- [ ] ` line outside a fenced code block containing the literal (non-regex) matcher and flips to `- [x] `. Exit codes: `0` on `checked` / `already checked` (idempotent); `1` on criterion not found; `2` on ambiguous; `3` on missing arg.
-7. Verify deliverables (tests pass, build succeeds).
-8. **Always** commit and push to remote — do not ask the user for confirmation.
-9. Update plan status to "✅ Complete".
-10. **After all phases complete:** Create pull request **(MUST include `Closes #N` if issue exists)**:
+9. Transition status to "✅ Complete": `bash "$SCRIPTS/plan-status-marker.sh" "<plan-path>" <phase-N> complete`.
+10. **After all phases complete:** Create pull request — gate on `verify-all-phases-complete.sh`, then invoke `create-pr.sh` (MUST include `Closes #N` if issue exists):
 
     ```bash
+    bash "$SCRIPTS/verify-all-phases-complete.sh" "<plan-path>"
     bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-pr.sh" feat "<FEAT-NNN>" "<summary>" [--closes <issueRef>]
     ```
 
-    Reads the current branch, runs `git push -u origin <branch>`, assembles title `feat(<FEAT-NNN>): <summary>`, substitutes into `scripts/assets/pr-body.tmpl`, and runs `gh pr create`. Pass `--closes #N` when a GitHub issue exists — auto-closes the linked issue on merge. Exit codes: `0` on success (PR URL on stdout); `1` on `git push` or `gh pr create` failure; `2` on missing/invalid args or malformed `--closes` token.
+    `verify-all-phases-complete.sh`: exit `0` with `all phases complete` only when every phase is `✅ Complete`; otherwise `1` with JSON `{"incomplete":[{"phase":<N>,...}...]}` — or stderr `[error] no phase blocks found in plan` when the plan has no `### Phase` blocks. Treat any non-zero as "do not create PR". `create-pr.sh`: reads current branch, runs `git push -u origin <branch>`, assembles title `feat(<FEAT-NNN>): <summary>`, substitutes `scripts/assets/pr-body.tmpl`, runs `gh pr create`. Pass `--closes #N` when a GitHub issue exists. Exit `0` PR URL on stdout; `1` on git/gh failure; `2` on malformed args.
 
 > **Note:** Issue tracking (start/completion comments) is handled by the orchestrator via `managing-work-items`. This skill focuses on implementation, verification, and status tracking.
+
+## Push Failure Recovery
+
+On push rejection, resolve with `git fetch origin && git rebase origin/<branch> && git push` — do not re-run `commit-and-push-phase.sh` after rebasing. On auth failure, re-authenticate (e.g. `gh auth login`) and retry `git push`. See the Push Failure Recovery section in [step-details.md](references/step-details.md) for rationale.
 
 ## Output Style
 
@@ -81,7 +80,7 @@ Follow the lite-narration rules below. Load-bearing carve-outs MUST be emitted a
 
 The following MUST always be emitted even when they resemble narration:
 
-- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface script and tool stderr verbatim (e.g., `resolve-requirement-doc.sh`, `build-branch-name.sh`, `ensure-branch.sh`, `check-acceptance.sh`, `create-pr.sh` failures; `npm test` / `npm run build` failing output).
+- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface script and tool stderr verbatim (e.g., `resolve-requirement-doc.sh`, `next-pending-phase.sh`, `plan-status-marker.sh`, `build-branch-name.sh`, `ensure-branch.sh`, `check-deliverable.sh`, `verify-phase-deliverables.sh`, `commit-and-push-phase.sh`, `verify-all-phases-complete.sh`, `create-pr.sh` failures).
 - **Security-sensitive warnings** -- destructive-operation confirmations, credential prompts.
 - **Interactive prompts** -- any prompt that blocks the workflow and requires user input (e.g., disambiguation when multiple plan files match the provided ID, phase-selection prompt when the supplied phase number exceeds the plan's phase count, summary re-prompt when `build-branch-name.sh` exits `1` on an empty slug).
 - **Findings display from `reviewing-requirements`** -- N/A for this skill (it does not consume reviewing-requirements findings); bullet retained for consistency with the canonical template.
@@ -123,48 +122,15 @@ See [step-details.md](references/step-details.md) for detailed guidance on each 
 
 ## Phase Structure
 
-Implementation plans follow this format:
-
-```markdown
-### Phase N: [Phase Name]
-**Feature:** [FEAT-XXX](../features/...) | [#IssueNum](https://github.com/...)
-**Status:** Pending | 🔄 In Progress | ✅ Complete
-
-#### Rationale
-Why this phase comes at this point in the sequence.
-
-#### Implementation Steps
-1. Specific action to take
-2. Another specific action
-3. Write tests for new functionality
-
-#### Deliverables
-- [ ] `path/to/file.ts` - Description
-- [ ] `tests/path/to/file.test.ts` - Tests
-```
-
-The GitHub issue number `[#N]` supplies the `Closes #N` PR reference when creating the pull request.
+Plans use `### Phase N: <name>` headings with a `**Status:**` line (`Pending` / `🔄 In Progress` / `✅ Complete`), a `**Feature:**` reference line including the `[#N]` GitHub issue (supplies `Closes #N`), and `#### Rationale`, `#### Implementation Steps`, `#### Deliverables` subsections. Deliverables are `- [ ]` lines — typically a leading backticked path (e.g. `` - [x] `path/to/file.ts` - description ``) for file deliverables.
 
 ## Branch Naming
 
-Format: `feat/{Feature ID}-{2-3-word-summary}`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<summary>"` (see Step 4) rather than hand-kebabing.
-
-Examples:
-- `feat/FEAT-001-scaffold-skill-command`
-- `feat/FEAT-002-validate-skill-command`
-- `feat/FEAT-007-chore-task-skill`
+Format: `feat/{Feature ID}-{2-3-word-summary}`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<summary>"` (see Step 4) rather than hand-kebabing. Examples: `feat/FEAT-001-scaffold-skill-command`, `feat/FEAT-002-validate-skill-command`, `feat/FEAT-007-chore-task-skill`.
 
 ## Verification
 
-Before marking a phase complete, verify:
-
-- All deliverables created/modified
-- Tests pass: `npm test`
-- Build succeeds: `npm run build`
-- Coverage meets threshold (if specified)
-- Changes committed and pushed to remote (blocking — do not update plan status until push succeeds)
-- Plan status updated with checkmarks
-- After all phases: create PR per Step 10
+Before marking a phase complete, `verify-phase-deliverables.sh` (Step 7) must exit `0` — files present, `test` / `build` / `coverage` all `pass` or `skipped`. `commit-and-push-phase.sh` (Step 8) must report `pushed <branch>` before the `✅ Complete` transition (blocking). After all phases: `verify-all-phases-complete.sh` must exit `0` before `create-pr.sh` is called.
 
 ## References
 

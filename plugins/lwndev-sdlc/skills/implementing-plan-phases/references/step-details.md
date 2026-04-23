@@ -1,6 +1,6 @@
 # Step-by-Step Implementation Details
 
-Detailed guidance for each step in the phase implementation workflow.
+Detailed guidance for each step in the phase implementation workflow. Script paths are relative to `${CLAUDE_PLUGIN_ROOT}/skills/implementing-plan-phases/scripts/` and abbreviated `$SCRIPTS/` below.
 
 ## Table of Contents
 
@@ -36,43 +36,33 @@ Read the plan file to understand:
 
 ## Step 2: Identify Target Phase
 
-Determine which phase to implement:
+When the user specified a phase, use it directly. Otherwise run `next-pending-phase.sh` — it parses the plan's `### Phase N: <name>` headings and `**Status:**` lines (fence-aware) and applies a two-tier selection rule (sequential ordering + explicit `**Depends on:** Phase <N>` lines).
 
-**User-specified:** User says "implement phase 2" → use Phase 2
+```bash
+bash "$SCRIPTS/next-pending-phase.sh" "<plan-path>"
+```
 
-**Auto-select:** Find the first phase with **Status: Pending** that has all prerequisites complete
+Dispatch on the JSON stdout:
+- `{"phase":<N>,"name":"..."}` — implement that phase.
+- `{"phase":<N>,"name":"...","reason":"resume-in-progress"}` — a phase is already `🔄 In Progress`; resume it rather than starting a new one.
+- `{"phase":null,"reason":"all-complete"}` — every phase is `✅ Complete`; proceed to Step 10.
+- `{"phase":null,"reason":"blocked","blockedOn":[<N>,...]}` — a pending phase exists but its prerequisites are not complete; halt and surface the blocker.
 
-**Verify prerequisites:**
-- Check all prior phases show **Status: ✅ Complete**
-- Verify deliverables from dependent phases exist
+Exit `0` on every shape above. Exit `1` on missing plan, no `### Phase` blocks, or a phase block with no `**Status:**` line. Exit `2` on missing arg.
 
-**Extract metadata:**
-- GitHub issue number from phase header: `[#N]`
-- Feature reference link
-- Rationale for phase ordering
+Extract any issue metadata (`[#N]`) and feature-link from the phase heading yourself once the target phase is selected.
 
 ## Step 3: Update Implementation Doc Status
 
-Update the phase status in the implementation plan to indicate work has started.
+Transition the selected phase to `🔄 In Progress` via `plan-status-marker.sh`:
 
-**Change:**
-```markdown
-**Status:** Pending
+```bash
+bash "$SCRIPTS/plan-status-marker.sh" "<plan-path>" <phase-N> in-progress
 ```
 
-**To:**
-```markdown
-**Status:** 🔄 In Progress
-```
+Canonical state tokens: `Pending`, `in-progress` (writes `🔄 In Progress`), `complete` (writes `✅ Complete`). Script is fence-aware, CRLF-safe, and idempotent: stdout `transitioned` on a real write, `already set` when the line already matches. Exit `1` on missing plan, no matching phase block, or no `**Status:**` line. Exit `2` on malformed args.
 
-**Example edit:**
-```markdown
-### Phase 2: Validation Engine
-**Feature:** [FEAT-002](../features/02-validate-skill-command.md) | [#2](https://github.com/...)
-**Status:** 🔄 In Progress
-```
-
-This provides visibility into current work across the team.
+Scope is bounded to the target `### Phase <N>:` block — sibling phases are never touched.
 
 ## Step 4: Branch Strategy
 
@@ -80,6 +70,13 @@ Create a feature branch following the naming convention:
 
 ```bash
 git checkout -b feat/{Feature ID}-{2-3-word-summary}
+```
+
+Assemble the name via `build-branch-name.sh` and create/switch with `ensure-branch.sh`:
+
+```bash
+branch=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<summary>")
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-branch.sh" "$branch"
 ```
 
 **Naming guidelines:**
@@ -122,12 +119,24 @@ For each implementation step:
 2. **Implement:** Write the code/tests
 3. **Follow patterns:** Reference existing code style and architecture
 4. **Use shared infrastructure:** Check plan's "Shared Infrastructure" section
-5. **Check off the deliverable in the implementation plan** — edit the plan file to change `- [ ]` to `- [x]` for each deliverable as it is completed
+5. **Check off the deliverable in the implementation plan** via `check-deliverable.sh` (see below) — run it as each deliverable completes, not in a batch at the end
 6. **Mark completed:** Update todo when step is done
 
-**Important:** Update the implementation plan deliverable checkbox at the point each deliverable is completed, not in a batch at the end. This provides real-time progress visibility in the plan document.
-
 **Keep exactly ONE todo in_progress at a time.**
+
+### Checking Off Deliverables
+
+```bash
+bash "$SCRIPTS/check-deliverable.sh" "<plan-path>" <phase-N> "<idx-or-text>"
+```
+
+Dispatches on the third arg: digits → 1-based index into the phase's deliverable lines (in document order, counting both `- [ ]` and `- [x]`); any non-digit → literal substring matcher (identical semantics to the plugin-shared `check-acceptance.sh`). Phase-scoped — matches only within the target `### Phase <N>:` block. Fence-aware — `- [ ]` lines inside fenced code blocks are never flipped.
+
+Exit-code shape (matches `check-acceptance.sh`):
+- `0` — line flipped to `- [x]`, stdout `checked`; or the line was already `- [x]`, stdout `already checked` (idempotent).
+- `1` — deliverable not found, out-of-range index, missing plan, or missing phase block.
+- `2` — ambiguous substring (multiple `- [ ]` lines match; `- [x]` matches are ignored for ambiguity).
+- `3` — missing or malformed arg.
 
 ### Following Code Organization
 
@@ -171,119 +180,81 @@ Reference the plan's test organization structure for file placement.
 
 ## Step 7: Verify Deliverables
 
-Before marking phase complete, verify all requirements:
-
-### Run Tests
+Run `verify-phase-deliverables.sh` — one call replaces the old `npm test` + `npm run build` + `npm run test:coverage` + per-file `ls` sequence:
 
 ```bash
-npm test
+bash "$SCRIPTS/verify-phase-deliverables.sh" "<plan-path>" <phase-N>
 ```
 
-All tests must pass. If any fail, fix before proceeding.
+The script parses the phase's `#### Deliverables` subsection, extracts backticked paths from both `- [ ]` and `- [x]` lines, and checks each file exists. It then runs `npm test` and `npm run build` sequentially (fail-fast: the first failing check short-circuits), and runs `npm run test:coverage` only when the plan mentions `coverage` or a `[0-9]+%` threshold. Non-file deliverable lines (no leading backtick) are skipped from the file-existence check.
 
-### Build Project
+JSON stdout shape:
 
-```bash
-npm run build
+```json
+{
+  "files": { "ok": ["..."], "missing": [] },
+  "test": "pass|fail|skipped",
+  "build": "pass|fail|skipped",
+  "coverage": "pass|fail|skipped",
+  "output": { "test": "<last 50 lines>", "build": "..." }
+}
 ```
 
-Build must succeed without errors or warnings.
+`output` keys appear only for failing checks.
 
-### Check Coverage
+Aggregate exit code: `0` only when `files.missing` is empty AND each of `test`/`build`/`coverage` is `pass` or `skipped`. Otherwise `1`. Missing args → `2`.
 
-```bash
-npm run test:coverage
-```
-
-Verify coverage meets the threshold specified in the plan (typically 80%+).
-
-### Verify Files Exist
-
-Check each deliverable from the plan exists and is complete:
-
-```bash
-ls -la src/validators/file-exists.ts
-ls -la tests/unit/validators/file-exists.test.ts
-# ... etc for all deliverables
-```
+**Graceful degradation.** If `npm` is not on `PATH`, the script emits `[warn] verify-phase-deliverables: npm not found; skipping test/build/coverage checks.` to stderr and reports all three as `skipped`. Exit `0` when all deliverable files exist.
 
 ## Step 8: Commit and Push Changes
 
-**Always commit and push after verification — do not ask the user for confirmation.** This is a mandatory step, not an optional one. Commit all changes and push to the remote. This preserves a per-phase audit trail in git and ensures work is not lost between phases.
-
-### Stage Changed Files
-
-Stage all files that were created or modified during this phase:
+**Always commit and push after verification — do not ask the user for confirmation.** This is a mandatory step, not an optional one. One script handles stage, commit, and push:
 
 ```bash
-# Stage specific deliverable files
-git add src/validators/file-exists.ts src/validators/required-fields.ts ...
-
-# Or stage all changes if all modifications are phase-related
-git add .
+bash "$SCRIPTS/commit-and-push-phase.sh" "<FEAT-NNN>" <phase-N> "<phase-name>"
 ```
 
-Review what will be committed before proceeding:
+The script:
+1. Runs `git status --porcelain=v1` — empty output → stderr `error: no changes to commit`, exit `1`.
+2. Stages with `git add -A`. On failure → stderr `[error] git add failed`, exit `1`.
+3. Commits with the canonical message `<type>(<ID>): complete phase <N> - <phase-name>`. Type prefix is derived from the ID: `FEAT-` → `feat`, `CHORE-` → `chore`, `BUG-` → `fix`.
+4. Determines current branch via `git rev-parse --abbrev-ref HEAD`.
+5. Checks upstream via `git rev-parse --abbrev-ref --symbolic-full-name @{u}`; pushes with `git push -u origin <branch>` on first push, bare `git push` thereafter.
+6. On success: stdout `pushed <branch>`, exit `0`.
+7. On push failure: `git push` stderr is surfaced verbatim, followed by `[error] push failed; see Push Failure Recovery in SKILL.md`, exit `1`.
 
-```bash
-git status
-```
-
-### Commit with Phase-Traceable Message
-
-Use a commit message that includes the Feature ID, phase number, and phase name:
-
-```bash
-git commit -m "feat(FEAT-XXX): complete phase N - <phase name>"
-```
-
-**Format:** `feat(<Feature ID>): complete phase <N> - <phase name>`
-
-**Examples:**
+**Canonical message examples:**
 - `feat(FEAT-001): complete phase 1 - yaml parsing infrastructure`
-- `feat(FEAT-002): complete phase 2 - validation engine`
-- `feat(FEAT-007): complete phase 3 - chore execution workflow`
+- `chore(CHORE-003): complete phase 2 - update deps`
+- `fix(BUG-012): complete phase 3 - fix null check`
 
-### Push to Remote
-
-Push the feature branch to the remote. Use `-u` on the first push to set upstream tracking:
-
-```bash
-# First push for this branch
-git push -u origin feat/FEAT-XXX-summary
-
-# Subsequent pushes (upstream already set)
-git push
-```
-
-If the branch was already pushed in a prior phase, a simple `git push` is sufficient.
+**Arg validation.** Exit `2` on: malformed ID (not matching `^(FEAT|CHORE|BUG)-[0-9]+$`), non-positive `<phase-N>`, or empty/whitespace-only `<phase-name>`.
 
 ### Push Failure Recovery
 
-If the push fails, diagnose and resolve before proceeding:
+If the push fails, diagnose and resolve before proceeding.
 
 **Network / authentication errors:**
-```bash
-# Verify remote is reachable
-git remote -v
 
-# Retry the push
+```bash
+git remote -v
 git push
 ```
 
-If authentication has expired, re-authenticate (e.g., `gh auth login`) and retry.
+If authentication has expired, re-authenticate (e.g. `gh auth login`) and retry `git push` directly.
 
 **Rejected push (remote has new commits):**
+
 ```bash
-# Fetch and rebase onto the latest remote
 git fetch origin
 git rebase origin/<branch-name>
-
-# Resolve any conflicts, then push
+# resolve conflicts if any
 git push
 ```
 
-**Important:** Do not proceed to Step 10 (Update Plan Status) until the push succeeds. The commit is local-only until pushed, and subsequent phases or collaborators will not see the work.
+**Important:** Do not proceed to Step 9 (Update Plan Status) until the push succeeds. The commit is local-only until pushed, and subsequent phases or collaborators will not see the work.
+
+**Do not re-run `commit-and-push-phase.sh` after resolving a rejected push.** The script's first step is `git status --porcelain=v1`; once the rebase is in place the working tree is clean, so the sanity gate reports `error: no changes to commit` and exits `1`, masking the successful recovery. The commit already exists locally (it is what you just rebased) — a raw `git push` is the correct retry.
 
 ---
 
@@ -291,19 +262,15 @@ git push
 
 **Prerequisite:** Step 8 commit and push must have succeeded before updating status. Do not mark a phase complete if changes are uncommitted or unpushed.
 
-Edit the implementation plan file to mark the phase complete:
+Transition to `✅ Complete` via the same `plan-status-marker.sh` used in Step 3, with the `complete` token:
 
-**Change:**
-```markdown
-**Status:** 🔄 In Progress
+```bash
+bash "$SCRIPTS/plan-status-marker.sh" "<plan-path>" <phase-N> complete
 ```
 
-**To:**
-```markdown
-**Status:** ✅ Complete
-```
+Stdout `transitioned` on a real write, `already set` if the phase is already `✅ Complete` (idempotent). Exit `1` on missing plan, no matching phase block, or no `**Status:**` line.
 
-Confirm that all deliverable checkboxes have already been checked off (`- [x]`) during Step 6. If any were missed, check them off now as a final catch.
+Confirm that all deliverable checkboxes were flipped during Step 6. If any were missed, run `check-deliverable.sh` for each now as a final catch.
 
 ## Step 10: Create Pull Request (All Phases Complete)
 
@@ -313,14 +280,13 @@ After all phases in the implementation plan are marked **✅ Complete**, create 
 
 ### Check All Phases Are Complete
 
-Before creating the PR, verify every phase in the plan shows **Status: ✅ Complete**:
+Before creating the PR, gate on `verify-all-phases-complete.sh`:
 
 ```bash
-# Search for any phases that are not complete
-grep "**Status:**" requirements/implementation/<plan-file>.md
+bash "$SCRIPTS/verify-all-phases-complete.sh" "<plan-path>"
 ```
 
-If any phase is still Pending or 🔄 In Progress, complete it before proceeding.
+Exit `0` with stdout `all phases complete` when every phase is `✅ Complete`. Otherwise exit `1` with JSON `{"incomplete":[{"phase":<N>,"name":"...","status":"Pending|in-progress"},...]}` on stdout — finish the listed phases before proceeding. Exit `1` with stderr `[error] no phase blocks found in plan` (no JSON) when the plan has no `### Phase` blocks. The script is fence-aware; `**Status:**` lines inside fenced blocks are ignored.
 
 ### Create the Pull Request
 

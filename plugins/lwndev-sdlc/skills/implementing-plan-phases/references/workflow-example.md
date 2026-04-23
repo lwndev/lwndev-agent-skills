@@ -170,48 +170,33 @@ Each step follows: mark in_progress, implement, mark completed.
 
 ### 8. Verify Deliverables
 
-Run verification:
+Run `verify-phase-deliverables.sh` (see `SKILL.md` Step 7 and `step-details.md`):
 
 ```bash
-# All tests pass
-npm test
-
-# Build succeeds
-npm run build
-
-# Check coverage
-npm run test:coverage
+bash "$SCRIPTS/verify-phase-deliverables.sh" requirements/implementation/02-validate-skill-command.md 2
 ```
 
-Confirm all files exist:
-- `src/validators/file-exists.ts`
-- `src/validators/required-fields.ts`
-- `src/generators/validate.ts`
-- `tests/unit/validators/file-exists.test.ts`
-- `tests/unit/validators/required-fields.test.ts`
-- `tests/unit/generators/validate.test.ts`
+The JSON stdout shows `files.ok` listing the six deliverable files, `test: pass`, `build: pass`, `coverage: pass`, and exits `0`.
 
 ### 9. Commit and Push Changes
 
-Always commit and push immediately after verification — do not prompt the user. Stage and commit all phase deliverables:
+Commit and push via `commit-and-push-phase.sh` — no prompt, always mandatory:
 
 ```bash
-git add src/validators/file-exists.ts src/validators/required-fields.ts src/generators/validate.ts \
-  tests/unit/validators/file-exists.test.ts tests/unit/validators/required-fields.test.ts \
-  tests/unit/generators/validate.test.ts
-
-git commit -m "feat(FEAT-002): complete phase 2 - validation engine"
+bash "$SCRIPTS/commit-and-push-phase.sh" FEAT-002 2 "validation engine"
 ```
 
-Push to remote (first push for this branch uses `-u`):
-
-```bash
-git push -u origin feat/FEAT-002-validate-skill-command
-```
+The script stages with `git add -A`, commits as `feat(FEAT-002): complete phase 2 - validation engine`, detects upstream, and pushes (`-u origin <branch>` on first push). Stdout: `pushed feat/FEAT-002-validate-skill-command`.
 
 ### 10. Update Plan Status
 
-Edit `requirements/implementation/02-validate-skill-command.md`:
+Transition Phase 2 to `✅ Complete` via `plan-status-marker.sh`:
+
+```bash
+bash "$SCRIPTS/plan-status-marker.sh" requirements/implementation/02-validate-skill-command.md 2 complete
+```
+
+The phase block now reads:
 
 ```markdown
 ### Phase 2: Validation Engine
@@ -226,6 +211,8 @@ Edit `requirements/implementation/02-validate-skill-command.md`:
 - [x] `tests/unit/validators/required-fields.test.ts` - Required fields tests
 - [x] `tests/unit/generators/validate.test.ts` - Orchestrator tests
 ```
+
+Deliverable lines were flipped to `- [x]` during Step 7 via `check-deliverable.sh` as each file was completed.
 
 ### 11. Update GitHub Issue
 
