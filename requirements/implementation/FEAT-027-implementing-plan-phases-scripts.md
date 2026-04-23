@@ -329,7 +329,7 @@ These are the two scripts with external tool dependencies (`npm` for FR-4, `git`
 ### Phase 4: SKILL.md + References Rewrite (FR-7) + Caller Audit (FR-8) + Final Validation
 
 **Feature:** [FEAT-027](../features/FEAT-027-implementing-plan-phases-scripts.md) | [#185](https://github.com/lwndev/lwndev-marketplace/issues/185)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phases 1, 2, and 3
 
 #### Rationale
@@ -402,13 +402,13 @@ The `step-details.md` rewrite and `workflow-example.md` audit are bundled here: 
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/SKILL.md` (rewritten per FR-7; public contract retained; Steps 2/3/6-checkoff/7/8-commit-push/9/10-check replaced with script pointers; net line-count reduction ≥ 20%; Push Failure Recovery updated with do-not-re-run paragraph)
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/references/step-details.md` (same retention rules as SKILL.md rewrite; mislabel on line 286 corrected; do-not-re-run paragraph added to Push Failure Recovery)
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/references/workflow-example.md` (audited; mechanical prose replaced with script references if applicable, else "no changes required" noted)
-- [ ] Caller audit complete: `orchestrating-workflows` confirmed no changes needed (no stale prose pointers)
-- [ ] Passing `npm test` (all bats tests pass)
-- [ ] Passing `npm run validate` (plugin validated)
-- [ ] SKILL.md line count verified via `wc -l` (≤ 138)
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/SKILL.md` (rewritten per FR-7; public contract retained; Steps 2/3/6-checkoff/7/8-commit-push/9/10-check replaced with script pointers; net line-count reduction ≥ 20%; Push Failure Recovery updated with do-not-re-run paragraph)
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/references/step-details.md` (same retention rules as SKILL.md rewrite; mislabel on line 286 corrected; do-not-re-run paragraph added to Push Failure Recovery)
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/references/workflow-example.md` (audited; mechanical prose replaced with script references if applicable, else "no changes required" noted)
+- [x] Caller audit complete: `orchestrating-workflows` confirmed no changes needed (no stale prose pointers)
+- [x] Passing `npm test` (all bats tests pass)
+- [x] Passing `npm run validate` (plugin validated)
+- [x] SKILL.md line count verified via `wc -l` (≤ 138)
 - [ ] Token-savings measurement per NFR-4 documented in PR body (within ±30% of ~6,900 tok/feature-workflow estimate) — deferred to post-PR (standard pattern)
 
 ---
