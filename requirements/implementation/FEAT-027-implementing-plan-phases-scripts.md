@@ -329,7 +329,7 @@ These are the two scripts with external tool dependencies (`npm` for FR-4, `git`
 ### Phase 4: SKILL.md + References Rewrite (FR-7) + Caller Audit (FR-8) + Final Validation
 
 **Feature:** [FEAT-027](../features/FEAT-027-implementing-plan-phases-scripts.md) | [#185](https://github.com/lwndev/lwndev-marketplace/issues/185)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phases 1, 2, and 3
 
 #### Rationale
