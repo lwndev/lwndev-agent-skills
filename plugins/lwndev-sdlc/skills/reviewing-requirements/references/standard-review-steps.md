@@ -34,4 +34,3 @@ Identify what's missing: operations without error handling in Edge Cases/NFRs; F
 
 - **Requirement docs**: Glob for referenced IDs in `requirements/` directories. **Error** if not found; **Info** if imprecise.
 - **GitHub issues**: `gh issue view N --json state,title` (validate up to 5). **Warning** if not found or inaccessible.
-- **Skill references**: Check skill directory exists under `plugins/lwndev-sdlc/skills/`. **Error** if not found.
