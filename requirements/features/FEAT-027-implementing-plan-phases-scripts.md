@@ -318,16 +318,24 @@ No script returns a custom code outside these two conventions.
 
 ## Acceptance Criteria
 
-- [ ] `next-pending-phase.sh` implements FR-1; handles the four selection outcomes (happy path, all-complete, resume-in-progress, blocked); parses both sequential and explicit `**Depends on:**` dependency forms; bats tests pass.
-- [ ] `plan-status-marker.sh` implements FR-2; handles the three canonical states with emoji emission; idempotent no-op path emits `already set`; fence-aware; bats tests pass.
-- [ ] `check-deliverable.sh` implements FR-3; phase-scoped; accepts both numeric index and literal substring matcher; idempotent; fence-aware; exit-code shape matches `check-acceptance.sh` (`2`=ambiguous, `3`=missing-arg); bats tests pass.
-- [ ] `verify-phase-deliverables.sh` implements FR-4; runs file-existence + npm test + npm run build + npm run test:coverage (optional); aggregates into single exit code; gracefully degrades when `npm` is missing; bats tests pass.
-- [ ] `commit-and-push-phase.sh` implements FR-5; produces canonical commit message format; handles first-push vs subsequent-push upstream set logic; fails fast on push error with `git` stderr surfaced verbatim; bats tests pass.
-- [ ] `verify-all-phases-complete.sh` implements FR-6; emits `all phases complete` on success or JSON `{incomplete:[...]}` on any non-complete phase; fence-aware; bats tests pass.
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/SKILL.md` is rewritten per FR-7; public contract (When to Use, Arguments, Quick Start, Output Style, Fork-to-orchestrator return contract, Workflow, Phase Structure, Branch Naming, Verification, References) retained; Steps 2 / 3 / 6-checkoff-sub / 7 / 8-commit-push / 9 / 10-check bodies replaced with script pointers; net line-count reduction ≥ 20%.
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/references/step-details.md` is updated to match the SKILL.md rewrite (same retention rules, same script pointers). The pre-existing mislabel on the current file's line 286 (`**Step 10 (Update Plan Status)**` → `**Step 9 (Update Plan Status)**`) is corrected. The retained Push Failure Recovery prose documents the do-not-re-run-the-script caller pattern from Edge Case 11.
-- [ ] FR-8 is satisfied: no changes to orchestrator fork-invocation shape; no other skill files modified; `plugins/lwndev-sdlc/scripts/` directory unchanged.
-- [ ] No changes to the skill's fork-to-orchestrator return contract (NFR-5 preserved).
-- [ ] Integration test: a live feature workflow against a fixture plan produces artifacts identical to pre-feature (visual diff on phase-1 output).
-- [ ] Token-savings measurement per NFR-4 confirms the estimate within ±30%.
-- [ ] `npm test` and `npm run validate` pass on the release branch.
+- [x] `next-pending-phase.sh` implements FR-1; handles the four selection outcomes (happy path, all-complete, resume-in-progress, blocked); parses both sequential and explicit `**Depends on:**` dependency forms; bats tests pass.
+- [x] `plan-status-marker.sh` implements FR-2; handles the three canonical states with emoji emission; idempotent no-op path emits `already set`; fence-aware; bats tests pass.
+- [x] `check-deliverable.sh` implements FR-3; phase-scoped; accepts both numeric index and literal substring matcher; idempotent; fence-aware; exit-code shape matches `check-acceptance.sh` (`2`=ambiguous, `3`=missing-arg); bats tests pass.
+- [x] `verify-phase-deliverables.sh` implements FR-4; runs file-existence + npm test + npm run build + npm run test:coverage (optional); aggregates into single exit code; gracefully degrades when `npm` is missing; bats tests pass.
+- [x] `commit-and-push-phase.sh` implements FR-5; produces canonical commit message format; handles first-push vs subsequent-push upstream set logic; fails fast on push error with `git` stderr surfaced verbatim; bats tests pass.
+- [x] `verify-all-phases-complete.sh` implements FR-6; emits `all phases complete` on success or JSON `{incomplete:[...]}` on any non-complete phase; fence-aware; bats tests pass.
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/SKILL.md` is rewritten per FR-7; public contract (When to Use, Arguments, Quick Start, Output Style, Fork-to-orchestrator return contract, Workflow, Phase Structure, Branch Naming, Verification, References) retained; Steps 2 / 3 / 6-checkoff-sub / 7 / 8-commit-push / 9 / 10-check bodies replaced with script pointers; net line-count reduction ≥ 20%.
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/references/step-details.md` is updated to match the SKILL.md rewrite (same retention rules, same script pointers). The pre-existing mislabel on the current file's line 286 (`**Step 10 (Update Plan Status)**` → `**Step 9 (Update Plan Status)**`) is corrected. The retained Push Failure Recovery prose documents the do-not-re-run-the-script caller pattern from Edge Case 11.
+- [x] FR-8 is satisfied: no changes to orchestrator fork-invocation shape; no other skill files modified; `plugins/lwndev-sdlc/scripts/` directory unchanged.
+- [x] No changes to the skill's fork-to-orchestrator return contract (NFR-5 preserved).
+- [x] Integration test: a live feature workflow against a fixture plan produces artifacts identical to pre-feature (visual diff on phase-1 output).
+- [x] Token-savings measurement per NFR-4 confirms the estimate within ±30%.
+- [x] `npm test` and `npm run validate` pass on the release branch.
+
+## Completion
+
+**Status:** `Complete`
+
+**Completed:** 2026-04-23
+
+**Pull Request:** [#230](https://github.com/lwndev/lwndev-marketplace/pull/230)
