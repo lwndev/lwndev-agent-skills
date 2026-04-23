@@ -209,10 +209,7 @@ emit_all_complete() {
 emit_blocked() {
   local blocked_csv="$1"
   if command -v jq >/dev/null 2>&1; then
-    # Convert "1,2,3" → JSON array of ints.
-    local arr
-    arr=$(printf '%s' "$blocked_csv" | jq -Rc 'split(",") | map(tonumber)')
-    jq -cn --argjson blockedOn "$arr" \
+    jq -cn --argjson blockedOn "[${blocked_csv}]" \
       '{phase:null,reason:"blocked",blockedOn:$blockedOn}'
   else
     printf '{"phase":null,"reason":"blocked","blockedOn":[%s]}\n' "$blocked_csv"
@@ -256,7 +253,7 @@ num_to_state_lookup() {
 
 # Rule 3: pick lowest-numbered Pending phase whose prereqs are satisfied.
 # Prereqs = (all lower-numbered phases are complete) AND (all Depends-on refs are complete).
-declare -a collected_blockers
+collected_blockers=()
 for i in "${!phase_nums[@]}"; do
   if [ "${phase_states[$i]}" != "Pending" ]; then
     continue
