@@ -222,7 +222,7 @@ No PATH-shadowing stubs are needed for Phase 1 tests — pure bash + POSIX utili
 ### Phase 3: Composite Scripts — `verify-phase-deliverables.sh` (FR-4), `commit-and-push-phase.sh` (FR-5)
 
 **Feature:** [FEAT-027](../features/FEAT-027-implementing-plan-phases-scripts.md) | [#185](https://github.com/lwndev/lwndev-marketplace/issues/185)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 1
 
 #### Rationale
@@ -318,11 +318,11 @@ These are the two scripts with external tool dependencies (`npm` for FR-4, `git`
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/verify-phase-deliverables.sh`
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/commit-and-push-phase.sh`
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/tests/fixtures/verify-deliverables-plan.md`
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/tests/verify-phase-deliverables.bats`
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/tests/commit-and-push-phase.bats`
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/verify-phase-deliverables.sh`
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/commit-and-push-phase.sh`
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/tests/fixtures/verify-deliverables-plan.md`
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/tests/verify-phase-deliverables.bats`
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/tests/commit-and-push-phase.bats`
 
 ---
 
