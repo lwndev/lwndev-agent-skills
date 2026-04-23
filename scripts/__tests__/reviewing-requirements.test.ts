@@ -68,19 +68,21 @@ describe('reviewing-requirements skill', () => {
 
     it('should document test-plan reconciliation mode', () => {
       expect(skillMd).toContain('## Test-Plan Reconciliation Mode');
-      expect(skillMd).toContain('Step R1');
+      expect(skillMd).toContain('R1');
       expect(skillMd).toContain('Step R7');
     });
 
     it('should document code-review reconciliation mode', () => {
       expect(skillMd).toContain('## Code-Review Reconciliation Mode');
-      expect(skillMd).toContain('Step CR1');
+      expect(skillMd).toContain('CR1');
       expect(skillMd).toContain('Step CR5');
     });
 
     it('should document mode detection with precedence rule', () => {
       expect(skillMd).toContain('## Step 1.5: Detect Review Mode');
-      expect(skillMd).toContain('code-review reconciliation takes precedence');
+      // FEAT-026 FR-7: precedence now enforced by detect-review-mode.sh script.
+      // SKILL.md describes the chain via the script pointer.
+      expect(skillMd).toContain('mode precedence chain');
     });
 
     it('should include mode detection table with all three modes', () => {
@@ -91,10 +93,11 @@ describe('reviewing-requirements skill', () => {
   });
 
   describe('code-review reconciliation content', () => {
-    it('should document PR detection via branch naming patterns', () => {
-      expect(skillMd).toContain('feat/{ID}-*');
-      expect(skillMd).toContain('chore/{ID}-*');
-      expect(skillMd).toContain('fix/{ID}-*');
+    it('should document PR detection via detect-review-mode.sh script', () => {
+      // FEAT-026 FR-7: branch-naming patterns now live inside detect-review-mode.sh.
+      // SKILL.md references the script; the patterns are covered by the script's bats tests.
+      expect(skillMd).toContain('detect-review-mode.sh');
+      expect(skillMd).toContain('open PR via `gh`');
     });
 
     it('should document --pr flag support', () => {
@@ -102,8 +105,8 @@ describe('reviewing-requirements skill', () => {
     });
 
     it('should document scope boundary with executing-qa', () => {
-      expect(skillMd).toContain('entirely advisory');
-      expect(skillMd).toContain('does NOT update affected files');
+      expect(skillMd).toMatch(/[Ee]ntirely advisory/);
+      expect(skillMd).toMatch(/[Dd]oes NOT update affected files/);
     });
 
     it('should document three finding categories', () => {
@@ -113,12 +116,16 @@ describe('reviewing-requirements skill', () => {
     });
 
     it('should document severity classification for CR findings', () => {
-      expect(skillMd).toContain('**Error** for entries that will definitely fail');
+      // FEAT-026 FR-7: CR staleness severity now expressed as a mapping in the
+      // Steps CR1-CR2 script pointer.
+      expect(skillMd).toMatch(/signature-changed.*\*\*Error\*\*/);
       expect(skillMd).toContain('**Warning** for drift findings');
     });
 
-    it('should document git diff fallback when gh unavailable', () => {
-      expect(skillMd).toContain('git diff <base-branch>...HEAD');
+    it('should document graceful skip when gh unavailable', () => {
+      // FEAT-026 FR-7: pr-diff-vs-plan.sh replaces the git-diff fallback with a
+      // graceful-skip contract (exit 0 + [warn] + empty stdout when gh is down).
+      expect(skillMd).toContain('graceful skip');
     });
 
     it('should have verification checklist for code-review reconciliation', () => {
