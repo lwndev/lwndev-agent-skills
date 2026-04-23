@@ -153,7 +153,7 @@ No PATH-shadowing stubs are needed for Phase 1 tests — pure bash + POSIX utili
 ### Phase 2: Phase-Scoped Deliverable Checkoff — `check-deliverable.sh` (FR-3)
 
 **Feature:** [FEAT-027](../features/FEAT-027-implementing-plan-phases-scripts.md) | [#185](https://github.com/lwndev/lwndev-marketplace/issues/185)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 1
 
 #### Rationale
@@ -213,9 +213,9 @@ No PATH-shadowing stubs are needed for Phase 1 tests — pure bash + POSIX utili
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/check-deliverable.sh`
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/tests/fixtures/deliverables-plan.md`
-- [ ] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/tests/check-deliverable.bats`
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/check-deliverable.sh`
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/tests/fixtures/deliverables-plan.md`
+- [x] `plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/tests/check-deliverable.bats`
 
 ---
 
