@@ -222,7 +222,7 @@ Together, Phase 2 delivers the two scripts that represent the highest per-script
 ### Phase 3: Reconciliation Scripts — `reconcile-test-plan.sh` (FR-5) + `pr-diff-vs-plan.sh` (FR-6)
 
 **Feature:** [FEAT-026](../features/FEAT-026-reviewing-requirements-scripts.md) | [#184](https://github.com/lwndev/lwndev-marketplace/issues/184)
-**Status:** Pending
+**Status:** ✅ Complete
 **Depends on:** Phase 1 (for FR-2's extraction patterns reused in FR-6), Phase 2 (for the detection contract established by FR-1)
 
 #### Rationale
@@ -339,13 +339,13 @@ The PR body for FEAT-026 MUST include the following statement:
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/reconcile-test-plan.sh` (with NFR-6 `TODO` comment)
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/pr-diff-vs-plan.sh`
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/fixtures/qa-plan-v2-prose.md` (version-2 prose format fixture)
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/fixtures/qa-plan-legacy-table.md` (legacy table format fixture)
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/fixtures/req-doc-reconcile.md` (matching requirement fixture)
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/reconcile-test-plan.bats`
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/pr-diff-vs-plan.bats`
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/reconcile-test-plan.sh` (with NFR-6 `TODO` comment)
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/pr-diff-vs-plan.sh`
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/fixtures/qa-plan-v2-prose.md` (version-2 prose format fixture)
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/fixtures/qa-plan-legacy-table.md` (legacy table format fixture)
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/fixtures/req-doc-reconcile.md` (matching requirement fixture)
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/reconcile-test-plan.bats`
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/pr-diff-vs-plan.bats`
 
 ---
 
