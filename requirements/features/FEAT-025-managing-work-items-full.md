@@ -236,15 +236,23 @@ All `[info]` / `[warn]` lines are load-bearing per the managing-work-items Outpu
 
 ## Acceptance Criteria
 
-- [ ] `backend-detect.sh` implements FR-1; handles the two documented regexes; emits JSON or `null`; bats tests pass.
-- [ ] `extract-issue-ref.sh` implements FR-2; scans the three heading variants; emits the first match or empty; bats tests pass.
-- [ ] `pr-link.sh` implements FR-3; pure function; emits `Closes #N`, `PROJ-NNN`, or empty; bats tests pass.
-- [ ] `render-issue-comment.sh` implements FR-4; renders markdown and ADF paths; unknown-placeholder warning emitted; missing-variable exit `1`; bats tests pass.
-- [ ] `post-issue-comment.sh` implements FR-5; composite sequence (detect → render → post); graceful degradation on every external-command failure; all `[warn]` / `[info]` strings match the managing-work-items SKILL.md tables verbatim; bats tests pass.
-- [ ] `fetch-issue.sh` implements FR-6; normalized JSON shape across GitHub / Jira backends; graceful degradation preserved; bats tests pass.
-- [ ] `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` is rewritten per FR-7; Arguments, Operations, Error Handling, Graceful Degradation, and Output Style sections retained; FR-1/5/6/7 bodies replaced with script pointers; net line-count reduction ≥ 30%.
-- [ ] `orchestrating-workflows/references/issue-tracking.md` examples are updated per FR-8 to invoke the scripts; mechanism-failure `[warn]` strings unchanged.
-- [ ] `documenting-features`, `documenting-chores`, `documenting-bugs` SKILL.md notes about `managing-work-items` delegation are updated per FR-8 (one-line pointers).
-- [ ] Integration test: a live feature workflow against a throwaway issue posts the same comment bodies as pre-feature (visual diff).
-- [ ] Token-savings measurement per NFR-4 confirms the estimate within ±30%.
-- [ ] `npm test` and `npm run validate` pass on the release branch.
+- [x] `backend-detect.sh` implements FR-1; handles the two documented regexes; emits JSON or `null`; bats tests pass.
+- [x] `extract-issue-ref.sh` implements FR-2; scans the three heading variants; emits the first match or empty; bats tests pass.
+- [x] `pr-link.sh` implements FR-3; pure function; emits `Closes #N`, `PROJ-NNN`, or empty; bats tests pass.
+- [x] `render-issue-comment.sh` implements FR-4; renders markdown and ADF paths; unknown-placeholder warning emitted; missing-variable exit `1`; bats tests pass.
+- [x] `post-issue-comment.sh` implements FR-5; composite sequence (detect → render → post); graceful degradation on every external-command failure; all `[warn]` / `[info]` strings match the managing-work-items SKILL.md tables verbatim; bats tests pass.
+- [x] `fetch-issue.sh` implements FR-6; normalized JSON shape across GitHub / Jira backends; graceful degradation preserved; bats tests pass.
+- [x] `plugins/lwndev-sdlc/skills/managing-work-items/SKILL.md` is rewritten per FR-7; Arguments, Operations, Error Handling, Graceful Degradation, and Output Style sections retained; FR-1/5/6/7 bodies replaced with script pointers; net line-count reduction ≥ 30%.
+- [x] `orchestrating-workflows/references/issue-tracking.md` examples are updated per FR-8 to invoke the scripts; mechanism-failure `[warn]` strings unchanged.
+- [x] `documenting-features`, `documenting-chores`, `documenting-bugs` SKILL.md notes about `managing-work-items` delegation are updated per FR-8 (one-line pointers).
+- [x] Integration test: a live feature workflow against a throwaway issue posts the same comment bodies as pre-feature (visual diff).
+- [x] Token-savings measurement per NFR-4 confirms the estimate within ±30%.
+- [x] `npm test` and `npm run validate` pass on the release branch.
+
+## Completion
+
+**Status:** `Complete`
+
+**Completed:** 2026-04-23
+
+**Pull Request:** [#225](https://github.com/lwndev/lwndev-marketplace/pull/225)
