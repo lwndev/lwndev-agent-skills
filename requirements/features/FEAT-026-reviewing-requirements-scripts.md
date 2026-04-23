@@ -270,16 +270,24 @@ No script returns a custom code outside this set.
 
 ## Acceptance Criteria
 
-- [ ] `detect-review-mode.sh` implements FR-1; handles the four-step precedence chain; emits JSON with `mode` and optional fields; bats tests pass.
-- [ ] `extract-references.sh` implements FR-2; emits the four-array shape with de-duplication and first-occurrence ordering; bats tests pass.
-- [ ] `verify-references.sh` implements FR-3; classifies each reference as `ok` / `moved` / `ambiguous` / `missing` / `unavailable`; preserves graceful degradation on `gh` failure; bats tests pass.
-- [ ] `cross-ref-check.sh` implements FR-4; composes FR-2 + FR-3 over cross-refs only; bats tests pass.
-- [ ] `reconcile-test-plan.sh` implements FR-5; produces `gaps` / `contradictions` / `surplus` / `drift` / `modeMismatch`; shares matcher logic with the `executing-qa` counterpart per NFR-6; bats tests pass.
-- [ ] `pr-diff-vs-plan.sh` implements FR-6; enumerates file / identifier / signature drift; preserves graceful degradation on `gh` missing; bats tests pass.
-- [ ] FR-8 (Caller Updates) is satisfied: no changes to orchestrator fork-invocation shape; if the shared-matcher factor from NFR-6 lands in this PR, `plugins/lwndev-sdlc/agents/qa-reconciliation-agent.md` is updated to point at the shared library; all three `documenting-*` skill files and the orchestrator's `issue-tracking.md` are audited for stale references and updated if needed.
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` is rewritten per FR-7; public contract (When to Use, Arguments, Quick Start, Output Style, Input, Relationship to Other Skills) retained; Steps 1.5 / 2 / 3 / 7 / R1–R5 / CR1–CR2 bodies replaced with script pointers; net line-count reduction ≥ 25%.
-- [ ] No changes to orchestrator fork-invocation shape or findings-summary-line format (NFR-5 preserved).
-- [ ] Integration test: a live feature workflow against a fixture produces findings identical to pre-feature (visual diff).
-- [ ] Token-savings measurement per NFR-4 confirms the estimate within ±30%.
-- [ ] Shared-matcher coordination plan with `executing-qa` per NFR-6 is documented in the PR body (either a commitment to land the shared `lib/` factor in this PR, or a `TODO` pointing at NFR-6 and the reconciling PR).
-- [ ] `npm test` and `npm run validate` pass on the release branch.
+- [x] `detect-review-mode.sh` implements FR-1; handles the four-step precedence chain; emits JSON with `mode` and optional fields; bats tests pass.
+- [x] `extract-references.sh` implements FR-2; emits the four-array shape with de-duplication and first-occurrence ordering; bats tests pass.
+- [x] `verify-references.sh` implements FR-3; classifies each reference as `ok` / `moved` / `ambiguous` / `missing` / `unavailable`; preserves graceful degradation on `gh` failure; bats tests pass.
+- [x] `cross-ref-check.sh` implements FR-4; composes FR-2 + FR-3 over cross-refs only; bats tests pass.
+- [x] `reconcile-test-plan.sh` implements FR-5; produces `gaps` / `contradictions` / `surplus` / `drift` / `modeMismatch`; shares matcher logic with the `executing-qa` counterpart per NFR-6; bats tests pass.
+- [x] `pr-diff-vs-plan.sh` implements FR-6; enumerates file / identifier / signature drift; preserves graceful degradation on `gh` missing; bats tests pass.
+- [x] FR-8 (Caller Updates) is satisfied: no changes to orchestrator fork-invocation shape; if the shared-matcher factor from NFR-6 lands in this PR, `plugins/lwndev-sdlc/agents/qa-reconciliation-agent.md` is updated to point at the shared library; all three `documenting-*` skill files and the orchestrator's `issue-tracking.md` are audited for stale references and updated if needed.
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` is rewritten per FR-7; public contract (When to Use, Arguments, Quick Start, Output Style, Input, Relationship to Other Skills) retained; Steps 1.5 / 2 / 3 / 7 / R1–R5 / CR1–CR2 bodies replaced with script pointers; net line-count reduction ≥ 25%.
+- [x] No changes to orchestrator fork-invocation shape or findings-summary-line format (NFR-5 preserved).
+- [x] Integration test: a live feature workflow against a fixture produces findings identical to pre-feature (visual diff).
+- [x] Token-savings measurement per NFR-4 confirms the estimate within ±30%.
+- [x] Shared-matcher coordination plan with `executing-qa` per NFR-6 is documented in the PR body (either a commitment to land the shared `lib/` factor in this PR, or a `TODO` pointing at NFR-6 and the reconciling PR).
+- [x] `npm test` and `npm run validate` pass on the release branch.
+
+## Completion
+
+**Status:** `Complete`
+
+**Completed:** 2026-04-23
+
+**Pull Request:** [#227](https://github.com/lwndev/lwndev-marketplace/pull/227)
