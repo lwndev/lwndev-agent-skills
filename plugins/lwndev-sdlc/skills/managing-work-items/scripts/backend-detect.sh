@@ -41,15 +41,17 @@ if [ -z "$ref" ]; then
 fi
 
 if [[ "$ref" =~ ^#([0-9]+)$ ]]; then
-  n="${BASH_REMATCH[1]}"
-  printf '{"backend":"github","issueNumber":%s}\n' "$n"
+  # Force base-10 interpretation so leading zeros are stripped; JSON numbers
+  # with a leading zero (e.g., 007) are invalid per RFC 8259.
+  n=$((10#${BASH_REMATCH[1]}))
+  printf '{"backend":"github","issueNumber":%d}\n' "$n"
   exit 0
 fi
 
 if [[ "$ref" =~ ^([A-Z][A-Z0-9]*)-([0-9]+)$ ]]; then
   key="${BASH_REMATCH[1]}"
-  n="${BASH_REMATCH[2]}"
-  printf '{"backend":"jira","projectKey":"%s","issueNumber":%s}\n' "$key" "$n"
+  n=$((10#${BASH_REMATCH[2]}))
+  printf '{"backend":"jira","projectKey":"%s","issueNumber":%d}\n' "$key" "$n"
   exit 0
 fi
 

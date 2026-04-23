@@ -28,6 +28,21 @@ fi
 
 ref="$1"
 
+# Reject post-trim empty refs with exit 2, matching backend-detect.sh's
+# contract. Without this, an empty-string arg would fall through to
+# backend-detect, which would exit 2 — but we swallow that exit on line
+# below, producing exit 0 with empty output, an inconsistent arg-shape
+# contract.
+trimmed="$ref"
+# shellcheck disable=SC2295
+trimmed="${trimmed#"${trimmed%%[![:space:]]*}"}"
+# shellcheck disable=SC2295
+trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
+if [ -z "$trimmed" ]; then
+  echo "[error] usage: pr-link.sh <issue-ref>" >&2
+  exit 2
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DETECT="${SCRIPT_DIR}/backend-detect.sh"
 
