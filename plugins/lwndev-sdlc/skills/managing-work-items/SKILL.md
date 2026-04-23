@@ -82,7 +82,7 @@ The following MUST always be emitted even when they resemble narration:
 
 **Precedence (in spirit)**: when a `[warn]` mechanism-failure line needs to be emitted (per the issue-tracking.md mechanism-failure table), that line is load-bearing and MUST be emitted verbatim even if it reads like narration. The lite rules do not override WARNING-level structured-log emission.
 
-## Backend Detection (FR-1)
+## Backend Detection
 
 Detect the backend from the issue reference format:
 
@@ -94,11 +94,11 @@ Detect the backend from the issue reference format:
 
 See `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/backend-detect.sh` for the detection implementation (emits `github` / `jira` JSON objects or the literal `null`).
 
-## GitHub Issues Backend (FR-2)
+## GitHub Issues Backend
 
 All GitHub operations use the `gh` CLI (reference signature: `gh issue view <N> --json title,body,labels,state,assignees`). Fetch is implemented by `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/fetch-issue.sh`; comments are posted by `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/post-issue-comment.sh`. Both perform `gh` pre-flight (presence + auth) and exit `0` on any skip path with the matching `[warn]`/`[info]` line on stderr.
 
-## Comment Type Routing (FR-5)
+## Comment Type Routing
 
 Map `--type` to the correct template and populate it with context data:
 
@@ -113,20 +113,15 @@ Map `--type` to the correct template and populate it with context data:
 
 See `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/render-issue-comment.sh` for template loading, variable substitution, markdown list expansion, and ADF JSON generation (selects `github-templates.md` for GitHub/Jira-`acli`, `jira-templates.md` for Jira-`rovo`).
 
-## PR Body Issue Link Generation (FR-6)
-
-Backend-specific auto-close syntax for PR bodies:
-
-| Backend | Output | Effect |
-|---------|--------|--------|
+## PR Body Issue Link Generation
 
 See `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/pr-link.sh` for generation (emits `Closes #N` for GitHub, raw issue key for Jira, empty for unrecognized inputs). The orchestrator calls `pr-link` at PR creation and includes the result in the PR body's "Related" section.
 
-## Issue Reference Extraction from Documents (FR-7)
+## Issue Reference Extraction from Documents
 
 Extract the issue reference from a requirement document's `## GitHub Issue` section (also accept `## Issue` / `## Issue Tracker`). See `${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/extract-issue-ref.sh` for the extraction implementation (scans accepted heading variants, emits first `[#N]` / `[PROJ-NNN]` markdown link match or empty on miss).
 
-## Jira Backend (FR-3) -- Tiered Fallback
+## Jira Backend -- Tiered Fallback
 
 Jira uses a tiered fallback. Tiers are tried in order; the first available backend wins:
 
@@ -174,7 +169,7 @@ acli jira workitem comment-create --key PROJ-123 --body "<markdown-comment>"
 
 **On failure**: log and skip. If Tier 1 fails, fall through to Tier 2 before skipping entirely.
 
-### Jira PR Body Link Generation (FR-6)
+### Jira PR Body Link Generation
 
 For Jira, the PR body link is the issue key itself:
 

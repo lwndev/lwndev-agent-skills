@@ -97,11 +97,10 @@ Graceful degradation (NFR-1) tells the orchestrator to skip issue operations on 
 | Failure mode | Warning message format |
 |--------------|------------------------|
 | `managing-work-items/SKILL.md` cannot be read at workflow start | `[warn] managing-work-items reference document unreadable at ${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/SKILL.md — issue tracking disabled for this workflow.` |
-| `gh` CLI missing when `issueRef` is a `#N` reference | `[warn] gh CLI not found on PATH — cannot invoke managing-work-items for GitHub issue ${issueRef}. Skipping issue tracking.` |
-| `gh` CLI not authenticated when `issueRef` is `#N` | `[warn] gh CLI not authenticated (run \`gh auth login\`) — cannot invoke managing-work-items for GitHub issue ${issueRef}. Skipping issue tracking.` |
-| Jira tiered fallback exhausts all three tiers | `[warn] No Jira backend available (Rovo MCP not registered, acli not found) — cannot invoke managing-work-items for Jira issue ${issueRef}. Skipping issue tracking.` |
-| GitHub template file unreadable | `[warn] managing-work-items GitHub template file unreadable at references/github-templates.md — cannot render ${commentType} comment. Skipping.` |
-| Jira template file unreadable | `[warn] managing-work-items Jira template file unreadable at references/jira-templates.md — cannot render ${commentType} comment. Skipping.` |
+| `gh` CLI missing when `issueRef` is a `#N` reference | ``[warn] GitHub CLI (`gh`) not found on PATH. Skipping GitHub issue operations.`` |
+| `gh` CLI not authenticated when `issueRef` is `#N` | ``[warn] GitHub CLI not authenticated -- run `gh auth login` to enable issue tracking.`` |
+| Jira tiered fallback exhausts all three tiers | `[warn] No Jira backend available (Rovo MCP not registered, acli not found). Skipping Jira operations.` |
+| Template render fails (e.g., template file unreadable) | `[warn] Failed to render ${commentType} comment for ${issueRef}: ${stderr}. Skipping.` |
 
 Contrast with the INFO-level skip (legitimate empty-`issueRef`):
 
