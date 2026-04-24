@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -36,6 +36,28 @@ function run(args: string, opts?: { expectError?: boolean }): string {
 
 function runJSON(args: string): Record<string, unknown> {
   return JSON.parse(run(args));
+}
+
+// Capture stdout, stderr, and exit code in one shot. Used by tests that
+// need to assert specific exit codes (e.g. 1 vs 2) on both success and
+// failure paths — the `run()` helper only returns stdout on success, so
+// it can't verify an [info] line written to stderr on a successful run
+// nor distinguish exit 1 from exit 2.
+function runCapture(args: string): {
+  stdout: string;
+  stderr: string;
+  status: number;
+} {
+  const result = spawnSync('bash', [SCRIPT, ...args.split(' ').filter(Boolean)], {
+    cwd: testDir,
+    encoding: 'utf-8',
+    env: { ...process.env, PATH: process.env.PATH },
+  });
+  return {
+    stdout: result.stdout ?? '',
+    stderr: result.stderr ?? '',
+    status: result.status ?? 1,
+  };
 }
 
 function readState(id: string): Record<string, unknown> {
@@ -930,6 +952,124 @@ describe('workflow-state.sh', () => {
         const state = runJSON('set-complexity FEAT-001 low');
         expect(state.complexity).toBe('low');
         expect(state.modelOverride).toBe('opus');
+      });
+    });
+
+    // FEAT-028 FR-7: pause/resume soft-override writer. Mirrors
+    // set-complexity's state-file + in-place jq write pattern, but accepts
+    // bare tiers only, permits downgrade, and emits to stderr instead of
+    // stdout so callers can chain subsequent commands.
+    describe('set-model-override', () => {
+      it('writes haiku and emits [info] to stderr on success', () => {
+        runJSON('init FEAT-028 feature');
+        const { stdout, stderr, status } = runCapture('set-model-override FEAT-028 haiku');
+        expect(status).toBe(0);
+        expect(stdout).toBe('');
+        expect(stderr).toContain('[info] modelOverride set to haiku for FEAT-028');
+        const state = readState('FEAT-028');
+        expect(state.modelOverride).toBe('haiku');
+      });
+
+      it('writes sonnet and emits [info] to stderr on success', () => {
+        runJSON('init FEAT-028 feature');
+        const { stdout, stderr, status } = runCapture('set-model-override FEAT-028 sonnet');
+        expect(status).toBe(0);
+        expect(stdout).toBe('');
+        expect(stderr).toContain('[info] modelOverride set to sonnet for FEAT-028');
+        const state = readState('FEAT-028');
+        expect(state.modelOverride).toBe('sonnet');
+      });
+
+      it('writes opus and emits [info] to stderr on success', () => {
+        runJSON('init FEAT-028 feature');
+        const { stdout, stderr, status } = runCapture('set-model-override FEAT-028 opus');
+        expect(status).toBe(0);
+        expect(stdout).toBe('');
+        expect(stderr).toContain('[info] modelOverride set to opus for FEAT-028');
+        const state = readState('FEAT-028');
+        expect(state.modelOverride).toBe('opus');
+      });
+
+      it('permits downgrade (opus -> sonnet) — this is the documented escape hatch', () => {
+        runJSON('init FEAT-028 feature');
+        runCapture('set-model-override FEAT-028 opus');
+        expect(readState('FEAT-028').modelOverride).toBe('opus');
+
+        const { status, stderr } = runCapture('set-model-override FEAT-028 sonnet');
+        expect(status).toBe(0);
+        expect(stderr).toContain('[info] modelOverride set to sonnet for FEAT-028');
+        expect(readState('FEAT-028').modelOverride).toBe('sonnet');
+      });
+
+      it('is idempotent on repeat write of the same tier', () => {
+        runJSON('init FEAT-028 feature');
+        const first = runCapture('set-model-override FEAT-028 sonnet');
+        expect(first.status).toBe(0);
+        expect(readState('FEAT-028').modelOverride).toBe('sonnet');
+
+        const second = runCapture('set-model-override FEAT-028 sonnet');
+        expect(second.status).toBe(0);
+        expect(second.stdout).toBe('');
+        expect(second.stderr).toContain('[info] modelOverride set to sonnet for FEAT-028');
+        expect(readState('FEAT-028').modelOverride).toBe('sonnet');
+      });
+
+      it('rejects malformed tier with exit 2', () => {
+        runJSON('init FEAT-028 feature');
+        const { status, stderr, stdout } = runCapture('set-model-override FEAT-028 ultra');
+        expect(status).toBe(2);
+        expect(stdout).toBe('');
+        expect(stderr).toContain("[error] set-model-override: unrecognised tier 'ultra'");
+        // State file left untouched (modelOverride still null from init).
+        expect(readState('FEAT-028').modelOverride).toBeNull();
+      });
+
+      it('rejects label tier `high` with exit 2 (labels are for set-complexity)', () => {
+        runJSON('init FEAT-028 feature');
+        const { status, stderr } = runCapture('set-model-override FEAT-028 high');
+        expect(status).toBe(2);
+        expect(stderr).toContain("[error] set-model-override: unrecognised tier 'high'");
+        expect(readState('FEAT-028').modelOverride).toBeNull();
+      });
+
+      it('rejects label tier `low` with exit 2', () => {
+        runJSON('init FEAT-028 feature');
+        const { status, stderr } = runCapture('set-model-override FEAT-028 low');
+        expect(status).toBe(2);
+        expect(stderr).toContain("[error] set-model-override: unrecognised tier 'low'");
+      });
+
+      it('rejects label tier `medium` with exit 2', () => {
+        runJSON('init FEAT-028 feature');
+        const { status, stderr } = runCapture('set-model-override FEAT-028 medium');
+        expect(status).toBe(2);
+        expect(stderr).toContain("[error] set-model-override: unrecognised tier 'medium'");
+      });
+
+      it('exits 1 when the state file does not exist', () => {
+        // No init: .sdlc/workflows/FEAT-999.json never created.
+        const { status, stderr } = runCapture('set-model-override FEAT-999 opus');
+        expect(status).toBe(1);
+        expect(stderr).toContain('State file not found');
+      });
+
+      it('exits 2 when <ID> is missing', () => {
+        const { status, stderr } = runCapture('set-model-override');
+        expect(status).toBe(2);
+        expect(stderr).toContain('set-model-override requires <ID> <tier>');
+      });
+
+      it('exits 2 when <tier> is missing', () => {
+        runJSON('init FEAT-028 feature');
+        const { status, stderr } = runCapture('set-model-override FEAT-028');
+        expect(status).toBe(2);
+        expect(stderr).toContain('set-model-override requires <ID> <tier>');
+      });
+
+      it('unknown subcommand still errors (regression guard)', () => {
+        const { status, stderr } = runCapture('unknown-subcommand FEAT-028');
+        expect(status).not.toBe(0);
+        expect(stderr).toContain("Unknown command 'unknown-subcommand'");
       });
     });
 

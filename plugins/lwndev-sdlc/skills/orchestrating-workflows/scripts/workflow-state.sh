@@ -30,6 +30,10 @@ usage() {
   echo "  phase-count <ID>              Return number of implementation phases" >&2
   echo "  phase-status <ID>             Return per-phase completion status" >&2
   echo "  set-complexity <ID> <tier>    Set work-item complexity tier (low|medium|high)" >&2
+  echo "  set-model-override <ID> <tier>" >&2
+  echo "                                Set the top-level modelOverride field (haiku|sonnet|opus)." >&2
+  echo "                                Downgrade permitted; labels (low|medium|high) rejected." >&2
+  echo "                                Emits [info] modelOverride set to <tier> for <ID> to stderr." >&2
   echo "  get-model <ID> <step-name>    Resolve model tier for a step (baseline + complexity + modelOverride)" >&2
   echo "  record-model-selection <ID> <stepIndex> <skill> <mode> <phase> <tier> <complexityStage> <startedAt>" >&2
   echo "                                Append an entry to the modelSelections audit trail" >&2
@@ -1315,6 +1319,45 @@ cmd_set_complexity() {
   cat "$file"
 }
 
+# Set the top-level modelOverride field (FEAT-028 FR-7).
+#
+# Soft override exposed as the pause/resume escape hatch documented in
+# model-selection.md Migration Option 4b. Mirrors cmd_set_complexity's
+# state-file-locking + in-place jq write pattern, but:
+#   - accepts bare tiers only (haiku|sonnet|opus); labels (low|medium|high)
+#     are rejected with exit 2 because modelOverride is stored as a bare
+#     tier and callers wanting label semantics should use set-complexity.
+#   - downgrade is permitted (the resolver is the upgrade-only gate, not
+#     this writer).
+#   - idempotent: writing the same tier twice is a no-op write.
+#   - emits nothing on stdout; writes one [info] line to stderr on
+#     successful write so callers can chain subsequent commands without
+#     parsing stdout.
+# Exit codes: 0 success; 1 state-file missing / unwritable / jq failure
+# (via validate_state_file); 2 missing or malformed args (unknown tier).
+cmd_set_model_override() {
+  local id="$1"
+  local tier="$2"
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  if [[ "$tier" != "haiku" && "$tier" != "sonnet" && "$tier" != "opus" ]]; then
+    echo "[error] set-model-override: unrecognised tier '${tier}'" >&2
+    exit 2
+  fi
+
+  if ! jq --arg tier "$tier" '.modelOverride = $tier' \
+    "$file" > "${file}.tmp"; then
+    echo "[error] set-model-override: jq write failed for ${file}" >&2
+    rm -f "${file}.tmp"
+    exit 1
+  fi
+  mv "${file}.tmp" "$file"
+
+  echo "[info] modelOverride set to ${tier} for ${id}" >&2
+}
+
 # Resolve model tier for a named step (FEAT-014 FR-15).
 #
 # Thin wrapper around cmd_resolve_tier that omits CLI-flag handling. The full
@@ -1654,6 +1697,10 @@ case "$command" in
   set-complexity)
     [[ $# -ge 2 ]] || { echo "Error: set-complexity requires <ID> <tier>" >&2; exit 1; }
     cmd_set_complexity "$1" "$2"
+    ;;
+  set-model-override)
+    [[ $# -ge 2 ]] || { echo "[error] set-model-override requires <ID> <tier>" >&2; exit 2; }
+    cmd_set_model_override "$1" "$2"
     ;;
   get-model)
     [[ $# -ge 2 ]] || { echo "Error: get-model requires <ID> <step-name>" >&2; exit 1; }

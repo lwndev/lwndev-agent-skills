@@ -387,7 +387,7 @@ They are grouped together in Phase 3 for three reasons:
 ### Phase 4: `workflow-state.sh set-model-override` (FR-7) + Vitest Extension
 
 **Feature:** [FEAT-028](../features/FEAT-028-orchestrating-workflows-findings-resume.md) | [#186](https://github.com/lwndev/lwndev-marketplace/issues/186)
-**Status:** Pending
+**Status:** 🔄 In Progress
 
 #### Rationale
 
@@ -443,8 +443,8 @@ This phase has no dependency on Phases 1–3 at runtime — `set-model-override`
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` (extended with `set-model-override` subcommand)
-- [ ] `scripts/__tests__/workflow-state.test.ts` (new `set-model-override` test cases added)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` (extended with `set-model-override` subcommand)
+- [x] `scripts/__tests__/workflow-state.test.ts` (new `set-model-override` test cases added)
 
 ---
 
