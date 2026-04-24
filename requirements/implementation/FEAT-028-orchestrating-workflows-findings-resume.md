@@ -257,7 +257,7 @@ Grouping them in Phase 1 for four reasons:
 ### Phase 3: Composite Scripts — `init-workflow.sh` (FR-5), `check-resume-preconditions.sh` (FR-6)
 
 **Feature:** [FEAT-028](../features/FEAT-028-orchestrating-workflows-findings-resume.md) | [#186](https://github.com/lwndev/lwndev-marketplace/issues/186)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 1, Phase 2
 
 #### Rationale
@@ -373,14 +373,14 @@ They are grouped together in Phase 3 for three reasons:
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/feature-requirement.md`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/chore-requirement.md`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/bug-requirement.md`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/requirement-no-issue.md`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/init-workflow.sh`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/check-resume-preconditions.sh`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/init-workflow.bats`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/check-resume-preconditions.bats`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/feature-requirement.md`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/chore-requirement.md`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/bug-requirement.md`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/requirement-no-issue.md`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/init-workflow.sh`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/check-resume-preconditions.sh`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/init-workflow.bats`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/check-resume-preconditions.bats`
 
 ---
 
