@@ -257,7 +257,7 @@ Grouping them in Phase 1 for four reasons:
 ### Phase 3: Composite Scripts — `init-workflow.sh` (FR-5), `check-resume-preconditions.sh` (FR-6)
 
 **Feature:** [FEAT-028](../features/FEAT-028-orchestrating-workflows-findings-resume.md) | [#186](https://github.com/lwndev/lwndev-marketplace/issues/186)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 1, Phase 2
 
 #### Rationale
