@@ -35,7 +35,7 @@ Three additive, positional-independent flags tune per-workflow model selection. 
 - `--complexity <tier>` — **soft blanket** override. Treated as a `low|medium|high` (or equivalent tier string) floor for work-item complexity. Upgrade-only; respects baseline locks.
 - `--model-for <step>:<tier>` — **hard per-step** override. Replaces the tier for a single named step (e.g. `--model-for reviewing-requirements:opus`). Per-step hard beats blanket hard (FR-5 #1 > #2). May be repeated.
 
-Parsing rules: strip each recognised flag and its argument from the argv list before interpreting the remaining positional token as the ID / `#N` / title. Unknown flags are a usage error. Pass the surviving flag values into every `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resolve-tier` call so the FR-3 chain sees them.
+Parsing: run `bash "${CLAUDE_PLUGIN_ROOT}/skills/orchestrating-workflows/scripts/parse-model-flags.sh" "$@"` — emits `{cliModel, cliComplexity, cliModelFor, positional}` on stdout; exit `2` on unknown flag, malformed tier, or `=`-form. Pass the three `cli*` fields into every `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resolve-tier` call so the FR-3 chain sees them.
 
 ## Issue Tracking via `managing-work-items`
 
@@ -47,9 +47,9 @@ For the full issue tracking protocol — extraction, invocation pattern, runnabl
 
 1. Parse argument — determine new workflow vs resume, and chain type (feature, chore, or bug)
 2. **Check Claude Code version (FEAT-014 NFR-6)**: run `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh check-claude-version 2.1.72` once at the entry point. The subcommand exits `0` silently when current ≥ required (or when the version cannot be determined), and exits `1` with a one-line warning on stderr when the installed Claude Code is older than the minimum. Treat the warning as advisory — continue the workflow; the per-fork NFR-6 fallback wrapper (see "Forked Steps") will catch any Agent-tool `model`-parameter rejection and retry without the parameter.
-3. **New feature workflow**: Run step 1 (`documenting-features`) in main context, read allocated ID, initialize state with `init {ID} feature`
-4. **New chore workflow**: Run step 1 (`documenting-chores`) in main context, read allocated ID, initialize state with `init {ID} chore`
-5. **New bug workflow**: Run step 1 (`documenting-bugs`) in main context, read allocated ID, initialize state with `init {ID} bug`
+3. **New feature workflow**: run step 1 (`documenting-features`) in main context; then `bash "${CLAUDE_PLUGIN_ROOT}/skills/orchestrating-workflows/scripts/init-workflow.sh" feature <artifact-path>` (emits `{id, type, complexity, issueRef}`).
+4. **New chore workflow**: run step 1 (`documenting-chores`); then `init-workflow.sh chore <artifact-path>` (same JSON shape).
+5. **New bug workflow**: run step 1 (`documenting-bugs`); then `init-workflow.sh bug <artifact-path>` (same JSON shape).
 6. **Resume**: Load state, handle pause/failure logic, continue from current step
 7. Execute steps sequentially using the step execution procedures below
 8. **Feature chain**: Pause at plan approval (step 4) and PR review (step 5+N+2)

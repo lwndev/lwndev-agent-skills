@@ -547,14 +547,11 @@ because you discovered the scope is larger than the requirement doc
 signals suggested.
 
 **4b — Force a sticky soft override via `.modelOverride`.**
-This writes the `.modelOverride` state field directly — a **soft**
-override per FR-5 #4, so it is upgrade-only and respects baseline locks.
-There is no `set-model-override` subcommand today; edit the JSON
-directly with `jq`:
+This writes the `.modelOverride` state field — a **soft**
+override per FR-5 #4, so it is upgrade-only and respects baseline locks:
 
 ```bash
-jq '.modelOverride = "opus"' .sdlc/workflows/FEAT-001.json > /tmp/s.json \
-    && mv /tmp/s.json .sdlc/workflows/FEAT-001.json
+${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-model-override FEAT-001 opus
 ```
 
 Use this when you want to force the whole workflow to a specific tier

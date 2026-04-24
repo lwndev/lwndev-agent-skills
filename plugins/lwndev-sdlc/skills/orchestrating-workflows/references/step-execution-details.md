@@ -37,11 +37,10 @@ Otherwise, append `{ID}` as argument. Pre-fork step-name `reviewing-requirements
 Before forking (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-start --context '{"workItemId": "{ID}"}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md) (read the `work-start` template from `references/github-templates.md` — or `references/jira-templates.md` for Jira — substitute context variables, and post via `gh issue comment` / Jira backend).
 
 Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) using step-name `executing-chores`, then fork via the Agent tool with `{ID}` as argument and the resolved tier passed as the `model` parameter. If `issueRef` is set, include the FR-6 issue link instruction in the subagent prompt: "Include `Closes #N` (or `PROJ-123` for Jira) in the PR body." Subagent must return the canonical contract shape; see SKILL.md `## Output Style`. After the subagent completes:
-1. Extract the PR number from the subagent output (the `executing-chores` skill creates a PR as its final step)
-2. If the PR number is not in the output, detect it via: `gh pr list --head {branch} --json number --jq '.[0].number'`
-3. Record the PR metadata:
+1. Resolve the PR number: `pr=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/orchestrating-workflows/scripts/resolve-pr-number.sh" "<branch>" "<subagent-output-file>")` — tries subagent-output scan (last `#<N>` or GitHub PR URL wins) then `gh pr list --head <branch>` fallback; emits a bare integer on stdout, exit `1` on no match or gh unavailable.
+2. Record the PR metadata:
    ```bash
-   ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-pr {ID} {pr-number} {branch}
+   ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-pr {ID} ${pr} {branch}
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
    ```
 
@@ -80,11 +79,10 @@ Otherwise, append `{ID}` as argument. Pre-fork step-name `reviewing-requirements
 Before forking (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-start --context '{"workItemId": "{ID}"}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md) (read the `bug-start` template from `references/github-templates.md` — or `references/jira-templates.md` for Jira — substitute context variables, and post via `gh issue comment` / Jira backend).
 
 Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) using step-name `executing-bug-fixes`, then fork via the Agent tool with `{ID}` as argument and the resolved tier passed as the `model` parameter. If `issueRef` is set, include the FR-6 issue link instruction in the subagent prompt: "Include `Closes #N` (or `PROJ-123` for Jira) in the PR body." Subagent must return the canonical contract shape; see SKILL.md `## Output Style`. After the subagent completes:
-1. Extract the PR number from the subagent output (the `executing-bug-fixes` skill creates a PR as its final step)
-2. If the PR number is not in the output, detect it via: `gh pr list --head {branch} --json number --jq '.[0].number'`
-3. Record the PR metadata:
+1. Resolve the PR number: `pr=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/orchestrating-workflows/scripts/resolve-pr-number.sh" "<branch>" "<subagent-output-file>")` — same contract as chore step 4 (subagent-output scan then `gh pr list` fallback; bare integer on stdout; exit `1` on no match).
+2. Record the PR metadata:
    ```bash
-   ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-pr {ID} {pr-number} {branch}
+   ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-pr {ID} ${pr} {branch}
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
    ```
 

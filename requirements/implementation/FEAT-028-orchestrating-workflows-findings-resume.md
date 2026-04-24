@@ -451,7 +451,7 @@ This phase has no dependency on Phases 1–3 at runtime — `set-model-override`
 ### Phase 5: SKILL.md + References Rewrite (FR-8) + Caller Audit (FR-9) + Final Validation
 
 **Feature:** [FEAT-028](../features/FEAT-028-orchestrating-workflows-findings-resume.md) | [#186](https://github.com/lwndev/lwndev-marketplace/issues/186)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phases 1, 2, 3, and 4
 
 #### Rationale
@@ -532,16 +532,16 @@ The caller audit (FR-9) is bundled here: confirming the closed-world change requ
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` (rewritten per FR-8; public contract retained; `Model-Selection Flags` parsing-rules collapsed to `parse-model-flags.sh` pointer; `Quick Start` steps 3–5 for each chain type collapsed to `init-workflow.sh` pointer; net line-count ≤ 234)
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/reviewing-requirements-flow.md` (rewritten per FR-8; `Parsing Findings` + `Parsing Individual Findings` sections collapsed to `parse-findings.sh` pointers; `Decision Flow` collapsed to `findings-decision.sh` pointer with action-table retained; net line-count ≤ 133)
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/chain-procedures.md` (rewritten per FR-8; New Feature / Chore / Bug Workflow Procedures collapsed to `init-workflow.sh` pointers; Resume Procedure steps 1–5 collapsed to `check-resume-preconditions.sh` pointer; step 6 prose retained; net line-count ≤ 165)
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/step-execution-details.md` (rewritten per FR-8; chore step 4 and bug step 4 PR-number extraction collapsed to `resolve-pr-number.sh` pointers; feature-chain PR-Creation prose retained; net line-count ≤ 193)
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/model-selection.md` (Migration Option 4b updated to `workflow-state.sh set-model-override` pointer)
-- [ ] Caller audit complete: no other skills / agents consume the new scripts; `manage-work-items/extract-issue-ref.sh` unchanged; `finalize.sh` unchanged
-- [ ] Passing `npm test` (all Phase 1–4 bats + vitest cases)
-- [ ] Passing `npm run validate` (13/13 plugins)
-- [ ] Line-count reductions verified via `wc -l` (all four files meet ≥ 8% target)
-- [ ] Token-savings measurement per NFR-4 documented in PR body (within ±30% of ~1,500–2,500 tok/workflow estimate) — deferred to post-PR (standard pattern)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` (rewritten per FR-8; public contract retained; `Model-Selection Flags` parsing-rules collapsed to `parse-model-flags.sh` pointer; `Quick Start` steps 3–5 for each chain type collapsed to `init-workflow.sh` pointer; net line-count ≤ 234)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/reviewing-requirements-flow.md` (rewritten per FR-8; `Parsing Findings` + `Parsing Individual Findings` sections collapsed to `parse-findings.sh` pointers; `Decision Flow` collapsed to `findings-decision.sh` pointer with action-table retained; net line-count ≤ 133)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/chain-procedures.md` (rewritten per FR-8; New Feature / Chore / Bug Workflow Procedures collapsed to `init-workflow.sh` pointers; Resume Procedure steps 1–5 collapsed to `check-resume-preconditions.sh` pointer; step 6 prose retained; net line-count ≤ 165)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/step-execution-details.md` (rewritten per FR-8; chore step 4 and bug step 4 PR-number extraction collapsed to `resolve-pr-number.sh` pointers; feature-chain PR-Creation prose retained; net line-count ≤ 193)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/model-selection.md` (Migration Option 4b updated to `workflow-state.sh set-model-override` pointer)
+- [x] Caller audit complete: no other skills / agents consume the new scripts; `manage-work-items/extract-issue-ref.sh` unchanged; `finalize.sh` unchanged
+- [x] Passing `npm test` (all Phase 1–4 bats + vitest cases)
+- [x] Passing `npm run validate` (13/13 plugins)
+- [x] Line-count reductions verified via `wc -l` (all four files meet ≥ 8% target)
+- [x] Token-savings measurement per NFR-4 documented in PR body (within ±30% of ~1,500–2,500 tok/workflow estimate) — deferred to post-PR (standard pattern)
 
 ---
 

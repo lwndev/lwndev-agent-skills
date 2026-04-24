@@ -4,79 +4,25 @@ All `reviewing-requirements` fork steps (feature step 2; chore step 2; bug step 
 
 ## Parsing Findings
 
-After the `reviewing-requirements` subagent returns its summary, parse the summary line for severity counts:
-
-```
-Found **N errors**, **N warnings**, **N info**
-```
-
-Extract the error, warning, and info counts from this line. If the summary line is not found (e.g., the subagent returned "No issues found"), treat as zero errors, zero warnings, zero info.
-
-> **Note**: Anchor the count-extraction regex on the `Found **N errors**` substring rather than the start of the line. Subagent output in test-plan mode may include a mode prefix (e.g., `"Test-plan reconciliation for {ID}: Found **N errors**..."`) before the counts — anchoring on the substring handles these prefixes correctly.
+Run `bash "${CLAUDE_PLUGIN_ROOT}/skills/orchestrating-workflows/scripts/parse-findings.sh" <subagent-output-file>` — emits `{counts:{errors,warnings,info}, individual:[{id,severity,category,description}]}` on stdout. Zero counts when no summary line found.
 
 ## Decision Flow
 
-Based on the parsed counts, follow this flow:
+Run `bash "${CLAUDE_PLUGIN_ROOT}/skills/orchestrating-workflows/scripts/findings-decision.sh" <ID> <stepIndex> '<counts-json>'` — emits `{action, reason, type, complexity}`. Dispatch on `action`:
 
-1. **Zero findings** (zero errors, zero warnings, zero info) → Persist findings, then advance state automatically. No user interaction needed.
-   ```bash
-   ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh record-findings {ID} {stepIndex} 0 0 0 advanced 'No issues found'
-   ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "{artifact-path}"
-   ```
+| `action` | Orchestrator behavior |
+|----------|----------------------|
+| `advance` | call `advance` + continue |
+| `auto-advance` | emit `[info]` log + call `advance` + continue |
+| `prompt-user` | set gate + display findings + prompt user |
+| `pause-errors` | set gate + display findings + offer apply-fixes / pause |
 
-2. **Warnings/info only (zero errors)** → Read chain type and complexity from the state file:
-   ```bash
-   type=$(jq -r '.type' ".sdlc/workflows/{ID}.json")
-   complexity=$(jq -r '.complexity // "medium"' ".sdlc/workflows/{ID}.json")
-   ```
-   Apply the gate:
-   - **Bug or chore chain with `complexity == low` or `complexity == medium`** → Log the findings and auto-advance. Parse individual findings from the subagent return text using the FR-7 procedure described in the "Parsing Individual Findings for `auto-advanced` Decisions" subsection below, write them to a temp file, then persist and advance:
-     ```
-     [info] {N} warnings, {N} info from reviewing-requirements ({mode}) — auto-advancing (chain={type}, complexity={complexity})
-     ```
-     Display the full findings to the user (for visibility), emit the `[info]` line above, then:
-     ```bash
-     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh record-findings {ID} {stepIndex} 0 {W} {I} auto-advanced '{summary}' --details-file /tmp/findings-{ID}-{stepIndex}.json
-     rm -f /tmp/findings-{ID}-{stepIndex}.json
-     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "{artifact-path}"
-     ```
-     Do not prompt.
-   - **Bug or chore chain with `complexity == high`**, or **any feature chain** → Display the full findings to the user. Set the gate before prompting so the stop hook does not nudge while waiting for input:
-     ```bash
-     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-gate {ID} findings-decision
-     ```
-     Prompt: "{N} warnings and {N} info found by reviewing-requirements. Review findings above and continue? (yes / no)". After the user responds, clear the gate:
-     ```bash
-     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh clear-gate {ID}
-     ```
-     If the user confirms, persist findings then advance state:
-     ```bash
-     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh record-findings {ID} {stepIndex} 0 {W} {I} user-advanced '{summary}'
-     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "{artifact-path}"
-     ```
-     If the user declines, persist findings then pause the workflow:
-     ```bash
-     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh record-findings {ID} {stepIndex} 0 {W} {I} paused '{summary}'
-     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} review-findings
-     ```
-     Halt execution. The user re-invokes with `/orchestrating-workflows {ID}` after addressing findings manually.
+State-transition calls per branch:
 
-3. **Errors present** → Display the full findings to the user. List the auto-fixable items from the "Fix Summary" / "Update Summary" section of the findings. Errors always block progression — set the gate before presenting options so the stop hook does not nudge while waiting for input:
-   ```bash
-   ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-gate {ID} findings-decision
-   ```
-   Present two options:
-   - **Apply fixes** → Persist findings at the decision point, then keep the gate active during fix application and re-verification (the gate suppresses stop-hook nudges for the entire fix+re-run cycle):
-     ```bash
-     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh record-findings {ID} {stepIndex} {E} {W} {I} auto-fixed '{summary}'
-     ```
-     Apply the auto-fixable corrections in main context using the Edit tool. Then spawn a **new** `reviewing-requirements` subagent fork to re-verify (this is the re-run, max 1). The gate is cleared after the re-run completes and the outcome is determined — see "Applying Auto-Fixes" below.
-   - **Pause for manual resolution** → Persist findings then pause immediately (the `pause` command clears the gate automatically):
-     ```bash
-     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh record-findings {ID} {stepIndex} {E} {W} {I} paused '{summary}'
-     ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} review-findings
-     ```
-     Halt execution.
+- `advance` → `record-findings {ID} {stepIndex} 0 0 0 advanced 'No issues found'` then `advance {ID} "{artifact-path}"`.
+- `auto-advance` → display findings; emit `[info] {N} warnings, {N} info from reviewing-requirements ({mode}) — auto-advancing (chain={type}, complexity={complexity})`; parse individual findings via `parse-findings.sh`'s `individual` field to `/tmp/findings-{ID}-{stepIndex}.json`; `record-findings {ID} {stepIndex} 0 {W} {I} auto-advanced '{summary}' --details-file /tmp/findings-{ID}-{stepIndex}.json` then `rm -f` that file; `advance {ID} "{artifact-path}"`.
+- `prompt-user` → `set-gate {ID} findings-decision`; display findings; prompt "{N} warnings and {N} info found by reviewing-requirements. Review findings above and continue? (yes / no)"; `clear-gate {ID}`; if yes → `record-findings ... user-advanced` + `advance`; if no → `record-findings ... paused` + `pause {ID} review-findings` and halt.
+- `pause-errors` → `set-gate {ID} findings-decision`; display findings + auto-fixable items from Fix Summary / Update Summary; offer Apply-fixes (→ `record-findings ... auto-fixed` then apply edits in main context then re-fork once, see Applying Auto-Fixes) or Pause (→ `record-findings ... paused` + `pause {ID} review-findings` and halt).
 
 ## Applying Auto-Fixes
 
@@ -130,16 +76,4 @@ Notes:
 
 ### Parsing Individual Findings for `auto-advanced` Decisions
 
-When `decision` is `auto-advanced`, parse individual findings from the subagent return text to build the `--details-file` argument:
-
-1. Scan the subagent return text for lines matching: `**[{W|I}{N}] {category} — {description}**` (or the unbolded variant). The separator is an em dash (`—`, U+2014); accept ASCII double-hyphen (`--`) as a fallback. Map prefix letters: `W` → `"warning"`, `I` → `"info"`.
-2. For each match, extract:
-   - `id` — severity+number token (e.g., `"W1"`, `"I3"`)
-   - `severity` — mapped from prefix letter
-   - `category` — text between `]` and `—`, trimmed
-   - `description` — text after `—` to end of line, trimmed and stripped of trailing bold markers
-3. Write the resulting JSON array to `/tmp/findings-{ID}-{stepIndex}.json`
-4. Pass `--details-file /tmp/findings-{ID}-{stepIndex}.json` to `record-findings`
-5. Remove the temp file after `record-findings` returns
-
-If no individual findings can be parsed despite non-zero counts, write `[]` and log: `[warn] Could not parse individual findings from reviewing-requirements output — recording counts only.`
+Use `parse-findings.sh`'s `individual` field (see `## Parsing Findings` above) — write the array to `/tmp/findings-{ID}-{stepIndex}.json`, pass `--details-file` to `record-findings`, remove the temp file after. Script emits `[warn] parse-findings: counts non-zero but no individual findings parsed — recording counts only.` to stderr when warnings/info are present but no individual lines match.
