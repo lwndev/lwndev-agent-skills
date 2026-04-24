@@ -451,7 +451,7 @@ This phase has no dependency on Phases 1–3 at runtime — `set-model-override`
 ### Phase 5: SKILL.md + References Rewrite (FR-8) + Caller Audit (FR-9) + Final Validation
 
 **Feature:** [FEAT-028](../features/FEAT-028-orchestrating-workflows-findings-resume.md) | [#186](https://github.com/lwndev/lwndev-marketplace/issues/186)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phases 1, 2, 3, and 4
 
 #### Rationale
