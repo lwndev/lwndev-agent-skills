@@ -141,7 +141,7 @@ Grouping them in Phase 1 for four reasons:
 ### Phase 2: Decision-Flow + PR-Number Extraction — `findings-decision.sh` (FR-3), `resolve-pr-number.sh` (FR-4)
 
 **Feature:** [FEAT-028](../features/FEAT-028-orchestrating-workflows-findings-resume.md) | [#186](https://github.com/lwndev/lwndev-marketplace/issues/186)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 1
 
 #### Rationale
@@ -240,16 +240,16 @@ Grouping them in Phase 1 for four reasons:
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/sdlc-workflows/FEAT-028.json`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/sdlc-workflows/CHORE-001.json`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/sdlc-workflows/BUG-001.json`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/exec-output-with-hash.txt`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/exec-output-with-url.txt`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/exec-output-multi-hash.txt`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/exec-output-empty.txt`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/findings-decision.sh`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/resolve-pr-number.sh`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/findings-decision.bats`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/sdlc-workflows/FEAT-028.json`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/sdlc-workflows/CHORE-001.json`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/sdlc-workflows/BUG-001.json`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/exec-output-with-hash.txt`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/exec-output-with-url.txt`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/exec-output-multi-hash.txt`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures/exec-output-empty.txt`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/findings-decision.sh`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/resolve-pr-number.sh`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/findings-decision.bats`
 - [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/resolve-pr-number.bats`
 
 ---

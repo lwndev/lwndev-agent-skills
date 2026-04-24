@@ -1,0 +1,18 @@
+{
+  "id": "FEAT-028",
+  "type": "feature",
+  "currentStep": 1,
+  "status": "in-progress",
+  "pauseReason": null,
+  "gate": null,
+  "steps": [],
+  "phases": { "total": 0, "completed": 0 },
+  "prNumber": null,
+  "branch": null,
+  "startedAt": "2026-04-23T00:00:00Z",
+  "lastResumedAt": null,
+  "complexity": "high",
+  "complexityStage": "init",
+  "modelOverride": null,
+  "modelSelections": []
+}

@@ -1,0 +1,18 @@
+{
+  "id": "CHORE-001",
+  "type": "chore",
+  "currentStep": 1,
+  "status": "in-progress",
+  "pauseReason": null,
+  "gate": null,
+  "steps": [],
+  "phases": { "total": 0, "completed": 0 },
+  "prNumber": null,
+  "branch": null,
+  "startedAt": "2026-04-23T00:00:00Z",
+  "lastResumedAt": null,
+  "complexity": "low",
+  "complexityStage": "init",
+  "modelOverride": null,
+  "modelSelections": []
+}
