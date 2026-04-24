@@ -141,7 +141,7 @@ Grouping them in Phase 1 for four reasons:
 ### Phase 2: Decision-Flow + PR-Number Extraction — `findings-decision.sh` (FR-3), `resolve-pr-number.sh` (FR-4)
 
 **Feature:** [FEAT-028](../features/FEAT-028-orchestrating-workflows-findings-resume.md) | [#186](https://github.com/lwndev/lwndev-marketplace/issues/186)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 1
 
 #### Rationale
