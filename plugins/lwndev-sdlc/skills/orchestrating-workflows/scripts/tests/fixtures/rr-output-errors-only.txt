@@ -1,0 +1,8 @@
+Reviewing requirements for FEAT-028.
+
+Found **1 errors**, **0 warnings**, **0 info**
+
+Error findings are not itemised in this summary — the orchestrator surfaces
+them separately before the apply-fixes / pause prompt.
+
+done | artifact=requirements/features/FEAT-028-orchestrating-workflows-findings-resume.md | review complete, errors-only

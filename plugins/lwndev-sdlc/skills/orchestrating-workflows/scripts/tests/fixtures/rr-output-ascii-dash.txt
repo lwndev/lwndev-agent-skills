@@ -1,0 +1,8 @@
+Reviewing requirements for FEAT-028.
+
+Found **0 errors**, **1 warnings**, **1 info**
+
+[W1] reference -- The FR-2 warn contract is ambiguous on whether en dashes count as the ASCII fallback.
+[I1] style -- Consider normalising on a single dash character in fixture files.
+
+done | artifact=requirements/features/FEAT-028-orchestrating-workflows-findings-resume.md | review complete, ASCII dashes

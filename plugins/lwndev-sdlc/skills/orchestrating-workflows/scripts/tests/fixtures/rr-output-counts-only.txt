@@ -1,0 +1,9 @@
+Reviewing requirements for FEAT-028.
+
+Found **0 errors**, **2 warnings**, **1 info**
+
+Detailed findings were recorded in the subagent's internal scratch pad but
+not itemised in this summary — the record-findings --details-file fallback
+applies.
+
+done | artifact=requirements/features/FEAT-028-orchestrating-workflows-findings-resume.md | review complete, counts-only

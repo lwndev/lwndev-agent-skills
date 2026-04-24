@@ -1,0 +1,9 @@
+Reviewing requirements for FEAT-028.
+
+Found **0 errors**, **2 warnings**, **1 info**
+
+**[W1] reference — FR-3 cites `references/reviewing-requirements-flow.md` but does not name the exact subsection.**
+**[W2] consistency — FR-5 uses `init-workflow.sh` but the Quick Start example is still prose.**
+**[I1] nit — Consider documenting the `jq` optional dependency in every script's top comment.**
+
+done | artifact=requirements/features/FEAT-028-orchestrating-workflows-findings-resume.md | review complete, 3 findings
