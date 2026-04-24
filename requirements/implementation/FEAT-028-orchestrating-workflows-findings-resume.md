@@ -19,7 +19,7 @@ The plan follows the four-layer sequencing proven by FEAT-025 / FEAT-026 / FEAT-
 ### Phase 1: Directory Scaffold + Pure Parsing Scripts — `parse-model-flags.sh` (FR-1), `parse-findings.sh` (FR-2)
 
 **Feature:** [FEAT-028](../features/FEAT-028-orchestrating-workflows-findings-resume.md) | [#186](https://github.com/lwndev/lwndev-marketplace/issues/186)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 
 #### Rationale
 
