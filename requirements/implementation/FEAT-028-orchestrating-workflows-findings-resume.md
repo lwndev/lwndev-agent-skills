@@ -387,7 +387,7 @@ They are grouped together in Phase 3 for three reasons:
 ### Phase 4: `workflow-state.sh set-model-override` (FR-7) + Vitest Extension
 
 **Feature:** [FEAT-028](../features/FEAT-028-orchestrating-workflows-findings-resume.md) | [#186](https://github.com/lwndev/lwndev-marketplace/issues/186)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 
 #### Rationale
 
