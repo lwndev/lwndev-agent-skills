@@ -19,7 +19,7 @@ Per-phase complexity discipline applies to this plan itself. Each phase aims for
 ### Phase 1: Directory Scaffold + `render-plan-scaffold.sh` (FR-1)
 
 **Feature:** [FEAT-029](../features/FEAT-029-creating-implementation-plans-scripts.md) | [#190](https://github.com/lwndev/lwndev-marketplace/issues/190)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 
 #### Rationale
 
