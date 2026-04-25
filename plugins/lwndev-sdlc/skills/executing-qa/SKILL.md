@@ -281,3 +281,7 @@ Before finishing, verify:
 | Merge PR and reset to main | Use `finalizing-workflow` |
 
 > Note: The `reviewing-requirements` test-plan reconciliation mode remains available as a standalone skill but is no longer invoked by the orchestrator between `documenting-qa` and `implementing-plan-phases` (per FR-11 Option B decision for FEAT-018).
+
+## References
+
+- [QA return contract](references/qa-return-contract.md) — artifact schema, final-message line, workflow-state findings JSON.
