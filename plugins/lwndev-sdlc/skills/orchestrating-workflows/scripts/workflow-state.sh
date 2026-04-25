@@ -56,7 +56,10 @@ usage() {
   echo "  resolve-tier <ID> <step-name> [flags...]" >&2
   echo "                                Debug helper. Walk the FR-3 precedence chain and echo the resolved" >&2
   echo "                                tier. Flags: --cli-model <tier>, --cli-complexity <tier>," >&2
-  echo "                                --cli-model-for <step>:<tier>, --state-override <tier>." >&2
+  echo "                                --cli-model-for <step>:<tier>, --state-override <tier>," >&2
+  echo "                                --phase <N> --plan-file <path> (FEAT-029 FR-6: per-phase" >&2
+  echo "                                classification for implementing-plan-phases; both must be supplied" >&2
+  echo "                                together; ignored with [info] for other skills)." >&2
   echo "                                In real orchestrator runs, CLI flags are parsed in the orchestrator" >&2
   echo "                                layer and passed through; this subcommand exists so the resolver can" >&2
   echo "                                be exercised from unit tests and by humans running dry-run checks." >&2
@@ -172,10 +175,20 @@ _complexity_to_tier() {
 
 # Step baseline lookup (FEAT-014 Axis 1). Echoes baseline tier for a given step name.
 # Unknown step names default to "sonnet" (safe floor).
+#
+# FEAT-029 FR-7: implementing-plan-phases is lowered from sonnet to haiku.
+# Rationale: most phases are mechanical (single-script edits, fixture additions,
+# bats coverage extensions) and resolve cleanly at haiku. Genuinely complex
+# phases are upgraded by FR-6 per-phase classification when resolve-tier is
+# called with --phase N --plan-file <path>; soft and hard overrides still walk
+# the standard precedence chain so callers can lift the tier when needed.
 _step_baseline() {
   case "$1" in
-    reviewing-requirements|creating-implementation-plans|implementing-plan-phases|executing-chores|executing-bug-fixes)
+    reviewing-requirements|creating-implementation-plans|executing-chores|executing-bug-fixes)
       echo "sonnet"
+      ;;
+    implementing-plan-phases)
+      echo "haiku"
       ;;
     finalizing-workflow|pr-creation)
       echo "haiku"
@@ -706,6 +719,12 @@ cmd_resolve_tier() {
   local -a cli_model_for_list=()
   local state_override_flag=""
   local state_override_value=""
+  # FEAT-029 FR-6: optional --phase N / --plan-file <path>. Both must appear
+  # together. When both are present and the step is implementing-plan-phases,
+  # phase-complexity-budget.sh provides the per-phase tier in place of the
+  # workflow-level complexity (Axis 2).
+  local phase_arg=""
+  local plan_file_arg=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -721,12 +740,22 @@ cmd_resolve_tier() {
       --state-override)
         state_override_flag="set"
         state_override_value="${2:-}"; shift 2 ;;
+      --phase)
+        phase_arg="${2:-}"; shift 2 ;;
+      --plan-file)
+        plan_file_arg="${2:-}"; shift 2 ;;
       *)
         echo "Error: Unknown resolve-tier flag '$1'." >&2
         exit 1
         ;;
     esac
   done
+
+  # FEAT-029 FR-6: --phase and --plan-file MUST be supplied together.
+  if [[ -n "$phase_arg" && -z "$plan_file_arg" ]] || [[ -z "$phase_arg" && -n "$plan_file_arg" ]]; then
+    echo "Error: --phase and --plan-file must be supplied together" >&2
+    exit 2
+  fi
 
   local file
   file=$(state_file "$id")
@@ -737,13 +766,49 @@ cmd_resolve_tier() {
   locked=$(_step_baseline_locked "$step_name")
   complexity_label=$(jq -r '.complexity // ""' "$file")
 
+  # FEAT-029 FR-6: per-phase classification override for implementing-plan-phases.
+  # When --phase N --plan-file <path> are supplied AND step is implementing-plan-phases,
+  # invoke phase-complexity-budget.sh and use its tier as the work-item complexity
+  # axis input (replaces the persisted workflow-level complexity for this resolve).
+  # On non-zero exit (Edge Case 9): fall back to the workflow-level complexity and
+  # emit a [warn] line. For non-phase skills the flags are accepted but ignored.
+  local per_phase_tier=""
+  if [[ -n "$phase_arg" && -n "$plan_file_arg" ]]; then
+    if [[ "$step_name" == "implementing-plan-phases" ]]; then
+      local pcb_script="${CLAUDE_PLUGIN_ROOT:-${WORKFLOW_STATE_PLUGIN_ROOT:-}}/skills/creating-implementation-plans/scripts/phase-complexity-budget.sh"
+      # Fallback: when CLAUDE_PLUGIN_ROOT isn't set, derive from this script's path.
+      if [[ ! -x "$pcb_script" ]]; then
+        local self_dir
+        self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+        pcb_script="${self_dir}/creating-implementation-plans/scripts/phase-complexity-budget.sh"
+      fi
+      local pcb_out pcb_rc
+      pcb_out=$(bash "$pcb_script" "$plan_file_arg" --phase "$phase_arg" 2>/dev/null) && pcb_rc=0 || pcb_rc=$?
+      if [[ "$pcb_rc" -eq 0 ]]; then
+        per_phase_tier=$(echo "$pcb_out" | jq -r '.tier // ""' 2>/dev/null)
+      fi
+      if [[ -z "$per_phase_tier" ]]; then
+        local fallback_tier
+        fallback_tier=$(_complexity_to_tier "$complexity_label")
+        [[ -z "$fallback_tier" ]] && fallback_tier="$baseline"
+        echo "[warn] resolve-tier: phase-complexity-budget failed for phase ${phase_arg}; falling back to workflow complexity ${fallback_tier}." >&2
+      fi
+    else
+      echo "[info] resolve-tier: --phase ignored for non-phase skill ${step_name}" >&2
+    fi
+  fi
+
   # Step 1: start at baseline.
   local tier="$baseline"
 
   # Step 2: apply work-item complexity unless baseline-locked.
   if [[ "$locked" != "true" ]]; then
     local wi_tier
-    wi_tier=$(_complexity_to_tier "$complexity_label")
+    if [[ -n "$per_phase_tier" ]]; then
+      wi_tier="$per_phase_tier"
+    else
+      wi_tier=$(_complexity_to_tier "$complexity_label")
+    fi
     if [[ -n "$wi_tier" ]]; then
       tier=$(_max_tier "$tier" "$wi_tier")
     fi
@@ -1426,6 +1491,13 @@ cmd_record_model_selection() {
     mode_arg=$(jq -n --arg v "$mode" '$v')
   fi
 
+  # FEAT-029 FR-6: when a phase is supplied, also persist the per-phase tier
+  # under modelSelectionsByPhase[step-N][phase-N]. The existing modelSelections
+  # array remains the canonical append-only audit trail; the new nested map is
+  # a sibling lookup that lets resume-recompute and downstream tooling find
+  # the most recent per-phase tier without scanning the whole array. Silent
+  # in-place migration per NFR-5: created on first per-phase write; entries
+  # recorded before FEAT-029 (or without --phase) leave the map untouched.
   jq \
     --argjson stepIndex "$step_index" \
     --arg skill "$skill" \
@@ -1434,15 +1506,26 @@ cmd_record_model_selection() {
     --arg tier "$tier" \
     --arg complexityStage "$complexity_stage" \
     --arg startedAt "$started_at" \
-    '.modelSelections += [{
-       stepIndex: $stepIndex,
-       skill: $skill,
-       mode: $mode,
-       phase: $phase,
-       tier: $tier,
-       complexityStage: $complexityStage,
-       startedAt: $startedAt
-     }]' \
+    '
+      .modelSelections += [{
+        stepIndex: $stepIndex,
+        skill: $skill,
+        mode: $mode,
+        phase: $phase,
+        tier: $tier,
+        complexityStage: $complexityStage,
+        startedAt: $startedAt
+      }]
+      | (if $phase != null then
+          .modelSelectionsByPhase = ((.modelSelectionsByPhase // {}) as $existing
+            | $existing
+              | .["step-" + ($stepIndex | tostring)] = (
+                  (.["step-" + ($stepIndex | tostring)] // {})
+                  | .["phase-" + ($phase | tostring)] = $tier
+                )
+          )
+        else . end)
+    ' \
     "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   cat "$file"

@@ -243,7 +243,7 @@ This phase also flips the warn-only `--enforce-phase-budget` flag in `render-pla
 ### Phase 4: Lower `implementing-plan-phases` Baseline + Per-Phase `resolve-tier` (FR-7, FR-6)
 
 **Feature:** [FEAT-029](../features/FEAT-029-creating-implementation-plans-scripts.md) | [#190](https://github.com/lwndev/lwndev-marketplace/issues/190)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 2
 
 #### Rationale
@@ -285,8 +285,8 @@ Edge Case 9 (graceful degradation): when `phase-complexity-budget.sh` exits non-
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` (amended: `_step_baseline` lowered, `resolve-tier` accepts `--phase`/`--plan-file`, `record-model-selection` persists per-phase keying)
-- [ ] `scripts/__tests__/workflow-state.test.ts` (extended: per-phase resolution, partial-flag exit `2`, fallback warn line, persistence schema)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` (amended: `_step_baseline` lowered, `resolve-tier` accepts `--phase`/`--plan-file`, `record-model-selection` persists per-phase keying)
+- [x] `scripts/__tests__/workflow-state.test.ts` (extended: per-phase resolution, partial-flag exit `2`, fallback warn line, persistence schema)
 
 ---
 

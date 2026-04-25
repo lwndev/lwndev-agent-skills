@@ -1079,9 +1079,10 @@ describe('workflow-state.sh', () => {
         // Sonnet-baseline steps
         expect(run('get-model FEAT-001 reviewing-requirements')).toBe('sonnet');
         expect(run('get-model FEAT-001 creating-implementation-plans')).toBe('sonnet');
-        expect(run('get-model FEAT-001 implementing-plan-phases')).toBe('sonnet');
         expect(run('get-model FEAT-001 executing-chores')).toBe('sonnet');
         expect(run('get-model FEAT-001 executing-bug-fixes')).toBe('sonnet');
+        // FEAT-029 FR-7: implementing-plan-phases baseline lowered to haiku.
+        expect(run('get-model FEAT-001 implementing-plan-phases')).toBe('haiku');
         // Baseline-locked steps
         expect(run('get-model FEAT-001 finalizing-workflow')).toBe('haiku');
         expect(run('get-model FEAT-001 pr-creation')).toBe('haiku');
@@ -1092,6 +1093,8 @@ describe('workflow-state.sh', () => {
         runJSON('set-complexity FEAT-001 high');
         // max(sonnet, opus) = opus
         expect(run('get-model FEAT-001 reviewing-requirements')).toBe('opus');
+        // FEAT-029 FR-7: implementing-plan-phases baseline=haiku, but high
+        // workflow complexity still upgrades it to opus via the standard chain.
         expect(run('get-model FEAT-001 implementing-plan-phases')).toBe('opus');
       });
 
@@ -1100,7 +1103,9 @@ describe('workflow-state.sh', () => {
         runJSON('set-complexity FEAT-001 low');
         // max(sonnet, haiku) = sonnet — Sonnet baseline floor protects us.
         expect(run('get-model FEAT-001 reviewing-requirements')).toBe('sonnet');
-        expect(run('get-model FEAT-001 implementing-plan-phases')).toBe('sonnet');
+        // FEAT-029 FR-7: implementing-plan-phases baseline=haiku, low
+        // complexity also resolves to haiku → max(haiku, haiku) = haiku.
+        expect(run('get-model FEAT-001 implementing-plan-phases')).toBe('haiku');
       });
 
       it('returns medium→sonnet complexity as a no-op upgrade on sonnet-baseline steps', () => {
@@ -1302,6 +1307,72 @@ describe('workflow-state.sh', () => {
           { expectError: true }
         );
         expect(err).toContain('requires a numeric');
+      });
+
+      // --- FEAT-029 FR-6: per-phase keying under modelSelectionsByPhase ---
+      it('per-phase invocation persists modelSelectionsByPhase[step-N][phase-N] (FEAT-029)', () => {
+        runJSON('init FEAT-001 feature');
+        const state = runJSON(
+          'record-model-selection FEAT-001 5 implementing-plan-phases null 1 haiku post-plan 2026-04-25T00:00:00Z'
+        );
+        const byPhase = state.modelSelectionsByPhase as Record<string, Record<string, string>>;
+        expect(byPhase).toBeDefined();
+        expect(byPhase['step-5']).toBeDefined();
+        expect(byPhase['step-5']['phase-1']).toBe('haiku');
+        // Existing audit-trail array still updated.
+        const selections = state.modelSelections as Array<Record<string, unknown>>;
+        expect(selections).toHaveLength(1);
+        expect(selections[0].phase).toBe(1);
+      });
+
+      it('multiple per-phase invocations on the same step accumulate under modelSelectionsByPhase', () => {
+        runJSON('init FEAT-001 feature');
+        runJSON(
+          'record-model-selection FEAT-001 5 implementing-plan-phases null 1 haiku post-plan 2026-04-25T00:00:00Z'
+        );
+        runJSON(
+          'record-model-selection FEAT-001 5 implementing-plan-phases null 2 sonnet post-plan 2026-04-25T00:01:00Z'
+        );
+        const state = runJSON(
+          'record-model-selection FEAT-001 5 implementing-plan-phases null 3 opus post-plan 2026-04-25T00:02:00Z'
+        );
+        const byPhase = state.modelSelectionsByPhase as Record<string, Record<string, string>>;
+        expect(byPhase['step-5']).toEqual({
+          'phase-1': 'haiku',
+          'phase-2': 'sonnet',
+          'phase-3': 'opus',
+        });
+        // Audit trail preserves all three entries — append-only.
+        const selections = state.modelSelections as Array<Record<string, unknown>>;
+        expect(selections).toHaveLength(3);
+      });
+
+      it('non-phase invocations leave modelSelectionsByPhase untouched (silent migration)', () => {
+        runJSON('init FEAT-001 feature');
+        // Pre-existing per-phase entry.
+        runJSON(
+          'record-model-selection FEAT-001 5 implementing-plan-phases null 1 haiku post-plan 2026-04-25T00:00:00Z'
+        );
+        // Subsequent non-phase invocation must NOT touch modelSelectionsByPhase.
+        const state = runJSON(
+          'record-model-selection FEAT-001 1 reviewing-requirements standard null sonnet init 2026-04-25T00:01:00Z'
+        );
+        const byPhase = state.modelSelectionsByPhase as Record<string, Record<string, string>>;
+        expect(byPhase['step-5']).toEqual({ 'phase-1': 'haiku' });
+        // The non-phase entry must NOT have created a step-1 key.
+        expect(byPhase['step-1']).toBeUndefined();
+        // Audit trail still appended.
+        const selections = state.modelSelections as Array<Record<string, unknown>>;
+        expect(selections).toHaveLength(2);
+      });
+
+      it('record-model-selection without --phase on a fresh state does not create modelSelectionsByPhase', () => {
+        runJSON('init FEAT-001 feature');
+        const state = runJSON(
+          'record-model-selection FEAT-001 1 reviewing-requirements standard null sonnet init 2026-04-25T00:00:00Z'
+        );
+        // No per-phase entries → modelSelectionsByPhase is absent (silent migration: created on first per-phase write).
+        expect((state as Record<string, unknown>).modelSelectionsByPhase).toBeUndefined();
       });
     });
 
@@ -1666,7 +1737,8 @@ describe('workflow-state.sh', () => {
           runJSON('init FEAT-001 feature');
           expect(run('resolve-tier FEAT-001 reviewing-requirements')).toBe('sonnet');
           expect(run('resolve-tier FEAT-001 creating-implementation-plans')).toBe('sonnet');
-          expect(run('resolve-tier FEAT-001 implementing-plan-phases')).toBe('sonnet');
+          // FEAT-029 FR-7: implementing-plan-phases baseline lowered to haiku.
+          expect(run('resolve-tier FEAT-001 implementing-plan-phases')).toBe('haiku');
         });
 
         it('baseline-locked steps default to haiku', () => {
@@ -1842,6 +1914,101 @@ describe('workflow-state.sh', () => {
         });
       });
 
+      // --- FEAT-029 FR-6: per-phase resolve-tier classification ---
+      describe('resolve-tier --phase / --plan-file (FEAT-029 FR-6)', () => {
+        const BUDGET_PLAN = join(
+          process.cwd(),
+          'plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md'
+        );
+
+        it('per-phase haiku phase resolves implementing-plan-phases to haiku', () => {
+          runJSON('init FEAT-001 feature');
+          // Phase 1 of budget-mixed-plan scores haiku (3 steps / 4 deliverables / 3 files / no flags).
+          // baseline=haiku (FR-7), per-phase=haiku → max=haiku.
+          expect(
+            run(
+              `resolve-tier FEAT-001 implementing-plan-phases --phase 1 --plan-file ${BUDGET_PLAN}`
+            )
+          ).toBe('haiku');
+        });
+
+        it('per-phase sonnet phase upgrades implementing-plan-phases to sonnet', () => {
+          runJSON('init FEAT-001 feature');
+          // Phase 2 of budget-mixed-plan scores sonnet (7/9/8 at the boundary).
+          // baseline=haiku, per-phase=sonnet → max=sonnet.
+          expect(
+            run(
+              `resolve-tier FEAT-001 implementing-plan-phases --phase 2 --plan-file ${BUDGET_PLAN}`
+            )
+          ).toBe('sonnet');
+        });
+
+        it('per-phase opus phase upgrades implementing-plan-phases to opus', () => {
+          runJSON('init FEAT-001 feature');
+          // Phase 4 of budget-mixed-plan scores opus on every axis (8/10/9, overBudget).
+          expect(
+            run(
+              `resolve-tier FEAT-001 implementing-plan-phases --phase 4 --plan-file ${BUDGET_PLAN}`
+            )
+          ).toBe('opus');
+        });
+
+        it('non-phase skill emits [info] and ignores --phase/--plan-file', () => {
+          runJSON('init FEAT-001 feature');
+          const cap = runCapture(
+            `resolve-tier FEAT-001 reviewing-requirements --phase 1 --plan-file ${BUDGET_PLAN}`
+          );
+          expect(cap.status).toBe(0);
+          expect(cap.stdout.trim()).toBe('sonnet');
+          expect(cap.stderr).toContain(
+            '[info] resolve-tier: --phase ignored for non-phase skill reviewing-requirements'
+          );
+        });
+
+        it('--phase without --plan-file exits 2', () => {
+          runJSON('init FEAT-001 feature');
+          const cap = runCapture('resolve-tier FEAT-001 implementing-plan-phases --phase 1');
+          expect(cap.status).toBe(2);
+          expect(cap.stderr).toContain('--phase and --plan-file must be supplied together');
+        });
+
+        it('--plan-file without --phase exits 2', () => {
+          runJSON('init FEAT-001 feature');
+          const cap = runCapture(
+            `resolve-tier FEAT-001 implementing-plan-phases --plan-file ${BUDGET_PLAN}`
+          );
+          expect(cap.status).toBe(2);
+          expect(cap.stderr).toContain('--phase and --plan-file must be supplied together');
+        });
+
+        it('non-existent plan-file emits [warn] and falls back to workflow complexity', () => {
+          runJSON('init FEAT-001 feature');
+          // No set-complexity called → workflow complexity is null → falls back to baseline (haiku).
+          const cap = runCapture(
+            'resolve-tier FEAT-001 implementing-plan-phases --phase 1 --plan-file /nonexistent/path.md'
+          );
+          expect(cap.status).toBe(0);
+          expect(cap.stdout.trim()).toBe('haiku');
+          expect(cap.stderr).toContain(
+            '[warn] resolve-tier: phase-complexity-budget failed for phase 1'
+          );
+          expect(cap.stderr).toContain('falling back to workflow complexity');
+        });
+
+        it('non-existent plan-file with high workflow complexity falls back to opus', () => {
+          runJSON('init FEAT-001 feature');
+          runJSON('set-complexity FEAT-001 high');
+          // Per-phase lookup fails → fallback to workflow complexity (high → opus).
+          // baseline=haiku, fallback=opus → max=opus.
+          const cap = runCapture(
+            'resolve-tier FEAT-001 implementing-plan-phases --phase 1 --plan-file /nonexistent/path.md'
+          );
+          expect(cap.status).toBe(0);
+          expect(cap.stdout.trim()).toBe('opus');
+          expect(cap.stderr).toContain('[warn] resolve-tier: phase-complexity-budget failed');
+        });
+      });
+
       // --- FEAT-021 Phase 1: step-baseline / step-baseline-locked subcommands ---
       describe('step-baseline (FEAT-021 Phase 1)', () => {
         it('echoes sonnet for reviewing-requirements', () => {
@@ -1852,8 +2019,8 @@ describe('workflow-state.sh', () => {
           expect(run('step-baseline creating-implementation-plans')).toBe('sonnet');
         });
 
-        it('echoes sonnet for implementing-plan-phases', () => {
-          expect(run('step-baseline implementing-plan-phases')).toBe('sonnet');
+        it('echoes haiku for implementing-plan-phases (FEAT-029 FR-7)', () => {
+          expect(run('step-baseline implementing-plan-phases')).toBe('haiku');
         });
 
         it('echoes sonnet for executing-chores', () => {
