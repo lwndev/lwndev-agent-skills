@@ -168,7 +168,7 @@ The phase deliberately excludes FR-4 (`split-phase-suggest.sh`) and FR-5 (`valid
 ### Phase 3: Advisory Splitter + Phase-Size Gate (FR-4, FR-5)
 
 **Feature:** [FEAT-029](../features/FEAT-029-creating-implementation-plans-scripts.md) | [#190](https://github.com/lwndev/lwndev-marketplace/issues/190)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 2
 
 #### Rationale
