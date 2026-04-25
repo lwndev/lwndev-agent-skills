@@ -293,7 +293,7 @@ Edge Case 9 (graceful degradation): when `phase-complexity-budget.sh` exits non-
 ### Phase 5: `prepare-fork.sh` Forwarding + Post-Plan `max` Classifier (FR-8, FR-9)
 
 **Feature:** [FEAT-029](../features/FEAT-029-creating-implementation-plans-scripts.md) | [#190](https://github.com/lwndev/lwndev-marketplace/issues/190)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 4
 
 #### Rationale
@@ -340,10 +340,10 @@ This is the canary phase: it scores itself against FR-3's budget (5 implementati
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/scripts/prepare-fork.sh` (amended: `--phase`/`--plan-file` forwarding, FR-14 echo line extended)
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` (amended: `classify-post-plan` uses `max`-of-per-phase-tiers + upgrade-only invariant + Edge Case 9 fallback)
-- [ ] `plugins/lwndev-sdlc/scripts/tests/prepare-fork.bats` (extended: per-phase forwarding, partial-flag rejection, echo-line suffix)
-- [ ] `scripts/__tests__/workflow-state.test.ts` (extended: `classify-post-plan` per-phase semantics, upgrade-only invariant, fallback)
+- [x] `plugins/lwndev-sdlc/scripts/prepare-fork.sh` (amended: `--phase`/`--plan-file` forwarding, FR-14 echo line extended)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` (amended: `classify-post-plan` uses `max`-of-per-phase-tiers + upgrade-only invariant + Edge Case 9 fallback)
+- [x] `plugins/lwndev-sdlc/scripts/tests/prepare-fork.bats` (extended: per-phase forwarding, partial-flag rejection, echo-line suffix)
+- [x] `scripts/__tests__/workflow-state.test.ts` (extended: `classify-post-plan` per-phase semantics, upgrade-only invariant, fallback)
 
 ---
 

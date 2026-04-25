@@ -668,13 +668,70 @@ cmd_classify_post_plan() {
   local persisted
   persisted=$(jq -r '.complexity // ""' "$file")
 
-  local new_tier=""
-  if [[ -n "$plan" && -f "$plan" ]]; then
-    new_tier=$(_classify_feature_post_plan "$plan")
+  # FEAT-029 FR-9: replace the raw-phase-count mapping with a
+  # max-of-per-phase-tiers calculation. Invoke phase-complexity-budget.sh on
+  # the plan, parse the JSON-array stdout, take max(tier) under the
+  # haiku < sonnet < opus ordering, then map back to the work-item
+  # complexity vocabulary (haiku→low, sonnet→medium, opus→high).
+  #
+  # On non-zero exit (Edge Case 9): emit a [warn] line, preserve the persisted
+  # init-stage complexity unchanged, exit 0 (graceful degradation matches FR-6).
+  local pcb_script="${CLAUDE_PLUGIN_ROOT:-${WORKFLOW_STATE_PLUGIN_ROOT:-}}/skills/creating-implementation-plans/scripts/phase-complexity-budget.sh"
+  if [[ ! -x "$pcb_script" ]]; then
+    local self_dir
+    self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+    pcb_script="${self_dir}/creating-implementation-plans/scripts/phase-complexity-budget.sh"
   fi
 
+  local pcb_out pcb_rc max_tier="" new_tier=""
+  if [[ -n "$plan" && -f "$plan" ]]; then
+    pcb_out=$(bash "$pcb_script" "$plan" 2>/dev/null) && pcb_rc=0 || pcb_rc=$?
+  else
+    pcb_rc=1
+  fi
+
+  if [[ "$pcb_rc" -ne 0 ]]; then
+    # Failure path: warn + preserve persisted + exit 0.
+    local fallback_tier="${persisted:-medium}"
+    echo "[warn] classify-post-plan: phase-complexity-budget failed; preserving init-stage complexity ${fallback_tier}." >&2
+    echo "$fallback_tier"
+    return 0
+  fi
+
+  # Walk the JSON array and compute max(tier). Pure-bash fallback if jq is
+  # unavailable would also work, but jq is a hard dependency throughout the
+  # script so we use it directly.
+  local tiers
+  tiers=$(echo "$pcb_out" | jq -r '[.[].tier] | unique | .[]' 2>/dev/null) || tiers=""
+  if [[ -z "$tiers" ]]; then
+    # Empty / malformed payload — same Edge Case 9 fallback.
+    local fallback_tier="${persisted:-medium}"
+    echo "[warn] classify-post-plan: phase-complexity-budget failed; preserving init-stage complexity ${fallback_tier}." >&2
+    echo "$fallback_tier"
+    return 0
+  fi
+
+  # Tier ordering: haiku < sonnet < opus.
+  local t
+  max_tier="haiku"
+  while IFS= read -r t; do
+    [[ -z "$t" ]] && continue
+    case "$t" in
+      sonnet) [[ "$max_tier" == "haiku" ]] && max_tier="sonnet" ;;
+      opus) max_tier="opus" ;;
+    esac
+  done <<< "$tiers"
+
+  # Map tier → complexity.
+  case "$max_tier" in
+    haiku) new_tier="low" ;;
+    sonnet) new_tier="medium" ;;
+    opus) new_tier="high" ;;
+    *) new_tier="" ;;
+  esac
+
   if [[ -z "$new_tier" ]]; then
-    # NFR-5: no plan / unparseable → retain persisted tier, no upgrade.
+    # Defensive — shouldn't happen given the case above.
     echo "${persisted:-medium}"
     return
   fi
@@ -694,10 +751,15 @@ cmd_classify_post_plan() {
   # when an actual upgrade occurred (the whole point of the post-plan stage is
   # to mark the transition for audit-trail purposes). When nothing changed we
   # leave the state file alone so the caller can grep for "no-op" semantics.
+  # On a real upgrade, also emit the canonical audit-trail line so callers
+  # (orchestrator, debug logs) can see the transition.
   if [[ "$resolved" != "$persisted" ]]; then
     jq --arg tier "$resolved" \
       '.complexity = $tier | .complexityStage = "post-plan"' \
       "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+    if [[ -n "$persisted" ]]; then
+      echo "[model] Work-item complexity upgraded since last invocation: ${persisted} → ${resolved}. Audit trail continues." >&2
+    fi
   fi
 
   echo "$resolved"

@@ -1653,33 +1653,59 @@ describe('workflow-state.sh', () => {
         });
       });
 
-      // --- feature post-plan upgrade tests ---
-      describe('feature post-plan upgrade', () => {
-        it('init medium + 4 phases → upgraded to high (sonnet → opus)', () => {
+      // --- feature post-plan upgrade tests (FEAT-029 FR-9) ---
+      // Post-plan classifier was rewritten in FEAT-029 FR-9: the raw
+      // phase-count mapping (1→low, 2-3→medium, 4+→high) was replaced with
+      // max-of-per-phase-tiers from phase-complexity-budget.sh. The same
+      // upgrade-only invariant from FEAT-014 FR-2b is preserved.
+      describe('feature post-plan upgrade (FR-9 max-of-per-phase-tiers)', () => {
+        // budget-mixed-plan.md scores [haiku, sonnet, opus, opus] → max=opus → high.
+        const BUDGET_MIXED_PLAN = join(
+          process.cwd(),
+          'plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md'
+        );
+
+        it('init medium + max-of-tiers=opus → upgraded to high (audit line emitted)', () => {
           runJSON('init FEAT-001 feature');
           runJSON('set-complexity FEAT-001 medium');
-          expect(
-            run(`classify-post-plan FEAT-001 ${fixturePath('feature-low-plan-4phase.md')}`)
-          ).toBe('high');
+          const cap = runCapture(`classify-post-plan FEAT-001 ${BUDGET_MIXED_PLAN}`);
+          expect(cap.status).toBe(0);
+          expect(cap.stdout.trim()).toBe('high');
+          expect(cap.stderr).toContain(
+            '[model] Work-item complexity upgraded since last invocation: medium → high'
+          );
+          // complexityStage flips to post-plan on a real upgrade.
+          const state = readState('FEAT-001') as Record<string, unknown>;
+          expect(state.complexityStage).toBe('post-plan');
+          expect(state.complexity).toBe('high');
         });
 
-        it('init high + 1 phase → stays high (upgrade-only, never downgrade)', () => {
-          runJSON('init FEAT-001 feature');
-          runJSON('set-complexity FEAT-001 high');
-          expect(
-            run(`classify-post-plan FEAT-001 ${fixturePath('feature-low-plan-1phase.md')}`)
-          ).toBe('high');
-        });
-
-        it('init low + 4 phases → upgraded to high', () => {
+        it('init low + max-of-tiers=opus → upgraded to high', () => {
           runJSON('init FEAT-001 feature');
           runJSON('set-complexity FEAT-001 low');
-          expect(
-            run(`classify-post-plan FEAT-001 ${fixturePath('feature-low-plan-4phase.md')}`)
-          ).toBe('high');
+          expect(run(`classify-post-plan FEAT-001 ${BUDGET_MIXED_PLAN}`)).toBe('high');
+          const state = readState('FEAT-001') as Record<string, unknown>;
+          expect(state.complexity).toBe('high');
         });
 
-        it('init medium + 1 phase → stays medium (low ≤ medium)', () => {
+        it('init high + max-of-tiers=haiku → stays high (upgrade-only invariant, no audit line)', () => {
+          // feature-low-plan-1phase.md has a single near-empty phase that
+          // scores haiku. With persisted=high this must NOT downgrade and
+          // MUST NOT emit the upgrade audit line.
+          runJSON('init FEAT-001 feature');
+          runJSON('set-complexity FEAT-001 high');
+          const cap = runCapture(
+            `classify-post-plan FEAT-001 ${fixturePath('feature-low-plan-1phase.md')}`
+          );
+          expect(cap.status).toBe(0);
+          expect(cap.stdout.trim()).toBe('high');
+          expect(cap.stderr).not.toContain('Work-item complexity upgraded');
+          // No upgrade → complexityStage remains init.
+          const state = readState('FEAT-001') as Record<string, unknown>;
+          expect(state.complexityStage).toBe('init');
+        });
+
+        it('init medium + max-of-tiers=haiku → stays medium (no downgrade)', () => {
           runJSON('init FEAT-001 feature');
           runJSON('set-complexity FEAT-001 medium');
           expect(
@@ -1687,10 +1713,30 @@ describe('workflow-state.sh', () => {
           ).toBe('medium');
         });
 
-        it('missing plan → retain persisted tier (NFR-5)', () => {
+        it('phase-complexity-budget failure (missing plan) → warn + preserve persisted + exit 0', () => {
           runJSON('init FEAT-001 feature');
           runJSON('set-complexity FEAT-001 medium');
-          expect(run('classify-post-plan FEAT-001 /nonexistent/plan.md')).toBe('medium');
+          const cap = runCapture('classify-post-plan FEAT-001 /nonexistent/plan.md');
+          expect(cap.status).toBe(0);
+          expect(cap.stdout.trim()).toBe('medium');
+          expect(cap.stderr).toContain(
+            '[warn] classify-post-plan: phase-complexity-budget failed; preserving init-stage complexity medium.'
+          );
+          // State is unchanged.
+          const state = readState('FEAT-001') as Record<string, unknown>;
+          expect(state.complexity).toBe('medium');
+          expect(state.complexityStage).toBe('init');
+        });
+
+        it('phase-complexity-budget failure preserves a high persisted tier', () => {
+          runJSON('init FEAT-001 feature');
+          runJSON('set-complexity FEAT-001 high');
+          const cap = runCapture('classify-post-plan FEAT-001 /nonexistent/plan.md');
+          expect(cap.status).toBe(0);
+          expect(cap.stdout.trim()).toBe('high');
+          expect(cap.stderr).toContain(
+            '[warn] classify-post-plan: phase-complexity-budget failed; preserving init-stage complexity high.'
+          );
         });
 
         it('rejects non-feature chains', () => {
@@ -2187,11 +2233,14 @@ describe('workflow-state.sh', () => {
           writeFileSync(join(testDir, 'requirements/features/FEAT-701.md'), featContent);
           run('set-complexity FEAT-701 medium');
 
-          // Post-plan transition via classify-post-plan.
+          // Post-plan transition via classify-post-plan. Use the FEAT-029
+          // budget-mixed-plan fixture so the per-phase max scores opus → high
+          // and triggers a real upgrade (medium → high) under the FR-9 rules.
           mkdirSync(join(testDir, 'requirements/implementation'), { recursive: true });
-          const planContent = execSync(`cat "${fixturePath('feature-low-plan-4phase.md')}"`, {
-            encoding: 'utf-8',
-          });
+          const planContent = execSync(
+            `cat "${join(process.cwd(), 'plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md')}"`,
+            { encoding: 'utf-8' }
+          );
           writeFileSync(join(testDir, 'requirements/implementation/FEAT-701-plan.md'), planContent);
           run('classify-post-plan FEAT-701');
 

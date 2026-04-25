@@ -946,13 +946,6 @@ describe('integration tests', () => {
       writeFileSync(abs, content);
     }
 
-    function seedPlan(id: string, fixtureFile: string): void {
-      const dir = join(testDir, 'requirements/implementation');
-      mkdirSync(dir, { recursive: true });
-      const content = execSync(`cat "${fx(fixtureFile)}"`, { encoding: 'utf-8' });
-      writeFileSync(join(dir, `${id}-test-plan.md`), content);
-    }
-
     function resolveTier(id: string, step: string): string {
       return stateCmd(`resolve-tier ${id} ${step}`);
     }
@@ -1072,8 +1065,17 @@ describe('integration tests', () => {
         expect(t3).toBe('sonnet');
         recordSelection(id, 2, 'creating-implementation-plans', 'null', 'null', t3);
 
-        // Post-plan re-classification (FR-2b): 4-phase plan → high → opus.
-        seedPlan(id, 'feature-low-plan-4phase.md');
+        // Post-plan re-classification (FEAT-029 FR-9): max-of-per-phase-tiers.
+        // Use the FEAT-029 budget-mixed-plan fixture whose 4 phases score
+        // [haiku, sonnet, opus, opus] → max=opus → high.
+        const planDir = join(testDir, 'requirements/implementation');
+        mkdirSync(planDir, { recursive: true });
+        const budgetPlanPath = join(
+          process.cwd(),
+          'plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md'
+        );
+        const planContent = execSync(`cat "${budgetPlanPath}"`, { encoding: 'utf-8' });
+        writeFileSync(join(planDir, `${id}-test-plan.md`), planContent);
         const postPlanTier = stateCmd(`classify-post-plan ${id}`);
         expect(postPlanTier).toBe('high');
 
@@ -1342,12 +1344,16 @@ describe('integration tests', () => {
           stateCmd(`set-complexity ${id} medium`);
 
           // Manually simulate the post-plan transition that FR-2b would
-          // perform: write a plan with 4 phases, then run classify-post-plan.
+          // perform: write a plan whose phases score opus under FEAT-029 FR-9
+          // (max-of-per-phase-tiers), then run classify-post-plan to trigger
+          // the medium → high upgrade and post-plan stage flip.
           const planDir = join(testDir, 'requirements/implementation');
           mkdirSync(planDir, { recursive: true });
-          const planContent = execSync(`cat "${fx('feature-low-plan-4phase.md')}"`, {
-            encoding: 'utf-8',
-          });
+          const budgetPlanPath = join(
+            process.cwd(),
+            'plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md'
+          );
+          const planContent = execSync(`cat "${budgetPlanPath}"`, { encoding: 'utf-8' });
           writeFileSync(join(planDir, `${id}-plan.md`), planContent);
           stateCmd(`classify-post-plan ${id}`);
 
