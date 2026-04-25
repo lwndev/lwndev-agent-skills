@@ -1053,16 +1053,16 @@ describe('workflow-state.sh', () => {
         expect(stderr).toContain('State file not found');
       });
 
-      it('exits 2 when <ID> is missing', () => {
+      it('exits 1 when <ID> is missing', () => {
         const { status, stderr } = runCapture('set-model-override');
-        expect(status).toBe(2);
+        expect(status).toBe(1);
         expect(stderr).toContain('set-model-override requires <ID> <tier>');
       });
 
-      it('exits 2 when <tier> is missing', () => {
+      it('exits 1 when <tier> is missing', () => {
         runJSON('init FEAT-028 feature');
         const { status, stderr } = runCapture('set-model-override FEAT-028');
-        expect(status).toBe(2);
+        expect(status).toBe(1);
         expect(stderr).toContain('set-model-override requires <ID> <tier>');
       });
 

@@ -35,7 +35,7 @@ Three additive, positional-independent flags tune per-workflow model selection. 
 - `--complexity <tier>` — **soft blanket** override. Treated as a `low|medium|high` (or equivalent tier string) floor for work-item complexity. Upgrade-only; respects baseline locks.
 - `--model-for <step>:<tier>` — **hard per-step** override. Replaces the tier for a single named step (e.g. `--model-for reviewing-requirements:opus`). Per-step hard beats blanket hard (FR-5 #1 > #2). May be repeated.
 
-Parsing: run `bash "${CLAUDE_PLUGIN_ROOT}/skills/orchestrating-workflows/scripts/parse-model-flags.sh" "$@"` — emits `{cliModel, cliComplexity, cliModelFor, positional}` on stdout; exit `2` on unknown flag, malformed tier, or `=`-form. Pass the three `cli*` fields into every `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resolve-tier` call so the FR-3 chain sees them.
+Parsing: run `bash "${CLAUDE_PLUGIN_ROOT}/skills/orchestrating-workflows/scripts/parse-model-flags.sh" "$@"` — emits `{cliModel, cliComplexity, cliModelFor, positional}` on stdout; exit `2` on unknown flag, malformed tier, or `=`-form. Pass `cliModel` and `cliComplexity` as scalar tier strings into every `${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh resolve-tier` call. `cliModelFor` is a JSON map (`{"<step>":"<tier>", ...}` or `null`) — convert it to repeated `--cli-model-for <step>:<tier>` flag-value pairs before forwarding to `prepare-fork.sh`; see [step-execution-details.md](references/step-execution-details.md) "Preparing fork flags" for the conversion pattern.
 
 ## Issue Tracking via `managing-work-items`
 

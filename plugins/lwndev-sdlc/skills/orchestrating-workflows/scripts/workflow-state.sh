@@ -1699,7 +1699,7 @@ case "$command" in
     cmd_set_complexity "$1" "$2"
     ;;
   set-model-override)
-    [[ $# -ge 2 ]] || { echo "[error] set-model-override requires <ID> <tier>" >&2; exit 2; }
+    [[ $# -ge 2 ]] || { echo "[error] set-model-override requires <ID> <tier>" >&2; exit 1; }
     cmd_set_model_override "$1" "$2"
     ;;
   get-model)

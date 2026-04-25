@@ -258,6 +258,42 @@ STUB
   [ "$status" -eq 1 ]
 }
 
+@test "classify-init returns empty tier → exit 1 with empty-tier error" {
+  # Override the default stub so classify-init echoes an empty string,
+  # exercising the init-workflow.sh empty-tier guard.
+  cat > "${STUB_DIR}/workflow-state.sh" <<'STUB'
+#!/usr/bin/env bash
+set -u
+cmd="${1:-}"
+shift || true
+case "$cmd" in
+  init)
+    id="${1:-}"
+    type="${2:-}"
+    mkdir -p .sdlc/workflows
+    printf '{"id":"%s","type":"%s"}\n' "$id" "$type" > ".sdlc/workflows/${id}.json"
+    echo "initialized ${id}"
+    ;;
+  classify-init)
+    echo ""
+    ;;
+  set-complexity|advance) : ;;
+  *)
+    echo "stub: unknown command $cmd" >&2
+    exit 1
+    ;;
+esac
+STUB
+  chmod +x "${STUB_DIR}/workflow-state.sh"
+
+  cd "$TMPDIR_TEST"
+  err_file="${TMPDIR_TEST}/err.log"
+  exit_code=0
+  PATH="${STUB_DIR}:${PATH}" bash "$INIT" feature reqs/FEAT-028-fixture.md >/dev/null 2>"$err_file" || exit_code=$?
+  [ "$exit_code" -eq 1 ]
+  grep -q 'classify-init returned empty tier for FEAT-028' "$err_file"
+}
+
 # ---- state file created on disk ---------------------------------------------
 
 @test "state file .sdlc/workflows/<ID>.json exists after run" {

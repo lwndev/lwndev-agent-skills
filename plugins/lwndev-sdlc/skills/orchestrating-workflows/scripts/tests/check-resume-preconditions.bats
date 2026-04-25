@@ -235,6 +235,47 @@ STUB
   grep -q '\[model\] Work-item complexity upgraded from low to medium for FEAT-028' "$stderr_file"
 }
 
+@test "status stderr relayed verbatim without contaminating JSON (FR-13 migration debug)" {
+  # Override the stub so `status` emits the workflow-state.sh FR-13 migration
+  # debug line to stderr AND valid JSON to stdout. Previously the script's
+  # 2>&1 capture merged the debug line into status_json, breaking jq parsing.
+  write_state FEAT-028 feature in-progress "" medium init
+  cat > "${STUB_DIR}/workflow-state.sh" <<'STUB'
+#!/usr/bin/env bash
+set -u
+cmd="${1:-}"
+shift || true
+case "$cmd" in
+  status)
+    id="${1:-}"
+    echo "[workflow-state] debug: migrating .sdlc/workflows/${id}.json to add missing state fields (model-selection and gate)" >&2
+    cat ".sdlc/workflows/${id}.json"
+    ;;
+  resume-recompute)
+    : ;;
+  *)
+    echo "stub: unknown command $cmd" >&2
+    exit 1
+    ;;
+esac
+STUB
+  chmod +x "${STUB_DIR}/workflow-state.sh"
+
+  cd "$TMPDIR_TEST"
+  stderr_file="${TMPDIR_TEST}/check.err"
+  stdout_file="${TMPDIR_TEST}/check.out"
+  PATH="${STUB_DIR}:${PATH}" bash "$CHECK" FEAT-028 >"$stdout_file" 2>"$stderr_file"
+  exit_code=$?
+  [ "$exit_code" -eq 0 ]
+  # Debug line must surface on stderr verbatim.
+  grep -q '\[workflow-state\] debug: migrating' "$stderr_file"
+  # Stdout must be clean JSON (no debug prefix contaminating the projection).
+  output=$(cat "$stdout_file")
+  [ "$(get_field "$output" type)" = "feature" ]
+  [ "$(get_field "$output" status)" = "in-progress" ]
+  [ "$(get_field "$output" complexity)" = "medium" ]
+}
+
 # ---- pass-through invariant: complexity is NOT downgraded ------------------
 
 @test "check-resume-preconditions does not downgrade complexity" {

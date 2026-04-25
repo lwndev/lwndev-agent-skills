@@ -37,7 +37,7 @@ Otherwise, append `{ID}` as argument. Pre-fork step-name `reviewing-requirements
 Before forking (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-start --context '{"workItemId": "{ID}"}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md) (read the `work-start` template from `references/github-templates.md` — or `references/jira-templates.md` for Jira — substitute context variables, and post via `gh issue comment` / Jira backend).
 
 Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) using step-name `executing-chores`, then fork via the Agent tool with `{ID}` as argument and the resolved tier passed as the `model` parameter. If `issueRef` is set, include the FR-6 issue link instruction in the subagent prompt: "Include `Closes #N` (or `PROJ-123` for Jira) in the PR body." Subagent must return the canonical contract shape; see SKILL.md `## Output Style`. After the subagent completes:
-1. Resolve the PR number: `pr=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/orchestrating-workflows/scripts/resolve-pr-number.sh" "<branch>" "<subagent-output-file>")` — tries subagent-output scan (last `#<N>` or GitHub PR URL wins) then `gh pr list --head <branch>` fallback; emits a bare integer on stdout, exit `1` on no match or gh unavailable.
+1. Resolve the PR number: `pr=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/orchestrating-workflows/scripts/resolve-pr-number.sh" "<branch>" "<subagent-output-file>")` — primary: `gh pr list --head <branch>` (authoritative, used when exactly one open PR matches); fallback: scan the subagent-output file for the last `#<N>` or GitHub PR URL outside any fenced code block. Emits a bare integer on stdout, exit `1` on no match or gh unavailable.
 2. Record the PR metadata:
    ```bash
    ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-pr {ID} ${pr} {branch}
@@ -128,6 +128,23 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} pr-review
 ```
 Display the PR number, link, and branch. Halt execution. The user re-invokes with `/orchestrating-workflows {ID}` to resume after review.
 
+## Preparing fork flags
+
+Both `prepare-fork.sh` call sites below forward the CLI flags parsed by `parse-model-flags.sh`. `cliModel` and `cliComplexity` are scalar tier strings (or `null`). `cliModelFor` is a JSON map — `{"<step>":"<tier>", ...}` or `null` — because a user can pass repeated `--model-for step:tier` flags. `prepare-fork.sh` expects repeated `--cli-model-for <step>:<tier>` flag-value pairs, so the orchestrator must convert the map before forwarding:
+
+```bash
+# parse-model-flags.sh emits cliModelFor as a JSON map (or the string "null").
+# prepare-fork.sh expects repeated --cli-model-for <step>:<tier> flags.
+cli_model_for_args=()
+if [ -n "$cli_model_for_json" ] && [ "$cli_model_for_json" != "null" ]; then
+  while IFS= read -r flag; do
+    cli_model_for_args+=("$flag")
+  done < <(printf '%s' "$cli_model_for_json" | jq -r 'to_entries[] | "--cli-model-for", "\(.key):\(.value)"')
+fi
+```
+
+Then expand the array verbatim in the invocation (`"${cli_model_for_args[@]}"`) — empty array expands to nothing; multi-entry expands to one `--cli-model-for step:tier` pair per entry.
+
 ## Phase Loop
 
 After step 5 (documenting-qa) completes:
@@ -146,11 +163,12 @@ After step 5 (documenting-qa) completes:
    **b. Run the FEAT-014 pre-fork ceremony** via `prepare-fork.sh` (FEAT-021 FR-1). The script composes the four-step ceremony — SKILL.md readability check, tier resolution, audit-trail write, and FR-14 echo — into one invocation. The `complexityStage` (`init` or `post-plan`) is captured per audit-trail entry so the upgrade transition is visible when one occurred:
 
    ```bash
+   # Prepare cli_model_for_args per "Preparing fork flags" above.
    tier=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-fork.sh" {ID} {stepIndex} implementing-plan-phases \
      --phase {phase-number} \
-     ${cli_model:+--cli-model $cli_model} \
-     ${cli_complexity:+--cli-complexity $cli_complexity} \
-     ${cli_model_for:+--cli-model-for $cli_model_for})
+     ${cli_model:+--cli-model "$cli_model"} \
+     ${cli_complexity:+--cli-complexity "$cli_complexity"} \
+     "${cli_model_for_args[@]}")
    ```
 
    The script emits the FR-14 echo line to stderr automatically: `[model] step {stepIndex} (implementing-plan-phases, phase {phase-number}) → {tier} (baseline=sonnet, wi-complexity={complexity}, override={override-or-none})`.
@@ -185,10 +203,11 @@ After all phases complete (step 5+N+1):
 1. Run the FEAT-014 pre-fork ceremony via `prepare-fork.sh` (FEAT-021 FR-1) for the PR-creation inline fork. **Pass the literal `pr-creation` as the `skill-name`** — not the state-file's `"orchestrator"` label (FEAT-021 FR-1 PR-creation caveat; future editors: do not copy-paste an `orchestrator` skill-name into this call site). This site is **baseline-locked** at `haiku` — work-item complexity and soft overrides are ignored; only a hard `--model` / `--model-for pr-creation:<tier>` override can push it off baseline.
 
    ```bash
+   # Prepare cli_model_for_args per "Preparing fork flags" above.
    tier=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-fork.sh" {ID} {stepIndex} pr-creation \
-     ${cli_model:+--cli-model $cli_model} \
-     ${cli_complexity:+--cli-complexity $cli_complexity} \
-     ${cli_model_for:+--cli-model-for $cli_model_for})
+     ${cli_model:+--cli-model "$cli_model"} \
+     ${cli_complexity:+--cli-complexity "$cli_complexity"} \
+     "${cli_model_for_args[@]}")
    ```
 
    The script emits the FR-14 echo line with the `baseline-locked` tag to stderr: `[model] step {stepIndex} (pr-creation) → haiku (baseline=haiku, baseline-locked)`.

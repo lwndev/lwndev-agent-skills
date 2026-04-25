@@ -87,12 +87,18 @@ _have_jq() {
 # --- step 1: workflow-state.sh status ---------------------------------------
 
 status_json=""
-if ! status_json=$(bash "$WORKFLOW_STATE" status "$id" 2>&1); then
+status_tmp=$(mktemp)
+if ! status_json=$(bash "$WORKFLOW_STATE" status "$id" 2>"$status_tmp"); then
+  cat "$status_tmp" >&2
+  rm -f "$status_tmp"
   echo "[error] check-resume-preconditions: workflow-state.sh status failed for $id" >&2
-  # Relay the stub/real stderr verbatim if present.
-  printf '%s\n' "$status_json" >&2
   exit 1
 fi
+# Relay stderr verbatim on success — captures FR-13 migration debug line
+# (`[workflow-state] debug: migrating ...` from workflow-state.sh:220) without
+# contaminating status_json with non-JSON text.
+cat "$status_tmp" >&2
+rm -f "$status_tmp"
 
 # --- step 2: resume-recompute (stderr relayed verbatim) ---------------------
 
