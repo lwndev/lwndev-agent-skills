@@ -75,7 +75,7 @@ The `--enforce-phase-budget` flag is implemented as a parsed-but-deferred no-op 
 ### Phase 2: DAG Validation + Per-Phase Complexity Scoring (FR-2, FR-3)
 
 **Feature:** [FEAT-029](../features/FEAT-029-creating-implementation-plans-scripts.md) | [#190](https://github.com/lwndev/lwndev-marketplace/issues/190)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 1
 
 #### Rationale
@@ -153,15 +153,15 @@ The phase deliberately excludes FR-4 (`split-phase-suggest.sh`) and FR-5 (`valid
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/validate-plan-dag.sh`
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/phase-complexity-budget.sh`
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/dag-valid-plan.md`
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/dag-cycle-plan.md`
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/dag-fenced-plan.md`
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md`
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-override-plan.md`
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/validate-plan-dag.bats`
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/phase-complexity-budget.bats`
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/validate-plan-dag.sh`
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/phase-complexity-budget.sh`
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/dag-valid-plan.md`
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/dag-cycle-plan.md`
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/dag-fenced-plan.md`
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md`
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-override-plan.md`
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/validate-plan-dag.bats`
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/phase-complexity-budget.bats`
 
 ---
 
