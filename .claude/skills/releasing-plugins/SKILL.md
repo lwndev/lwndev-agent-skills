@@ -99,7 +99,17 @@ Check for the `code-review` plugin:
     - README version line was updated
   - Include this note in the summary: *"Tip: Install the `code-review` plugin for richer release reviews: `claude plugin install code-review@claude-code-marketplace`"*
 
-### 8. Push and open PR
+### 8. Run build-health verification
+
+Before pushing the release branch, run the shared build-health script (BUG-013) so a release branch never carries lint/format/test/build regressions into CI:
+
+```bash
+bash plugins/lwndev-sdlc/scripts/verify-build-health.sh
+```
+
+Detects `lint`, `format:check`, `test`, `build` from `package.json` and runs each defined script, halting on the first failure. Interactive: on a `lint` or `format:check` failure, the script offers to run `lint:fix` / `format` and re-run. If the gate exits non-zero and is not corrected, abort the release and surface the failing output to the user.
+
+### 9. Push and open PR
 
 Ask the user if they want to push the branch and open a PR. If yes:
 
@@ -109,7 +119,7 @@ git push -u origin <branch-name>
 
 Then offer to create the PR with `gh pr create`.
 
-### 9. Remind about Phase 2
+### 10. Remind about Phase 2
 
 After the PR is created, clearly tell the user:
 
@@ -117,7 +127,7 @@ After the PR is created, clearly tell the user:
 
 **Important**: State all completed steps clearly in your message — the Stop hook evaluates your last message to confirm Phase 1 is complete.
 
-### 10. Mark Phase 1 complete
+### 11. Mark Phase 1 complete
 
 Write the `.phase1-complete` marker so the stop hook skips Phase 1 criteria checks. This prevents false positives when the user performs unrelated work between phases:
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync, chmodSync } from 'node:fs';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -18,7 +18,11 @@ const SCRIPTS_DIR = join(
 
 type RunResult = { stdout: string; stderr: string; status: number };
 
-function run(script: string, args: string[], opts: { env?: NodeJS.ProcessEnv; cwd?: string } = {}): RunResult {
+function run(
+  script: string,
+  args: string[],
+  opts: { env?: NodeJS.ProcessEnv; cwd?: string } = {}
+): RunResult {
   try {
     const stdout = execFileSync('bash', [join(SCRIPTS_DIR, script), ...args], {
       encoding: 'utf-8',
@@ -75,7 +79,11 @@ describe('parse-model-flags.sh adversarial inputs', () => {
   });
 
   it('rejects malformed --model-for tier', () => {
-    const r = run('parse-model-flags.sh', ['--model-for', 'reviewing-requirements:super', 'FEAT-001']);
+    const r = run('parse-model-flags.sh', [
+      '--model-for',
+      'reviewing-requirements:super',
+      'FEAT-001',
+    ]);
     expect(r.status).toBe(2);
   });
 
@@ -91,8 +99,10 @@ describe('parse-model-flags.sh adversarial inputs', () => {
 
   it('handles last-wins for repeated --model-for on the same step', () => {
     const r = run('parse-model-flags.sh', [
-      '--model-for', 'reviewing-requirements:opus',
-      '--model-for', 'reviewing-requirements:sonnet',
+      '--model-for',
+      'reviewing-requirements:opus',
+      '--model-for',
+      'reviewing-requirements:sonnet',
       'FEAT-001',
     ]);
     expect(r.status).toBe(0);
@@ -230,7 +240,16 @@ describe('findings-decision.sh chain+complexity gate', () => {
       status: 'in-progress',
       pauseReason: null,
       gate: null,
-      steps: [{ name: 'doc', skill: 'doc', context: 'main', status: 'complete', artifact: null, completedAt: null }],
+      steps: [
+        {
+          name: 'doc',
+          skill: 'doc',
+          context: 'main',
+          status: 'complete',
+          artifact: null,
+          completedAt: null,
+        },
+      ],
       phases: { total: 0, completed: 0 },
       prNumber: null,
       branch: null,
@@ -258,9 +277,13 @@ describe('findings-decision.sh chain+complexity gate', () => {
 
   it('chore/low with warnings-only emits auto-advance (Edge Case 20 isolation)', () => {
     writeState('CHORE-100', 'chore', 'low');
-    const r = run('findings-decision.sh', ['CHORE-100', '1', '{"errors":0,"warnings":3,"info":0}'], {
-      cwd: tmp,
-    });
+    const r = run(
+      'findings-decision.sh',
+      ['CHORE-100', '1', '{"errors":0,"warnings":3,"info":0}'],
+      {
+        cwd: tmp,
+      }
+    );
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.action).toBe('auto-advance');
@@ -270,18 +293,26 @@ describe('findings-decision.sh chain+complexity gate', () => {
 
   it('chore/medium with warnings-only emits auto-advance', () => {
     writeState('CHORE-101', 'chore', 'medium');
-    const r = run('findings-decision.sh', ['CHORE-101', '1', '{"errors":0,"warnings":1,"info":0}'], {
-      cwd: tmp,
-    });
+    const r = run(
+      'findings-decision.sh',
+      ['CHORE-101', '1', '{"errors":0,"warnings":1,"info":0}'],
+      {
+        cwd: tmp,
+      }
+    );
     expect(r.status).toBe(0);
     expect(JSON.parse(r.stdout).action).toBe('auto-advance');
   });
 
   it('chore/high with warnings-only emits prompt-user', () => {
     writeState('CHORE-102', 'chore', 'high');
-    const r = run('findings-decision.sh', ['CHORE-102', '1', '{"errors":0,"warnings":1,"info":0}'], {
-      cwd: tmp,
-    });
+    const r = run(
+      'findings-decision.sh',
+      ['CHORE-102', '1', '{"errors":0,"warnings":1,"info":0}'],
+      {
+        cwd: tmp,
+      }
+    );
     expect(r.status).toBe(0);
     expect(JSON.parse(r.stdout).action).toBe('prompt-user');
   });
@@ -313,9 +344,11 @@ describe('findings-decision.sh chain+complexity gate', () => {
 
   it('extra fields in counts are ignored (forward-compat)', () => {
     writeState('FEAT-103', 'feature', 'medium');
-    const r = run('findings-decision.sh', [
-      'FEAT-103', '1', '{"errors":0,"warnings":1,"info":2,"critical":5}',
-    ], { cwd: tmp });
+    const r = run(
+      'findings-decision.sh',
+      ['FEAT-103', '1', '{"errors":0,"warnings":1,"info":2,"critical":5}'],
+      { cwd: tmp }
+    );
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(['auto-advance', 'prompt-user']).toContain(j.action);
@@ -412,7 +445,16 @@ describe('check-resume-preconditions.sh pass-through invariants', () => {
         status: 'paused',
         pauseReason: 'pr-review',
         gate: null,
-        steps: [{ name: 'x', skill: 'x', context: 'main', status: 'pending', artifact: null, completedAt: null }],
+        steps: [
+          {
+            name: 'x',
+            skill: 'x',
+            context: 'main',
+            status: 'pending',
+            artifact: null,
+            completedAt: null,
+          },
+        ],
         phases: { total: 0, completed: 0 },
         prNumber: 100,
         branch: 'feat/x',
@@ -453,7 +495,16 @@ describe('workflow-state.sh set-model-override (FR-7)', () => {
       status: 'in-progress',
       pauseReason: null,
       gate: null,
-      steps: [{ name: 'x', skill: 'x', context: 'main', status: 'pending', artifact: null, completedAt: null }],
+      steps: [
+        {
+          name: 'x',
+          skill: 'x',
+          context: 'main',
+          status: 'pending',
+          artifact: null,
+          completedAt: null,
+        },
+      ],
       phases: { total: 0, completed: 0 },
       prNumber: null,
       branch: null,
@@ -484,13 +535,18 @@ describe('workflow-state.sh set-model-override (FR-7)', () => {
   it('permits downgrade (escape-hatch contract)', () => {
     writeState('FEAT-301');
     execFileSync('bash', [SCRIPT, 'set-model-override', 'FEAT-301', 'opus'], {
-      cwd: tmp, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+      cwd: tmp,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
     execFileSync('bash', [SCRIPT, 'set-model-override', 'FEAT-301', 'sonnet'], {
-      cwd: tmp, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+      cwd: tmp,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
     const status = execFileSync('bash', [SCRIPT, 'status', 'FEAT-301'], {
-      cwd: tmp, encoding: 'utf-8',
+      cwd: tmp,
+      encoding: 'utf-8',
     });
     expect(JSON.parse(status).modelOverride).toBe('sonnet');
   });
@@ -498,13 +554,18 @@ describe('workflow-state.sh set-model-override (FR-7)', () => {
   it('is idempotent on repeat-write of the same value', () => {
     writeState('FEAT-302');
     execFileSync('bash', [SCRIPT, 'set-model-override', 'FEAT-302', 'opus'], {
-      cwd: tmp, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+      cwd: tmp,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
     execFileSync('bash', [SCRIPT, 'set-model-override', 'FEAT-302', 'opus'], {
-      cwd: tmp, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+      cwd: tmp,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
     const status = execFileSync('bash', [SCRIPT, 'status', 'FEAT-302'], {
-      cwd: tmp, encoding: 'utf-8',
+      cwd: tmp,
+      encoding: 'utf-8',
     });
     expect(JSON.parse(status).modelOverride).toBe('opus');
   });
@@ -512,7 +573,9 @@ describe('workflow-state.sh set-model-override (FR-7)', () => {
   it('exits 1 on missing state file', () => {
     try {
       execFileSync('bash', [SCRIPT, 'set-model-override', 'FEAT-999', 'opus'], {
-        cwd: tmp, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tmp,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       throw new Error('expected non-zero exit');
     } catch (e: any) {
