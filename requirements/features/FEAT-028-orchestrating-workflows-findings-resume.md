@@ -378,4 +378,8 @@ Post-feature target: the measured delta on a representative feature workflow (4 
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `Complete`
+
+**Completed:** 2026-04-25
+
+**Pull Request:** [#233](https://github.com/lwndev/lwndev-marketplace/pull/233)
