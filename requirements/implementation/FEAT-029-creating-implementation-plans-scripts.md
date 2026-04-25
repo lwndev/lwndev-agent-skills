@@ -243,7 +243,7 @@ This phase also flips the warn-only `--enforce-phase-budget` flag in `render-pla
 ### Phase 4: Lower `implementing-plan-phases` Baseline + Per-Phase `resolve-tier` (FR-7, FR-6)
 
 **Feature:** [FEAT-029](../features/FEAT-029-creating-implementation-plans-scripts.md) | [#190](https://github.com/lwndev/lwndev-marketplace/issues/190)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 2
 
 #### Rationale
