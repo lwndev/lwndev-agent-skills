@@ -345,18 +345,26 @@ haiku
 - Persisting `phase-complexity-budget.sh` results to a sidecar cache under `.sdlc/cache/phase-budget-<plan-hash>.json` to avoid re-computing on every fork. Out of scope; current performance is well under NFR-1 budget.
 
 ## Acceptance Criteria
-- [ ] FR-1: `render-plan-scaffold.sh` exists with full bats coverage, supports single and multi-feature inputs, refuses to overwrite, supports `--enforce-phase-budget`.
-- [ ] FR-2: `validate-plan-dag.sh` exists with full bats coverage; detects cycles and unresolved references; is fence-aware.
-- [ ] FR-3: `phase-complexity-budget.sh` exists with full bats coverage; supports per-phase and full-plan modes; honours `**ComplexityOverride:**` clamps; documents the budget table at the top of the script for tuning.
-- [ ] FR-4: `split-phase-suggest.sh` exists with full bats coverage; preserves step ordering and `**Depends on Step N**` annotations; emits advisory JSON without writing the plan.
-- [ ] FR-5: `validate-phase-sizes.sh` exists with full bats coverage; integrates as the last step of FR-1 when `--enforce-phase-budget` is passed; integrates as a verification-checklist item in the rewritten SKILL.md.
-- [ ] FR-6: `workflow-state.sh resolve-tier` accepts `--phase N --plan-file <path>`; per-phase tier replaces the workflow-complexity input for `implementing-plan-phases` forks; bats coverage for happy path + every malformed-flag exit; `modelSelections` schema extended.
-- [ ] FR-7: `implementing-plan-phases` baseline lowered to `haiku`; existing override chain semantics unchanged; bats coverage updated.
-- [ ] FR-8: `prepare-fork.sh` forwards `--phase`/`--plan-file` to `resolve-tier` for `implementing-plan-phases` forks; FR-14 console echo line includes `phase=<N>=<tier>`; bats coverage extended.
-- [ ] FR-9: post-plan classifier replaced with `max`-of-per-phase-tiers; upgrade-only invariant honoured; bats coverage extended.
-- [ ] FR-10: `references/model-selection.md` rewritten — Edge Case 8 limitation retired, Haiku-floor limitation re-framed, migration note added, cross-references to FR-3 / FR-6 / FR-9 included.
-- [ ] `creating-implementation-plans/SKILL.md` Quick Start collapses to single-line script invocations; Verification Checklist updated.
-- [ ] All amendments to `workflow-state.sh` and `prepare-fork.sh` ship with extended bats coverage in their existing test suites.
-- [ ] End-to-end manual test on a 4-phase synthetic plan demonstrates per-phase tier resolution working through the full pre-fork ceremony.
-- [ ] NFR-5 verified: a pre-existing state file (created before FR-6 ships) loads cleanly without manual migration; a pre-existing plan without `**ComplexityOverride:**` lines validates without warnings under FR-3 / FR-5.
-- [ ] NFR-6 verified: cross-references in `references/step-execution-details.md` and `references/forked-steps.md` are updated to point to the rewritten `references/model-selection.md` section; the `creating-implementation-plans/README` (or plugin-level README) lists FR-1 through FR-5 scripts with one-line purposes.
+- [x] FR-1: `render-plan-scaffold.sh` exists with full bats coverage, supports single and multi-feature inputs, refuses to overwrite, supports `--enforce-phase-budget`.
+- [x] FR-2: `validate-plan-dag.sh` exists with full bats coverage; detects cycles and unresolved references; is fence-aware.
+- [x] FR-3: `phase-complexity-budget.sh` exists with full bats coverage; supports per-phase and full-plan modes; honours `**ComplexityOverride:**` clamps; documents the budget table at the top of the script for tuning.
+- [x] FR-4: `split-phase-suggest.sh` exists with full bats coverage; preserves step ordering and `**Depends on Step N**` annotations; emits advisory JSON without writing the plan.
+- [x] FR-5: `validate-phase-sizes.sh` exists with full bats coverage; integrates as the last step of FR-1 when `--enforce-phase-budget` is passed; integrates as a verification-checklist item in the rewritten SKILL.md.
+- [x] FR-6: `workflow-state.sh resolve-tier` accepts `--phase N --plan-file <path>`; per-phase tier replaces the workflow-complexity input for `implementing-plan-phases` forks; bats coverage for happy path + every malformed-flag exit; `modelSelections` schema extended.
+- [x] FR-7: `implementing-plan-phases` baseline lowered to `haiku`; existing override chain semantics unchanged; bats coverage updated.
+- [x] FR-8: `prepare-fork.sh` forwards `--phase`/`--plan-file` to `resolve-tier` for `implementing-plan-phases` forks; FR-14 console echo line includes `phase=<N>=<tier>`; bats coverage extended.
+- [x] FR-9: post-plan classifier replaced with `max`-of-per-phase-tiers; upgrade-only invariant honoured; bats coverage extended.
+- [x] FR-10: `references/model-selection.md` rewritten — Edge Case 8 limitation retired, Haiku-floor limitation re-framed, migration note added, cross-references to FR-3 / FR-6 / FR-9 included.
+- [x] `creating-implementation-plans/SKILL.md` Quick Start collapses to single-line script invocations; Verification Checklist updated.
+- [x] All amendments to `workflow-state.sh` and `prepare-fork.sh` ship with extended bats coverage in their existing test suites.
+- [x] End-to-end manual test on a 4-phase synthetic plan demonstrates per-phase tier resolution working through the full pre-fork ceremony.
+- [x] NFR-5 verified: a pre-existing state file (created before FR-6 ships) loads cleanly without manual migration; a pre-existing plan without `**ComplexityOverride:**` lines validates without warnings under FR-3 / FR-5.
+- [x] NFR-6 verified: cross-references in `references/step-execution-details.md` and `references/forked-steps.md` are updated to point to the rewritten `references/model-selection.md` section; the `creating-implementation-plans/README` (or plugin-level README) lists FR-1 through FR-5 scripts with one-line purposes.
+
+## Completion
+
+**Status:** `Complete`
+
+**Completed:** 2026-04-25
+
+**Pull Request:** [#240](https://github.com/lwndev/lwndev-marketplace/pull/240)
