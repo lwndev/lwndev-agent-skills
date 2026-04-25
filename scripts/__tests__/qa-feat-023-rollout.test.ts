@@ -88,7 +88,13 @@ describe('FEAT-023 rollout — Inputs dimension', () => {
     expect((fx.data.description as string).trim().length).toBeGreaterThan(0);
   });
 
+  // FEAT-029 FR-1/FR-2/FR-5 introduce script invocations from
+  // creating-implementation-plans/SKILL.md, which requires the Bash tool.
+  // The rollout-stability assertion skips this skill until FEAT-029 lands on main.
+  const ALLOWED_TOOLS_CHANGED_BY_FEAT_029 = new Set<string>(['creating-implementation-plans']);
+
   it.each(TARGET_SKILLS)('[P0] %s preserves allowed-tools set vs main', (name) => {
+    if (ALLOWED_TOOLS_CHANGED_BY_FEAT_029.has(name)) return;
     const fx = fixtures.get(name)!;
     const headRaw: string[] = Array.isArray(fx.data['allowed-tools'])
       ? (fx.data['allowed-tools'] as string[])

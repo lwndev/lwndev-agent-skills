@@ -6,15 +6,15 @@ Every fork site below expects the subagent to return the canonical contract shap
 
 **Step 3 — `creating-implementation-plans`**: Append `{ID}` as argument. Expected artifact: `requirements/implementation/{ID}-*.md`. Run the FEAT-014 pre-fork sequence with step-name `creating-implementation-plans`. Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
 
-**Post-step-3 re-classification (FEAT-014 FR-2b)**: Immediately after step 3's artifact is validated and before `advance` returns control to the next fork, trigger the post-plan re-classification. This runs exactly once per feature chain and must precede any fork that resolves a tier:
+**Post-step-3 re-classification (FEAT-014 FR-2b, amended by FEAT-029 FR-9)**: Immediately after step 3's artifact is validated and before `advance` returns control to the next fork, trigger the post-plan re-classification. This runs exactly once per feature chain and must precede any fork that resolves a tier:
 
 ```bash
 tier=$("${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" classify-post-plan {ID})
-# classify-post-plan applies upgrade-only max(persisted, phase_count_tier) and persists
+# Applies upgrade-only max(persisted, max-of-per-phase-tiers) and persists
 # the result plus complexityStage="post-plan" when an upgrade occurs; silent otherwise.
 ```
 
-If the plan file is missing or malformed, `classify-post-plan` retains the init-stage tier per NFR-5 and emits a one-line warning. Chore and bug chains have no post-plan stage.
+The classifier scores each phase via `phase-complexity-budget.sh` (FEAT-029 FR-3) and takes the `max` over all per-phase tiers — see [model-selection.md "Feature post-plan signal extractor"](model-selection.md#feature-post-plan-signal-extractor-fr-2b). If the plan file is missing or malformed, `classify-post-plan` retains the init-stage tier per NFR-5 and emits a one-line warning. Chore and bug chains have no post-plan stage.
 
 **Steps 6…5+N — `implementing-plan-phases`**: See Phase Loop below. The first phase fork is the first to see the post-plan stage transition (if one occurred).
 
@@ -160,18 +160,19 @@ After step 5 (documenting-qa) completes:
 
    **a. Before the phase** (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type phase-start --context '{"phase": <phase-number>, "totalPhases": <N>, "workItemId": "{ID}"}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md) (read the `phase-start` template from `references/github-templates.md` — or `references/jira-templates.md` for Jira — substitute context variables, and post via `gh issue comment` / Jira backend).
 
-   **b. Run the FEAT-014 pre-fork ceremony** via `prepare-fork.sh` (FEAT-021 FR-1). The script composes the four-step ceremony — SKILL.md readability check, tier resolution, audit-trail write, and FR-14 echo — into one invocation. The `complexityStage` (`init` or `post-plan`) is captured per audit-trail entry so the upgrade transition is visible when one occurred:
+   **b. Run the FEAT-014 pre-fork ceremony** via `prepare-fork.sh` (FEAT-021 FR-1, amended by FEAT-029 FR-8). The script composes the four-step ceremony — SKILL.md readability check, tier resolution, audit-trail write, and FR-14 echo — into one invocation. Pass `--phase` and `--plan-file` together so `resolve-tier` can score the per-phase tier via `phase-complexity-budget.sh` (FEAT-029 FR-3 + FR-6). The `complexityStage` (`init` or `post-plan`) is captured per audit-trail entry so the upgrade transition is visible when one occurred. See [model-selection.md](model-selection.md) for the per-step baseline matrix and per-phase resolution rules:
 
    ```bash
    # Prepare cli_model_for_args per "Preparing fork flags" above.
    tier=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-fork.sh" {ID} {stepIndex} implementing-plan-phases \
      --phase {phase-number} \
+     --plan-file "requirements/implementation/{ID}-*.md" \
      ${cli_model:+--cli-model "$cli_model"} \
      ${cli_complexity:+--cli-complexity "$cli_complexity"} \
      "${cli_model_for_args[@]}")
    ```
 
-   The script emits the FR-14 echo line to stderr automatically: `[model] step {stepIndex} (implementing-plan-phases, phase {phase-number}) → {tier} (baseline=sonnet, wi-complexity={complexity}, override={override-or-none})`.
+   The script emits the FR-14 echo line to stderr automatically: `[model] step {stepIndex} (implementing-plan-phases) → {tier} (workflow={complexity}, phase={phase-number}={phase-tier}, override={override-or-none})`. The `phase=N=<tier>` suffix is FEAT-029 FR-8; the `override=` token preserves the FEAT-021 dacc38e audit-trail invariant (any active override stays visible).
 
    **c. Fork `implementing-plan-phases`** with the Agent tool. The prompt must include:
    - The SKILL.md content from `${CLAUDE_PLUGIN_ROOT}/skills/implementing-plan-phases/SKILL.md`

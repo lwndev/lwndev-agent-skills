@@ -42,6 +42,15 @@ setup() {
     mkdir -p "${FAKE_PLUGIN}/skills/${s}"
     printf -- '---\nname: %s\n---\n# %s stub\n' "$s" "$s" > "${FAKE_PLUGIN}/skills/${s}/SKILL.md"
   done
+  # FEAT-029 FR-8: workflow-state.sh resolve-tier --phase shells out to
+  # phase-complexity-budget.sh under creating-implementation-plans/scripts.
+  # Symlink the real script so resolve-tier can find it via CLAUDE_PLUGIN_ROOT.
+  REAL_PCB="${PLUGIN_ROOT}/skills/creating-implementation-plans/scripts/phase-complexity-budget.sh"
+  mkdir -p "${FAKE_PLUGIN}/skills/creating-implementation-plans/scripts"
+  ln -s "$REAL_PCB" "${FAKE_PLUGIN}/skills/creating-implementation-plans/scripts/phase-complexity-budget.sh"
+
+  # Path to the FEAT-029 budget-mixed-plan fixture for FR-8 tests.
+  BUDGET_MIXED_PLAN="${PLUGIN_ROOT}/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md"
 
   export CLAUDE_PLUGIN_ROOT="$FAKE_PLUGIN"
   export CLAUDE_SKILL_DIR="${FAKE_PLUGIN}/skills/orchestrating-workflows"
@@ -483,4 +492,133 @@ STUB
   run bash "$PREPARE_FORK" FEAT-TEST -h 1 reviewing-requirements
   [ "$status" -eq 0 ]
   [[ "$output" == *"Usage: prepare-fork.sh"* ]]
+}
+
+# --- FEAT-029 FR-8: --phase / --plan-file forwarding ------------------------
+
+# Per-phase forwarding for implementing-plan-phases on budget-mixed-plan.md
+# (phases score [haiku, sonnet, opus, opus]). Phase 1 → haiku, Phase 2 → sonnet,
+# Phase 4 → opus. Asserts (a) the resolved tier on stdout matches the per-phase
+# tier and (b) the FR-14 echo line on stderr carries the new
+# `(workflow=<complexity>, phase=<N>=<tier>, override=<token>)` parenthetical
+# suffix. The `override=` token preserves the dacc38e audit-trail invariant.
+
+@test "FR-8: --phase 1 --plan-file resolves implementing-plan-phases to haiku" {
+  seed_state
+  stdout_file="${TMPDIR_TEST}/stdout.log"
+  stderr_file="${TMPDIR_TEST}/stderr.log"
+  bash "$PREPARE_FORK" FEAT-TEST 6 implementing-plan-phases \
+    --phase 1 --plan-file "$BUDGET_MIXED_PLAN" \
+    > "$stdout_file" 2> "$stderr_file"
+  status_code=$?
+  [ "$status_code" -eq 0 ]
+  tier=$(cat "$stdout_file")
+  [ "$tier" = "haiku" ]
+  run cat "$stderr_file"
+  [[ "$output" == *"[model] step 6 (implementing-plan-phases) → haiku (workflow=medium, phase=1=haiku, override=none)"* ]]
+}
+
+@test "FR-8: --phase 2 --plan-file resolves implementing-plan-phases to sonnet" {
+  seed_state
+  stdout_file="${TMPDIR_TEST}/stdout.log"
+  stderr_file="${TMPDIR_TEST}/stderr.log"
+  bash "$PREPARE_FORK" FEAT-TEST 7 implementing-plan-phases \
+    --phase 2 --plan-file "$BUDGET_MIXED_PLAN" \
+    > "$stdout_file" 2> "$stderr_file"
+  status_code=$?
+  [ "$status_code" -eq 0 ]
+  tier=$(cat "$stdout_file")
+  [ "$tier" = "sonnet" ]
+  run cat "$stderr_file"
+  [[ "$output" == *"phase=2=sonnet, override=none"* ]]
+}
+
+@test "FR-8: --phase 4 --plan-file resolves implementing-plan-phases to opus" {
+  seed_state
+  stdout_file="${TMPDIR_TEST}/stdout.log"
+  stderr_file="${TMPDIR_TEST}/stderr.log"
+  bash "$PREPARE_FORK" FEAT-TEST 9 implementing-plan-phases \
+    --phase 4 --plan-file "$BUDGET_MIXED_PLAN" \
+    > "$stdout_file" 2> "$stderr_file"
+  status_code=$?
+  [ "$status_code" -eq 0 ]
+  tier=$(cat "$stdout_file")
+  [ "$tier" = "opus" ]
+  run cat "$stderr_file"
+  [[ "$output" == *"phase=4=opus, override=none"* ]]
+}
+
+# Edge Case 9 + FR-8 interaction: per-phase forking with an active hard
+# override MUST surface the override token in the audit-trail line, the
+# same invariant dacc38e established for non-per-phase forks.
+
+@test "FR-8 + override: --phase 1 + --cli-model opus pins the per-phase tier and surfaces override token" {
+  seed_state
+  stdout_file="${TMPDIR_TEST}/stdout.log"
+  stderr_file="${TMPDIR_TEST}/stderr.log"
+  bash "$PREPARE_FORK" FEAT-TEST 6 implementing-plan-phases \
+    --phase 1 --plan-file "$BUDGET_MIXED_PLAN" --cli-model opus \
+    > "$stdout_file" 2> "$stderr_file"
+  status_code=$?
+  [ "$status_code" -eq 0 ]
+  tier=$(cat "$stdout_file")
+  [ "$tier" = "opus" ]
+  run cat "$stderr_file"
+  [[ "$output" == *"phase=1=opus, override=cli-model:opus"* ]]
+}
+
+# Partial-flag rejection: both --phase and --plan-file MUST be supplied
+# together. Either alone exits 2 with the documented error.
+
+@test "FR-8: --phase without --plan-file → exit 2" {
+  seed_state
+  run bash "$PREPARE_FORK" FEAT-TEST 6 implementing-plan-phases --phase 1
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--phase and --plan-file must be supplied together"* ]]
+}
+
+@test "FR-8: --plan-file without --phase → exit 2" {
+  seed_state
+  run bash "$PREPARE_FORK" FEAT-TEST 6 implementing-plan-phases --plan-file "$BUDGET_MIXED_PLAN"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--phase and --plan-file must be supplied together"* ]]
+}
+
+# --plan-file on a non-implementing-plan-phases skill → exit 2.
+@test "FR-8: --plan-file on reviewing-requirements → exit 2" {
+  seed_state
+  run bash "$PREPARE_FORK" FEAT-TEST 1 reviewing-requirements --plan-file "$BUDGET_MIXED_PLAN"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"--plan-file is only valid for implementing-plan-phases"* ]]
+}
+
+# Forks for skills other than implementing-plan-phases must keep using the
+# existing FEAT-021 echo format unchanged when --phase/--plan-file are absent.
+@test "FR-8: other skills keep the FEAT-021 echo format when --phase absent" {
+  seed_state
+  stderr_file="${TMPDIR_TEST}/stderr.log"
+  bash "$PREPARE_FORK" FEAT-TEST 4 executing-chores 2> "$stderr_file" > /dev/null
+  run cat "$stderr_file"
+  [[ "$output" == *"[model] step 4 (executing-chores)"* ]]
+  [[ "$output" == *"baseline=sonnet"* ]]
+  [[ "$output" == *"wi-complexity=medium"* ]]
+  [[ "$output" == *"override=none"* ]]
+  # Must NOT carry the per-phase suffix.
+  [[ "$output" != *"workflow="* ]]
+  [[ "$output" != *"phase="* ]]
+}
+
+# implementing-plan-phases without --phase keeps the FEAT-021 format too —
+# the per-phase echo variant only kicks in when both --phase and --plan-file
+# are supplied. Backward compat for callers that haven't been updated yet.
+@test "FR-8: implementing-plan-phases without --phase uses FEAT-021 echo format" {
+  seed_state
+  stderr_file="${TMPDIR_TEST}/stderr.log"
+  bash "$PREPARE_FORK" FEAT-TEST 6 implementing-plan-phases 2> "$stderr_file" > /dev/null
+  run cat "$stderr_file"
+  [[ "$output" == *"[model] step 6 (implementing-plan-phases)"* ]]
+  [[ "$output" == *"baseline=haiku"* ]]
+  [[ "$output" == *"wi-complexity=medium"* ]]
+  [[ "$output" == *"override=none"* ]]
+  [[ "$output" != *"workflow="* ]]
 }

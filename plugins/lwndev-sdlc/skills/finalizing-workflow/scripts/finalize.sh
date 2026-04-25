@@ -110,7 +110,7 @@ run_preflight() {
         cat "$preflight_stderr" >&2
       fi
       local json
-      json="$(cat "$preflight_stdout")"
+      json="$(tail -1 "$preflight_stdout")"
       rm -f "$preflight_stdout" "$preflight_stderr"
       PR_NUMBER="$(extract_json_scalar "$json" "prNumber")"
       PR_TITLE="$(extract_json_scalar "$json" "prTitle")"

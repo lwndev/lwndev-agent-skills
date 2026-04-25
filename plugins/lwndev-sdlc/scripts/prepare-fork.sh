@@ -14,6 +14,7 @@
 #
 # Usage:
 #   prepare-fork.sh <ID> <stepIndex> <skill-name> [--mode <mode>] [--phase <phase>]
+#                   [--plan-file <path>]
 #                   [--cli-model <tier>] [--cli-complexity <tier>]
 #                   [--cli-model-for <step:tier>]...
 #
@@ -31,6 +32,7 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage: prepare-fork.sh <ID> <stepIndex> <skill-name> [--mode <mode>] [--phase <phase>]
+                       [--plan-file <path>]
                        [--cli-model <tier>] [--cli-complexity <tier>]
                        [--cli-model-for <step:tier>]...
 
@@ -53,6 +55,13 @@ Optional flags (may appear before or after positional args):
                             when <skill-name> is reviewing-requirements.
   --phase <phase>           Phase passed to record-model-selection. Only valid
                             when <skill-name> is implementing-plan-phases.
+                            When supplied, --plan-file must also be supplied
+                            (FEAT-029 FR-8): the pair is forwarded verbatim to
+                            resolve-tier so the per-phase tier replaces the
+                            workflow-level complexity for this fork.
+  --plan-file <path>        Implementation-plan file to score per-phase against
+                            (FEAT-029 FR-8). Only valid when --phase is also
+                            supplied; partial supply exits 2.
   --cli-model <tier>        Forwarded to resolve-tier --cli-model.
   --cli-complexity <tier>   Forwarded to resolve-tier --cli-complexity.
   --cli-model-for <step:tier>
@@ -100,6 +109,7 @@ step_index=""
 skill=""
 mode=""            # empty when --mode absent; "null" string at call time
 phase=""           # empty when --phase absent; "null" string at call time
+plan_file=""       # FEAT-029 FR-8: must accompany --phase when set.
 cli_model=""
 cli_complexity=""
 # Indexed array for repeated --cli-model-for (Bash 3.2 compatible).
@@ -122,6 +132,14 @@ while [[ $# -gt 0 ]]; do
         exit 2
       fi
       phase="$2"
+      shift 2
+      ;;
+    --plan-file)
+      if [[ $# -lt 2 ]]; then
+        echo "Error: --plan-file requires a value" >&2
+        exit 2
+      fi
+      plan_file="$2"
       shift 2
       ;;
     --cli-model)
@@ -206,6 +224,21 @@ if [[ -n "$phase" && "$skill" != "implementing-plan-phases" ]]; then
   echo "Error: --phase is only valid for implementing-plan-phases; got skill '${skill}'" >&2
   exit 2
 fi
+# FEAT-029 FR-8: --phase and --plan-file MUST be supplied together when either
+# is present. Partial supply is rejected at the orchestrator boundary so the
+# downstream resolve-tier call never sees a half-configured per-phase request.
+if [[ -n "$plan_file" && "$skill" != "implementing-plan-phases" ]]; then
+  echo "Error: --plan-file is only valid for implementing-plan-phases; got skill '${skill}'" >&2
+  exit 2
+fi
+if [[ -n "$phase" && -z "$plan_file" ]]; then
+  echo "Error: --phase and --plan-file must be supplied together" >&2
+  exit 2
+fi
+if [[ -n "$plan_file" && -z "$phase" ]]; then
+  echo "Error: --phase and --plan-file must be supplied together" >&2
+  exit 2
+fi
 
 # --- Step 1c: resolve CLAUDE_PLUGIN_ROOT / CLAUDE_SKILL_DIR ------------------
 # Env vars win when set and non-empty; otherwise derive from script location.
@@ -250,13 +283,17 @@ if [[ ${#cli_model_for_flags[@]} -eq 0 ]]; then
   tier=$(
     "$workflow_state_sh" resolve-tier "$ID" "$skill" \
       ${cli_model:+--cli-model "$cli_model"} \
-      ${cli_complexity:+--cli-complexity "$cli_complexity"}
+      ${cli_complexity:+--cli-complexity "$cli_complexity"} \
+      ${phase:+--phase "$phase"} \
+      ${plan_file:+--plan-file "$plan_file"}
   )
 else
   tier=$(
     "$workflow_state_sh" resolve-tier "$ID" "$skill" \
       ${cli_model:+--cli-model "$cli_model"} \
       ${cli_complexity:+--cli-complexity "$cli_complexity"} \
+      ${phase:+--phase "$phase"} \
+      ${plan_file:+--plan-file "$plan_file"} \
       "${cli_model_for_flags[@]}"
   )
 fi
@@ -368,12 +405,20 @@ elif [[ -n "$phase" ]]; then
   slot=", phase=${phase}"
 fi
 
-# Emit the echo line. Edge Case 9: when a hard override pushed a baseline-locked
-# step off its baseline, tier != baseline and we fall through to the non-locked
-# format so the override surfaces via the `override=` token. Soft overrides on
-# locked steps are ignored by resolve-tier (tier stays at baseline), so this
-# check correctly keeps the baseline-locked format for those cases.
-if [[ "$locked" == "true" && "$tier" == "$baseline" ]]; then
+# FEAT-029 FR-8: per-phase format extension. When the fork is for
+# implementing-plan-phases AND --phase/--plan-file were both supplied, emit a
+# distinct echo line that surfaces the workflow-level complexity, the
+# per-phase tier, and the active override token:
+#   [model] step <N> (implementing-plan-phases) → <tier> (workflow=<complexity>, phase=<N>=<phase-tier>, override=<override-or-none>)
+# `phase-tier` is read from the captured resolve-tier stdout, which already
+# carries the per-phase value (baseline=haiku, no override → tier == per-phase
+# tier). The `override=` token preserves the FEAT-021 dacc38e audit-trail
+# invariant: any active hard or soft override stays visible. For all other
+# forks (including implementing-plan-phases without --phase) the FEAT-021
+# format is preserved unchanged.
+if [[ "$skill" == "implementing-plan-phases" && -n "$phase" && -n "$plan_file" ]]; then
+  echo "[model] step ${step_index} (${skill}) → ${tier} (workflow=${wi_complexity}, phase=${phase}=${tier}, override=${override_token})" >&2
+elif [[ "$locked" == "true" && "$tier" == "$baseline" ]]; then
   echo "[model] step ${step_index} (${skill}) → ${tier} (baseline=${baseline}, baseline-locked)" >&2
 else
   echo "[model] step ${step_index} (${skill}${slot}) → ${tier} (baseline=${baseline}, wi-complexity=${wi_complexity}, override=${override_token})" >&2

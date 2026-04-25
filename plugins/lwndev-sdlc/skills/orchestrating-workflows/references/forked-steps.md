@@ -4,17 +4,17 @@
 
 For all steps marked **fork** in the step sequence, use the Agent tool to delegate. Every fork site must execute the FEAT-014 pre-fork ceremony **before** spawning the subagent — the audit trail write must precede fork execution (NFR-3) so a crashed fork still leaves a trace. The four-step ceremony (SKILL.md readability check, tier resolution, audit-trail write, FR-14 echo line) is composed into a single script invocation (FEAT-021 FR-1):
 
-1. **Run the pre-fork ceremony** via `prepare-fork.sh`. The script reads the sub-skill's SKILL.md (verifying it exists and is readable), resolves the FEAT-014 tier via `workflow-state.sh resolve-tier`, writes the `modelSelections` audit-trail entry via `workflow-state.sh record-model-selection` (NFR-3: before the fork executes), and emits the FR-14 console echo line to stderr. It prints the resolved tier on stdout:
+1. **Run the pre-fork ceremony** via `prepare-fork.sh`. The script reads the sub-skill's SKILL.md (verifying it exists and is readable), resolves the FEAT-014 tier via `workflow-state.sh resolve-tier`, writes the `modelSelections` audit-trail entry via `workflow-state.sh record-model-selection` (NFR-3: before the fork executes), and emits the FR-14 console echo line to stderr. It prints the resolved tier on stdout. Per-step baseline matrix and per-phase resolution rules: see [model-selection.md](model-selection.md):
 
    ```bash
    tier=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/prepare-fork.sh" {ID} {stepIndex} {skill-name} \
-     ${mode:+--mode $mode} ${phase:+--phase $phase} \
+     ${mode:+--mode $mode} ${phase:+--phase $phase} ${plan_file:+--plan-file $plan_file} \
      ${cli_model:+--cli-model $cli_model} \
      ${cli_complexity:+--cli-complexity $cli_complexity} \
      ${cli_model_for:+--cli-model-for $cli_model_for})
    ```
 
-   `{skill-name}` is the canonical step-name from the "Fork Step-Name Map" below. On non-zero exit, propagate the error and abort the fork — do **not** spawn the Agent tool. For the PR-creation fork site, pass `pr-creation` as `{skill-name}` (not the state-file's `"orchestrator"` label — see the FEAT-021 FR-1 PR-creation caveat). Pass `--mode standard` for `reviewing-requirements` forks and `--phase {N}` for `implementing-plan-phases` forks; these flags are rejected by the script on mismatched skill-names. The Edge Case 11 hard-override-below-baseline warning (if applicable) is emitted by the script itself — no additional echo is required here.
+   `{skill-name}` is the canonical step-name from the "Fork Step-Name Map" below. On non-zero exit, propagate the error and abort the fork — do **not** spawn the Agent tool. For the PR-creation fork site, pass `pr-creation` as `{skill-name}` (not the state-file's `"orchestrator"` label — see the FEAT-021 FR-1 PR-creation caveat). Pass `--mode standard` for `reviewing-requirements` forks and `--phase {N} --plan-file {path}` together for `implementing-plan-phases` forks (FEAT-029 FR-8 — partial flags are rejected); these flags are rejected by the script on mismatched skill-names. The Edge Case 11 hard-override-below-baseline warning (if applicable) is emitted by the script itself — no additional echo is required here.
 
 2. Spawn a general-purpose subagent via the Agent tool. The prompt must include:
    - The full SKILL.md content (read it separately; `prepare-fork.sh` only verifies readability, it does not print the file)
@@ -58,7 +58,7 @@ The `resolve-tier` and `record-model-selection` subcommands key off canonical st
 |-----------|-----------|----------|------------------|
 | Review requirements (standard) | `reviewing-requirements` | sonnet | no |
 | Create implementation plan | `creating-implementation-plans` | sonnet | no |
-| Implement phases (per-phase) | `implementing-plan-phases` | sonnet | no |
+| Implement phases (per-phase) | `implementing-plan-phases` | haiku (per-phase floor; upgraded by `phase-complexity-budget.sh` FEAT-029 FR-3 + FR-6) | no |
 | Execute chore | `executing-chores` | sonnet | no |
 | Execute bug fix | `executing-bug-fixes` | sonnet | no |
 | Finalize workflow | `finalizing-workflow` | haiku | **yes** |

@@ -1079,9 +1079,10 @@ describe('workflow-state.sh', () => {
         // Sonnet-baseline steps
         expect(run('get-model FEAT-001 reviewing-requirements')).toBe('sonnet');
         expect(run('get-model FEAT-001 creating-implementation-plans')).toBe('sonnet');
-        expect(run('get-model FEAT-001 implementing-plan-phases')).toBe('sonnet');
         expect(run('get-model FEAT-001 executing-chores')).toBe('sonnet');
         expect(run('get-model FEAT-001 executing-bug-fixes')).toBe('sonnet');
+        // FEAT-029 FR-7: implementing-plan-phases baseline lowered to haiku.
+        expect(run('get-model FEAT-001 implementing-plan-phases')).toBe('haiku');
         // Baseline-locked steps
         expect(run('get-model FEAT-001 finalizing-workflow')).toBe('haiku');
         expect(run('get-model FEAT-001 pr-creation')).toBe('haiku');
@@ -1092,6 +1093,8 @@ describe('workflow-state.sh', () => {
         runJSON('set-complexity FEAT-001 high');
         // max(sonnet, opus) = opus
         expect(run('get-model FEAT-001 reviewing-requirements')).toBe('opus');
+        // FEAT-029 FR-7: implementing-plan-phases baseline=haiku, but high
+        // workflow complexity still upgrades it to opus via the standard chain.
         expect(run('get-model FEAT-001 implementing-plan-phases')).toBe('opus');
       });
 
@@ -1100,7 +1103,9 @@ describe('workflow-state.sh', () => {
         runJSON('set-complexity FEAT-001 low');
         // max(sonnet, haiku) = sonnet — Sonnet baseline floor protects us.
         expect(run('get-model FEAT-001 reviewing-requirements')).toBe('sonnet');
-        expect(run('get-model FEAT-001 implementing-plan-phases')).toBe('sonnet');
+        // FEAT-029 FR-7: implementing-plan-phases baseline=haiku, low
+        // complexity also resolves to haiku → max(haiku, haiku) = haiku.
+        expect(run('get-model FEAT-001 implementing-plan-phases')).toBe('haiku');
       });
 
       it('returns medium→sonnet complexity as a no-op upgrade on sonnet-baseline steps', () => {
@@ -1302,6 +1307,72 @@ describe('workflow-state.sh', () => {
           { expectError: true }
         );
         expect(err).toContain('requires a numeric');
+      });
+
+      // --- FEAT-029 FR-6: per-phase keying under modelSelectionsByPhase ---
+      it('per-phase invocation persists modelSelectionsByPhase[step-N][phase-N] (FEAT-029)', () => {
+        runJSON('init FEAT-001 feature');
+        const state = runJSON(
+          'record-model-selection FEAT-001 5 implementing-plan-phases null 1 haiku post-plan 2026-04-25T00:00:00Z'
+        );
+        const byPhase = state.modelSelectionsByPhase as Record<string, Record<string, string>>;
+        expect(byPhase).toBeDefined();
+        expect(byPhase['step-5']).toBeDefined();
+        expect(byPhase['step-5']['phase-1']).toBe('haiku');
+        // Existing audit-trail array still updated.
+        const selections = state.modelSelections as Array<Record<string, unknown>>;
+        expect(selections).toHaveLength(1);
+        expect(selections[0].phase).toBe(1);
+      });
+
+      it('multiple per-phase invocations on the same step accumulate under modelSelectionsByPhase', () => {
+        runJSON('init FEAT-001 feature');
+        runJSON(
+          'record-model-selection FEAT-001 5 implementing-plan-phases null 1 haiku post-plan 2026-04-25T00:00:00Z'
+        );
+        runJSON(
+          'record-model-selection FEAT-001 5 implementing-plan-phases null 2 sonnet post-plan 2026-04-25T00:01:00Z'
+        );
+        const state = runJSON(
+          'record-model-selection FEAT-001 5 implementing-plan-phases null 3 opus post-plan 2026-04-25T00:02:00Z'
+        );
+        const byPhase = state.modelSelectionsByPhase as Record<string, Record<string, string>>;
+        expect(byPhase['step-5']).toEqual({
+          'phase-1': 'haiku',
+          'phase-2': 'sonnet',
+          'phase-3': 'opus',
+        });
+        // Audit trail preserves all three entries — append-only.
+        const selections = state.modelSelections as Array<Record<string, unknown>>;
+        expect(selections).toHaveLength(3);
+      });
+
+      it('non-phase invocations leave modelSelectionsByPhase untouched (silent migration)', () => {
+        runJSON('init FEAT-001 feature');
+        // Pre-existing per-phase entry.
+        runJSON(
+          'record-model-selection FEAT-001 5 implementing-plan-phases null 1 haiku post-plan 2026-04-25T00:00:00Z'
+        );
+        // Subsequent non-phase invocation must NOT touch modelSelectionsByPhase.
+        const state = runJSON(
+          'record-model-selection FEAT-001 1 reviewing-requirements standard null sonnet init 2026-04-25T00:01:00Z'
+        );
+        const byPhase = state.modelSelectionsByPhase as Record<string, Record<string, string>>;
+        expect(byPhase['step-5']).toEqual({ 'phase-1': 'haiku' });
+        // The non-phase entry must NOT have created a step-1 key.
+        expect(byPhase['step-1']).toBeUndefined();
+        // Audit trail still appended.
+        const selections = state.modelSelections as Array<Record<string, unknown>>;
+        expect(selections).toHaveLength(2);
+      });
+
+      it('record-model-selection without --phase on a fresh state does not create modelSelectionsByPhase', () => {
+        runJSON('init FEAT-001 feature');
+        const state = runJSON(
+          'record-model-selection FEAT-001 1 reviewing-requirements standard null sonnet init 2026-04-25T00:00:00Z'
+        );
+        // No per-phase entries → modelSelectionsByPhase is absent (silent migration: created on first per-phase write).
+        expect((state as Record<string, unknown>).modelSelectionsByPhase).toBeUndefined();
       });
     });
 
@@ -1582,33 +1653,59 @@ describe('workflow-state.sh', () => {
         });
       });
 
-      // --- feature post-plan upgrade tests ---
-      describe('feature post-plan upgrade', () => {
-        it('init medium + 4 phases → upgraded to high (sonnet → opus)', () => {
+      // --- feature post-plan upgrade tests (FEAT-029 FR-9) ---
+      // Post-plan classifier was rewritten in FEAT-029 FR-9: the raw
+      // phase-count mapping (1→low, 2-3→medium, 4+→high) was replaced with
+      // max-of-per-phase-tiers from phase-complexity-budget.sh. The same
+      // upgrade-only invariant from FEAT-014 FR-2b is preserved.
+      describe('feature post-plan upgrade (FR-9 max-of-per-phase-tiers)', () => {
+        // budget-mixed-plan.md scores [haiku, sonnet, opus, opus] → max=opus → high.
+        const BUDGET_MIXED_PLAN = join(
+          process.cwd(),
+          'plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md'
+        );
+
+        it('init medium + max-of-tiers=opus → upgraded to high (audit line emitted)', () => {
           runJSON('init FEAT-001 feature');
           runJSON('set-complexity FEAT-001 medium');
-          expect(
-            run(`classify-post-plan FEAT-001 ${fixturePath('feature-low-plan-4phase.md')}`)
-          ).toBe('high');
+          const cap = runCapture(`classify-post-plan FEAT-001 ${BUDGET_MIXED_PLAN}`);
+          expect(cap.status).toBe(0);
+          expect(cap.stdout.trim()).toBe('high');
+          expect(cap.stderr).toContain(
+            '[model] Work-item complexity upgraded since last invocation: medium → high'
+          );
+          // complexityStage flips to post-plan on a real upgrade.
+          const state = readState('FEAT-001') as Record<string, unknown>;
+          expect(state.complexityStage).toBe('post-plan');
+          expect(state.complexity).toBe('high');
         });
 
-        it('init high + 1 phase → stays high (upgrade-only, never downgrade)', () => {
-          runJSON('init FEAT-001 feature');
-          runJSON('set-complexity FEAT-001 high');
-          expect(
-            run(`classify-post-plan FEAT-001 ${fixturePath('feature-low-plan-1phase.md')}`)
-          ).toBe('high');
-        });
-
-        it('init low + 4 phases → upgraded to high', () => {
+        it('init low + max-of-tiers=opus → upgraded to high', () => {
           runJSON('init FEAT-001 feature');
           runJSON('set-complexity FEAT-001 low');
-          expect(
-            run(`classify-post-plan FEAT-001 ${fixturePath('feature-low-plan-4phase.md')}`)
-          ).toBe('high');
+          expect(run(`classify-post-plan FEAT-001 ${BUDGET_MIXED_PLAN}`)).toBe('high');
+          const state = readState('FEAT-001') as Record<string, unknown>;
+          expect(state.complexity).toBe('high');
         });
 
-        it('init medium + 1 phase → stays medium (low ≤ medium)', () => {
+        it('init high + max-of-tiers=haiku → stays high (upgrade-only invariant, no audit line)', () => {
+          // feature-low-plan-1phase.md has a single near-empty phase that
+          // scores haiku. With persisted=high this must NOT downgrade and
+          // MUST NOT emit the upgrade audit line.
+          runJSON('init FEAT-001 feature');
+          runJSON('set-complexity FEAT-001 high');
+          const cap = runCapture(
+            `classify-post-plan FEAT-001 ${fixturePath('feature-low-plan-1phase.md')}`
+          );
+          expect(cap.status).toBe(0);
+          expect(cap.stdout.trim()).toBe('high');
+          expect(cap.stderr).not.toContain('Work-item complexity upgraded');
+          // No upgrade → complexityStage remains init.
+          const state = readState('FEAT-001') as Record<string, unknown>;
+          expect(state.complexityStage).toBe('init');
+        });
+
+        it('init medium + max-of-tiers=haiku → stays medium (no downgrade)', () => {
           runJSON('init FEAT-001 feature');
           runJSON('set-complexity FEAT-001 medium');
           expect(
@@ -1616,10 +1713,30 @@ describe('workflow-state.sh', () => {
           ).toBe('medium');
         });
 
-        it('missing plan → retain persisted tier (NFR-5)', () => {
+        it('phase-complexity-budget failure (missing plan) → warn + preserve persisted + exit 0', () => {
           runJSON('init FEAT-001 feature');
           runJSON('set-complexity FEAT-001 medium');
-          expect(run('classify-post-plan FEAT-001 /nonexistent/plan.md')).toBe('medium');
+          const cap = runCapture('classify-post-plan FEAT-001 /nonexistent/plan.md');
+          expect(cap.status).toBe(0);
+          expect(cap.stdout.trim()).toBe('medium');
+          expect(cap.stderr).toContain(
+            '[warn] classify-post-plan: phase-complexity-budget failed; preserving init-stage complexity medium.'
+          );
+          // State is unchanged.
+          const state = readState('FEAT-001') as Record<string, unknown>;
+          expect(state.complexity).toBe('medium');
+          expect(state.complexityStage).toBe('init');
+        });
+
+        it('phase-complexity-budget failure preserves a high persisted tier', () => {
+          runJSON('init FEAT-001 feature');
+          runJSON('set-complexity FEAT-001 high');
+          const cap = runCapture('classify-post-plan FEAT-001 /nonexistent/plan.md');
+          expect(cap.status).toBe(0);
+          expect(cap.stdout.trim()).toBe('high');
+          expect(cap.stderr).toContain(
+            '[warn] classify-post-plan: phase-complexity-budget failed; preserving init-stage complexity high.'
+          );
         });
 
         it('rejects non-feature chains', () => {
@@ -1666,7 +1783,8 @@ describe('workflow-state.sh', () => {
           runJSON('init FEAT-001 feature');
           expect(run('resolve-tier FEAT-001 reviewing-requirements')).toBe('sonnet');
           expect(run('resolve-tier FEAT-001 creating-implementation-plans')).toBe('sonnet');
-          expect(run('resolve-tier FEAT-001 implementing-plan-phases')).toBe('sonnet');
+          // FEAT-029 FR-7: implementing-plan-phases baseline lowered to haiku.
+          expect(run('resolve-tier FEAT-001 implementing-plan-phases')).toBe('haiku');
         });
 
         it('baseline-locked steps default to haiku', () => {
@@ -1842,6 +1960,101 @@ describe('workflow-state.sh', () => {
         });
       });
 
+      // --- FEAT-029 FR-6: per-phase resolve-tier classification ---
+      describe('resolve-tier --phase / --plan-file (FEAT-029 FR-6)', () => {
+        const BUDGET_PLAN = join(
+          process.cwd(),
+          'plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md'
+        );
+
+        it('per-phase haiku phase resolves implementing-plan-phases to haiku', () => {
+          runJSON('init FEAT-001 feature');
+          // Phase 1 of budget-mixed-plan scores haiku (3 steps / 4 deliverables / 3 files / no flags).
+          // baseline=haiku (FR-7), per-phase=haiku → max=haiku.
+          expect(
+            run(
+              `resolve-tier FEAT-001 implementing-plan-phases --phase 1 --plan-file ${BUDGET_PLAN}`
+            )
+          ).toBe('haiku');
+        });
+
+        it('per-phase sonnet phase upgrades implementing-plan-phases to sonnet', () => {
+          runJSON('init FEAT-001 feature');
+          // Phase 2 of budget-mixed-plan scores sonnet (7/9/8 at the boundary).
+          // baseline=haiku, per-phase=sonnet → max=sonnet.
+          expect(
+            run(
+              `resolve-tier FEAT-001 implementing-plan-phases --phase 2 --plan-file ${BUDGET_PLAN}`
+            )
+          ).toBe('sonnet');
+        });
+
+        it('per-phase opus phase upgrades implementing-plan-phases to opus', () => {
+          runJSON('init FEAT-001 feature');
+          // Phase 4 of budget-mixed-plan scores opus on every axis (8/10/9, overBudget).
+          expect(
+            run(
+              `resolve-tier FEAT-001 implementing-plan-phases --phase 4 --plan-file ${BUDGET_PLAN}`
+            )
+          ).toBe('opus');
+        });
+
+        it('non-phase skill emits [info] and ignores --phase/--plan-file', () => {
+          runJSON('init FEAT-001 feature');
+          const cap = runCapture(
+            `resolve-tier FEAT-001 reviewing-requirements --phase 1 --plan-file ${BUDGET_PLAN}`
+          );
+          expect(cap.status).toBe(0);
+          expect(cap.stdout.trim()).toBe('sonnet');
+          expect(cap.stderr).toContain(
+            '[info] resolve-tier: --phase ignored for non-phase skill reviewing-requirements'
+          );
+        });
+
+        it('--phase without --plan-file exits 2', () => {
+          runJSON('init FEAT-001 feature');
+          const cap = runCapture('resolve-tier FEAT-001 implementing-plan-phases --phase 1');
+          expect(cap.status).toBe(2);
+          expect(cap.stderr).toContain('--phase and --plan-file must be supplied together');
+        });
+
+        it('--plan-file without --phase exits 2', () => {
+          runJSON('init FEAT-001 feature');
+          const cap = runCapture(
+            `resolve-tier FEAT-001 implementing-plan-phases --plan-file ${BUDGET_PLAN}`
+          );
+          expect(cap.status).toBe(2);
+          expect(cap.stderr).toContain('--phase and --plan-file must be supplied together');
+        });
+
+        it('non-existent plan-file emits [warn] and falls back to workflow complexity', () => {
+          runJSON('init FEAT-001 feature');
+          // No set-complexity called → workflow complexity is null → falls back to baseline (haiku).
+          const cap = runCapture(
+            'resolve-tier FEAT-001 implementing-plan-phases --phase 1 --plan-file /nonexistent/path.md'
+          );
+          expect(cap.status).toBe(0);
+          expect(cap.stdout.trim()).toBe('haiku');
+          expect(cap.stderr).toContain(
+            '[warn] resolve-tier: phase-complexity-budget failed for phase 1'
+          );
+          expect(cap.stderr).toContain('falling back to workflow complexity');
+        });
+
+        it('non-existent plan-file with high workflow complexity falls back to opus', () => {
+          runJSON('init FEAT-001 feature');
+          runJSON('set-complexity FEAT-001 high');
+          // Per-phase lookup fails → fallback to workflow complexity (high → opus).
+          // baseline=haiku, fallback=opus → max=opus.
+          const cap = runCapture(
+            'resolve-tier FEAT-001 implementing-plan-phases --phase 1 --plan-file /nonexistent/path.md'
+          );
+          expect(cap.status).toBe(0);
+          expect(cap.stdout.trim()).toBe('opus');
+          expect(cap.stderr).toContain('[warn] resolve-tier: phase-complexity-budget failed');
+        });
+      });
+
       // --- FEAT-021 Phase 1: step-baseline / step-baseline-locked subcommands ---
       describe('step-baseline (FEAT-021 Phase 1)', () => {
         it('echoes sonnet for reviewing-requirements', () => {
@@ -1852,8 +2065,8 @@ describe('workflow-state.sh', () => {
           expect(run('step-baseline creating-implementation-plans')).toBe('sonnet');
         });
 
-        it('echoes sonnet for implementing-plan-phases', () => {
-          expect(run('step-baseline implementing-plan-phases')).toBe('sonnet');
+        it('echoes haiku for implementing-plan-phases (FEAT-029 FR-7)', () => {
+          expect(run('step-baseline implementing-plan-phases')).toBe('haiku');
         });
 
         it('echoes sonnet for executing-chores', () => {
@@ -2020,11 +2233,14 @@ describe('workflow-state.sh', () => {
           writeFileSync(join(testDir, 'requirements/features/FEAT-701.md'), featContent);
           run('set-complexity FEAT-701 medium');
 
-          // Post-plan transition via classify-post-plan.
+          // Post-plan transition via classify-post-plan. Use the FEAT-029
+          // budget-mixed-plan fixture so the per-phase max scores opus → high
+          // and triggers a real upgrade (medium → high) under the FR-9 rules.
           mkdirSync(join(testDir, 'requirements/implementation'), { recursive: true });
-          const planContent = execSync(`cat "${fixturePath('feature-low-plan-4phase.md')}"`, {
-            encoding: 'utf-8',
-          });
+          const planContent = execSync(
+            `cat "${join(process.cwd(), 'plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md')}"`,
+            { encoding: 'utf-8' }
+          );
           writeFileSync(join(testDir, 'requirements/implementation/FEAT-701-plan.md'), planContent);
           run('classify-post-plan FEAT-701');
 
@@ -2036,6 +2252,42 @@ describe('workflow-state.sh', () => {
           const post = readState('FEAT-701');
           expect(post.complexityStage).toBe('post-plan');
           expect(post.complexity).toBe('high');
+        });
+
+        it('uses max-of-per-phase-tiers (FR-9), not legacy raw-phase-count, on the post-plan branch', () => {
+          // Divergence fixture: feature-low-plan-4phase.md has four empty
+          // phases. Legacy raw-phase-count → "high" (4+ phases). FR-9
+          // max-of-per-phase-tiers → "low" (every phase scores haiku).
+          // Persist {complexity: low, complexityStage: post-plan} so the
+          // resume path enters the feature post-plan branch, then verify
+          // resume returns "low" — not "high" (which would prove the legacy
+          // algorithm is still wired to the resume path).
+          runJSON('init FEAT-707 feature');
+          mkdirSync(join(testDir, 'requirements/features'), { recursive: true });
+          const featContent = execSync(`cat "${fixturePath('feature-low.md')}"`, {
+            encoding: 'utf-8',
+          });
+          writeFileSync(join(testDir, 'requirements/features/FEAT-707.md'), featContent);
+
+          // Force {complexity: low, complexityStage: post-plan} directly so
+          // the resume path is forced to recompute the post-plan tier.
+          const stateFile = join(testDir, '.sdlc/workflows/FEAT-707.json');
+          const state = JSON.parse(execSync(`cat "${stateFile}"`, { encoding: 'utf-8' }));
+          state.complexity = 'low';
+          state.complexityStage = 'post-plan';
+          writeFileSync(stateFile, JSON.stringify(state));
+
+          mkdirSync(join(testDir, 'requirements/implementation'), { recursive: true });
+          const planContent = execSync(`cat "${fixturePath('feature-low-plan-4phase.md')}"`, {
+            encoding: 'utf-8',
+          });
+          writeFileSync(join(testDir, 'requirements/implementation/FEAT-707-plan.md'), planContent);
+
+          const tier = run('resume-recompute FEAT-707');
+          expect(tier).toBe('low');
+          const after = readState('FEAT-707');
+          expect(after.complexity).toBe('low');
+          expect(after.complexityStage).toBe('post-plan');
         });
 
         it('populates complexity on a freshly-migrated legacy state file', () => {
