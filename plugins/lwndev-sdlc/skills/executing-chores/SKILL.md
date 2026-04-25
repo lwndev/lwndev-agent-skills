@@ -60,7 +60,13 @@ Execute chore task workflows with systematic tracking from branch creation throu
    ```
 
    **The script does not stage files** — run `git add <paths>` first. Runs `git commit -m "chore(<category>): <description>"` and prints the short SHA. Exit codes: `0` on success (SHA on stdout); `1` on commit failure (git stderr passes through); `2` on missing/invalid type arg.
-7. Run tests/build verification.
+7. Run build-health verification (lint, format:check, test, build) via the shared script:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/verify-build-health.sh"
+   ```
+
+   Detects the available `package.json` scripts and runs them in order, halting on the first non-zero exit. Interactive: on a `lint` or `format:check` failure, the script offers to run the matching `lint:fix` / `format` (only when the script exists) and re-run. Non-zero exit halts the chore with `failed | <reason>`. Exit `0` on pass or graceful skip (no `package.json` / no recognized scripts / `npm` absent), `1` on failure, `2` on malformed args.
 8. Create the pull request with:
 
    ```bash
@@ -157,8 +163,7 @@ Examples:
 Before creating the PR, verify:
 
 - [ ] All acceptance criteria from chore document are met
-- [ ] Tests pass (if applicable)
-- [ ] Build succeeds
+- [ ] `verify-build-health.sh` exits 0 (lint, format:check, test, build all pass)
 - [ ] Changes match the chore document scope
 - [ ] No unintended side effects
 
