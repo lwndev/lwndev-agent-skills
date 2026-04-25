@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.21.1] - 2026-04-25
+
+### Bug Fixes
+
+- **BUG-013:** phase-completion skills no longer declare success without running the repo's lint/format/test gates ([#212](https://github.com/lwndev/lwndev-marketplace/issues/212)). Adds shared `plugins/lwndev-sdlc/scripts/verify-build-health.sh` that detects available `package.json` scripts (`lint`, `format:check`, `test`, `build`; `validate` opt-in via `--include-validate`), runs each that exists, and halts on the first non-zero exit. Wired into all six affected skills with the documented interactive vs non-interactive split: `executing-chores` Step 7, `executing-bug-fixes` Step 9, `implementing-plan-phases` (lint/format added to `verify-phase-deliverables.sh`'s JSON contract), `executing-qa` (new Step 5.5, `--no-interactive`), `finalizing-workflow` `preflight-checks.sh` (`--no-interactive`), and `releasing-plugins` (new Step 8 between changelog and push). The auto-fix branch (`lint:fix` / `format`) is reachable only at the four interactive sites; QA and finalize fail-fast. 21-test bats suite plus 7-scenario vitest adversarial suite at `scripts/__tests__/qa-bug-013.test.ts`. Closes the gap that was leaking prettier/eslint errors to release branches and `main` (CI runs 24781710973, 24781373957, 24781373952). Merged via PR [#237](https://github.com/lwndev/lwndev-marketplace/pull/237).
+- **security:** bump `postcss` from 8.5.8 to 8.5.10 to clear `npm audit` advisory [GHSA-qx2v-qp2m-jg93](https://github.com/advisories/GHSA-qx2v-qp2m-jg93) (XSS via unescaped `</style>` in CSS Stringify output). Transitive devDependency only.
+
+[1.21.1]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.21.0...lwndev-sdlc@1.21.1
+
 ## [1.21.0] - 2026-04-25
 
 ### Features
