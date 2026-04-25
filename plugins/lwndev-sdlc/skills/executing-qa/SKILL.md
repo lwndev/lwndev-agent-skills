@@ -182,6 +182,19 @@ Dimensions:
 
 Populate the artifact's `## Exploratory Mode` section with a `Reason:` line explaining the fallback (e.g., `"No supported test framework detected in consumer repo. Detection attempted: vitest, jest, pytest, go test."`). Set verdict to `EXPLORATORY-ONLY`.
 
+## Step 5.5: Build-health gate (BUG-013)
+
+After the test run (test-framework or exploratory-only) but before the reconciliation delta:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/verify-build-health.sh" --no-interactive --skip-test
+```
+
+`--skip-test` avoids re-running the suite Step 4 already executed. See the script header for full semantics. If the gate exits non-zero:
+
+- Force the QA verdict to `ISSUES-FOUND` (regardless of test-framework results).
+- Add a finding to `## Findings` describing the failing build-health stage (e.g., `lint failed: 24 prettier violations`) with the failing command output excerpt — surfaced verbatim from the script's stderr.
+
 ## Step 6: Reconciliation Delta (FR-5)
 
 After the run completes, read the requirements document. **This is the one and only time the requirements doc is consulted** — the planning skill (`documenting-qa`) is forbidden from reading it, so the delta here is the audit trail of spec-demanded vs. QA-tested.

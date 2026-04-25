@@ -41,12 +41,16 @@ teardown() {
 # ---------- stub writers ----------
 
 write_npm_stub() {
-  # NPM_TEST_RC        — exit for `npm test`        (default 0)
-  # NPM_TEST_OUT       — stdout/stderr payload
-  # NPM_BUILD_RC       — exit for `npm run build`   (default 0)
-  # NPM_BUILD_OUT      — stdout/stderr payload
-  # NPM_COVERAGE_RC    — exit for `npm run test:coverage` (default 0)
-  # NPM_COVERAGE_OUT   — stdout/stderr payload
+  # NPM_TEST_RC          — exit for `npm test`              (default 0)
+  # NPM_TEST_OUT         — stdout/stderr payload
+  # NPM_BUILD_RC         — exit for `npm run build`         (default 0)
+  # NPM_BUILD_OUT        — stdout/stderr payload
+  # NPM_COVERAGE_RC      — exit for `npm run test:coverage` (default 0)
+  # NPM_COVERAGE_OUT     — stdout/stderr payload
+  # NPM_LINT_RC          — exit for `npm run lint`          (default 0)
+  # NPM_LINT_OUT         — stdout/stderr payload
+  # NPM_FORMAT_CHECK_RC  — exit for `npm run format:check`  (default 0)
+  # NPM_FORMAT_CHECK_OUT — stdout/stderr payload
   cat > "${STUB_DIR}/npm" <<'EOF'
 #!/usr/bin/env bash
 printf 'TRACE:npm:%s\n' "$*" >> "${TRACER}"
@@ -65,12 +69,43 @@ case "$1" in
         printf '%s' "${NPM_COVERAGE_OUT:-npm-cov-ok}"
         exit "${NPM_COVERAGE_RC:-0}"
         ;;
+      lint)
+        printf '%s' "${NPM_LINT_OUT:-npm-lint-ok}"
+        exit "${NPM_LINT_RC:-0}"
+        ;;
+      format:check)
+        printf '%s' "${NPM_FORMAT_CHECK_OUT:-npm-format-ok}"
+        exit "${NPM_FORMAT_CHECK_RC:-0}"
+        ;;
     esac
     ;;
 esac
 exit 0
 EOF
   chmod +x "${STUB_DIR}/npm"
+}
+
+write_pkg_json() {
+  # Args: <space-separated script names> — emits minimal package.json with
+  # the named scripts each defined as `exit 0`. Empty arg list emits an
+  # empty scripts object.
+  local entries=""
+  local first=1
+  for s in "$@"; do
+    if [ "$first" -eq 1 ]; then
+      first=0
+    else
+      entries+=","
+    fi
+    entries+=$'\n    "'"$s"'": "exit 0"'
+  done
+  cat > "${TEST_CWD}/package.json" <<EOF
+{
+  "name": "fixture",
+  "scripts": {${entries}
+  }
+}
+EOF
 }
 
 # PATH directory without npm (but with the real POSIX toolchain the script needs).
@@ -264,4 +299,82 @@ empty_path_for_no_npm() {
   PATH="${STUB_DIR}:${PATH}" run bash "$SCRIPT" "plan.md" "1"
   [[ "$output" == *'"ok":['* ]]
   [[ "$output" == *'"missing":'* ]]
+}
+
+# =====================================================================
+# lint / format:check cascade (BUG-013 follow-up)
+# =====================================================================
+
+@test "lint:fail cascades — format/test/build all reported skipped" {
+  write_npm_stub
+  write_pkg_json lint format:check
+  : > src/alpha.ts
+  : > src/beta.ts
+  NPM_LINT_RC=1 NPM_LINT_OUT="lint failed: 3 errors" \
+    PATH="${STUB_DIR}:${PATH}" run bash "$SCRIPT" "plan.md" "1"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'"lint":"fail"'* ]]
+  [[ "$output" == *'"format":"skipped"'* ]]
+  [[ "$output" == *'"test":"skipped"'* ]]
+  [[ "$output" == *'"build":"skipped"'* ]]
+  [[ "$output" == *"lint failed: 3 errors"* ]]
+  run cat "${TRACER}"
+  [[ "$output" != *"TRACE:npm:run format:check"* ]]
+  [[ "$output" != *"TRACE:npm:test"* ]]
+  [[ "$output" != *"TRACE:npm:run build"* ]]
+}
+
+@test "format:check:fail cascades — test/build reported skipped (lint passes)" {
+  write_npm_stub
+  write_pkg_json lint format:check
+  : > src/alpha.ts
+  : > src/beta.ts
+  NPM_FORMAT_CHECK_RC=1 NPM_FORMAT_CHECK_OUT="prettier: 12 violations" \
+    PATH="${STUB_DIR}:${PATH}" run bash "$SCRIPT" "plan.md" "1"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'"lint":"pass"'* ]]
+  [[ "$output" == *'"format":"fail"'* ]]
+  [[ "$output" == *'"test":"skipped"'* ]]
+  [[ "$output" == *'"build":"skipped"'* ]]
+  [[ "$output" == *"prettier: 12 violations"* ]]
+  run cat "${TRACER}"
+  [[ "$output" != *"TRACE:npm:test"* ]]
+  [[ "$output" != *"TRACE:npm:run build"* ]]
+}
+
+@test "all four pass — lint/format/test/build all report pass" {
+  write_npm_stub
+  write_pkg_json lint format:check
+  : > src/alpha.ts
+  : > src/beta.ts
+  PATH="${STUB_DIR}:${PATH}" run bash "$SCRIPT" "plan.md" "1"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"lint":"pass"'* ]]
+  [[ "$output" == *'"format":"pass"'* ]]
+  [[ "$output" == *'"test":"pass"'* ]]
+  [[ "$output" == *'"build":"pass"'* ]]
+  [[ "$output" == *'"output":{}'* ]]
+}
+
+@test "have_pkg_script does not false-positive on top-level keys named like a script" {
+  # Regression: package.json with `"name": "lint"` and no `lint` in scripts
+  # must report lint:"skipped", not "fail" or "pass".
+  write_npm_stub
+  cat > "${TEST_CWD}/package.json" <<'EOF'
+{
+  "name": "lint",
+  "scripts": {
+    "build": "exit 0"
+  }
+}
+EOF
+  : > src/alpha.ts
+  : > src/beta.ts
+  PATH="${STUB_DIR}:${PATH}" run bash "$SCRIPT" "plan.md" "1"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"lint":"skipped"'* ]]
+  [[ "$output" == *'"format":"skipped"'* ]]
+  run cat "${TRACER}"
+  [[ "$output" != *"TRACE:npm:run lint"* ]]
+  [[ "$output" != *"TRACE:npm:run format:check"* ]]
 }

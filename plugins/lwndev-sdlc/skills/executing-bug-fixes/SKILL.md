@@ -62,7 +62,13 @@ Execute bug fix workflows with root cause driven execution from branch creation 
 
    **The script does not stage files** — run `git add <paths>` first. It runs `git commit -m "fix(<category>): <description>"` and prints the short SHA on success. Exit codes: `0` on success (SHA on stdout); `1` on commit failure (git stderr passes through); `2` on missing/invalid type arg.
 8. Verify reproduction steps no longer trigger the bug
-9. Run tests/build verification
+9. Run build-health verification:
+
+    ```bash
+    bash "${CLAUDE_PLUGIN_ROOT}/scripts/verify-build-health.sh"
+    ```
+
+    See the script header for full semantics. Non-zero exit halts the fix.
 10. Create the pull request with:
 
     ```bash
@@ -189,8 +195,7 @@ Before creating the PR, verify:
 - [ ] All root causes from the bug document are addressed
 - [ ] Each `(RC-N)` tagged acceptance criterion is met
 - [ ] Reproduction steps no longer trigger the bug
-- [ ] Tests pass (if applicable)
-- [ ] Build succeeds
+- [ ] `verify-build-health.sh` exits 0 (lint, format:check, test, build all pass)
 - [ ] Changes match the scope defined in the bug document
 - [ ] No unintended side effects or regressions
 

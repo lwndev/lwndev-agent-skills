@@ -32,7 +32,12 @@ const CANONICAL_SCRIPTS = [
   'create-pr.sh',
   'branch-id-parse.sh',
   'prepare-fork.sh',
+  'verify-build-health.sh',
 ] as const;
+
+// Scripts where invoking with no args is a valid contract (graceful skip,
+// not a usage error). Excluded from the usage-error sanity check below.
+const NO_ARGS_OK = new Set<string>(['verify-build-health.sh']);
 
 describe('shared-scripts library: directory layout', () => {
   it('should have the scripts directory and it should be non-empty', () => {
@@ -60,6 +65,7 @@ describe('shared-scripts library: script files exist and are executable', () => 
 
 describe('shared-scripts library: usage-error sanity (missing args)', () => {
   for (const scriptName of CANONICAL_SCRIPTS) {
+    if (NO_ARGS_OK.has(scriptName)) continue;
     const scriptPath = join(SCRIPTS_DIR, scriptName);
 
     it(`${scriptName} should exit non-zero with a usage message when invoked without args`, () => {
@@ -92,11 +98,11 @@ describe('shared-scripts library: pr-body.tmpl asset', () => {
 });
 
 describe('shared-scripts library: bats fixture count', () => {
-  it('should contain exactly eleven .bats files, one per script', () => {
+  it('should contain a .bats fixture per canonical script', () => {
     expect(existsSync(TESTS_DIR)).toBe(true);
     const batsFiles = readdirSync(TESTS_DIR).filter((f) => f.endsWith('.bats'));
     expect(batsFiles.length).toBe(CANONICAL_SCRIPTS.length);
-    expect(batsFiles.length).toBe(11);
+    expect(batsFiles.length).toBe(12);
   });
 
   it('should have a .bats fixture for every canonical script', () => {

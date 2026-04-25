@@ -432,6 +432,8 @@ describe('FEAT-027 — Dependency failure dimension', () => {
           [
             '#!/usr/bin/env bash',
             'case "$*" in',
+            '  "run lint")          exit 0 ;;',
+            '  "run format:check")  exit 0 ;;',
             '  "test")      echo "PASS runtime"; exit 0 ;;',
             '  "run build") echo "build ERROR: missing tsc"; exit 1 ;;',
             '  "run test:coverage") echo "coverage missing"; exit 1 ;;',

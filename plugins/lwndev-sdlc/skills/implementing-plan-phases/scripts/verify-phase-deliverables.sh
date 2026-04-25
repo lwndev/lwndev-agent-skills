@@ -7,29 +7,35 @@
 # block, extracts leading backticked file paths from each `- [ ]` / `- [x]`
 # entry, and runs:
 #   1. File existence check per extracted path.
-#   2. `npm test`           — captures exit code + last 50 lines on failure.
-#   3. `npm run build`      — captures exit code + last 50 lines on failure.
-#   4. `npm run test:coverage` — run only when a coverage token is detected
+#   2. `npm run lint`         — when `lint` is defined in package.json.
+#   3. `npm run format:check` — when `format:check` is defined in package.json.
+#   4. `npm test`             — captures exit code + last 50 lines on failure.
+#   5. `npm run build`        — captures exit code + last 50 lines on failure.
+#   6. `npm run test:coverage` — run only when a coverage token is detected
 #      in the phase block or the `## Testing Requirements` section.
+#
+# Fail-fast: a failing stage leaves downstream stages reported `skipped`.
 #
 # Graceful degradation:
 #   If `npm` is not on PATH, emits a `[warn]` line to stderr and marks
-#   test/build/coverage all as `"skipped"`. Exits 0 when files.missing is
-#   empty in that case.
+#   lint/format/test/build/coverage all as `"skipped"`. Exits 0 when files.missing
+#   is empty in that case.
 #
 # Fence-aware: deliverable lines inside ``` / ~~~ fenced blocks are ignored.
 #
 # Stdout: one JSON object with the shape:
 #   {
 #     "files":   {"ok":[...], "missing":[...]},
+#     "lint":    "pass" | "fail" | "skipped",
+#     "format":  "pass" | "fail" | "skipped",
 #     "test":    "pass" | "fail" | "skipped",
 #     "build":   "pass" | "fail" | "skipped",
 #     "coverage":"pass" | "fail" | "skipped",
-#     "output":  { "test":"...", "build":"...", "coverage":"..." }   // keys present only for failing checks
+#     "output":  { "lint":"...", "format":"...", "test":"...", "build":"...", "coverage":"..." }   // keys present only for failing checks
 #   }
 #
 # Exit codes:
-#   0  files.missing empty AND all of test/build/coverage ∈ {pass, skipped}.
+#   0  files.missing empty AND all of lint/format/test/build/coverage ∈ {pass, skipped}.
 #   1  missing files, a failing check, plan missing, or no matching phase block.
 #   2  missing / malformed args.
 #
@@ -204,28 +210,89 @@ for p in "${paths[@]}"; do
   fi
 done
 
+lint_status="skipped"
+format_status="skipped"
 test_status="skipped"
 build_status="skipped"
 coverage_status="skipped"
+lint_output=""
+format_output=""
 test_output=""
 build_output=""
 coverage_output=""
 
+# package.json script existence helper. Scopes the no-jq fallback to the
+# `scripts` block via awk so that top-level keys like `"name": "lint"` or a
+# dependency named `lint` do not produce a false positive.
+have_pkg_script() {
+  local name="$1"
+  local pkg
+  pkg="$(pwd)"
+  while [ "$pkg" != "/" ] && [ -n "$pkg" ]; do
+    if [ -f "$pkg/package.json" ]; then
+      if command -v jq >/dev/null 2>&1; then
+        jq -e --arg n "$name" '.scripts[$n] // empty' "$pkg/package.json" >/dev/null 2>&1
+        return $?
+      fi
+      awk '
+        /"scripts"[[:space:]]*:[[:space:]]*\{/ { in_block = 1; depth = 1; next }
+        in_block {
+          for (i = 1; i <= length($0); i++) {
+            c = substr($0, i, 1)
+            if (c == "{") depth++
+            else if (c == "}") { depth--; if (depth == 0) { in_block = 0; exit } }
+          }
+          print
+        }
+      ' "$pkg/package.json" | grep -Eq "^[[:space:]]*\"${name}\"[[:space:]]*:"
+      return $?
+    fi
+    pkg="$(dirname "$pkg")"
+  done
+  return 1
+}
+
 if ! command -v npm >/dev/null 2>&1; then
-  echo "[warn] verify-phase-deliverables: npm not found; skipping test/build/coverage checks." >&2
+  echo "[warn] verify-phase-deliverables: npm not found; skipping lint/format/test/build/coverage checks." >&2
 else
-  # npm test
-  tmp_test_out=$(mktemp)
-  if npm test >"$tmp_test_out" 2>&1; then
-    test_status="pass"
-  else
-    test_status="fail"
-    test_output=$(tail -n 50 "$tmp_test_out")
+  # npm run lint — only when defined in package.json.
+  if have_pkg_script lint; then
+    tmp_lint_out=$(mktemp)
+    if npm run lint >"$tmp_lint_out" 2>&1; then
+      lint_status="pass"
+    else
+      lint_status="fail"
+      lint_output=$(tail -n 50 "$tmp_lint_out")
+    fi
+    rm -f "$tmp_lint_out"
   fi
-  rm -f "$tmp_test_out"
+
+  # npm run format:check — only when defined and prior stages passed.
+  if [ "$lint_status" != "fail" ] && have_pkg_script format:check; then
+    tmp_format_out=$(mktemp)
+    if npm run format:check >"$tmp_format_out" 2>&1; then
+      format_status="pass"
+    else
+      format_status="fail"
+      format_output=$(tail -n 50 "$tmp_format_out")
+    fi
+    rm -f "$tmp_format_out"
+  fi
+
+  # npm test — fail-fast if prior stages failed.
+  if [ "$lint_status" != "fail" ] && [ "$format_status" != "fail" ]; then
+    tmp_test_out=$(mktemp)
+    if npm test >"$tmp_test_out" 2>&1; then
+      test_status="pass"
+    else
+      test_status="fail"
+      test_output=$(tail -n 50 "$tmp_test_out")
+    fi
+    rm -f "$tmp_test_out"
+  fi
 
   # npm run build — skip further checks if prior stage failed (fail fast).
-  if [ "$test_status" = "pass" ]; then
+  if [ "$lint_status" != "fail" ] && [ "$format_status" != "fail" ] && [ "$test_status" = "pass" ]; then
     tmp_build_out=$(mktemp)
     if npm run build >"$tmp_build_out" 2>&1; then
       build_status="pass"
@@ -304,9 +371,19 @@ files_missing_json=$(json_array "${missing_paths[@]+"${missing_paths[@]}"}")
 
 # Build "output" object: include keys only for failing checks.
 output_parts=""
+if [ "$lint_status" = "fail" ]; then
+  val=$(json_string "$lint_output")
+  output_parts="\"lint\":${val}"
+fi
+if [ "$format_status" = "fail" ]; then
+  val=$(json_string "$format_output")
+  if [ -n "$output_parts" ]; then output_parts="${output_parts},"; fi
+  output_parts+="\"format\":${val}"
+fi
 if [ "$test_status" = "fail" ]; then
   val=$(json_string "$test_output")
-  output_parts="\"test\":${val}"
+  if [ -n "$output_parts" ]; then output_parts="${output_parts},"; fi
+  output_parts+="\"test\":${val}"
 fi
 if [ "$build_status" = "fail" ]; then
   val=$(json_string "$build_output")
@@ -320,9 +397,9 @@ if [ "$coverage_status" = "fail" ]; then
 fi
 output_json="{${output_parts}}"
 
-printf '{"files":{"ok":%s,"missing":%s},"test":"%s","build":"%s","coverage":"%s","output":%s}\n' \
+printf '{"files":{"ok":%s,"missing":%s},"lint":"%s","format":"%s","test":"%s","build":"%s","coverage":"%s","output":%s}\n' \
   "$files_ok_json" "$files_missing_json" \
-  "$test_status" "$build_status" "$coverage_status" \
+  "$lint_status" "$format_status" "$test_status" "$build_status" "$coverage_status" \
   "$output_json"
 
 # Aggregate exit code.
@@ -330,7 +407,7 @@ rc=0
 if [ "${#missing_paths[@]}" -gt 0 ]; then
   rc=1
 fi
-for s in "$test_status" "$build_status" "$coverage_status"; do
+for s in "$lint_status" "$format_status" "$test_status" "$build_status" "$coverage_status"; do
   case "$s" in
     pass|skipped) : ;;
     *) rc=1 ;;
