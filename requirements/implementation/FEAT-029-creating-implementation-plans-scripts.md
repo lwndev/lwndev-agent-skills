@@ -168,7 +168,7 @@ The phase deliberately excludes FR-4 (`split-phase-suggest.sh`) and FR-5 (`valid
 ### Phase 3: Advisory Splitter + Phase-Size Gate (FR-4, FR-5)
 
 **Feature:** [FEAT-029](../features/FEAT-029-creating-implementation-plans-scripts.md) | [#190](https://github.com/lwndev/lwndev-marketplace/issues/190)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 2
 
 #### Rationale
@@ -229,14 +229,14 @@ This phase also flips the warn-only `--enforce-phase-budget` flag in `render-pla
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/split-phase-suggest.sh`
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/validate-phase-sizes.sh`
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/render-plan-scaffold.sh` (amended: `--enforce-phase-budget` wired to FR-5)
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/split-overflow-plan.md`
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/split-tiny-plan.md`
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/split-phase-suggest.bats`
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/validate-phase-sizes.bats`
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/render-plan-scaffold.bats` (extended)
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/split-phase-suggest.sh`
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/validate-phase-sizes.sh`
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/render-plan-scaffold.sh` (amended: `--enforce-phase-budget` wired to FR-5)
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/split-overflow-plan.md`
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/split-tiny-plan.md`
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/split-phase-suggest.bats`
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/validate-phase-sizes.bats`
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/render-plan-scaffold.bats` (extended)
 
 ---
 

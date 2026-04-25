@@ -11,10 +11,11 @@
 #               the output filename.
 #
 #   --enforce-phase-budget
-#               Parsed but a no-op in Phase 1 of FEAT-029. Emits a [warn]
-#               line to stderr noting the gate activates once
-#               validate-phase-sizes.sh ships in Phase 3. Does not exit
-#               non-zero.
+#               After rendering the scaffold, invoke
+#               `validate-phase-sizes.sh <rendered-path>` (FR-5) and
+#               propagate its exit code. A failing gate exits 1 with the
+#               offender list on stderr; the rendered file is left in
+#               place for inspection.
 #
 # Behavior:
 #   1. Parse and validate the comma-separated FEAT-ID list.
@@ -83,10 +84,6 @@ done
 if [ -z "$raw_ids" ]; then
   echo "error: usage: render-plan-scaffold.sh <FEAT-IDs> [--enforce-phase-budget]" >&2
   exit 2
-fi
-
-if [ "$enforce_phase_budget" = "true" ]; then
-  echo "[warn] --enforce-phase-budget will activate once validate-phase-sizes.sh ships (FEAT-029 Phase 3)." >&2
 fi
 
 # Split comma-separated list, tolerating whitespace around commas. Each
@@ -325,4 +322,22 @@ EOF
 } > "$target_abs"
 
 printf '%s\n' "$target_abs"
+
+# ---------------------------------------------------------------------------
+# --enforce-phase-budget gate (FR-5). Invoke validate-phase-sizes.sh on the
+# rendered file and propagate its exit code. The rendered file remains on
+# disk regardless of the gate outcome so the user can inspect or amend it.
+# ---------------------------------------------------------------------------
+if [ "$enforce_phase_budget" = "true" ]; then
+  script_dir="$(cd "$(dirname "$0")" && pwd)"
+  validator="${script_dir}/validate-phase-sizes.sh"
+  if [ ! -f "$validator" ]; then
+    echo "error: validate-phase-sizes.sh not found at ${validator}" >&2
+    exit 1
+  fi
+  if ! bash "$validator" "$target_abs"; then
+    exit 1
+  fi
+fi
+
 exit 0

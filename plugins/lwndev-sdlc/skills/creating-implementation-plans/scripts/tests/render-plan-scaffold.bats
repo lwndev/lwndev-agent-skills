@@ -103,14 +103,20 @@ teardown() {
   [ "$phase_blocks" -eq 4 ]
 }
 
-@test "--enforce-phase-budget: warn-only, exit 0, [warn] on stderr" {
-  run bash "$SCRIPT" "FEAT-901" --enforce-phase-budget
-  [ "$status" -eq 0 ]
-  # stderr capture: rerun while redirecting stdout to /dev/null, stderr to a file.
+@test "--enforce-phase-budget: gate passes on rendered placeholder plan, no Phase 1 placeholder warn" {
+  # Phase 3 wires --enforce-phase-budget to validate-phase-sizes.sh. A
+  # freshly-rendered scaffold has placeholder phase blocks with `[TBD]`
+  # implementation steps and a single `[ ] [TBD]` deliverable per phase —
+  # all signals score `haiku`, so the gate must pass. The script resolves
+  # validate-phase-sizes.sh as a sibling of itself (script_dir), so it
+  # picks up the real validator from the live skill tree without any
+  # symlink bookkeeping.
   stderr_file="${FIXTURE_DIR}/stderr.txt"
-  rm -f "$output"
-  bash "$SCRIPT" "FEAT-901" --enforce-phase-budget >/dev/null 2>"$stderr_file" || true
-  grep -q '^\[warn\] --enforce-phase-budget will activate once validate-phase-sizes.sh ships' "$stderr_file"
+  bash "$SCRIPT" "FEAT-901" --enforce-phase-budget >/dev/null 2>"$stderr_file"
+  rc=$?
+  [ "$rc" -eq 0 ]
+  # The Phase 1 placeholder line MUST NOT appear (Phase 3 removed it).
+  ! grep -q '^\[warn\] --enforce-phase-budget will activate once validate-phase-sizes.sh ships' "$stderr_file"
 }
 
 # --- error paths -------------------------------------------------------------
