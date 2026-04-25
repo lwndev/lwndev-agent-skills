@@ -206,6 +206,22 @@ EOF
   [[ "$output" == *'build-health check failed'* ]]
 }
 
+@test "build-health gate: shared script unresolvable → exit 1 with 'build-health gate unavailable'" {
+  # Copy preflight-checks.sh to an isolated tmp dir so PREFLIGHT_DIR's
+  # ../../../scripts relative fallback resolves to a directory without
+  # verify-build-health.sh. CLAUDE_PLUGIN_ROOT must also be unset (or point
+  # to a path without scripts/verify-build-health.sh) for the gate to fail.
+  ISOLATED="$(mktemp -d)"
+  cp "$PREFLIGHT" "${ISOLATED}/preflight-checks.sh"
+  write_git_stub "" "feat/FEAT-022-foo"
+  write_gh_stub "ok"
+  run env -u CLAUDE_PLUGIN_ROOT bash "${ISOLATED}/preflight-checks.sh"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'"status":"abort"'* ]]
+  [[ "$output" == *'build-health gate unavailable'* ]]
+  rm -rf "$ISOLATED"
+}
+
 @test "gh missing on PATH → exit 1 with missing-gh stderr" {
   # Create stub git only. Build a minimal PATH that has ONLY the directories
   # required for bash / awk / sed / mktemp / sleep / jq to resolve. We keep

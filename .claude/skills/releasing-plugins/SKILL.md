@@ -101,13 +101,13 @@ Check for the `code-review` plugin:
 
 ### 8. Run build-health verification
 
-Before pushing the release branch, run the shared build-health script (BUG-013) so a release branch never carries lint/format/test/build regressions into CI:
+Before pushing the release branch (BUG-013):
 
 ```bash
 bash plugins/lwndev-sdlc/scripts/verify-build-health.sh
 ```
 
-Detects `lint`, `format:check`, `test`, `build` from `package.json` and runs each defined script, halting on the first failure. Interactive: on a `lint` or `format:check` failure, the script offers to run `lint:fix` / `format` and re-run. If the gate exits non-zero and is not corrected, abort the release and surface the failing output to the user.
+See the script header for full semantics. If the gate exits non-zero and is not corrected, abort the release and surface the failing output to the user.
 
 ### 9. Push and open PR
 

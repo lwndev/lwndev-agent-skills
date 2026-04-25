@@ -87,9 +87,9 @@ Skills declare success and open PRs (or tag releases) while lint/format violatio
 
 ## Completion
 
-**Status:** `In Progress`
+**Status:** `Completed`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-04-25
 
 **Pull Request:** [#237](https://github.com/lwndev/lwndev-marketplace/pull/237)
 

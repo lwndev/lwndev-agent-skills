@@ -30,6 +30,7 @@
 #   - PR is not open (state: <STATE>)
 #   - PR is not mergeable (<reason>)
 #   - build-health check failed (lint / format:check / test / build)
+#   - build-health gate unavailable: verify-build-health.sh not found at <paths>
 #
 # Missing `gh` on PATH:        [error] preflight: gh CLI not found on PATH
 # `gh auth status` failure:    [error] preflight: gh CLI not authenticated (run 'gh auth login')
@@ -303,7 +304,7 @@ if [ -n "$verify_health" ]; then
     abort "build-health check failed (lint / format:check / test / build)"
   fi
 else
-  echo "[warn] preflight: verify-build-health.sh not found; skipping build-health gate." >&2
+  abort "build-health gate unavailable: verify-build-health.sh not found at \${CLAUDE_PLUGIN_ROOT:-(unset)}/scripts/ or relative fallback ${PREFLIGHT_DIR}/../../../scripts/"
 fi
 
 pr_number="$(cat "$tmpdir/pr.number")"

@@ -221,13 +221,9 @@ test_output=""
 build_output=""
 coverage_output=""
 
-# Resolve the shared build-health script's directory: this script lives at
-# plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/, and the shared
-# script is at plugins/lwndev-sdlc/scripts/. Walk up three levels.
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SHARED_SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../../../scripts" && pwd 2>/dev/null || true)"
-
-# package.json script existence helper (mirrors verify-build-health.sh).
+# package.json script existence helper. Scopes the no-jq fallback to the
+# `scripts` block via awk so that top-level keys like `"name": "lint"` or a
+# dependency named `lint` do not produce a false positive.
 have_pkg_script() {
   local name="$1"
   local pkg
@@ -238,7 +234,17 @@ have_pkg_script() {
         jq -e --arg n "$name" '.scripts[$n] // empty' "$pkg/package.json" >/dev/null 2>&1
         return $?
       fi
-      grep -Eq "\"${name}\"[[:space:]]*:" "$pkg/package.json"
+      awk '
+        /"scripts"[[:space:]]*:[[:space:]]*\{/ { in_block = 1; depth = 1; next }
+        in_block {
+          for (i = 1; i <= length($0); i++) {
+            c = substr($0, i, 1)
+            if (c == "{") depth++
+            else if (c == "}") { depth--; if (depth == 0) { in_block = 0; exit } }
+          }
+          print
+        }
+      ' "$pkg/package.json" | grep -Eq "^[[:space:]]*\"${name}\"[[:space:]]*:"
       return $?
     fi
     pkg="$(dirname "$pkg")"

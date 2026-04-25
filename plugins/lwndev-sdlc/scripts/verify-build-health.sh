@@ -2,11 +2,13 @@
 # verify-build-health.sh — Shared build-health gate for phase-completion skills (BUG-013).
 #
 # Usage:
-#   verify-build-health.sh [--no-interactive] [--include-validate]
+#   verify-build-health.sh [--no-interactive] [--include-validate] [--skip-test]
 #
 # Detects the canonical build-health scripts from `package.json` (`lint`,
 # `format:check`, `test`, `build`) and runs each detected script in that order,
-# halting on the first non-zero exit.
+# halting on the first non-zero exit. `--skip-test` excludes `test` from the
+# detection list (used by `executing-qa` Step 5.5, where the QA framework has
+# already executed the full test suite).
 #
 # Auto-fix path:
 #   In interactive mode (TTY on stdin AND no `--no-interactive`), a `lint` or
@@ -34,11 +36,12 @@
 #   1  any script failed and was not corrected by the auto-fix branch.
 #   2  malformed args.
 
-set -uo pipefail
+set -euo pipefail
 
 # ---------- arg parsing ----------
 NO_INTERACTIVE=0
 INCLUDE_VALIDATE=0
+SKIP_TEST=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -50,13 +53,17 @@ while [ $# -gt 0 ]; do
       INCLUDE_VALIDATE=1
       shift
       ;;
+    --skip-test)
+      SKIP_TEST=1
+      shift
+      ;;
     -h|--help)
-      sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
       echo "[error] verify-build-health: unknown argument: $1" >&2
-      echo "usage: verify-build-health.sh [--no-interactive] [--include-validate]" >&2
+      echo "usage: verify-build-health.sh [--no-interactive] [--include-validate] [--skip-test]" >&2
       exit 2
       ;;
   esac
@@ -115,6 +122,13 @@ script_exists() {
 HAVE_JQ=0
 if command -v jq >/dev/null 2>&1; then
   HAVE_JQ=1
+fi
+
+# Surface malformed package.json instead of silently treating it as
+# "no recognized scripts" (which the jq -e in script_exists would otherwise do).
+if [ "$HAVE_JQ" -eq 1 ] && ! jq empty "$PKG_JSON" >/dev/null 2>&1; then
+  echo "[error] verify-build-health: malformed package.json at ${PKG_JSON} (jq parse failed)" >&2
+  exit 1
 fi
 
 # ---------- runner helpers ----------
@@ -217,6 +231,9 @@ run_or_halt() {
 # ---------- detection summary ----------
 detected=()
 for s in lint format:check test build; do
+  if [ "$SKIP_TEST" -eq 1 ] && [ "$s" = "test" ]; then
+    continue
+  fi
   if script_exists "$s"; then
     detected+=("$s")
   fi
@@ -236,7 +253,9 @@ echo "[info] verify-build-health: detected scripts: ${detected[*]}" >&2
 # ---------- run sequence ----------
 run_or_halt lint        lint         lint:fix
 run_or_halt format-check format:check format
-run_or_halt test        test         ""
+if [ "$SKIP_TEST" -ne 1 ]; then
+  run_or_halt test      test         ""
+fi
 run_or_halt build       build        ""
 
 if [ "$INCLUDE_VALIDATE" -eq 1 ]; then

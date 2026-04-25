@@ -337,3 +337,88 @@ format:check" ]
   [[ "$output" == *"unknown argument"* ]]
   [[ "$output" == *"usage:"* ]]
 }
+
+# ---------- --skip-test ----------
+@test "--skip-test: test excluded from detection and run sequence" {
+  write_pkg lint format:check test build
+  set_codes
+  run bash "$VERIFY" --no-interactive --skip-test
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"detected scripts: lint format:check build"* ]]
+  log="$(cat "$TMPDIR_TEST/npm.log")"
+  [ "$log" = "lint
+format:check
+build" ]
+}
+
+@test "--skip-test with only test in package.json: graceful skip, exit 0" {
+  write_pkg test
+  set_codes
+  run bash "$VERIFY" --no-interactive --skip-test
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no recognized scripts"* ]]
+  [ ! -f "$TMPDIR_TEST/npm.log" ]
+}
+
+# ---------- malformed package.json (BUG-013 follow-up) ----------
+@test "malformed package.json (truncated): exit 1 with [error] parse line" {
+  if ! command -v jq >/dev/null 2>&1; then
+    skip "jq not available — malformed-JSON detection requires jq"
+  fi
+  cat > "$TMPDIR_TEST/package.json" <<'EOF'
+{
+  "name": "fixture",
+  "scripts": { "lint": "exit 0"
+EOF
+  run bash "$VERIFY" --no-interactive
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"[error]"* ]]
+  [[ "$output" == *"malformed package.json"* ]]
+  [ ! -f "$TMPDIR_TEST/npm.log" ]
+}
+
+@test "malformed package.json (trailing comma): exit 1 with [error] parse line" {
+  if ! command -v jq >/dev/null 2>&1; then
+    skip "jq not available — malformed-JSON detection requires jq"
+  fi
+  cat > "$TMPDIR_TEST/package.json" <<'EOF'
+{
+  "name": "fixture",
+  "scripts": {
+    "lint": "exit 0",
+  }
+}
+EOF
+  run bash "$VERIFY" --no-interactive
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"malformed package.json"* ]]
+}
+
+# ---------- missing-binary stderr passthrough ----------
+@test "lint script invokes missing binary: exit 1, stderr passthrough" {
+  write_pkg lint format:check
+  # Override the stub to emit realistic stderr from npm and exit non-zero,
+  # mimicking `npm run lint` when the script command is `not-a-real-binary`.
+  cat > "$TMPDIR_TEST/_bin/npm" <<'STUB'
+#!/usr/bin/env bash
+LOG="$TMPDIR_TEST/npm.log"
+target=""
+if [ "$1" = "test" ]; then target="test"
+elif [ "$1" = "run" ] && [ -n "${2:-}" ]; then target="$2"
+fi
+echo "$target" >> "$LOG"
+if [ "$target" = "lint" ]; then
+  echo "sh: not-a-real-binary: command not found" >&2
+  echo "npm ERR! Lifecycle script \`lint\` failed with error:" >&2
+  exit 127
+fi
+exit 0
+STUB
+  chmod +x "$TMPDIR_TEST/_bin/npm"
+  run bash "$VERIFY" --no-interactive
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not-a-real-binary: command not found"* ]]
+  [[ "$output" == *"lint (lint) failed"* ]]
+  log="$(cat "$TMPDIR_TEST/npm.log")"
+  [ "$log" = "lint" ]
+}
