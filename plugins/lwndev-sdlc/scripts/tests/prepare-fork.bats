@@ -500,7 +500,8 @@ STUB
 # (phases score [haiku, sonnet, opus, opus]). Phase 1 → haiku, Phase 2 → sonnet,
 # Phase 4 → opus. Asserts (a) the resolved tier on stdout matches the per-phase
 # tier and (b) the FR-14 echo line on stderr carries the new
-# `(workflow=<complexity>, phase=<N>=<tier>)` parenthetical suffix.
+# `(workflow=<complexity>, phase=<N>=<tier>, override=<token>)` parenthetical
+# suffix. The `override=` token preserves the dacc38e audit-trail invariant.
 
 @test "FR-8: --phase 1 --plan-file resolves implementing-plan-phases to haiku" {
   seed_state
@@ -514,7 +515,7 @@ STUB
   tier=$(cat "$stdout_file")
   [ "$tier" = "haiku" ]
   run cat "$stderr_file"
-  [[ "$output" == *"[model] step 6 (implementing-plan-phases) → haiku (workflow=medium, phase=1=haiku)"* ]]
+  [[ "$output" == *"[model] step 6 (implementing-plan-phases) → haiku (workflow=medium, phase=1=haiku, override=none)"* ]]
 }
 
 @test "FR-8: --phase 2 --plan-file resolves implementing-plan-phases to sonnet" {
@@ -529,7 +530,7 @@ STUB
   tier=$(cat "$stdout_file")
   [ "$tier" = "sonnet" ]
   run cat "$stderr_file"
-  [[ "$output" == *"phase=2=sonnet"* ]]
+  [[ "$output" == *"phase=2=sonnet, override=none"* ]]
 }
 
 @test "FR-8: --phase 4 --plan-file resolves implementing-plan-phases to opus" {
@@ -544,7 +545,26 @@ STUB
   tier=$(cat "$stdout_file")
   [ "$tier" = "opus" ]
   run cat "$stderr_file"
-  [[ "$output" == *"phase=4=opus"* ]]
+  [[ "$output" == *"phase=4=opus, override=none"* ]]
+}
+
+# Edge Case 9 + FR-8 interaction: per-phase forking with an active hard
+# override MUST surface the override token in the audit-trail line, the
+# same invariant dacc38e established for non-per-phase forks.
+
+@test "FR-8 + override: --phase 1 + --cli-model opus pins the per-phase tier and surfaces override token" {
+  seed_state
+  stdout_file="${TMPDIR_TEST}/stdout.log"
+  stderr_file="${TMPDIR_TEST}/stderr.log"
+  bash "$PREPARE_FORK" FEAT-TEST 6 implementing-plan-phases \
+    --phase 1 --plan-file "$BUDGET_MIXED_PLAN" --cli-model opus \
+    > "$stdout_file" 2> "$stderr_file"
+  status_code=$?
+  [ "$status_code" -eq 0 ]
+  tier=$(cat "$stdout_file")
+  [ "$tier" = "opus" ]
+  run cat "$stderr_file"
+  [[ "$output" == *"phase=1=opus, override=cli-model:opus"* ]]
 }
 
 # Partial-flag rejection: both --phase and --plan-file MUST be supplied

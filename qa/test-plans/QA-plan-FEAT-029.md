@@ -47,7 +47,7 @@ FEAT-029 collapses the deterministic prose inside `creating-implementation-plans
 - [P0] `split-phase-suggest.sh` on a 7-step phase with `Depends on Step 7` annotation on Step 1 (impossible constraint) — exits with diagnostic, not silent infinite loop | mode: test-framework | expected: bats case asserting bounded behavior
 - [P1] `split-phase-suggest.sh` on a 100-step phase (very large) — completes in bounded time, returns 3-way split | mode: test-framework | expected: bats timing-bounded assertion
 - [P0] `split-phase-suggest.sh` with malformed `Depends on Step <N>` annotations (e.g., `depends on step 4` lowercase, `Depends on step 4`) — does it match? (decide regex case sensitivity) | mode: test-framework | expected: bats case for parser robustness
-- [P1] `validate-phase-sizes.sh` on a plan with both an over-budget phase AND its `**ComplexityOverride:** high` clamp on the same phase — clamp wins, exit `0` | mode: test-framework | expected: bats case
+- [P1] `validate-phase-sizes.sh` on a plan with both an over-budget phase AND its `**ComplexityOverride:** opus` clamp on the same phase — clamp wins, exit `0` | mode: test-framework | expected: bats case
 - [P0] `validate-phase-sizes.sh` propagates exit `1` from `phase-complexity-budget.sh` (chained-script failure path) | mode: test-framework | expected: bats case asserting exit `1` and stderr surfaces upstream error
 - [P0] `resolve-tier ... --phase 1` (no `--plan-file`) exits `2` per the partial-supply rule | mode: test-framework | expected: vitest case in `scripts/__tests__/workflow-state.test.ts`
 - [P0] `resolve-tier ... --plan-file <path>` (no `--phase`) exits `2` per the partial-supply rule | mode: test-framework | expected: vitest case

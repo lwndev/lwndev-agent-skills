@@ -13,6 +13,10 @@
 #   * `Depends on Step 4` annotation: split boundary on a 6-step phase
 #     must not place Step 5 in a chunk that terminates before Step 4 is
 #     included.
+#   * Impossible (forward-pointing) `Depends on Step <N>` annotation
+#     where N is the step's own position or later: exits 1 with a
+#     `[error] ... impossible dependency ...` diagnostic instead of
+#     silently producing a malformed split.
 #   * Error tests: missing args → exit 2; non-existent file → exit 1;
 #     phase block missing → exit 1.
 
@@ -187,6 +191,37 @@ original_count() {
     has_step 4 "$s1"
     has_step 5 "$s1"
   fi
+}
+
+# --- impossible dependency annotations --------------------------------------
+
+@test "impossible forward-pointing dep (Step 1 depends on Step 7 in a 7-step phase): exit 1 with diagnostic" {
+  # QA-plan-FEAT-029.md flags this as P0: the constraint loop cannot
+  # satisfy a forward-pointing dependency, so the script must surface the
+  # bad annotation as an error rather than silently produce a malformed
+  # split.
+  STEP_1_TEXT="Initialize subsystem (Depends on Step 7)." \
+    f="$(make_plan 'forward-dep' 7)"
+  stderr_file="${WORK_DIR}/forward-dep-stderr.txt"
+  rc=0
+  bash "$SCRIPT" "$f" 1 >/dev/null 2>"$stderr_file" || rc=$?
+  [ "$rc" -eq 1 ]
+  grep -q '^\[error\] split-phase-suggest: phase has impossible dependency' "$stderr_file"
+  grep -q 'step 1' "$stderr_file"
+  grep -q 'Step 7' "$stderr_file"
+}
+
+@test "self-referential dep (Step 3 depends on Step 3): exit 1 with diagnostic" {
+  # A step depending on itself is also unsatisfiable; same path as the
+  # forward-pointing case.
+  STEP_3_TEXT="Self-referential (Depends on Step 3)." \
+    f="$(make_plan 'self-dep' 5)"
+  stderr_file="${WORK_DIR}/self-dep-stderr.txt"
+  rc=0
+  bash "$SCRIPT" "$f" 1 >/dev/null 2>"$stderr_file" || rc=$?
+  [ "$rc" -eq 1 ]
+  grep -q '^\[error\] split-phase-suggest: phase has impossible dependency' "$stderr_file"
+  grep -q 'step 3' "$stderr_file"
 }
 
 # --- error paths -------------------------------------------------------------

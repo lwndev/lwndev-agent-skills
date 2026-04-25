@@ -14,7 +14,7 @@
 # Output:
 #   no failing phases   stdout `ok`, exit 0
 #   one or more failing stderr lists each on its own line as
-#                       `[warn] phase <N>: over budget — <signal>=<value> exceeds opus threshold; either split (see split-phase-suggest.sh) or add **ComplexityOverride:** high to the phase block.`
+#                       `[warn] phase <N>: over budget — <signal>=<value> exceeds opus threshold; either split (see split-phase-suggest.sh) or add **ComplexityOverride:** opus to the phase block.`
 #                       stdout empty, exit 1
 #
 # Exit codes:
@@ -66,7 +66,7 @@ emit_fail() {
   local n="$1"
   local signal="$2"
   local value="$3"
-  local line="[warn] phase ${n}: over budget — ${signal}=${value} exceeds opus threshold; either split (see split-phase-suggest.sh) or add **ComplexityOverride:** high to the phase block."
+  local line="[warn] phase ${n}: over budget — ${signal}=${value} exceeds opus threshold; either split (see split-phase-suggest.sh) or add **ComplexityOverride:** opus to the phase block."
   if [ -z "$fail_lines" ]; then
     fail_lines="$line"
   else
@@ -100,10 +100,10 @@ if command -v jq >/dev/null 2>&1; then
     fi
   done < <(printf '%s' "$json" | jq -r '.[] | [.phase,(.overBudget|tostring),(.override|tostring),.signals.steps,.signals.deliverables,.signals.files] | @tsv')
 else
-  # Pure-awk fallback: split the flat array on `},{` boundaries and grep
-  # the numeric fields out of each object. Capture into a variable so the
-  # `while read` loop runs in the current shell (the subshell pipe form
-  # would lose any `fail_lines` mutations).
+  # Pure-awk fallback: walk the flat array, tracking brace depth so the
+  # nested `signals` sub-object does not split the parent record. Capture
+  # into a variable so the `while read` loop runs in the current shell
+  # (the subshell pipe form would lose any `fail_lines` mutations).
   rows="$(printf '%s' "$json" | awk '
     {
       s = $0
@@ -111,12 +111,22 @@ else
       sub(/^[[:space:]]*\[/, "", s)
       sub(/\][[:space:]]*$/, "", s)
       while (length(s) > 0) {
-        # Find the next "}" — objects are flat (no nested braces).
-        i = index(s, "}")
-        if (i == 0) break
-        obj = substr(s, 1, i)
-        s = substr(s, i + 1)
-        sub(/^[ ,]+/, "", s)
+        sub(/^[[:space:]]*,?[[:space:]]*/, "", s)
+        if (length(s) == 0) break
+        # Walk to the matching `}` at depth 0; each phase record contains
+        # a nested `signals` sub-object that a flat index() would mis-cut.
+        depth = 0; end_pos = 0
+        for (j = 1; j <= length(s); j++) {
+          c = substr(s, j, 1)
+          if (c == "{") depth++
+          else if (c == "}") {
+            depth--
+            if (depth == 0) { end_pos = j; break }
+          }
+        }
+        if (end_pos == 0) break
+        obj = substr(s, 1, end_pos)
+        s = substr(s, end_pos + 1)
         # Extract phase number.
         if (match(obj, /"phase":[0-9]+/)) {
           p = substr(obj, RSTART + 8, RLENGTH - 8)
@@ -128,7 +138,7 @@ else
         else if (match(obj, /"override":"[^"]*"/)) {
           ovr = substr(obj, RSTART + 12, RLENGTH - 13)
         } else { ovr = "null" }
-        # steps, deliverables, files
+        # steps, deliverables, files (live inside the nested signals object).
         st = ""; dv = ""; fl = ""
         if (match(obj, /"steps":[0-9]+/)) st = substr(obj, RSTART + 8, RLENGTH - 8)
         if (match(obj, /"deliverables":[0-9]+/)) dv = substr(obj, RSTART + 15, RLENGTH - 15)

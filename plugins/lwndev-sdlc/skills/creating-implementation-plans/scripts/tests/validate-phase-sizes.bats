@@ -6,12 +6,16 @@
 #     exit 0.
 #   * One over-budget phase (no override) → exit 1, stderr contains the
 #     documented `[warn] phase <N>: over budget — ...` line for that
-#     phase only.
+#     phase only, and the suggestion uses **ComplexityOverride:** opus
+#     (the only value `phase-complexity-budget.sh` accepts).
 #   * Override clamps an over-budget phase → that phase passes the gate;
 #     stdout `ok` if no other failures.
 #   * Multiple over-budget phases → stderr lists each on its own line,
 #     exit 1.
 #   * Missing arg → exit 2; non-existent file → exit 1.
+#   * awk fallback parity: with `jq` hidden from PATH the same plan
+#     yields the same warning (the awk parser must walk nested `{}` in
+#     the per-phase `signals` sub-object, not bail at the first `}`).
 
 setup() {
   SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/.." && pwd)"
@@ -84,6 +88,11 @@ write_phase() {
   [ ! -s "$stdout_file" ]
   grep -q '^\[warn\] phase 2: over budget' "$stderr_file"
   grep -q 'steps=9 exceeds opus threshold' "$stderr_file"
+  # The suggested override value MUST be one phase-complexity-budget.sh
+  # accepts (haiku|sonnet|opus). `high` is invalid and would fail on the
+  # next run.
+  grep -q '\*\*ComplexityOverride:\*\* opus' "$stderr_file"
+  ! grep -q '\*\*ComplexityOverride:\*\* high' "$stderr_file"
   ! grep -q '^\[warn\] phase 1:' "$stderr_file"
 }
 
@@ -112,6 +121,39 @@ write_phase() {
   ! grep -q '^\[warn\] phase 2:' "$stderr_file"
   count=$(grep -c '^\[warn\] phase ' "$stderr_file")
   [ "$count" -eq 2 ]
+}
+
+# --- awk fallback (no jq) ---------------------------------------------------
+
+mk_no_jq_path() {
+  # Mirror coreutils into a tmpdir so the script can still exec dirname,
+  # awk, sed, grep, etc., but `command -v jq` returns false. This is the
+  # only way to exercise the awk branch on systems where jq lives in a
+  # PATH dir we can't carve up otherwise.
+  local d="$1"
+  mkdir -p "$d"
+  for tool in awk sed grep cat printf cut sort uniq head tail tr dirname basename mkdir rm chmod test ls find xargs wc bash sh dash env date stat tee; do
+    local src
+    src="$(command -v "$tool" 2>/dev/null)"
+    [ -n "$src" ] && ln -sf "$src" "$d/$tool"
+  done
+}
+
+@test "awk fallback (no jq) detects over-budget phase: matches jq-path output" {
+  f="${WORK_DIR}/over-awk.md"
+  printf '# Plan\n' > "$f"
+  write_phase "$f" 1 "Small" 3 3
+  write_phase "$f" 2 "Big" 9 2
+  no_jq_dir="${WORK_DIR}/nojq-bin"
+  mk_no_jq_path "$no_jq_dir"
+  stderr_file="${WORK_DIR}/awk-stderr.txt"
+  rc=0
+  PATH="$no_jq_dir" bash "$SCRIPT" "$f" >/dev/null 2>"$stderr_file" || rc=$?
+  [ "$rc" -eq 1 ]
+  grep -q '^\[warn\] phase 2: over budget' "$stderr_file"
+  grep -q 'steps=9 exceeds opus threshold' "$stderr_file"
+  grep -q '\*\*ComplexityOverride:\*\* opus' "$stderr_file"
+  ! grep -q '^\[warn\] phase 1:' "$stderr_file"
 }
 
 # --- error paths ------------------------------------------------------------

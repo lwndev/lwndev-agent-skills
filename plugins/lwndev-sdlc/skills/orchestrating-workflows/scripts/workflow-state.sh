@@ -360,21 +360,6 @@ _extract_category() {
   echo "$raw"
 }
 
-# Count implementation-plan phases. Plan files use `### Phase N:` headings.
-# Returns empty string if the plan file is absent or has zero phases.
-_count_phases() {
-  local plan="$1"
-  [[ -f "$plan" ]] || { echo ""; return; }
-
-  local count
-  count=$(grep -cE '^### Phase [0-9]+' "$plan" 2>/dev/null || true)
-  if [[ "$count" -gt 0 ]]; then
-    echo "$count"
-  else
-    echo ""
-  fi
-}
-
 # Check whether the Non-Functional Requirements section mentions any
 # security / authentication / performance concern. Uses word-boundary
 # matching (delimited by non-letter characters) rather than substring
@@ -604,16 +589,62 @@ _classify_feature_init() {
   echo "$base"
 }
 
+# Compute the post-plan complexity for a feature plan. FEAT-029 FR-9
+# replaces the legacy raw-phase-count buckets (1→low, 2-3→medium, 4+→high)
+# with a max-of-per-phase-tiers calculation: invoke phase-complexity-budget.sh,
+# take max(tier) under the haiku < sonnet < opus ordering, and map back to
+# the work-item complexity vocabulary (haiku→low, sonnet→medium, opus→high).
+#
+# Returns the complexity on stdout. Returns the empty string on any failure
+# (missing plan, budget script absent, jq unavailable, malformed payload) so
+# the caller can preserve the persisted init-stage tier per NFR-5 / Edge Case 9.
+# Pure computation — no persistence, no audit-trail emission. Both
+# `cmd_classify_post_plan` (fresh path) and `cmd_resume_recompute` (resume
+# path) call this helper so they cannot diverge.
 _classify_feature_post_plan() {
   local plan="$1"
-  local phases
-  phases=$(_count_phases "$plan")
-  if [[ -z "$phases" ]]; then
-    echo ""  # caller preserves persisted tier (NFR-5)
+  if [[ -z "$plan" || ! -f "$plan" ]]; then
+    echo ""
     return
   fi
-  # Feature phase thresholds: 1 low, 2–3 medium, 4+ high.
-  _bucket_count "$phases" 1 3
+
+  local pcb_script
+  pcb_script="${CLAUDE_PLUGIN_ROOT:-${WORKFLOW_STATE_PLUGIN_ROOT:-}}/skills/creating-implementation-plans/scripts/phase-complexity-budget.sh"
+  if [[ ! -x "$pcb_script" ]]; then
+    local self_dir
+    self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+    pcb_script="${self_dir}/creating-implementation-plans/scripts/phase-complexity-budget.sh"
+  fi
+
+  local pcb_out pcb_rc=0
+  pcb_out=$(bash "$pcb_script" "$plan" 2>/dev/null) || pcb_rc=$?
+  if [[ "$pcb_rc" -ne 0 ]]; then
+    echo ""
+    return
+  fi
+
+  local tiers
+  tiers=$(echo "$pcb_out" | jq -r '[.[].tier] | unique | .[]' 2>/dev/null) || tiers=""
+  if [[ -z "$tiers" ]]; then
+    echo ""
+    return
+  fi
+
+  local t max_tier="haiku"
+  while IFS= read -r t; do
+    [[ -z "$t" ]] && continue
+    case "$t" in
+      sonnet) [[ "$max_tier" == "haiku" ]] && max_tier="sonnet" ;;
+      opus) max_tier="opus" ;;
+    esac
+  done <<< "$tiers"
+
+  case "$max_tier" in
+    haiku) echo "low" ;;
+    sonnet) echo "medium" ;;
+    opus) echo "high" ;;
+    *) echo "" ;;
+  esac
 }
 
 cmd_classify_init() {
@@ -668,72 +699,20 @@ cmd_classify_post_plan() {
   local persisted
   persisted=$(jq -r '.complexity // ""' "$file")
 
-  # FEAT-029 FR-9: replace the raw-phase-count mapping with a
-  # max-of-per-phase-tiers calculation. Invoke phase-complexity-budget.sh on
-  # the plan, parse the JSON-array stdout, take max(tier) under the
-  # haiku < sonnet < opus ordering, then map back to the work-item
-  # complexity vocabulary (haiku→low, sonnet→medium, opus→high).
-  #
-  # On non-zero exit (Edge Case 9): emit a [warn] line, preserve the persisted
-  # init-stage complexity unchanged, exit 0 (graceful degradation matches FR-6).
-  local pcb_script="${CLAUDE_PLUGIN_ROOT:-${WORKFLOW_STATE_PLUGIN_ROOT:-}}/skills/creating-implementation-plans/scripts/phase-complexity-budget.sh"
-  if [[ ! -x "$pcb_script" ]]; then
-    local self_dir
-    self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-    pcb_script="${self_dir}/creating-implementation-plans/scripts/phase-complexity-budget.sh"
-  fi
-
-  local pcb_out pcb_rc max_tier="" new_tier=""
-  if [[ -n "$plan" && -f "$plan" ]]; then
-    pcb_out=$(bash "$pcb_script" "$plan" 2>/dev/null) && pcb_rc=0 || pcb_rc=$?
-  else
-    pcb_rc=1
-  fi
-
-  if [[ "$pcb_rc" -ne 0 ]]; then
-    # Failure path: warn + preserve persisted + exit 0.
-    local fallback_tier="${persisted:-medium}"
-    echo "[warn] classify-post-plan: phase-complexity-budget failed; preserving init-stage complexity ${fallback_tier}." >&2
-    echo "$fallback_tier"
-    return 0
-  fi
-
-  # Walk the JSON array and compute max(tier). Pure-bash fallback if jq is
-  # unavailable would also work, but jq is a hard dependency throughout the
-  # script so we use it directly.
-  local tiers
-  tiers=$(echo "$pcb_out" | jq -r '[.[].tier] | unique | .[]' 2>/dev/null) || tiers=""
-  if [[ -z "$tiers" ]]; then
-    # Empty / malformed payload — same Edge Case 9 fallback.
-    local fallback_tier="${persisted:-medium}"
-    echo "[warn] classify-post-plan: phase-complexity-budget failed; preserving init-stage complexity ${fallback_tier}." >&2
-    echo "$fallback_tier"
-    return 0
-  fi
-
-  # Tier ordering: haiku < sonnet < opus.
-  local t
-  max_tier="haiku"
-  while IFS= read -r t; do
-    [[ -z "$t" ]] && continue
-    case "$t" in
-      sonnet) [[ "$max_tier" == "haiku" ]] && max_tier="sonnet" ;;
-      opus) max_tier="opus" ;;
-    esac
-  done <<< "$tiers"
-
-  # Map tier → complexity.
-  case "$max_tier" in
-    haiku) new_tier="low" ;;
-    sonnet) new_tier="medium" ;;
-    opus) new_tier="high" ;;
-    *) new_tier="" ;;
-  esac
+  # FEAT-029 FR-9: max-of-per-phase-tiers computation lives in
+  # `_classify_feature_post_plan` (shared with `cmd_resume_recompute` so the
+  # fresh and resume paths cannot drift). On any failure (missing plan,
+  # budget script unavailable, malformed payload), the helper returns "" and
+  # we degrade gracefully: emit a [warn] line, preserve the persisted
+  # init-stage complexity unchanged, exit 0 (Edge Case 9 / FR-6).
+  local new_tier
+  new_tier=$(_classify_feature_post_plan "$plan")
 
   if [[ -z "$new_tier" ]]; then
-    # Defensive — shouldn't happen given the case above.
-    echo "${persisted:-medium}"
-    return
+    local fallback_tier="${persisted:-medium}"
+    echo "[warn] classify-post-plan: phase-complexity-budget failed; preserving init-stage complexity ${fallback_tier}." >&2
+    echo "$fallback_tier"
+    return 0
   fi
 
   # Upgrade-only max(persisted, new_tier). If persisted is unset, use new.

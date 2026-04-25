@@ -148,7 +148,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/orchestrating-workflows/scripts/workflow-stat
 - Invoke `phase-complexity-budget.sh <plan-file>` (FR-3) internally and inspect the per-phase JSON array. A phase **fails the gate** when:
   - `overBudget == true` (any single signal independently scored `opus`)
   - AND the phase has no `**ComplexityOverride:** <tier>` line clamping it.
-- For each failing phase, emit `[warn] phase <N>: over budget — <signal>=<value> exceeds <tier> threshold; either split (see split-phase-suggest.sh) or add **ComplexityOverride:** high to the phase block.` to stderr.
+- For each failing phase, emit `[warn] phase <N>: over budget — <signal>=<value> exceeds <tier> threshold; either split (see split-phase-suggest.sh) or add **ComplexityOverride:** opus to the phase block.` to stderr.
 - Stdout on success (no failing phases): `ok`. Exit `0`.
 - Stdout on failure (one or more failing phases): nothing on stdout; stderr lists every offending phase. Exit `1`.
 - Designed as the last step of `render-plan-scaffold.sh` (FR-1, when `--enforce-phase-budget` is passed) and as a verification-checklist item in the rewritten `creating-implementation-plans/SKILL.md`. The two callers reuse the same script.
@@ -249,7 +249,7 @@ ok
 ```
 On failure (stderr):
 ```text
-[warn] phase 3: over budget — steps=9 exceeds opus threshold; either split (see split-phase-suggest.sh) or add **ComplexityOverride:** high to the phase block.
+[warn] phase 3: over budget — steps=9 exceeds opus threshold; either split (see split-phase-suggest.sh) or add **ComplexityOverride:** opus to the phase block.
 ```
 
 `workflow-state.sh resolve-tier --phase N --plan-file <path>`:

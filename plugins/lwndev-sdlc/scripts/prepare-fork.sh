@@ -407,15 +407,17 @@ fi
 
 # FEAT-029 FR-8: per-phase format extension. When the fork is for
 # implementing-plan-phases AND --phase/--plan-file were both supplied, emit a
-# distinct echo line that surfaces the workflow-level complexity and the
-# per-phase tier separately:
-#   [model] step <N> (implementing-plan-phases) → <tier> (workflow=<complexity>, phase=<N>=<phase-tier>)
+# distinct echo line that surfaces the workflow-level complexity, the
+# per-phase tier, and the active override token:
+#   [model] step <N> (implementing-plan-phases) → <tier> (workflow=<complexity>, phase=<N>=<phase-tier>, override=<override-or-none>)
 # `phase-tier` is read from the captured resolve-tier stdout, which already
 # carries the per-phase value (baseline=haiku, no override → tier == per-phase
-# tier). For all other forks (including implementing-plan-phases without
-# --phase) the FEAT-021 format is preserved unchanged.
+# tier). The `override=` token preserves the FEAT-021 dacc38e audit-trail
+# invariant: any active hard or soft override stays visible. For all other
+# forks (including implementing-plan-phases without --phase) the FEAT-021
+# format is preserved unchanged.
 if [[ "$skill" == "implementing-plan-phases" && -n "$phase" && -n "$plan_file" ]]; then
-  echo "[model] step ${step_index} (${skill}) → ${tier} (workflow=${wi_complexity}, phase=${phase}=${tier})" >&2
+  echo "[model] step ${step_index} (${skill}) → ${tier} (workflow=${wi_complexity}, phase=${phase}=${tier}, override=${override_token})" >&2
 elif [[ "$locked" == "true" && "$tier" == "$baseline" ]]; then
   echo "[model] step ${step_index} (${skill}) → ${tier} (baseline=${baseline}, baseline-locked)" >&2
 else

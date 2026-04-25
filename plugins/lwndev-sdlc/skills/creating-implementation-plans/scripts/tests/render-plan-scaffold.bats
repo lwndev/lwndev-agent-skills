@@ -9,8 +9,9 @@
 #     from the primary feature's name.
 #   * Whitespace tolerance: `FEAT-XXX, FEAT-YYY` parses identically to the
 #     no-space form.
-#   * --enforce-phase-budget warn-only: stderr contains the documented
-#     [warn] line, exit 0.
+#   * --enforce-phase-budget: gate passes on the rendered placeholder
+#     plan and Phase 3 removed the Phase 1 placeholder warn line, so
+#     stderr MUST NOT contain that warn line; exit 0.
 #   * Error paths: missing arg → exit 2; malformed FEAT-IDs → exit 2;
 #     target file already exists → exit 2; resolver failure → exit 1 with
 #     resolver stderr surfaced.

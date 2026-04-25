@@ -2254,6 +2254,42 @@ describe('workflow-state.sh', () => {
           expect(post.complexity).toBe('high');
         });
 
+        it('uses max-of-per-phase-tiers (FR-9), not legacy raw-phase-count, on the post-plan branch', () => {
+          // Divergence fixture: feature-low-plan-4phase.md has four empty
+          // phases. Legacy raw-phase-count → "high" (4+ phases). FR-9
+          // max-of-per-phase-tiers → "low" (every phase scores haiku).
+          // Persist {complexity: low, complexityStage: post-plan} so the
+          // resume path enters the feature post-plan branch, then verify
+          // resume returns "low" — not "high" (which would prove the legacy
+          // algorithm is still wired to the resume path).
+          runJSON('init FEAT-707 feature');
+          mkdirSync(join(testDir, 'requirements/features'), { recursive: true });
+          const featContent = execSync(`cat "${fixturePath('feature-low.md')}"`, {
+            encoding: 'utf-8',
+          });
+          writeFileSync(join(testDir, 'requirements/features/FEAT-707.md'), featContent);
+
+          // Force {complexity: low, complexityStage: post-plan} directly so
+          // the resume path is forced to recompute the post-plan tier.
+          const stateFile = join(testDir, '.sdlc/workflows/FEAT-707.json');
+          const state = JSON.parse(execSync(`cat "${stateFile}"`, { encoding: 'utf-8' }));
+          state.complexity = 'low';
+          state.complexityStage = 'post-plan';
+          writeFileSync(stateFile, JSON.stringify(state));
+
+          mkdirSync(join(testDir, 'requirements/implementation'), { recursive: true });
+          const planContent = execSync(`cat "${fixturePath('feature-low-plan-4phase.md')}"`, {
+            encoding: 'utf-8',
+          });
+          writeFileSync(join(testDir, 'requirements/implementation/FEAT-707-plan.md'), planContent);
+
+          const tier = run('resume-recompute FEAT-707');
+          expect(tier).toBe('low');
+          const after = readState('FEAT-707');
+          expect(after.complexity).toBe('low');
+          expect(after.complexityStage).toBe('post-plan');
+        });
+
         it('populates complexity on a freshly-migrated legacy state file', () => {
           // Write a legacy state file (FR-13) with no FEAT-014 fields at all.
           mkdirSync(join(testDir, '.sdlc/workflows'), { recursive: true });

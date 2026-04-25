@@ -196,7 +196,7 @@ This phase also flips the warn-only `--enforce-phase-budget` flag in `render-pla
    - Shebang `#!/usr/bin/env bash`; `set -euo pipefail`; Bash 3.2-compatible.
    - Top-of-file comment block: purpose, signature `validate-phase-sizes.sh <plan-file>`, exit codes (`0` ok / `1` one or more failing phases or plan I/O error / `2` missing arg).
    - Invoke `${CLAUDE_PLUGIN_ROOT}/skills/creating-implementation-plans/scripts/phase-complexity-budget.sh <plan-file>` (FR-3); parse the JSON array (use `jq` when available; pure-bash fallback otherwise).
-   - For every phase where `overBudget == true` and `override == null`, emit `[warn] phase <N>: over budget — <signal>=<value> exceeds opus threshold; either split (see split-phase-suggest.sh) or add **ComplexityOverride:** high to the phase block.` to stderr. Pick the dominant signal (the one that scored opus first by axis-precedence: steps > deliverables > files); when multiple axes scored opus, list the highest-scoring one.
+   - For every phase where `overBudget == true` and `override == null`, emit `[warn] phase <N>: over budget — <signal>=<value> exceeds opus threshold; either split (see split-phase-suggest.sh) or add **ComplexityOverride:** opus to the phase block.` to stderr. Pick the dominant signal (the one that scored opus first by axis-precedence: steps > deliverables > files); when multiple axes scored opus, list the highest-scoring one.
    - On no failing phases: stdout `ok`, exit `0`. On one or more failing phases: nothing on stdout, stderr lists every offender, exit `1`.
    - `chmod +x`.
 

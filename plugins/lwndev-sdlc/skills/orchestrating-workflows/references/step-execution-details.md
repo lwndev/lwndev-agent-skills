@@ -172,7 +172,7 @@ After step 5 (documenting-qa) completes:
      "${cli_model_for_args[@]}")
    ```
 
-   The script emits the FR-14 echo line to stderr automatically: `[model] step {stepIndex} (implementing-plan-phases, phase {phase-number}) → {tier} (baseline=haiku, wi-complexity={complexity}, phase={phase-number}={phase-tier}, override={override-or-none})`. The `phase=N=<tier>` suffix is FEAT-029 FR-8.
+   The script emits the FR-14 echo line to stderr automatically: `[model] step {stepIndex} (implementing-plan-phases) → {tier} (workflow={complexity}, phase={phase-number}={phase-tier}, override={override-or-none})`. The `phase=N=<tier>` suffix is FEAT-029 FR-8; the `override=` token preserves the FEAT-021 dacc38e audit-trail invariant (any active override stays visible).
 
    **c. Fork `implementing-plan-phases`** with the Agent tool. The prompt must include:
    - The SKILL.md content from `${CLAUDE_PLUGIN_ROOT}/skills/implementing-plan-phases/SKILL.md`

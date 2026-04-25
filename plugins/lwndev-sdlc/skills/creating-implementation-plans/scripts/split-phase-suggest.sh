@@ -232,6 +232,24 @@ while [ "$i" -lt "$step_count" ]; do
 done
 
 # ---------------------------------------------------------------------------
+# Reject impossible dependency annotations: a step cannot declare a
+# `Depends on Step <N>` where N is the step's own position or a later
+# step (forward-pointing). Such constraints are unsatisfiable in any
+# chunking, and the constraint loop below would silently swallow them.
+# Surface a diagnostic so the model can repair the plan instead.
+# ---------------------------------------------------------------------------
+i=0
+while [ "$i" -lt "$step_count" ]; do
+  p="${prereq[$i]}"
+  step_num=$((i + 1))
+  if [ "$p" -gt 0 ] && [ "$p" -ge "$step_num" ]; then
+    printf '[error] split-phase-suggest: phase has impossible dependency — step %d declares "Depends on Step %d" (>= own position).\n' "$step_num" "$p" >&2
+    exit 1
+  fi
+  i=$((i + 1))
+done
+
+# ---------------------------------------------------------------------------
 # Compute initial chunk boundaries (1-based, inclusive end indices) by
 # spreading `step_count` items across `arity` chunks within ±1.
 # ---------------------------------------------------------------------------
