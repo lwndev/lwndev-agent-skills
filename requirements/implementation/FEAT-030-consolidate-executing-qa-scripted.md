@@ -17,7 +17,7 @@ The build order mirrors issue #242's "Build order" section verbatim. Phase 2 shi
 ### Phase 1: Lock the QA return contract (FR-1)
 
 **Feature:** [FEAT-030](../features/FEAT-030-consolidate-executing-qa-scripted.md) | [#242](https://github.com/lwndev/lwndev-marketplace/issues/242)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** none
 
 #### Rationale
@@ -47,7 +47,7 @@ The contract has three parts that must all be specified before Phase 2 ships: (1
 ### Phase 2: Producer scripts (FR-3 through FR-8)
 
 **Feature:** [FEAT-030](../features/FEAT-030-consolidate-executing-qa-scripted.md) | [#242](https://github.com/lwndev/lwndev-marketplace/issues/242)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 1
 **ComplexityOverride:** opus
 
@@ -79,18 +79,18 @@ Each script is independent in implementation and ships with a `*.bats` sibling. 
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/capability-report-diff.sh`
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/check-branch-diff.sh`
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/run-framework.sh`
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/qa-reconcile-delta.sh`
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/render-qa-results.sh`
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/commit-qa-tests.sh`
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/capability-report-diff.bats`
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/check-branch-diff.bats`
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/run-framework.bats`
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/qa-reconcile-delta.bats`
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/render-qa-results.bats`
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/commit-qa-tests.bats`
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/capability-report-diff.sh`
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/check-branch-diff.sh`
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/run-framework.sh`
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/qa-reconcile-delta.sh`
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/render-qa-results.sh`
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/commit-qa-tests.sh`
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/capability-report-diff.bats`
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/check-branch-diff.bats`
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/run-framework.bats`
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/qa-reconcile-delta.bats`
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/render-qa-results.bats`
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/commit-qa-tests.bats`
 
 ---
 
