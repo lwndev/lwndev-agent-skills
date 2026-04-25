@@ -3,12 +3,16 @@
 #
 # Usage: preflight-checks.sh
 #
-# Runs three read-only checks in parallel:
+# Runs three read-only checks in parallel, then a sequential build-health
+# gate (BUG-013) once the parallel checks pass:
 #   1. `git status --porcelain` must be empty (clean working directory).
 #   2. `git branch --show-current` must NOT be `main` or `master`.
 #   3. `gh pr view --json number,title,state,mergeable,url` must return an
 #      OPEN PR with `mergeable` in {MERGEABLE, UNKNOWN}. On UNKNOWN, sleep 2
 #      and retry once. If still UNKNOWN, accept and emit a stderr info note.
+#   4. Shared `verify-build-health.sh --no-interactive` must exit 0 (lint /
+#      format:check / test / build all pass, or graceful skip when no
+#      package.json / npm absent).
 #
 # Output:
 #   On success: single-line JSON on stdout
@@ -25,12 +29,13 @@
 #   - no PR found for current branch
 #   - PR is not open (state: <STATE>)
 #   - PR is not mergeable (<reason>)
+#   - build-health check failed (lint / format:check / test / build)
 #
 # Missing `gh` on PATH:        [error] preflight: gh CLI not found on PATH
 # `gh auth status` failure:    [error] preflight: gh CLI not authenticated (run 'gh auth login')
 #
 # Exit codes:
-#   0  all three checks passed (prints ok JSON)
+#   0  all checks passed (prints ok JSON)
 #   1  any check aborted (prints abort JSON + [error] stderr)
 
 set -euo pipefail
@@ -279,7 +284,28 @@ if [ "$rc_pr" -ne 0 ]; then
   esac
 fi
 
-# All three checks passed. Compose success JSON.
+# All three checks passed. Run the shared build-health gate before
+# composing the success JSON. The shared script lives at
+# plugins/lwndev-sdlc/scripts/verify-build-health.sh and may be invoked
+# from either the cached plugin location (CLAUDE_PLUGIN_ROOT) or the
+# in-repo location when this script runs from the marketplace checkout.
+PREFLIGHT_DIR="$(cd "$(dirname "$0")" && pwd)"
+verify_health=""
+if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/scripts/verify-build-health.sh" ]; then
+  verify_health="${CLAUDE_PLUGIN_ROOT}/scripts/verify-build-health.sh"
+elif [ -f "${PREFLIGHT_DIR}/../../../scripts/verify-build-health.sh" ]; then
+  verify_health="$(cd "${PREFLIGHT_DIR}/../../../scripts" && pwd)/verify-build-health.sh"
+fi
+
+if [ -n "$verify_health" ]; then
+  echo "[info] preflight: running verify-build-health.sh --no-interactive ..." >&2
+  if ! bash "$verify_health" --no-interactive; then
+    abort "build-health check failed (lint / format:check / test / build)"
+  fi
+else
+  echo "[warn] preflight: verify-build-health.sh not found; skipping build-health gate." >&2
+fi
+
 pr_number="$(cat "$tmpdir/pr.number")"
 pr_title="$(cat "$tmpdir/pr.title")"
 pr_url="$(cat "$tmpdir/pr.url")"

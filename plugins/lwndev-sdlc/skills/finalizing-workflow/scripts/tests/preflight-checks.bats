@@ -11,6 +11,15 @@ setup() {
   # Put stubs first on PATH; keep the rest of PATH intact so jq / sed / awk /
   # bash / sleep / mktemp remain resolvable.
   export PATH="${STUB_DIR}:${PATH}"
+
+  # Default: stub npm to always succeed so the build-health gate (BUG-013) is
+  # a no-op under tests that don't explicitly exercise it. Tests that need to
+  # simulate a failing build-health stage overwrite this stub.
+  cat > "${STUB_DIR}/npm" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+  chmod +x "${STUB_DIR}/npm"
 }
 
 teardown() {
@@ -178,6 +187,23 @@ EOF
   err_content="$(cat "${STUB_DIR}/err")"
   [[ "$err_content" == *'[info] PR mergeable state UNKNOWN after retry'* ]]
   [[ "$err_content" == *'proceeding'* ]]
+}
+
+@test "build-health gate: npm script fails → exit 1 with 'build-health check failed'" {
+  write_git_stub "" "feat/FEAT-022-foo"
+  write_gh_stub "ok"
+  # Override the default success npm stub with a failing one. The gate runs
+  # in --no-interactive mode so the auto-fix branch is suppressed.
+  cat > "${STUB_DIR}/npm" <<'EOF'
+#!/usr/bin/env bash
+echo "stub-npm: simulated lint failure" >&2
+exit 1
+EOF
+  chmod +x "${STUB_DIR}/npm"
+  run bash "$PREFLIGHT"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'"status":"abort"'* ]]
+  [[ "$output" == *'build-health check failed'* ]]
 }
 
 @test "gh missing on PATH → exit 1 with missing-gh stderr" {
