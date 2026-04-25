@@ -45,18 +45,21 @@ describe('creating-implementation-plans skill', () => {
       expect(skillMd).toMatch(/^---\s*\n[\s\S]*?allowed-tools:[\s\S]*?---/);
     });
 
-    it('should include Read, Write, Edit, Glob, Grep', () => {
+    it('should include Read, Write, Edit, Bash, Glob, Grep', () => {
       const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
       expect(frontmatter).toContain('- Read');
       expect(frontmatter).toContain('- Write');
       expect(frontmatter).toContain('- Edit');
+      // FEAT-029 FR-1/FR-2/FR-5 invoke skill-scoped scripts via bash.
+      expect(frontmatter).toContain('- Bash');
       expect(frontmatter).toContain('- Glob');
       expect(frontmatter).toContain('- Grep');
     });
 
-    it('should NOT include Bash or Agent', () => {
+    it('should NOT include Agent', () => {
+      // Bash was added in FEAT-029 (FR-1/FR-2/FR-5 script invocations);
+      // Agent remains forbidden — this skill does not fork subagents.
       const frontmatter = skillMd.match(/^---\s*\n([\s\S]*?)---/)?.[1] ?? '';
-      expect(frontmatter).not.toContain('- Bash');
       expect(frontmatter).not.toContain('- Agent');
     });
   });

@@ -294,21 +294,32 @@ This stage runs exactly once in a feature chain, after step 3
 resolves its tier. It is **upgrade-only**: it can never downgrade the tier
 computed at init.
 
+Per FEAT-029 FR-9, the post-plan classifier is the `max` of the per-phase
+tiers scored by `phase-complexity-budget.sh` (FEAT-029 FR-3) — not the raw
+phase count. Splitting a phase for clarity therefore *distributes* work
+across cheaper forks instead of upgrading the tier on phase-count alone.
+
 ```text
 read the implementation plan at requirements/implementation/{ID}-*.md
-count `### Phase N:` headings
-→ 1 phase                → low
-→ 2–3 phases             → medium
-→ 4+ phases              → high
-→ plan absent or 0 phases → NFR-5: retain persisted init-stage tier,
-                            log warning, do not upgrade
+for each `### Phase N:` block:
+  per_phase_tier = phase-complexity-budget.sh <plan-file> --phase N
+plan_tier = max(per_phase_tier_1, per_phase_tier_2, ...)
+→ plan absent or 0 phases             → NFR-5: retain persisted init-stage
+                                         tier, log warning, do not upgrade
+→ phase-complexity-budget.sh failure  → fall back to persisted init-stage
+                                         tier, emit `[warn]` line, do not
+                                         upgrade (graceful degradation)
 
-new_tier = max(persisted_complexity, phase_count_tier)   # upgrade-only
+new_tier = max(persisted_complexity, plan_tier)   # upgrade-only
 if new_tier != persisted_complexity:
   persist new_tier, set complexityStage = "post-plan", emit upgrade log
 else:
   proceed silently with persisted tier
 ```
+
+A `**ComplexityOverride:** <tier>` line on a phase block clamps that
+phase's per-phase tier outright (FEAT-029 FR-3 escape hatch); the override
+participates in the `max` like any other per-phase tier.
 
 Chore and bug chains have no post-plan stage — all their signals are
 init-stage.
@@ -341,10 +352,18 @@ Guidance for tuning decisions:
   `reviewing-requirements` or `creating-implementation-plans` to `haiku`,
   run a shadow comparison across a sample of real workflows and confirm
   the artifacts are indistinguishable.
-- **Do not drop `implementing-plan-phases` below `sonnet`** — phases are
-  the highest-risk fork in the chain (multi-file edits, test runs, commit
-  boundaries). Even "trivial" phases routinely touch code paths where a
-  wrong rename propagates silently.
+- **`implementing-plan-phases` baseline is `haiku` with a per-phase floor.**
+  As of FEAT-029 FR-7, the baseline is `haiku`, not `sonnet`. The
+  per-phase classifier (`phase-complexity-budget.sh`, FEAT-029 FR-3)
+  upgrades the resolved tier per phase based on scored signals: phases
+  that touch schemas, migrations, or multiple skills upgrade to `sonnet`
+  or `opus` automatically; mechanical phases stay on `haiku`. Tune the
+  per-phase floor by editing `_step_baseline` in `workflow-state.sh` (the
+  baseline is the floor under which no per-phase upgrade can sink) and
+  the budget table at the top of `phase-complexity-budget.sh` (the
+  signal-to-tier thresholds). Pre-FEAT-029 guidance "do not drop
+  `implementing-plan-phases` below `sonnet`" is retired — the per-phase
+  floor handles the safety case the prior caution was protecting.
 - **`finalizing-workflow` should stay on `haiku`** — its entire job is
   `gh pr merge && git checkout main && git pull`. Upgrading it to Sonnet
   costs tokens with zero quality benefit. If you want to force it higher
@@ -446,11 +465,19 @@ jq -r '.modelSelections | group_by(.stepIndex) | .[] | select(length > 1)' \
 
 ## Known limitations
 
-- **Haiku is never selected for `implementing-plan-phases` regardless of
-  signals.** The Sonnet baseline floor enforces this even when work-item
-  complexity is `low`. Per-phase classification is also not supported in
-  this iteration — all phases of a single feature run on the same
-  feature-level tier (Edge Case 8 in the requirement doc).
+- **Per-phase classification is first-class for `implementing-plan-phases`
+  forks.** Each phase fork resolves its own tier from the scored phase
+  block (FEAT-029 FR-6 + FR-9). A 4-phase plan where 3 phases score
+  `haiku` and 1 scores `sonnet` runs as 3 Haiku forks + 1 Sonnet fork;
+  the workflow-level complexity stays at the `max` per the
+  upgrade-only invariant. The pre-FEAT-029 limitation — all phases of a
+  feature pinned to the same feature-level tier — is retired.
+- **`implementing-plan-phases` baseline is `haiku` with a per-phase floor.**
+  The baseline lowers to `haiku` (FEAT-029 FR-7); per-phase classification
+  via `phase-complexity-budget.sh` (FEAT-029 FR-3) upgrades the resolved
+  tier on demand for phases whose signals warrant it. Mechanical phases
+  run on Haiku; schema/migration or multi-skill phases upgrade to Sonnet
+  or Opus per the scored signal matrix.
 - **Alias form only — no full model IDs.** The orchestrator always passes
   `sonnet`, `opus`, or `haiku` to the Agent tool's `model` parameter,
   never a full model ID like `claude-opus-4-6-20250219`. This means the
@@ -563,6 +590,31 @@ Remember that both `.complexity` and `.modelOverride` are **soft** inputs
 to downgrade below baseline or force a baseline-locked step above its
 floor, use a **hard** override via `--model` at invocation time instead.
 
+### `modelSelections` per-phase keying (FEAT-029 schema migration)
+
+FEAT-029 FR-6 extends the `modelSelections` audit-trail with per-phase
+keying for `implementing-plan-phases` forks. The `phase` field has been
+populated since FEAT-014 — what changed is that `resolve-tier` now
+consumes it to scope the tier resolution per phase, and the persisted
+audit-trail entry per phase reflects the per-phase resolved tier (not the
+workflow-level tier).
+
+**Backward compatibility (NFR-5).** Pre-FEAT-029 state files load
+without manual migration — the schema change is silent and additive.
+Pre-existing entries continue to read cleanly; per-phase entries are
+appended on the next `implementing-plan-phases` fork after FR-6 ships.
+`jq` writes use additive merge semantics (`+` operator), not full
+replacement, so no existing entry is overwritten on the first FR-6
+invocation against a pre-existing state file.
+
+**For downstream consumers reading the audit trail.** The `phase` field
+is the integer one-based phase number for `implementing-plan-phases`
+entries (unchanged from the FEAT-014 contract); the `tier` field on those
+entries is now the per-phase resolved tier rather than the workflow-level
+tier. Queries that count Opus fork invocations should now see at most one
+Opus entry per genuinely-complex phase rather than one Opus entry per
+phase fork in the chain.
+
 ## Why requirement docs have no complexity/model-override frontmatter
 
 FEAT-014 intentionally does not introduce a `complexity: high` or
@@ -606,6 +658,15 @@ section of the FEAT-014 requirements doc for details.
 - **`requirements/features/FEAT-014-adaptive-model-selection.md`** —
   the full requirements doc with every FR, NFR, edge case, and worked
   example.
+- **`requirements/features/FEAT-029-creating-implementation-plans-scripts.md`** —
+  the per-phase tier-resolution redesign: `phase-complexity-budget.sh`
+  (FR-3), per-phase `resolve-tier --phase` (FR-6), `implementing-plan-phases`
+  baseline lowered to `haiku` (FR-7), `prepare-fork.sh --phase` forwarding
+  (FR-8), and the post-plan `max`-of-per-phase-tiers classifier (FR-9).
+- **`plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/phase-complexity-budget.sh`** —
+  scores per-phase tiers from the implementation plan; honours
+  `**ComplexityOverride:** <tier>` clamps; budget table tunable at the
+  top of the script.
 - **`${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh`** — the canonical
   shell implementation of the classifier, override walker, audit trail
   writer, retry helpers, and resume re-computation.

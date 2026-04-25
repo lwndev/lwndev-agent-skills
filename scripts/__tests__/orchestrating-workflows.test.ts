@@ -248,7 +248,11 @@ describe('orchestrating-workflows skill', () => {
 
       it('should document known limitations', () => {
         expect(refMd).toContain('Known limitations');
-        expect(refMd).toContain('Haiku is never selected for `implementing-plan-phases`');
+        // FEAT-029 FR-10 retired the "Haiku is never selected for
+        // implementing-plan-phases" limitation: per-phase classification is now
+        // first-class and the baseline lowered to haiku (FEAT-029 FR-7).
+        expect(refMd).toContain('Per-phase classification is first-class');
+        expect(refMd).toContain('`haiku` with a per-phase floor');
       });
 
       it('should provide migration guidance for the old inherit-parent behavior', () => {

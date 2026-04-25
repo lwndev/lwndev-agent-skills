@@ -350,7 +350,7 @@ This is the canary phase: it scores itself against FR-3's budget (5 implementati
 ### Phase 6: Documentation Rewrite + SKILL.md Lean-Down (FR-10, NFR-4, NFR-6)
 
 **Feature:** [FEAT-029](../features/FEAT-029-creating-implementation-plans-scripts.md) | [#190](https://github.com/lwndev/lwndev-marketplace/issues/190)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 5
 
 #### Rationale
@@ -388,12 +388,12 @@ The `creating-implementation-plans/README.md` (or plugin-level README under `${C
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/model-selection.md` (rewritten per FR-10)
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/SKILL.md` (lean-down per NFR-4)
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/step-execution-details.md` (cross-references updated per NFR-6)
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/forked-steps.md` (cross-references updated per NFR-6)
-- [ ] `plugins/lwndev-sdlc/skills/creating-implementation-plans/README.md` (new or updated: lists FR-1 through FR-5 scripts)
-- [ ] `requirements/features/FEAT-014-adaptive-model-selection.md` (post-FEAT-029 cross-reference note added)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/model-selection.md` (rewritten per FR-10)
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/SKILL.md` (lean-down per NFR-4)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/step-execution-details.md` (cross-references updated per NFR-6)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/forked-steps.md` (cross-references updated per NFR-6)
+- [x] `plugins/lwndev-sdlc/skills/creating-implementation-plans/README.md` (new or updated: lists FR-1 through FR-5 scripts)
+- [x] `requirements/features/FEAT-014-adaptive-model-selection.md` (post-FEAT-029 cross-reference note added)
 
 ---
 

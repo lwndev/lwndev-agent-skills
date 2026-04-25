@@ -5,6 +5,7 @@ allowed-tools:
   - Read
   - Write
   - Edit
+  - Bash
   - Glob
   - Grep
 argument-hint: <requirements-file>
@@ -16,19 +17,19 @@ Transform feature requirements into actionable implementation plans with clear p
 
 ## When to Use This Skill
 
-- User requests an implementation plan, build plan, or roadmap
-- Planning a feature with multiple components
-- Organizing work into logical phases
-- Identifying dependencies between features
+- User requests an implementation plan, build plan, or roadmap.
+- Planning a feature with multiple components.
+- Organizing work into logical phases.
+- Identifying dependencies between features.
 
 ## Flexibility
 
 Adapt to project type:
 
-- **Single feature**: simplified structure, may skip phases
-- **Multi-feature project**: full phase breakdown with dependencies
-- **Refactoring**: focus on risk assessment and rollback strategy
-- **Prototypes**: lighter testing, heavier deliverables
+- Single feature: simplified structure, may skip phases.
+- Multi-feature project: full phase breakdown with dependencies.
+- Refactoring: focus on risk assessment and rollback strategy.
+- Prototypes: lighter testing, heavier deliverables.
 
 ## Arguments
 
@@ -37,17 +38,13 @@ Adapt to project type:
 
 ## Quick Start
 
-1. **Locate feature requirements** — when the user provides a `FEAT-NNN` ID, resolve to a path with:
+`$SCRIPTS/` = `${CLAUDE_PLUGIN_ROOT}/skills/creating-implementation-plans/scripts/`. See [README.md](README.md) for the FR-1 through FR-5 script table.
 
-   ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<FEAT-NNN>"
-   ```
-
-   Exit codes: `0` (one match, path on stdout); `1` (no match — ask for a path); `2` (ambiguous — present candidates); `3` (malformed/missing ID). Otherwise check `requirements/features/` or ask for paths directly.
-2. **Ask for GitHub issue URL(s)** if not in context
-3. Identify dependencies between features
-4. Determine optimal build sequence
-5. Create the plan using the template
+1. Resolve `FEAT-NNN` -> path: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<FEAT-NNN>"`.
+2. Ask for GitHub issue URL(s) if not in context.
+3. Render scaffold (FR-1): `bash "$SCRIPTS/render-plan-scaffold.sh" "<FEAT-IDs>" [--enforce-phase-budget]`. Author per-phase content into the rendered file.
+4. Validate DAG (FR-2): `bash "$SCRIPTS/validate-plan-dag.sh" "<plan-file>"`.
+5. Validate phase sizes (FR-5): `bash "$SCRIPTS/validate-phase-sizes.sh" "<plan-file>"`.
 
 ## Output Style
 
@@ -67,7 +64,7 @@ Follow the lite-narration rules below. Load-bearing carve-outs MUST be emitted a
 
 The following MUST always be emitted even when they resemble narration:
 
-- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface script and tool stderr verbatim (e.g., `resolve-requirement-doc.sh` failures).
+- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface script and tool stderr verbatim (e.g., `resolve-requirement-doc.sh`, `render-plan-scaffold.sh`, `validate-plan-dag.sh`, `validate-phase-sizes.sh` failures).
 - **Security-sensitive warnings** -- destructive-operation confirmations, credential prompts.
 - **Interactive prompts** -- any prompt that blocks the workflow and requires user input (e.g., the GitHub issue URL prompt, disambiguation when multiple requirement documents match the provided ID).
 - **Findings display from `reviewing-requirements`** -- N/A for this skill (it does not consume reviewing-requirements findings); bullet retained for consistency with the canonical template.
@@ -83,57 +80,29 @@ This skill is forked by `orchestrating-workflows` as feature chain step 3. Emit 
 
 ## File Locations
 
-- `requirements/implementation/` - Implementation plan documents
+- `requirements/implementation/` - Implementation plan documents.
 
 ### Filename Convention
 
 Use the primary Feature ID as the prefix:
-- Single feature: `FEAT-XXX-feature-name.md` (e.g., `FEAT-001-user-authentication.md`)
-- Multiple features: `FEAT-XXX-project-name.md` using the first/primary feature ID (e.g., `FEAT-001-podcast-cli-features.md`)
+- Single feature: `FEAT-XXX-feature-name.md` (e.g. `FEAT-001-user-authentication.md`).
+- Multi-feature: `FEAT-XXX-project-name.md` using the first/primary feature ID (e.g. `FEAT-001-podcast-cli-features.md`).
 
 ## Template
 
-See [assets/implementation-plan.md](assets/implementation-plan.md) for the full template.
-
-### Structure Overview
-
-```
-# Implementation Plan: [Project Name]
-- Overview
-- Features Summary (table: ID, Name, Priority, Complexity, Status)
-- Recommended Build Sequence
-  - Phase N: Rationale, Implementation Steps, Deliverables
-- Shared Infrastructure
-- Testing Strategy
-- Dependencies and Prerequisites
-- Risk Assessment (table: Risk, Impact, Probability, Mitigation)
-- Success Criteria
-- Code Organization
-```
-
-### Sequencing Principles
-
-Order features: **foundation patterns** -> **dependencies** -> **complexity progression** -> **value delivery**
-
-Each phase needs a rationale for its position and the patterns it introduces.
-
-### Implementation Steps
-
-- Start with CLI/API/interface additions
-- Include validation and error handling
-- End with tests and documentation
-- Specific enough to execute without ambiguity
+See [assets/implementation-plan.md](assets/implementation-plan.md). FR-1 emits a scaffold matching this structure. Sequencing: foundation -> dependencies -> complexity progression -> value delivery. Each phase needs a rationale. Implementation steps: CLI/API additions -> validation/error handling -> tests/docs.
 
 ## Verification Checklist
 
 Before finalizing:
 
-- [ ] All requirement features included
-- [ ] Build sequence accounts for dependencies
-- [ ] Each phase has clear rationale and deliverables
-- [ ] Risks identified with mitigations
-- [ ] Success criteria are measurable
+- [ ] All requirement features included.
+- [ ] `validate-plan-dag.sh` (FR-2) exits `0` — no cycles, all `Depends on Phase N` references resolve.
+- [ ] `validate-phase-sizes.sh` (FR-5) exits `0` — no over-budget phase without `**ComplexityOverride:**` clamp.
+- [ ] Each phase has clear rationale and deliverables.
+- [ ] Risks identified with mitigations.
+- [ ] Success criteria are measurable.
 
 ## Reference
 
-See [implementation-plan-example.md](references/implementation-plan-example.md) for a complete example covering 5 CLI features with full phase breakdowns.
+See [implementation-plan-example.md](references/implementation-plan-example.md) for a complete example covering 5 CLI features.
