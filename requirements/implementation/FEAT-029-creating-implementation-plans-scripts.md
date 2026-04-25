@@ -75,7 +75,7 @@ The `--enforce-phase-budget` flag is implemented as a parsed-but-deferred no-op 
 ### Phase 2: DAG Validation + Per-Phase Complexity Scoring (FR-2, FR-3)
 
 **Feature:** [FEAT-029](../features/FEAT-029-creating-implementation-plans-scripts.md) | [#190](https://github.com/lwndev/lwndev-marketplace/issues/190)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 1
 
 #### Rationale
