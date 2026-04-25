@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.22.0] - 2026-04-25
+
+### Features
+
+- **FEAT-029:** `creating-implementation-plans` scripts + per-phase tier reduction ([#190](https://github.com/lwndev/lwndev-marketplace/issues/190)). Two compounding savings levers land in one feature. **Lever 1 — prose-to-script for plan creation:** five new skill-scoped shell scripts under `plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/` collapse the deterministic prose inside `creating-implementation-plans` — `render-plan-scaffold.sh` (FR-1, plan-skeleton renderer accepting comma-separated `<FEAT-IDs>` with optional `--enforce-phase-budget`), `validate-plan-dag.sh` (FR-2, cycle / unresolved-dependency check across phase blocks), `phase-complexity-budget.sh` (FR-3, per-phase complexity scorer emitting `{phase, tier, signals, overBudget}` for every phase or a single `--phase N`), `split-phase-suggest.sh` (FR-4, advisory 2–3-phase split proposer for over-budget phases), and `validate-phase-sizes.sh` (FR-5, gate that fails the plan when any phase exceeds budget without an override). **Lever 2 — per-phase tier reduction:** `workflow-state.sh resolve-tier` (FR-6) gains `--phase N --plan-file <path>` so each `implementing-plan-phases` fork resolves its own tier from the scored phase block; `prepare-fork.sh` (FR-7) threads `--phase` / `--plan-file` through to the resolver; the `implementing-plan-phases` baseline drops from `sonnet` to `haiku` so mechanical phases run on Haiku and Sonnet / Opus stay reserved for phases that genuinely warrant them; `classify-post-plan` is rewritten as a `max` aggregator across phase tiers, retiring the old `1→low / 2–3→medium / 4+→high` raw-phase-count anti-pattern (Edge Case 8 in `references/model-selection.md`) where splitting a phase for clarity actively *upgraded* the tier. **Per-workflow runtime payoff:** ~550–750 input tokens saved per plan creation from the prose-to-script work alone; the per-phase tier lever is the bigger savings — a typical 4-phase feature where 3 phases qualify as low and 1 as medium drops fork cost from 4×Opus to 3×Haiku + 1×Sonnet, an order-of-magnitude reduction on `implementing-plan-phases` fork calls. NFR-4 from FEAT-014 ("fresh default invocation on a typical chore or low-severity bug produces zero Opus fork calls") now extends to features whose phases are individually mechanical. FR-10 / NFR-4 / NFR-6 also rewrite `creating-implementation-plans/SKILL.md` and `references/model-selection.md` to reflect the new behaviour, with `SKILL.md` reduced **22.3%** by lean-down compression. Test surface: 90+ bats tests across the five per-script fixtures plus a vitest adversarial suite at `scripts/__tests__/qa-feat-029.test.ts`. Merged via PR [#240](https://github.com/lwndev/lwndev-marketplace/pull/240).
+
+### Bug Fixes
+
+- **finalizing-workflow:** extract last line of preflight output for JSON parsing — `preflight-checks.sh --no-interactive` could emit additional context lines before the JSON contract; the workflow now isolates the final line for parsing so trailing diagnostics no longer break the gate.
+
+[1.22.0]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.21.1...lwndev-sdlc@1.22.0
+
 ## [1.21.1] - 2026-04-25
 
 ### Bug Fixes
