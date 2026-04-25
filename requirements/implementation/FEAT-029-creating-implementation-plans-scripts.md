@@ -350,7 +350,7 @@ This is the canary phase: it scores itself against FR-3's budget (5 implementati
 ### Phase 6: Documentation Rewrite + SKILL.md Lean-Down (FR-10, NFR-4, NFR-6)
 
 **Feature:** [FEAT-029](../features/FEAT-029-creating-implementation-plans-scripts.md) | [#190](https://github.com/lwndev/lwndev-marketplace/issues/190)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 5
 
 #### Rationale
