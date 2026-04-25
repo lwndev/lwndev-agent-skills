@@ -47,7 +47,7 @@ The contract has three parts that must all be specified before Phase 2 ships: (1
 ### Phase 2: Producer scripts (FR-3 through FR-8)
 
 **Feature:** [FEAT-030](../features/FEAT-030-consolidate-executing-qa-scripted.md) | [#242](https://github.com/lwndev/lwndev-marketplace/issues/242)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 1
 **ComplexityOverride:** opus
 
@@ -97,7 +97,7 @@ Each script is independent in implementation and ships with a `*.bats` sibling. 
 ### Phase 3: Replace the QA agents (FR-9)
 
 **Feature:** [FEAT-030](../features/FEAT-030-consolidate-executing-qa-scripted.md) | [#242](https://github.com/lwndev/lwndev-marketplace/issues/242)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 2
 
 #### Rationale
@@ -118,10 +118,10 @@ This phase closes #192 by replacing the two QA-related agents (`qa-verifier`, `q
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/qa-verify-coverage.sh`
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/qa-verify-coverage.bats`
-- [ ] `plugins/lwndev-sdlc/agents/qa-verifier.md` (deleted)
-- [ ] `plugins/lwndev-sdlc/agents/qa-reconciliation-agent.md` (deleted)
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/qa-verify-coverage.sh`
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/qa-verify-coverage.bats`
+- [x] `plugins/lwndev-sdlc/agents/qa-verifier.md` (deleted)
+- [x] `plugins/lwndev-sdlc/agents/qa-reconciliation-agent.md` (deleted)
 
 ---
 

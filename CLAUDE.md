@@ -48,7 +48,7 @@ plugins/
 └── lwndev-sdlc/
     ├── .claude-plugin/
     │   └── plugin.json         # Plugin manifest (name, version, metadata)
-    ├── agents/                 # Subagent definitions (qa-verifier, qa-reconciliation-agent)
+    ├── agents/                 # Subagent definitions (empty — agents replaced by scripts in FEAT-030)
     ├── skills/                 # Skill directories
     │   ├── documenting-features/
     │   ├── reviewing-requirements/

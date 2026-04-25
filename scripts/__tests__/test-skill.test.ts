@@ -5,7 +5,7 @@ import { execSync } from 'node:child_process';
 import { PROJECT_SKILLS_DIR, PROJECT_AGENTS_DIR } from '../lib/constants.js';
 
 const TEST_SKILL = 'documenting-features';
-const TEST_AGENT = 'qa-verifier';
+const TEST_AGENT = 'test-fixture-agent';
 const COPIED_SKILL_PATH = join(PROJECT_SKILLS_DIR, TEST_SKILL);
 const COPIED_AGENT_PATH = join(PROJECT_AGENTS_DIR, `${TEST_AGENT}.md`);
 
@@ -87,7 +87,7 @@ describe('test-skill script', () => {
 
       const content = await readFile(COPIED_AGENT_PATH, 'utf-8');
       expect(content).toContain('---');
-      // qa-verifier has model: sonnet in frontmatter
+      // test-fixture-agent has model: haiku in frontmatter
       expect(content).toContain('model:');
     });
 
