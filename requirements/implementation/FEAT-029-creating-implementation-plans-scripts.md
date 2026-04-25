@@ -293,7 +293,7 @@ Edge Case 9 (graceful degradation): when `phase-complexity-budget.sh` exits non-
 ### Phase 5: `prepare-fork.sh` Forwarding + Post-Plan `max` Classifier (FR-8, FR-9)
 
 **Feature:** [FEAT-029](../features/FEAT-029-creating-implementation-plans-scripts.md) | [#190](https://github.com/lwndev/lwndev-marketplace/issues/190)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 4
 
 #### Rationale
