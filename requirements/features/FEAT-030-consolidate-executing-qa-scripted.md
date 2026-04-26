@@ -356,18 +356,18 @@ Per script (FR-3 through FR-9, FR-11): test happy path, each documented exit cod
 
 ## Acceptance Criteria
 
-- [ ] Contract documented (FR-1: artifact schema + final-message format + workflow-state findings shape) before any producer code lands. (Equivalent to issue #242 AC #1.)
-- [ ] `executing-qa/SKILL.md` contains an explicit, unambiguous prohibition on editing non-test source files during a QA run. (FR-2; issue #242 AC #2.)
-- [ ] All six executing-qa scripts from #187 (FR-3 through FR-8) shipped and replacing the corresponding SKILL.md prose; every new script has at least one caller in `executing-qa` SKILL.md, and the Quick Start + verification checklist sections are updated to reference the scripts. (FR-13; issue #242 AC #3.)
-- [ ] `qa-reconcile-delta.sh` is a single implementation shared by `executing-qa` and `reviewing-requirements` test-plan reconciliation mode. (FR-6, NFR-6; issue #242 AC #4.)
-- [ ] `qa-verify-coverage.sh` replaces (or wraps) the `qa-verifier` agent; `qa-reconciliation-agent` reference logic is replaced by the shared `qa-reconcile-delta.sh`. (FR-9; issue #242 AC #5.)
-- [ ] Stop hook fails the run when `git status` shows modifications outside the framework's test root. (FR-10; issue #242 AC #6.)
-- [ ] `workflow-state.sh record-qa-findings` (or generalized `record-findings` accepting a QA shape) persists `{verdict, passed, failed, errored, summary}` to the QA step entry. (FR-11; issue #242 AC #7.)
-- [ ] `orchestrating-workflows/SKILL.md` documents how it parses the QA return contract and calls the new state command. (FR-14; issue #242 AC #8.)
-- [ ] `orchestrating-workflows` parses the `Verdict: <V> | Passed: <N> | Failed: <N> | Errored: <N>` line from `executing-qa` output and invokes `record-qa-findings` (or `record-findings --type qa`) **before** `advance`; a malformed final-message line halts the workflow with a contract-mismatch `fail`. (FR-12.)
-- [ ] Bats coverage for every new script behavior, per the project's "scripts over prose" convention. (NFR-5; issue #242 AC #9.)
-- [ ] Regression test: a QA run against a known-buggy branch produces an `ISSUES-FOUND` artifact, leaves non-test files untouched, and populates the workflow-state JSON correctly. (NFR-5; issue #242 AC #10.)
-- [ ] Issues #187, #192, #208 closed by the merging PR via `Closes #N` lines.
+- [x] Contract documented (FR-1: artifact schema + final-message format + workflow-state findings shape) before any producer code lands. (Equivalent to issue #242 AC #1.)
+- [x] `executing-qa/SKILL.md` contains an explicit, unambiguous prohibition on editing non-test source files during a QA run. (FR-2; issue #242 AC #2.)
+- [x] All six executing-qa scripts from #187 (FR-3 through FR-8) shipped and replacing the corresponding SKILL.md prose; every new script has at least one caller in `executing-qa` SKILL.md, and the Quick Start + verification checklist sections are updated to reference the scripts. (FR-13; issue #242 AC #3.)
+- [x] `qa-reconcile-delta.sh` is a single implementation shared by `executing-qa` and `reviewing-requirements` test-plan reconciliation mode. (FR-6, NFR-6; issue #242 AC #4.)
+- [x] `qa-verify-coverage.sh` replaces (or wraps) the `qa-verifier` agent; `qa-reconciliation-agent` reference logic is replaced by the shared `qa-reconcile-delta.sh`. (FR-9; issue #242 AC #5.)
+- [x] Stop hook fails the run when `git status` shows modifications outside the framework's test root. (FR-10; issue #242 AC #6.)
+- [x] `workflow-state.sh record-qa-findings` (or generalized `record-findings` accepting a QA shape) persists `{verdict, passed, failed, errored, summary}` to the QA step entry. (FR-11; issue #242 AC #7.)
+- [x] `orchestrating-workflows/SKILL.md` documents how it parses the QA return contract and calls the new state command. (FR-14; issue #242 AC #8.)
+- [x] `orchestrating-workflows` parses the `Verdict: <V> | Passed: <N> | Failed: <N> | Errored: <N>` line from `executing-qa` output and invokes `record-qa-findings` (or `record-findings --type qa`) **before** `advance`; a malformed final-message line halts the workflow with a contract-mismatch `fail`. (FR-12.)
+- [x] Bats coverage for every new script behavior, per the project's "scripts over prose" convention. (NFR-5; issue #242 AC #9.)
+- [x] Regression test: a QA run against a known-buggy branch produces an `ISSUES-FOUND` artifact, leaves non-test files untouched, and populates the workflow-state JSON correctly. (NFR-5; issue #242 AC #10.)
+- [x] Issues #187, #192, #208 closed by the merging PR via `Closes #N` lines.
 
 ## Packaging
 
@@ -385,3 +385,11 @@ Single feature, single `lwndev-sdlc` minor bump, single CHANGELOG entry, single 
 - Closes #192 (Agents: qa-verifier + qa-reconciliation-agent — script replacement)
 - Closes #208 (executing-qa should only report findings, never fix them)
 - Part of #179 (prose-to-script backlog)
+
+## Completion
+
+**Status:** `Complete`
+
+**Completed:** 2026-04-26
+
+**Pull Request:** [#243](https://github.com/lwndev/lwndev-marketplace/pull/243)
