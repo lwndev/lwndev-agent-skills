@@ -85,7 +85,7 @@ Every gate above reduces to one shape: **the agent must wait for explicit user t
 
 ## Acceptance Criteria
 
-- [ ] `plugins/lwndev-sdlc/hooks/hooks.json` declares Hook A (`UserPromptSubmit`) and Hooks B+C (`PreToolUse` matchers `Bash` and `Agent`), and the plugin is installable with the hooks active under default plugin enablement (RC-5).
+- [x] `plugins/lwndev-sdlc/hooks/hooks.json` declares Hook A (`UserPromptSubmit`) and Hooks B+C (`PreToolUse` matchers `Bash` and `Agent`), and the plugin is installable with the hooks active under default plugin enablement (RC-5).
 - [x] Hook A creates approval markers under `.sdlc/approvals/` for each canonical approval shape (`approve <gate-type> <ID>`, `proceed <ID>`, `yes <ID>`, `merge <ID>`, `pause <ID>`); each marker contains an ISO-8601 timestamp, the workflow ID, and the verbatim user message; unknown shapes are silently ignored (no marker, no error, user message proceeds normally) (RC-5, RC-7).
 - [x] Hook A only fires on real `UserPromptSubmit` events — auto-mode self-prompts produce no marker (RC-1, RC-2, RC-5).
 - [x] Hook B denies `workflow-state.sh resume <ID>` when the corresponding `.approval-<pauseReason>-<ID>` marker is missing or older than the workflow's `pausedAt` (RC-1, RC-3, RC-5).
