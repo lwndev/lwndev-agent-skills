@@ -30,6 +30,7 @@ set -euo pipefail
 
 ACTIVE_FILE=".sdlc/qa/.executing-active"
 QA_RESULTS_DIR="qa/test-results"
+BASELINE_DIR=".sdlc/qa"
 
 # ---------------------------------------------------------------------------
 # Guards
@@ -97,6 +98,12 @@ if [[ ! -f "$RESULTS_PATH" ]]; then
   echo "Stop hook: results artifact ${RESULTS_PATH} does not exist. The executing-qa skill must write the results file before stopping." >&2
   exit 2
 fi
+
+# ---------------------------------------------------------------------------
+# Extract ID from results artifact filename (QA-results-{ID}.md).
+# ---------------------------------------------------------------------------
+ARTIFACT_BASENAME="$(basename "$RESULTS_PATH" .md)"
+QA_ID="${ARTIFACT_BASENAME#QA-results-}"
 
 # ---------------------------------------------------------------------------
 # Parse frontmatter.
@@ -269,6 +276,186 @@ case "$VERDICT" in
     ;;
 esac
 
+# ---------------------------------------------------------------------------
+# FR-10: Diff guard — block if production files were modified outside the
+# framework test root during this QA run.
+# ---------------------------------------------------------------------------
+diff_guard() {
+  local qa_id="$1"
+  local baseline_path="${BASELINE_DIR}/.executing-qa-baseline-${qa_id}"
+
+  # Fail closed if baseline marker is missing.
+  if [[ ! -f "$baseline_path" ]]; then
+    echo "Stop hook: missing baseline marker '${baseline_path}' — cannot compute diff guard. Re-run executing-qa from the start." >&2
+    return 2
+  fi
+
+  local baseline_sha
+  baseline_sha="$(cat "$baseline_path")"
+
+  # Determine framework from capability JSON (written to /tmp/qa-capability-{ID}.json
+  # by capability-discovery.sh) or fall back to null.
+  local cap_json="/tmp/qa-capability-${qa_id}.json"
+  local framework=""
+  if [[ -f "$cap_json" ]]; then
+    framework="$(jq -r '.framework // ""' "$cap_json" 2>/dev/null || echo "")"
+  fi
+
+  # Map framework → human-readable test-root label and match patterns.
+  local test_root_label=""
+  local test_patterns=()
+  case "$framework" in
+    vitest|jest)
+      test_root_label="vitest/jest test files (**/__tests__/**, **/*.{spec,test}.{ts,js})"
+      test_patterns=(
+        "__tests__/"
+        ".spec.ts"
+        ".spec.js"
+        ".test.ts"
+        ".test.js"
+        ".spec.tsx"
+        ".spec.jsx"
+        ".test.tsx"
+        ".test.jsx"
+      )
+      ;;
+    pytest)
+      test_root_label="pytest test files (tests/**, **/test_*.py, **/*_test.py)"
+      test_patterns=(
+        "tests/"
+        "/test_"
+        "_test.py"
+      )
+      ;;
+    go-test)
+      test_root_label="go test files (**/*_test.go)"
+      test_patterns=(
+        "_test.go"
+      )
+      ;;
+    *)
+      # No framework detected or unknown — skip diff guard (exploratory-only mode).
+      return 0
+      ;;
+  esac
+
+  # Compute diff since baseline (committed changes only, HEAD..baseline).
+  # Using <sha> HEAD excludes pre-existing working-tree dirt that predates the
+  # baseline write, satisfying the requirement that only changes made during
+  # the QA run count (test 5 / FR-10 pre-existing-changes carve-out).
+  local diff_output
+  diff_output="$(git diff --name-status "${baseline_sha}" HEAD 2>/dev/null || true)"
+
+  # Filter: drop lines that are in the test root OR are QA artifacts.
+  # path_in_test_root <path>: returns 0 if the path matches a test-root pattern.
+  path_in_test_root() {
+    local p="$1"
+    local pat
+    for pat in "${test_patterns[@]}"; do
+      if [[ "$p" == *"$pat"* ]]; then
+        return 0
+      fi
+    done
+    return 1
+  }
+
+  # path_is_qa_artifact <path>: returns 0 if the path is a QA results or plan file.
+  path_is_qa_artifact() {
+    local p="$1"
+    case "$p" in
+      qa/test-results/QA-results-*.md) return 0 ;;
+      qa/test-plans/QA-plan-*.md)      return 0 ;;
+    esac
+    return 1
+  }
+
+  # For renames, the old-path directory determines whether the source was in
+  # the test root (directory-based check only). A rename FROM a test-root
+  # directory TO anywhere outside that SAME directory is blocked — even if
+  # the destination has a test-like filename suffix.
+  src_dir_in_test_root() {
+    local p="$1"
+    # Extract the directory component.
+    local dir
+    dir="$(dirname "$p")"
+    local pat
+    for pat in "${test_patterns[@]}"; do
+      # Match only directory-style patterns (those containing '/').
+      [[ "$pat" == *"/"* ]] || continue
+      # Strip trailing slash from pattern for comparison.
+      local dpattern="${pat%/}"
+      if [[ "$dir" == *"$dpattern"* || "$dir" == "$dpattern" ]]; then
+        return 0
+      fi
+    done
+    return 1
+  }
+
+  local offending=()
+  while IFS=$'\t' read -r status old_path new_path; do
+    [[ -z "$status" ]] && continue
+
+    # For renames (R*) and copies (C*): check if source was in a test directory.
+    # A rename FROM a test-root directory TO anywhere else is blocked, even if
+    # the destination filename still looks like a test file.
+    if [[ "$status" == R* || "$status" == C* ]]; then
+      local src_path="$old_path"
+      local dst_path="$new_path"
+
+      if src_dir_in_test_root "$src_path" && ! src_dir_in_test_root "$dst_path"; then
+        # Moved out of a test directory → blocked.
+        offending+=("${dst_path} (renamed from ${src_path})")
+      fi
+      # Otherwise: destination is in test root, or source wasn't — allow.
+      continue
+    fi
+
+    # For non-rename entries, only one path.
+    local file_path="$old_path"
+
+    # Allow if in test root.
+    if path_in_test_root "$file_path"; then continue; fi
+
+    # Allow QA artifacts.
+    if path_is_qa_artifact "$file_path"; then continue; fi
+
+    offending+=("$file_path")
+  done < <(
+    # Parse name-status output: renames are "R<score>\t<old>\t<new>",
+    # regular entries are "<X>\t<file>". Normalise to 3-field tab-separated rows.
+    git diff --name-status "${baseline_sha}" HEAD 2>/dev/null | awk '
+      /^[RC][0-9]*\t/ {
+        n = split($0, a, "\t")
+        if (n >= 3) print a[1] "\t" a[2] "\t" a[3]
+        next
+      }
+      {
+        n = split($0, a, "\t")
+        if (n >= 2) print a[1] "\t" a[2] "\t"
+      }
+    ' || true
+  )
+
+  if [[ ${#offending[@]} -gt 0 ]]; then
+    local file_list
+    file_list="$(printf '%s' "${offending[0]}"; for f in "${offending[@]:1}"; do printf ', %s' "$f"; done)"
+    echo "Stop hook: executing-qa modified production files outside the framework test root '${test_root_label}': ${file_list}. QA is report-only; do not edit production code to make tests pass. Revert these files and add the issue to ## Findings." >&2
+    return 2
+  fi
+
+  return 0
+}
+
+DIFF_GUARD_RESULT=0
+diff_guard "$QA_ID" || DIFF_GUARD_RESULT=$?
+
+if [[ "$DIFF_GUARD_RESULT" -ne 0 ]]; then
+  rm -f "$ACTIVE_FILE"
+  rm -f "${BASELINE_DIR}/.executing-qa-baseline-${QA_ID}"
+  exit 2
+fi
+
 # All checks passed.
 rm -f "$ACTIVE_FILE"
+rm -f "${BASELINE_DIR}/.executing-qa-baseline-${QA_ID}"
 exit 0

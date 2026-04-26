@@ -150,10 +150,17 @@ describe('QA integration (fixture-based)', () => {
     it('executing-qa stop-hook accepts a hand-built v2 ISSUES-FOUND artifact that matches the observed failure', () => {
       workdir = mkdtempSync(join(tmpdir(), 'qa-integ-'));
       // Simulate the repo layout the stop hook expects (active file +
-      // qa/test-results/ artifact).
+      // qa/test-results/ artifact + FR-10 baseline marker).
       const repo = workdir;
       mkdirSync(join(repo, '.sdlc', 'qa'), { recursive: true });
       writeFileSync(join(repo, '.sdlc', 'qa', '.executing-active'), '');
+      // FR-10: write a dummy baseline marker so the diff guard does not fail
+      // closed. The temp dir is not a git repo, so git diff returns empty
+      // (no offending files) once the marker exists.
+      writeFileSync(
+        join(repo, '.sdlc', 'qa', '.executing-qa-baseline-FIXTURE'),
+        'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\n'
+      );
       mkdirSync(join(repo, 'qa', 'test-results'), { recursive: true });
       const artifactPath = join(repo, 'qa', 'test-results', 'QA-results-FIXTURE.md');
       writeFileSync(
@@ -236,6 +243,13 @@ Adversarial correctness test revealed an off-by-one in add().
       const repo = workdir;
       mkdirSync(join(repo, '.sdlc', 'qa'), { recursive: true });
       writeFileSync(join(repo, '.sdlc', 'qa', '.executing-active'), '');
+      // FR-10: write a dummy baseline marker so the diff guard does not fail
+      // closed. EXPLORATORY-ONLY → no framework → diff guard skips by design,
+      // but the marker is still required by the fail-closed check.
+      writeFileSync(
+        join(repo, '.sdlc', 'qa', '.executing-qa-baseline-EMPTY'),
+        'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\n'
+      );
       mkdirSync(join(repo, 'qa', 'test-results'), { recursive: true });
       const artifactPath = join(repo, 'qa', 'test-results', 'QA-results-EMPTY.md');
       writeFileSync(
@@ -302,6 +316,12 @@ Dimensions covered: inputs, state-transitions, environment, dependency-failure, 
       const repo = workdir;
       mkdirSync(join(repo, '.sdlc', 'qa'), { recursive: true });
       writeFileSync(join(repo, '.sdlc', 'qa', '.executing-active'), '');
+      // FR-10: write a dummy baseline marker so the diff guard does not fail
+      // closed. The temp dir is not a git repo, so git diff returns empty.
+      writeFileSync(
+        join(repo, '.sdlc', 'qa', '.executing-qa-baseline-FEAT-017-smoke'),
+        'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\n'
+      );
       mkdirSync(join(repo, 'qa', 'test-results'), { recursive: true });
       // Copy the committed artifact into the temp repo so we do not need to
       // mutate the real .sdlc state during the test.

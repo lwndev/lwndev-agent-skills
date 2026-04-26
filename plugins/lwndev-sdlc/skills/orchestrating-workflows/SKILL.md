@@ -152,11 +152,40 @@ These steps run directly in the orchestrator's conversation because they rely on
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-plans/QA-plan-{ID}.md"
 ```
 
-**Step 5+N+3 — `executing-qa`**: Read the SKILL.md content from `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/SKILL.md`. Follow its instructions directly in this conversation, passing the workflow ID as argument. Expected artifact: `qa/test-results/QA-results-{ID}.md`. On completion:
+**Step 5+N+3 — `executing-qa`**: Read the SKILL.md content from `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/SKILL.md`. Follow its instructions directly in this conversation, passing the workflow ID as argument. Expected artifact: `qa/test-results/QA-results-{ID}.md`.
+
+Immediately after the skill returns and before calling `advance`, parse the return contract line and persist findings:
+
+```bash
+qa_parsed=$(echo "$qa_response" | bash "${CLAUDE_SKILL_DIR}/scripts/parse-qa-return.sh" --stdin --artifact "qa/test-results/QA-results-{ID}.md")
+```
+
+On parse success, persist via:
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh record-findings --type qa {ID} {stepIndex} \
+  "$(echo "$qa_parsed" | jq -r .verdict)" \
+  "$(echo "$qa_parsed" | jq -r .passed)" \
+  "$(echo "$qa_parsed" | jq -r .failed)" \
+  "$(echo "$qa_parsed" | jq -r .errored)" \
+  "$(echo "$qa_parsed" | jq -r .summary)"
+```
+
+Then advance:
 
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-results-{ID}.md"
 ```
+
+On parse mismatch (non-zero exit from `parse-qa-return.sh`), halt the workflow:
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh fail {ID} "<contract-mismatch error from parse-qa-return.sh stderr>"
+```
+
+Surface the contract-mismatch error verbatim — this is a load-bearing carve-out, not narration.
+
+**Note**: the orchestrator does NOT change advance behavior based on verdict. Verdict-based gating is out of scope; FR-12 is persistence-only.
 
 #### Chore Chain Main-Context Steps (Steps 1, 3, 6)
 
@@ -168,11 +197,32 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-r
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-plans/QA-plan-{ID}.md"
 ```
 
-**Step 6 — `executing-qa`**: Same pattern as feature chain step 5+N+3. Read `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/SKILL.md`, follow its instructions in this conversation, passing the workflow ID as argument. Expected artifact: `qa/test-results/QA-results-{ID}.md`. On completion:
+**Step 6 — `executing-qa`**: Same pattern as feature chain step 5+N+3. Read `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/SKILL.md`, follow its instructions in this conversation, passing the workflow ID as argument. Expected artifact: `qa/test-results/QA-results-{ID}.md`.
+
+Immediately after the skill returns and before calling `advance`, parse the return contract line and persist findings:
+
+```bash
+qa_parsed=$(echo "$qa_response" | bash "${CLAUDE_SKILL_DIR}/scripts/parse-qa-return.sh" --stdin --artifact "qa/test-results/QA-results-{ID}.md")
+```
+
+On parse success, persist via:
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh record-findings --type qa {ID} {stepIndex} \
+  "$(echo "$qa_parsed" | jq -r .verdict)" \
+  "$(echo "$qa_parsed" | jq -r .passed)" \
+  "$(echo "$qa_parsed" | jq -r .failed)" \
+  "$(echo "$qa_parsed" | jq -r .errored)" \
+  "$(echo "$qa_parsed" | jq -r .summary)"
+```
+
+Then advance:
 
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-results-{ID}.md"
 ```
+
+On parse mismatch, halt with `fail` and surface the contract-mismatch error verbatim (load-bearing carve-out). The orchestrator does NOT gate advance on verdict — verdict-based gating is out of scope.
 
 ### Forked Steps
 

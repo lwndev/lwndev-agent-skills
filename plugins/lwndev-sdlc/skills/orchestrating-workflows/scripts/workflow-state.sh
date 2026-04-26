@@ -79,11 +79,18 @@ usage() {
   echo "  set-gate <ID> <gate-type>     Signal that the orchestrator is waiting for user input within an" >&2
   echo "                                in-progress step. Valid gate types: findings-decision." >&2
   echo "  clear-gate <ID>               Remove the active gate (sets gate to null)." >&2
-  echo "  record-findings <ID> <stepIndex> <errors> <warnings> <info> <decision> <summary> [--rerun] [--details-file <path>]" >&2
+  echo "  record-findings [--type qa|review] <ID> <stepIndex> ..." >&2
+  echo "                                Persist findings on a step entry. --type defaults to review." >&2
+  echo "  record-findings --type review <ID> <stepIndex> <errors> <warnings> <info> <decision> <summary> [--rerun] [--details-file <path>]" >&2
   echo "                                Persist reviewing-requirements findings on a step entry." >&2
   echo "                                decision must be one of: advanced, auto-advanced, user-advanced, auto-fixed, paused." >&2
   echo "                                --rerun writes to rerunFindings instead of findings." >&2
   echo "                                --details-file is only used when decision is auto-advanced." >&2
+  echo "  record-findings --type qa <ID> <stepIndex> <verdict> <passed> <failed> <errored> <summary>" >&2
+  echo "                                Persist executing-qa findings on a QA step entry." >&2
+  echo "                                verdict must be one of: PASS, ISSUES-FOUND, ERROR, EXPLORATORY-ONLY." >&2
+  echo "                                passed, failed, errored must be non-negative integers." >&2
+  echo "                                Step at stepIndex must have skill 'executing-qa'." >&2
   exit 1
 }
 
@@ -1179,6 +1186,114 @@ cmd_clear_gate() {
 }
 
 cmd_record_findings() {
+  # Pre-scan args to extract --type flag (default: review). The flag may
+  # appear before the positional args (e.g. record-findings --type qa ...).
+  local findings_type="review"
+  local remaining_args=()
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --type)
+        [[ $# -ge 2 ]] || { echo "Error: record-findings --type requires an argument (qa|review)." >&2; exit 2; }
+        case "$2" in
+          qa|review) findings_type="$2" ;;
+          *) echo "Error: record-findings --type must be qa or review; got '${2}'." >&2; exit 2 ;;
+        esac
+        shift 2
+        ;;
+      *) remaining_args+=("$1"); shift ;;
+    esac
+  done
+  set -- "${remaining_args[@]+"${remaining_args[@]}"}"
+
+  if [[ "$findings_type" == "qa" ]]; then
+    cmd_record_findings_qa "$@"
+  else
+    cmd_record_findings_review "$@"
+  fi
+}
+
+cmd_record_findings_qa() {
+  # Args: <ID> <stepIndex> <verdict> <passed> <failed> <errored> <summary>
+  if [[ $# -lt 7 ]]; then
+    echo "Error: record-findings --type qa requires <ID> <stepIndex> <verdict> <passed> <failed> <errored> <summary>." >&2
+    exit 2
+  fi
+
+  local id="$1"
+  local step_index="$2"
+  local verdict="$3"
+  local passed="$4"
+  local failed="$5"
+  local errored="$6"
+  local summary="$7"
+
+  # Validate step_index is a non-negative integer.
+  if [[ -z "$step_index" ]] || ! [[ "$step_index" =~ ^[0-9]+$ ]]; then
+    echo "Error: record-findings --type qa requires a numeric <stepIndex>; got '${step_index}'." >&2
+    exit 1
+  fi
+
+  # Validate verdict against FR-1 enum.
+  case "$verdict" in
+    PASS|ISSUES-FOUND|ERROR|EXPLORATORY-ONLY) ;;
+    *)
+      echo "Error: record-findings --type qa verdict must be one of: PASS, ISSUES-FOUND, ERROR, EXPLORATORY-ONLY; got '${verdict}'." >&2
+      exit 1
+      ;;
+  esac
+
+  # Validate counts are non-negative integers.
+  if [[ -z "$passed" ]] || ! [[ "$passed" =~ ^[0-9]+$ ]]; then
+    echo "Error: record-findings --type qa requires a non-negative integer <passed>; got '${passed}'." >&2
+    exit 1
+  fi
+  if [[ -z "$failed" ]] || ! [[ "$failed" =~ ^[0-9]+$ ]]; then
+    echo "Error: record-findings --type qa requires a non-negative integer <failed>; got '${failed}'." >&2
+    exit 1
+  fi
+  if [[ -z "$errored" ]] || ! [[ "$errored" =~ ^[0-9]+$ ]]; then
+    echo "Error: record-findings --type qa requires a non-negative integer <errored>; got '${errored}'." >&2
+    exit 1
+  fi
+
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  # Bounds check: stepIndex must be < length(.steps).
+  local steps_len
+  steps_len=$(jq '.steps | length' "$file")
+  if (( step_index >= steps_len )); then
+    echo "Error: stepIndex ${step_index} out of bounds for workflow ${id} (steps length: ${steps_len})." >&2
+    exit 1
+  fi
+
+  # Validate step at stepIndex has skill 'executing-qa'.
+  local step_skill
+  step_skill=$(jq -r ".steps[${step_index}].skill // empty" "$file")
+  if [[ "$step_skill" != "executing-qa" ]]; then
+    echo "Error: stepIndex ${step_index} skill is '${step_skill}'; expected 'executing-qa' for --type qa." >&2
+    exit 1
+  fi
+
+  # Build the QA findings JSON object.
+  local findings_json
+  findings_json=$(jq -n \
+    --arg verdict "$verdict" \
+    --argjson passed "$passed" \
+    --argjson failed "$failed" \
+    --argjson errored "$errored" \
+    --arg summary "$summary" \
+    '{verdict: $verdict, passed: $passed, failed: $failed, errored: $errored, summary: $summary}')
+
+  # Write findings object to steps[stepIndex].findings.
+  jq --argjson idx "$step_index" --argjson obj "$findings_json" \
+    '.steps[$idx].findings = $obj' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+
+  cat "$file"
+}
+
+cmd_record_findings_review() {
   local id="$1"
   local step_index="$2"
   local errors="$3"
@@ -1892,7 +2007,7 @@ case "$command" in
     cmd_clear_gate "$1"
     ;;
   record-findings)
-    [[ $# -ge 7 ]] || { echo "Error: record-findings requires <ID> <stepIndex> <errors> <warnings> <info> <decision> <summary> [--rerun] [--details-file <path>]" >&2; exit 1; }
+    [[ $# -ge 1 ]] || { echo "Error: record-findings requires at least <ID> or --type flag plus args." >&2; exit 2; }
     cmd_record_findings "$@"
     ;;
   *)

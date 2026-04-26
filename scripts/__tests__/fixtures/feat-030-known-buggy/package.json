@@ -1,0 +1,10 @@
+{
+  "name": "feat-030-known-buggy",
+  "private": true,
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.3"
+  }
+}

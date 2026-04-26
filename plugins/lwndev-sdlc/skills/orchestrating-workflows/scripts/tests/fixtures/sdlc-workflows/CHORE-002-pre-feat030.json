@@ -1,0 +1,26 @@
+{
+  "id": "CHORE-002",
+  "type": "chore",
+  "currentStep": 5,
+  "status": "in-progress",
+  "pauseReason": null,
+  "gate": null,
+  "steps": [
+    {"name":"Document chore","skill":"documenting-chores","context":"main","status":"complete","artifact":"requirements/chores/CHORE-002.md","completedAt":"2026-01-10T09:00:00Z"},
+    {"name":"Review requirements (standard)","skill":"reviewing-requirements","context":"fork","status":"complete","artifact":null,"completedAt":"2026-01-10T09:10:00Z"},
+    {"name":"Document QA test plan","skill":"documenting-qa","context":"main","status":"complete","artifact":"qa/test-plans/QA-plan-CHORE-002.md","completedAt":"2026-01-10T09:15:00Z"},
+    {"name":"Execute chore","skill":"executing-chores","context":"fork","status":"complete","artifact":null,"completedAt":"2026-01-10T09:30:00Z"},
+    {"name":"PR review","skill":null,"context":"pause","status":"complete","artifact":null,"completedAt":"2026-01-10T09:35:00Z"},
+    {"name":"Execute QA","skill":"executing-qa","context":"main","status":"pending","artifact":null,"completedAt":null},
+    {"name":"Finalize","skill":"finalizing-workflow","context":"fork","status":"pending","artifact":null,"completedAt":null}
+  ],
+  "phases": { "total": 0, "completed": 0 },
+  "prNumber": 99,
+  "branch": "chore/CHORE-002-update-deps",
+  "startedAt": "2026-01-10T09:00:00Z",
+  "lastResumedAt": null,
+  "complexity": "low",
+  "complexityStage": "init",
+  "modelOverride": null,
+  "modelSelections": []
+}

@@ -22,13 +22,6 @@ SDLC workflow skills for Claude Code — documenting, planning, and executing fe
 | **orchestrating-workflows** | Drives a full SDLC workflow chain (feature, chore, bug) end-to-end by sequencing sub-skill invocations, persisting state across pause points, and isolating per-step context via subagent forking |
 | **finalizing-workflow** | Merges the current PR, checks out main, fetches, and pulls — the terminal step in all workflow chains |
 
-## Agents
-
-| Agent | Model | Description |
-|-------|-------|-------------|
-| **qa-verifier** | Sonnet | Runs test suites, analyzes coverage, verifies code paths against acceptance criteria, and returns structured pass/fail verdicts. Used by `documenting-qa` and `executing-qa` skills via subagent delegation. |
-| **qa-reconciliation-agent** | Sonnet | Reference spec for the bidirectional coverage-surplus / coverage-gap delta between a QA results artifact and its requirements document. Currently executed inline by `executing-qa` (FEAT-018 removed Ralph-style subagent loops); the description is authoritative for what the inline reconciliation produces. |
-
 ## Installation
 
 ### Via marketplace
