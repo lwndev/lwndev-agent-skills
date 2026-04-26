@@ -97,7 +97,7 @@ Each script is independent in implementation and ships with a `*.bats` sibling. 
 ### Phase 3: Replace the QA agents (FR-9)
 
 **Feature:** [FEAT-030](../features/FEAT-030-consolidate-executing-qa-scripted.md) | [#242](https://github.com/lwndev/lwndev-marketplace/issues/242)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 2
 
 #### Rationale
@@ -128,7 +128,7 @@ This phase closes #192 by replacing the two QA-related agents (`qa-verifier`, `q
 ### Phase 4: Stop-hook diff guard (FR-10)
 
 **Feature:** [FEAT-030](../features/FEAT-030-consolidate-executing-qa-scripted.md) | [#242](https://github.com/lwndev/lwndev-marketplace/issues/242)
-**Status:** Pending
+**Status:** ✅ Complete
 **Depends on:** Phase 1
 
 #### Rationale
@@ -153,8 +153,10 @@ The stop-hook diff guard (FR-10) closes #208 scope item 2 — it blocks the run 
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/stop-hook.sh` (extended with FR-10 diff guard + baseline marker)
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/stop-hook.bats` (extended with the six FR-10 test cases)
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/stop-hook.sh` (extended with FR-10 diff guard + baseline marker)
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/qa-baseline.sh` (Option B sibling script: `init <ID>` / `clear <ID>`)
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/stop-hook.bats` (FR-10 test cases: 9 tests)
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/tests/qa-baseline.bats` (8 tests)
 
 ---
 

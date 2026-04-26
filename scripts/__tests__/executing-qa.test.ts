@@ -182,6 +182,14 @@ describe('executing-qa skill', () => {
       mkdirSync(resultsDir, { recursive: true });
       const path = join(resultsDir, `QA-results-${id}.md`);
       writeFileSync(path, content);
+      // FR-10: write a dummy baseline marker so the diff guard does not fail
+      // closed. The temp dir is not a git repo, so git diff returns empty
+      // (no offending files) once the marker exists.
+      mkdirSync(join(dir, '.sdlc', 'qa'), { recursive: true });
+      writeFileSync(
+        join(dir, '.sdlc', 'qa', `.executing-qa-baseline-${id}`),
+        'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\n'
+      );
       return path;
     }
 
