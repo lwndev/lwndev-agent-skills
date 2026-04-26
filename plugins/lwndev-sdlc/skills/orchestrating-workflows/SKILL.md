@@ -43,6 +43,10 @@ The orchestrator integrates with issue trackers (GitHub Issues, Jira) through th
 
 For the full issue tracking protocol — extraction, invocation pattern, runnable examples, rejected alternatives, and mechanism-failure logging — see [references/issue-tracking.md](references/issue-tracking.md).
 
+## Approval-Marker Grammar (BUG-014)
+
+Confirmation gates require a fresh `.sdlc/approvals/.approval-<gate>-<ID>` marker, written by Hook A only on real `UserPromptSubmit` events. For canonical input shapes — `approve <gate-type> <ID>`, `proceed <ID>`, `merge <ID>` — marker-name resolution rules, the `proceed` fallback caveat, and copy-paste examples, see [references/approval-marker-grammar.md](references/approval-marker-grammar.md).
+
 ## Quick Start
 
 1. Parse argument — determine new workflow vs resume, and chain type (feature, chore, or bug)

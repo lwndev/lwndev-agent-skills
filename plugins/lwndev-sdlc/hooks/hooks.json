@@ -1,0 +1,49 @@
+{
+  "description": "BUG-014 confirmation-gate hooks. Hook A (UserPromptSubmit) writes approval markers from canonical user input shapes. Hook B (PreToolUse Bash) denies workflow-state.sh resume/clear-gate and destructive Bash without a fresh marker. Hook C (PreToolUse Task/Agent) denies carve-out prompts and forks of confirmation-owning skills without a marker.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/record-approval.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/guard-state-transitions.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/guard-agent-prompts.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/guard-agent-prompts.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
