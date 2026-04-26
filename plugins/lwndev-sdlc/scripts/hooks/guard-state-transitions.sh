@@ -107,18 +107,22 @@ marker_mtime_epoch() {
   stat -c %Y "$path" 2>/dev/null || echo ""
 }
 
-# iso_to_epoch <iso8601> -> epoch seconds, or empty if unparsable.
+# iso_to_epoch <iso8601> -> epoch seconds (UTC), or empty if unparsable.
+# Always interprets the input as UTC (the trailing 'Z' in our ISO format
+# indicates UTC, but BSD `date -j -f` ignores that suffix and defaults to
+# the local zone — `TZ=UTC` forces correct interpretation).
 iso_to_epoch() {
   local iso="$1"
   if [[ -z "$iso" ]]; then
     echo ""
     return
   fi
-  # GNU date supports -d; macOS BSD date needs -j -f.
-  if date -d "$iso" +%s 2>/dev/null; then
+  # GNU date supports -d and respects the trailing Z natively.
+  if date -d "$iso" -u +%s 2>/dev/null; then
     return
   fi
-  date -j -f "%Y-%m-%dT%H:%M:%SZ" "$iso" +%s 2>/dev/null || echo ""
+  # BSD/macOS date: force UTC interpretation via env TZ.
+  TZ=UTC date -j -f "%Y-%m-%dT%H:%M:%SZ" "$iso" +%s 2>/dev/null || echo ""
 }
 
 # state_field <id> <jq-expr> -> value or empty
