@@ -4,6 +4,16 @@ set -euo pipefail
 # workflow-state.sh — State management for orchestrating-workflows skill
 # Manages .sdlc/workflows/{ID}.json state files for SDLC workflow chains.
 # Requires: jq, bash-compatible shell
+#
+# State-file schema (top-level fields, partial — see _migrate_state_file for the
+# defensive migration set): id, type, status, currentStep, steps, gate,
+# pauseReason, pausedAt, lastResumedAt, complexity, complexityStage,
+# modelOverride, modelSelections, error.
+#   * pausedAt (BUG-014 / AC9): optional ISO-8601 string. Written by `cmd_pause`
+#     each time the workflow pauses. Null/missing on workflows that have never
+#     paused. Hook B (guard-state-transitions.sh) compares the mtime of an
+#     approval marker against this field; missing pausedAt is treated as
+#     infinitely old, so a fresh user approval is always required.
 
 # Check jq availability
 if ! command -v jq &>/dev/null; then
@@ -1120,8 +1130,14 @@ cmd_pause() {
     exit 1
   fi
 
-  jq --arg reason "$reason" \
-    '.status = "paused" | .pauseReason = $reason | .gate = null' \
+  # BUG-014 / AC9: write `pausedAt` (ISO-8601) so Hook B can compare an approval
+  # marker's mtime against the most recent pause time. Missing `pausedAt` on a
+  # pre-existing in-flight workflow is treated by Hook B as infinitely old.
+  local now
+  now=$(now_iso)
+
+  jq --arg reason "$reason" --arg now "$now" \
+    '.status = "paused" | .pauseReason = $reason | .gate = null | .pausedAt = $now' \
     "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   cat "$file"
