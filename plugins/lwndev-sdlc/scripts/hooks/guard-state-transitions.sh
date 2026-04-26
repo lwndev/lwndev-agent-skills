@@ -100,12 +100,9 @@ marker_mtime_epoch() {
     echo ""
     return
   fi
-  # GNU coreutils first (Linux): `stat -c %Y` returns mtime epoch.
-  # BSD/macOS stat doesn't accept `-c` and errors, so we fall through.
-  # Fallback: BSD `stat -f %m` returns mtime epoch on macOS.
-  # Order matters — on Linux GNU stat, `-f %m` means `--file-system` mountpoint
-  # and would silently return a non-numeric string that breaks the comparison
-  # (CI-only fail-open of the stale-marker check).
+  # GNU stat (`-c %Y`) first; on Linux, BSD-style `-f %m` means
+  # `--file-system` mountpoint and silently returns non-numeric garbage,
+  # breaking the arithmetic compare and fail-opening the stale-marker check.
   if stat -c %Y "$path" 2>/dev/null; then
     return
   fi

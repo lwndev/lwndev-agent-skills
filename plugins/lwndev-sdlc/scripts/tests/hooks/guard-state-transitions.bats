@@ -279,6 +279,32 @@ JSON
   [ "$(decision_of "$output")" = "allow" ]
 }
 
+# ------------------------ marker_mtime_epoch unit ----------------------------
+
+@test "marker_mtime_epoch returns numeric epoch on this platform (BUG-014 stat ordering)" {
+  # Regression: extract the helper from the source and invoke it directly.
+  # If the GNU/BSD stat ordering is reversed, GNU `stat -f %m` returns a
+  # mountpoint string on Linux and the regex below fails. macOS BSD stat
+  # tolerates the wrong order so this guard is meaningful only on Linux CI.
+  local fixture
+  fixture="$(mktemp)"
+  local fn
+  fn="$(sed -n '/^marker_mtime_epoch()/,/^}/p' "$HOOK")"
+  local result
+  result="$(bash -c "${fn}; marker_mtime_epoch \"$fixture\"")"
+  rm -f "$fixture"
+  [[ "$result" =~ ^[0-9]+$ ]]
+  [ "$result" -gt 1000000000 ]
+}
+
+@test "marker_mtime_epoch returns empty for missing file" {
+  local fn
+  fn="$(sed -n '/^marker_mtime_epoch()/,/^}/p' "$HOOK")"
+  local result
+  result="$(bash -c "${fn}; marker_mtime_epoch /tmp/does-not-exist-$$")"
+  [ -z "$result" ]
+}
+
 # ------------------------ FEAT-030 reproduction regression --------------------
 
 @test "FEAT-030 gate 2 reproduction: self-resume immediately after pause is denied" {
