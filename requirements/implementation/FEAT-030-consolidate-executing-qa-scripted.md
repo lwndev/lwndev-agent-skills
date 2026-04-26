@@ -201,7 +201,7 @@ This phase closes #208 scope items 3, 4, and the related orchestrator documentat
 ### Phase 6: SKILL.md adoption + non-remediation rule + regression test (FR-2, FR-13, NFR-5)
 
 **Feature:** [FEAT-030](../features/FEAT-030-consolidate-executing-qa-scripted.md) | [#242](https://github.com/lwndev/lwndev-marketplace/issues/242)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 2, Phase 3, Phase 4, Phase 5
 **ComplexityOverride:** opus
 
