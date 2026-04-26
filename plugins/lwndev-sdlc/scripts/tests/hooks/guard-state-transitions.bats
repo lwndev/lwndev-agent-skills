@@ -127,6 +127,17 @@ JSON
   printf '%s' "$output" | grep -qi "corrupt"
 }
 
+@test "resume denied: unparseable pausedAt format (fail-secure)" {
+  # iso_to_epoch returns empty for malformed pausedAt — guard-state-transitions.sh
+  # denies fail-secure rather than letting the timestamp comparison silently
+  # treat the marker as fresh.
+  write_state BUG-014 plan-approval "not-a-date"
+  write_marker plan-approval BUG-014
+  output=$(fire_hook "bash workflow-state.sh resume BUG-014")
+  [ "$(decision_of "$output")" = "deny" ]
+  printf '%s' "$output" | grep -qi "cannot parse pausedAt"
+}
+
 @test "resume denied: workflow has no active pauseReason" {
   cat > .sdlc/workflows/BUG-014.json <<'JSON'
 {"id":"BUG-014","type":"bug","status":"in-progress","currentStep":0,"steps":[],"pauseReason":null,"gate":null}

@@ -231,3 +231,25 @@ JSON
   files=$(ls -1 .sdlc/approvals/ | grep -v '^\.approval-' || true)
   [ -z "$files" ]
 }
+
+@test "jq absent: hook exits 0 silently and writes no marker (fail-open per contract)" {
+  # record-approval.sh:53-56 documents a fail-open path when jq is missing —
+  # Hook B is the fail-secure guard, Hook A is best-effort marker writing.
+  # Use the PATH-stripping pattern from branch-id-parse.bats:99-121: build a
+  # minimal PATH containing only essential utilities, omit jq.
+  empty_path="$(mktemp -d)"
+  for bin in bash env grep sed tr cut wc mktemp mv rm mkdir cat printf chmod ls true false test dirname basename date stat; do
+    if [ -x "/bin/$bin" ]; then
+      ln -s "/bin/$bin" "$empty_path/$bin" 2>/dev/null || true
+    elif [ -x "/usr/bin/$bin" ]; then
+      ln -s "/usr/bin/$bin" "$empty_path/$bin" 2>/dev/null || true
+    fi
+  done
+  # Feed a literal JSON payload — the hook never parses it because the
+  # command -v jq guard exits before stdin is read.
+  PATH="$empty_path" run bash -c "printf '%s' '{\"prompt\":\"approve plan-approval BUG-014\"}' | bash \"$HOOK\""
+  rm -rf "$empty_path"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  refute_marker ".sdlc/approvals/.approval-plan-approval-BUG-014"
+}

@@ -103,10 +103,23 @@ write_merge_marker() {
   [ "$(decision_of "$output")" = "allow" ]
 }
 
-@test "AC7: 'Skip Step 5' for executing-bug-fixes is denied (not whitelisted)" {
+@test "AC7: 'Skip Step 5' for non-gating skill (executing-bug-fixes) is allowed" {
+  # Skip Step <N> is dangerous only when it suppresses a confirmation prompt
+  # in a gating skill. For non-gating targets the phrase appears legitimately
+  # in embedded SKILL.md content (e.g. reviewing-requirements/SKILL.md:261)
+  # and does not bypass any gate.
   output=$(fire_hook "Run the bug fix. Skip Step 5." "executing-bug-fixes")
-  [ "$(decision_of "$output")" = "deny" ]
-  printf '%s' "$output" | grep -qi "Skip Step"
+  [ "$(decision_of "$output")" = "allow" ]
+}
+
+@test "AC7: 'Skip Step 4' embedded in reviewing-requirements SKILL.md is allowed" {
+  # Regression: reviewing-requirements/SKILL.md:261 contains the literal text
+  # "| **CHORE** | Skip Step 4 unless APIs referenced; ..." and fork prompts
+  # embed the SKILL.md verbatim per references/forked-steps.md. Hook C must
+  # not block its own most-used sub-skill.
+  prompt=$'You are reviewing-requirements. Validate.\n\n| **CHORE** | Skip Step 4 unless APIs referenced; emphasize Step 5 scope boundaries and Step 3 affected files |'
+  output=$(fire_hook "$prompt" "reviewing-requirements")
+  [ "$(decision_of "$output")" = "allow" ]
 }
 
 @test "AC7: 'Skip Step 5' for finalizing-workflow is denied" {
@@ -159,6 +172,53 @@ write_merge_marker() {
   echo "BUG-014" > .sdlc/workflows/.active
   output=$(fire_hook "Skill: finalizing-workflow. Merge the PR." "")
   [ "$(decision_of "$output")" = "deny" ]
+}
+
+@test "AC8: spawn target detected from YAML frontmatter 'name:' key" {
+  # Real orchestrator forks embed the SKILL.md verbatim per
+  # references/forked-steps.md. The frontmatter key is `name:`, not `Skill:`.
+  # The orchestrator does not always set tool_input.subagent_type — the hook
+  # must recognize the frontmatter shape.
+  echo "BUG-014" > .sdlc/workflows/.active
+  prompt=$'---\nname: finalizing-workflow\n---\nMerge the PR.'
+  output=$(fire_hook "$prompt" "")
+  [ "$(decision_of "$output")" = "deny" ]
+  printf '%s' "$output" | grep -q "merge BUG-014"
+}
+
+@test "AC8: YAML 'name: reviewing-requirements' frontmatter does not trigger AC8" {
+  # Negative case for the frontmatter detector: only confirmation-owning
+  # skills (today: finalizing-workflow) get AC8 enforcement.
+  echo "BUG-014" > .sdlc/workflows/.active
+  prompt=$'---\nname: reviewing-requirements\n---\nValidate.'
+  output=$(fire_hook "$prompt" "")
+  [ "$(decision_of "$output")" = "allow" ]
+}
+
+@test "AC8: uppercase subagent_type still denies (case-fold)" {
+  # Regression: bash `case` is case-sensitive when nocasematch is unset.
+  # target_skill_norm must be lowercased explicitly so 'FINALIZING-WORKFLOW'
+  # and 'Finalizing-Workflow' fold to the canonical form before matching.
+  echo "BUG-014" > .sdlc/workflows/.active
+  output=$(fire_hook "Run." "FINALIZING-WORKFLOW")
+  [ "$(decision_of "$output")" = "deny" ]
+  printf '%s' "$output" | grep -q "merge BUG-014"
+}
+
+@test "AC8: mixed-case plugin-prefixed subagent_type still denies (prefix-strip + case-fold)" {
+  echo "BUG-014" > .sdlc/workflows/.active
+  output=$(fire_hook "Run." "lwndev-sdlc:Finalizing-Workflow")
+  [ "$(decision_of "$output")" = "deny" ]
+}
+
+@test "AC8: cross-workflow marker isolation — wrong-ID marker does not authorize spawn" {
+  # Hook C reads .active to construct the marker path. A marker for FEAT-099
+  # must NOT authorize a fork while .active is BUG-014.
+  echo "BUG-014" > .sdlc/workflows/.active
+  write_merge_marker FEAT-099
+  output=$(fire_hook "You are the finalizing-workflow skill. Merge the PR." "finalizing-workflow")
+  [ "$(decision_of "$output")" = "deny" ]
+  printf '%s' "$output" | grep -q "merge BUG-014"
 }
 
 # ------------------------ pass-through tests ----------------------------------

@@ -69,10 +69,38 @@ if [[ -z "$prompt_text" ]]; then
   allow
 fi
 
-# Extract the subagent_type / target skill if present (Task tool). Used to
-# evaluate AC7's `Skip Step \d+` whitelist and AC8's confirmation-owning
-# skill set.
+# Resolve the target skill once, before either AC7 or AC8 consults it. Real
+# orchestrator forks pass the SKILL.md verbatim (per orchestrating-workflows
+# references/forked-steps.md) and do NOT set subagent_type on every fork —
+# the model decides whether to populate it. The fallback regex therefore has
+# to recognize the YAML frontmatter `name:` key in addition to prose-style
+# `Skill:` / `fork:` / `target:` references kept for defense in depth.
 subagent_type="$(printf '%s' "$payload" | jq -r '.tool_input.subagent_type // empty' 2>/dev/null || true)"
+
+target_skill="$subagent_type"
+if [[ -z "$target_skill" ]]; then
+  if [[ "$prompt_text" =~ (^|[[:space:]])name[[:space:]]*:[[:space:]]*([A-Za-z0-9:_/-]+) ]]; then
+    target_skill="${BASH_REMATCH[2]}"
+  elif [[ "$prompt_text" =~ (^|[[:space:]])(Skill|skill|fork|target)[[:space:]]*[:=][[:space:]]*([A-Za-z0-9:_/-]+) ]]; then
+    target_skill="${BASH_REMATCH[3]}"
+  fi
+fi
+
+# Strip plugin prefix and lowercase explicitly. Lowercasing here decouples
+# the case statement below from `nocasematch` shell state — uppercase /
+# mixed-case skill names fold to canonical lowercase before matching.
+target_skill_norm="$(printf '%s' "${target_skill##*:}" | tr '[:upper:]' '[:lower:]')"
+
+# Confirmation-owning skill set — forks to these skills require a fresh
+# `.approval-merge-approval-<active-ID>` marker (AC8). The same set scopes
+# AC7's `Skip Step <N>` deny: the carve-out is only dangerous when it
+# suppresses a confirmation prompt, and the phrase appears legitimately in
+# embedded SKILL.md content for non-gating skills (e.g.
+# reviewing-requirements/SKILL.md:261 "Skip Step 4 unless APIs referenced").
+case "$target_skill_norm" in
+  finalizing-workflow) is_confirmation_owning=1 ;;
+  *) is_confirmation_owning=0 ;;
+esac
 
 # ---------------------------------------------------------------------------
 # AC7: carve-out regex scan.
@@ -95,11 +123,26 @@ if [[ "$prompt_text" =~ proceed[[:space:]]+directly[[:space:]]+to[[:space:]]+fin
   deny "Hook C: Agent prompt instructs the subagent to 'proceed directly to finalize.sh' (matches BUG-014 AC7 regex). finalize.sh is a destructive call site. Remove the carve-out and require user approval."
 fi
 
-# 4. "Skip Step \d+" — denied unless target skill is implementing-plan-phases.
+# 4. "Skip Step \d+" — scoped deny. implementing-plan-phases is the documented
+#    legitimate carve-out (Step 10/12 PR-creation variance). Empty target
+#    fails secure. Confirmation-owning targets (the only place the carve-out
+#    can suppress a real gate) deny. Other non-gating targets allow — the
+#    phrase appears in embedded SKILL.md content where it cannot bypass a
+#    confirmation that doesn't exist.
 if [[ "$prompt_text" =~ Skip[[:space:]]+Step[[:space:]]+[0-9]+ ]]; then
-  if [[ "$subagent_type" != "implementing-plan-phases" && "$subagent_type" != "lwndev-sdlc:implementing-plan-phases" ]]; then
-    deny "Hook C: Agent prompt contains 'Skip Step <N>' carve-out for skill '${subagent_type:-<unknown>}'. The whitelist accepts this carve-out only when target skill is implementing-plan-phases (the documented PR-creation step variance). Remove the carve-out or fork implementing-plan-phases instead."
-  fi
+  case "$target_skill_norm" in
+    implementing-plan-phases)
+      : # legitimate carve-out — allow.
+      ;;
+    "")
+      deny "Hook C: Agent prompt contains 'Skip Step <N>' carve-out with no resolvable target skill. Denying fail-secure."
+      ;;
+    *)
+      if (( is_confirmation_owning == 1 )); then
+        deny "Hook C: Agent prompt contains 'Skip Step <N>' carve-out for confirmation-owning skill '${target_skill_norm}'. The carve-out cannot bypass a confirmation gate. Remove it or fork implementing-plan-phases instead."
+      fi
+      ;;
+  esac
 fi
 
 shopt -u nocasematch || true
@@ -109,35 +152,19 @@ shopt -u nocasematch || true
 # Initial set: finalizing-workflow (forks to finalize.sh:438 `gh pr merge`).
 # ---------------------------------------------------------------------------
 
-# Detect the target skill from either subagent_type (Task tool) or from a
-# documented "Skill: <name>" / "fork: <name>" line in the prompt body.
-target_skill="$subagent_type"
-if [[ -z "$target_skill" ]]; then
-  # Fall back to scanning the prompt for an explicit skill reference.
-  if [[ "$prompt_text" =~ (^|[[:space:]])(Skill|skill|fork|target)[[:space:]]*[:=][[:space:]]*([A-Za-z0-9:_/-]+) ]]; then
-    target_skill="${BASH_REMATCH[3]}"
+if (( is_confirmation_owning == 1 )); then
+  if [[ ! -f "$ACTIVE_FILE" ]]; then
+    deny "Hook C: spawning '${target_skill_norm}' but no active workflow (.sdlc/workflows/.active missing). User must type: merge <ID>"
+  fi
+  active_id="$(tr -d '[:space:]' < "$ACTIVE_FILE" 2>/dev/null || true)"
+  if [[ -z "$active_id" || ! "$active_id" =~ ^(FEAT|CHORE|BUG)-[0-9]+$ ]]; then
+    deny "Hook C: spawning '${target_skill_norm}' but .active is empty or malformed. Denying fail-secure."
+  fi
+  marker_path="${APPROVALS_DIR}/.approval-merge-approval-${active_id}"
+  if [[ ! -f "$marker_path" ]]; then
+    deny "Hook C: missing merge-approval marker for spawn of '${target_skill_norm}' on workflow ${active_id}. User must type: merge ${active_id}"
   fi
 fi
-
-# Normalize: strip a "lwndev-sdlc:" plugin prefix if present.
-target_skill_norm="${target_skill##*:}"
-
-case "$target_skill_norm" in
-  finalizing-workflow)
-    # AC8: require .approval-merge-approval-<active-ID>.
-    if [[ ! -f "$ACTIVE_FILE" ]]; then
-      deny "Hook C: spawning '${target_skill_norm}' but no active workflow (.sdlc/workflows/.active missing). User must type: merge <ID>"
-    fi
-    active_id="$(tr -d '[:space:]' < "$ACTIVE_FILE" 2>/dev/null || true)"
-    if [[ -z "$active_id" || ! "$active_id" =~ ^(FEAT|CHORE|BUG)-[0-9]+$ ]]; then
-      deny "Hook C: spawning '${target_skill_norm}' but .active is empty or malformed. Denying fail-secure."
-    fi
-    marker_path="${APPROVALS_DIR}/.approval-merge-approval-${active_id}"
-    if [[ ! -f "$marker_path" ]]; then
-      deny "Hook C: missing merge-approval marker for spawn of '${target_skill_norm}' on workflow ${active_id}. User must type: merge ${active_id}"
-    fi
-    ;;
-esac
 
 # Default: allow.
 allow
