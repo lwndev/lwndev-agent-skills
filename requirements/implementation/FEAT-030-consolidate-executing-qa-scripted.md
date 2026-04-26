@@ -163,7 +163,7 @@ The stop-hook diff guard (FR-10) closes #208 scope item 2 — it blocks the run 
 ### Phase 5: Workflow-state QA findings + orchestrator parser (FR-11, FR-12, FR-14)
 
 **Feature:** [FEAT-030](../features/FEAT-030-consolidate-executing-qa-scripted.md) | [#242](https://github.com/lwndev/lwndev-marketplace/issues/242)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 1
 
 #### Rationale
@@ -201,7 +201,7 @@ This phase closes #208 scope items 3, 4, and the related orchestrator documentat
 ### Phase 6: SKILL.md adoption + non-remediation rule + regression test (FR-2, FR-13, NFR-5)
 
 **Feature:** [FEAT-030](../features/FEAT-030-consolidate-executing-qa-scripted.md) | [#242](https://github.com/lwndev/lwndev-marketplace/issues/242)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 2, Phase 3, Phase 4, Phase 5
 **ComplexityOverride:** opus
 
@@ -235,13 +235,13 @@ The SKILL.md rewrite carries opus complexity by intent: each of the six existing
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` (full rewrite per FR-13 + FR-2 non-remediation rule + FR-1 final-message-line emission)
-- [ ] `plugins/lwndev-sdlc/skills/executing-chores/SKILL.md` (cross-reference updates for deleted agents)
-- [ ] `plugins/lwndev-sdlc/skills/executing-bug-fixes/SKILL.md` (cross-reference updates for deleted agents)
-- [ ] `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` (test-plan reconciliation mode cites shared `qa-reconcile-delta.sh`)
-- [ ] `tests/fixtures/feat-030-known-buggy/` (regression fixture directory)
-- [ ] `tests/fixtures/feat-030-known-buggy/README.md` (fixture intent documentation)
-- [ ] `tests/regression/feat-030-executing-qa.test.ts` (vitest regression + negative-regression)
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` (full rewrite per FR-13 + FR-2 non-remediation rule + FR-1 final-message-line emission)
+- [x] `plugins/lwndev-sdlc/skills/executing-chores/SKILL.md` (cross-reference updates for deleted agents)
+- [x] `plugins/lwndev-sdlc/skills/executing-bug-fixes/SKILL.md` (cross-reference updates for deleted agents)
+- [x] `plugins/lwndev-sdlc/skills/reviewing-requirements/SKILL.md` (test-plan reconciliation mode cites shared `qa-reconcile-delta.sh`)
+- [x] `scripts/__tests__/fixtures/feat-030-known-buggy/` (regression fixture directory; located under `scripts/__tests__/fixtures/` to match the repo's vitest `testMatch` glob and existing fixture conventions instead of the originally proposed `tests/fixtures/`)
+- [x] `scripts/__tests__/fixtures/feat-030-known-buggy/README.md` (fixture intent documentation)
+- [x] `scripts/__tests__/feat-030-executing-qa.test.ts` (vitest regression + negative-regression; located under `scripts/__tests__/` to match the repo's vitest `testMatch` glob `**/__tests__/**/*.test.ts`)
 
 ---
 

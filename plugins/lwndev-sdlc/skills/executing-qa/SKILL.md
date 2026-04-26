@@ -18,7 +18,13 @@ argument-hint: <requirement-id>
 
 # Executing QA
 
-Write and run adversarial tests against the change on the current branch. Grade the run on what the tests produce, not on what is said about them. With no supported test framework detected, fall through to a structured exploratory review covering the five adversarial dimensions.
+Write and run adversarial tests against the change on the current branch. Grade the run on the framework's actual output. With no supported test framework detected, fall through to a structured exploratory review covering the five adversarial dimensions.
+
+## Report-Only Mode
+
+> Do not edit production code to make tests pass. Adversarial QA reports; it does not patch. If a finding suggests a fix, name the fix in `## Findings` and let `executing-bug-fixes` / `executing-chores` handle it in a follow-up run.
+
+This rule is enforced by the FR-10 stop-hook diff guard (`scripts/stop-hook.sh`): edits outside the framework test root and outside `qa/test-results/` / `qa/test-plans/` block the run with a verbatim error. Verdict derivation in Step 4 cites this section. The Verification Checklist re-asserts it.
 
 ## When to Use This Skill
 
@@ -33,13 +39,25 @@ Write and run adversarial tests against the change on the current branch. Grade 
 
 ## Quick Start
 
-1. Accept a requirement ID
-2. Run capability discovery and compose the `qa` persona overlay
-3. Load the v2 test plan
-4. Mode-route: test-framework (write + run) OR exploratory-only (structured review)
-5. Compute the reconciliation delta against the requirements doc
-6. Emit the version-2 results artifact
-7. Exit; the stop hook validates structural conformance
+Script paths below are relative to `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/` (abbreviated `$SCRIPTS/`).
+
+1. Accept a requirement ID; record the active marker; record the diff baseline:
+   - `Write .sdlc/qa/.executing-active`
+   - `bash "$SCRIPTS/qa-baseline.sh" init <ID>`
+2. Capability discovery + drift check:
+   - `bash "$SCRIPTS/capability-discovery.sh" <consumer-root> <ID>`
+   - `bash "$SCRIPTS/capability-report-diff.sh" "<plan-file>" "<fresh-json>"`
+3. Load the v2 test plan; mode-route (test-framework or exploratory-only).
+4. Pre-flight branch-diff check: `bash "$SCRIPTS/check-branch-diff.sh"`. Empty diff -> ERROR verdict path.
+5. Test-framework mode:
+   - Write tests under the framework's test root.
+   - `bash "$SCRIPTS/run-framework.sh" <capability-json> "<test-glob>"`
+   - `bash "$SCRIPTS/commit-qa-tests.sh" <ID> <test-files...>`
+6. Build-health gate: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/verify-build-health.sh" --no-interactive --skip-test`.
+7. Reconciliation delta: `bash "$SCRIPTS/qa-reconcile-delta.sh" "<results-doc>" "<requirements-doc>"`.
+8. Coverage check: `bash "$SCRIPTS/qa-verify-coverage.sh" "<artifact-path>"`.
+9. Emit artifact: `bash "$SCRIPTS/render-qa-results.sh" <ID> <verdict> <capability-json> <execution-json>`.
+10. Emit the FR-1 final-message line as the **last line** of the response.
 
 ## Output Style
 
@@ -59,7 +77,11 @@ Follow the lite-narration rules below. Load-bearing carve-outs MUST be emitted a
 
 The following MUST always be emitted even when they resemble narration:
 
-- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface script and tool stderr verbatim (e.g., `capability-discovery.sh` / `persona-loader.sh` / `git diff` / `testCommand` failures) and the stop-hook block message when structural validation fails.
+- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface script and tool stderr verbatim (`capability-discovery.sh`, `capability-report-diff.sh`, `check-branch-diff.sh`, `run-framework.sh`, `qa-reconcile-delta.sh`, `qa-verify-coverage.sh`, `render-qa-results.sh`, `commit-qa-tests.sh`, `qa-baseline.sh`, `persona-loader.sh`, `git diff`, `testCommand`) and the stop-hook block message when structural validation fails.
+- **FR-2 non-remediation rule** -- the verbatim text in `## Report-Only Mode` is load-bearing; do not paraphrase, summarize, or omit when surfacing.
+- **FR-10 stop-hook block message** -- emit verbatim:
+  > Stop hook: executing-qa modified production files outside the framework test root '<test-root>': <file1>, <file2>. QA is report-only; do not edit production code to make tests pass. Revert these files and add the issue to ## Findings.
+- **FR-1 final-message line** -- the `Verdict: <V> | Passed: <N> | Failed: <N> | Errored: <N>` line is the **last** line of the response (see [references/qa-return-contract.md](references/qa-return-contract.md)). The orchestrator parses this line via `parse-qa-return.sh`; any deviation triggers a contract-mismatch error.
 - **Security-sensitive warnings** -- destructive-operation confirmations, credential prompts.
 - **Interactive prompts** -- any prompt that blocks the workflow and requires user input (e.g., the requirement ID prompt when no argument is provided, the missing-test-plan error pointing to `documenting-qa`, the pointer prompt when there are no branch changes to test).
 - **Findings display from `reviewing-requirements`** -- N/A for this skill (it does not consume reviewing-requirements findings); bullet retained for consistency with the canonical template.
@@ -69,17 +91,22 @@ The following MUST always be emitted even when they resemble narration:
 
 ### Fork-to-orchestrator return contract
 
-`executing-qa` runs in **main context** (feature chain step 5+N+3; chore/bug chain step 6), **not** as an Agent fork. It returns its result directly to the user, not to a parent orchestrator. The `done | artifact=<path> | <note>` / `failed | <reason>` shapes do **not** apply to this skill -- there is no subagent boundary. Structural conformance of the emitted artifact (`qa/test-results/QA-results-{ID}.md`) is enforced by the Stop hook at `scripts/stop-hook.sh`, which validates frontmatter fields, the verdict enum, required sections, and per-verdict structural rules (`Failed: 0` for PASS, failing-test names for ISSUES-FOUND, stack trace for ERROR, `Reason:` line for EXPLORATORY-ONLY). The lite narration rules and load-bearing carve-outs above still govern the skill's output.
+`executing-qa` runs in **main context** (feature chain step 5+N+3; chore/bug chain step 6), **not** as an Agent fork. It returns its result directly to the user, not to a parent orchestrator. The `done | artifact=<path> | <note>` / `failed | <reason>` shapes do **not** apply to this skill. Structural conformance of the artifact is enforced by the Stop hook at `scripts/stop-hook.sh`. The FR-1 final-message line is the orchestrator's parse target; it MUST be the last line of the response.
 
-**Precedence**: when a load-bearing carve-out (error message, `[warn]` structured log, interactive prompt, etc.) conflicts with a lite-narration rule, the carve-out wins and MUST be emitted verbatim even if it reads like narration.
+**Precedence**: when a load-bearing carve-out (error message, `[warn]` structured log, interactive prompt, the FR-2 rule body, the FR-1 final-message line) conflicts with a lite-narration rule, the carve-out wins and MUST be emitted verbatim.
 
 ## State File Management
 
-At skill start, create `.sdlc/qa/.executing-active` via Write (empty file). This signals the stop hook that `executing-qa` is active. The stop hook removes it on success; in orchestrated workflows the orchestrator cleans it up after return.
+At skill start:
+
+1. Write `.sdlc/qa/.executing-active` (empty file). Signals the stop hook that `executing-qa` is active.
+2. `bash "${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/qa-baseline.sh" init <ID>` writes `.sdlc/qa/.executing-qa-baseline-<ID>` with the current HEAD SHA. The FR-10 stop-hook diff guard reads this baseline to scope the diff check.
+
+The stop hook removes both files on success; in orchestrated workflows the orchestrator cleans up after return. To clear the baseline manually: `bash "$SCRIPTS/qa-baseline.sh" clear <ID>`.
 
 ## Important: Bash-for-scripts-only
 
-`Bash` is in `allowed-tools` so this skill can run `capability-discovery.sh`, `persona-loader.sh`, `git diff`, and the framework-specific `testCommand`. Do NOT use Bash for output formatting, status messages, progress echoes, or `echo` statements. All user communication goes through direct response text, not shell `echo`.
+`Bash` is in `allowed-tools` so this skill can run the producer scripts above plus `git diff` and the framework's `testCommand`. Do NOT use Bash for output formatting, status messages, progress echoes, or `echo` statements. All user communication goes through direct response text, not shell `echo`.
 
 ## Input
 
@@ -91,83 +118,97 @@ The user provides a requirement ID in one of these formats:
 
 If no ID is provided, ask for one.
 
-## Step 1: Run capability discovery and compose the persona
+## Step 1: Capability discovery, baseline marker, persona
 
-1. **Resolve the consumer repo root** via `git rev-parse --show-toplevel`. This is the directory inspected for test framework and test command.
+1. **Resolve the consumer repo root** via `git rev-parse --show-toplevel`.
 
-2. **Capability discovery**: if a fresh `/tmp/qa-capability-{ID}.json` already exists from this session (produced by `documenting-qa`) with mtime within the last hour, reuse it. Otherwise run:
+2. **Initialize state**:
+   - `Write .sdlc/qa/.executing-active` (empty file).
+   - `bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/qa-baseline.sh init <ID>` — writes the diff-guard baseline.
+
+3. **Capability discovery**: if a fresh `/tmp/qa-capability-{ID}.json` from this session (mtime within the last hour) exists, reuse it. Otherwise:
    ```
    bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/capability-discovery.sh <consumer-root> <ID>
    ```
-   Capture the emitted JSON. Fields: `mode` (`test-framework` | `exploratory-only`), `framework`, `packageManager`, `testCommand`, `language`.
+   Capture the JSON. Fields: `mode` (`test-framework` | `exploratory-only`), `framework`, `packageManager`, `testCommand`, `language`. If `capability-discovery.sh` exits non-zero, treat as `mode: exploratory-only` with a recorded reason.
 
-   If the plan's embedded capability report differs from the fresh one (e.g., framework changed since the plan was built), use the fresh one and note the drift in the artifact's `## Capability Report`.
+4. **Drift check** against the plan-embedded capability report:
+   ```
+   bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/capability-report-diff.sh "<plan-file>" "<fresh-json>"
+   ```
+   Stdout JSON `{drift, fields}`. Drift JSON goes into the artifact's `## Capability Report` section verbatim; the fresh JSON is the source of truth for downstream steps.
 
-   If `capability-discovery.sh` exits non-zero, treat as `mode: exploratory-only` with a recorded reason.
-
-3. **Compose the `qa` persona overlay**:
+5. **Compose the `qa` persona overlay**:
    ```
    source ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/persona-loader.sh
    load_persona qa ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa
    ```
-   If `load_persona` returns non-zero, abort with the error — do not silently substitute a default persona. The persona directives govern the tester mindset for the run.
+   If `load_persona` returns non-zero, abort with the error — do not silently substitute a default.
 
 ## Step 2: Load the test plan
 
-Read `qa/test-plans/QA-plan-{ID}.md`. If it does not exist, stop with an actionable error:
+Read `qa/test-plans/QA-plan-{ID}.md`. If it does not exist, stop with:
 
 > No test plan found at `qa/test-plans/QA-plan-{ID}.md`. Run `documenting-qa` first.
 
-Validate the plan is version-2 (frontmatter contains `version: 2`). If the `version` field is absent or is `1`, refuse with a specific error:
+Validate `version: 2` in frontmatter. Reject `version: 1` with:
 
 > Test plan is version 1 (pre-FEAT-018). Refusing to run the executable-oracle runner against a legacy closed-loop plan. Re-run `documenting-qa` to regenerate as version 2.
 
 ## Step 3: Mode selection
 
-- If `capability.mode == "test-framework"`: proceed to Step 4 (write-and-run loop).
-- If `capability.mode == "exploratory-only"`: proceed to Step 5 (exploratory review).
+- `capability.mode == "test-framework"` -> Step 4.
+- `capability.mode == "exploratory-only"` -> Step 5.
 
-### Edge case 5: clean branch vs main → ERROR
+### Edge case 5: clean branch vs main -> ERROR
 
-Before writing any tests, run `git diff main...HEAD`. If the diff is empty (no changes on the branch), set verdict to `ERROR` with `Reason: no changes to test relative to main` and jump to Step 7 (reconciliation delta) and Step 8 (emit artifact). Do not write tests; do not run the framework.
+Before writing tests, the script wraps `git diff main...HEAD`:
 
-## Step 4: Test-framework mode — write and run
+```
+bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/check-branch-diff.sh
+```
 
-For each P0/P1 scenario in the test plan whose `mode: test-framework` marker is set:
+Exit `0` -> proceed. Exit `1` -> set verdict `ERROR` with `Reason: no changes to test relative to main`; jump to Step 6 (reconciliation delta) and Step 7 (emit artifact). Do not write tests; do not run the framework.
 
-1. **Write a test file** in the framework's conventions, under its standard test root, with a `qa-` filename prefix tying the file to this run. Defaults by framework:
+## Step 4: Test-framework mode -- write and run
+
+For each P0/P1 scenario whose `mode: test-framework` marker is set:
+
+1. **Write a test file** under the framework's test root with a `qa-` filename prefix. Defaults:
    - vitest / jest: `__tests__/qa-<dimension>.spec.ts` (or `.test.ts` per project config)
    - pytest: `tests/test_qa_<dimension>.py`
    - go test: `qa_<dimension>_test.go` next to the package under test
 
-   Create the parent directory if absent (edge case 6). Each file implements the plan's scenarios for that dimension, following the suggested test shape in the scenario line.
+   Create the parent directory if absent (edge case 6). The skill prose still owns "what tests to write" (the scenario lines from the plan dictate the assertions).
 
-2. **Execute the framework** via `capability.testCommand` (e.g., `npm test`, `npx vitest run`, `pytest`, `go test ./...`). Capture stdout, stderr, exit code, and wall-clock duration.
-
-3. **Parse results**: total test count, passed count, failed count, errored count, failing test names, and truncated failing output (first 2000 chars per failing test or first 50 lines, whichever is shorter).
-
-4. **Commit the written test files** to the feature branch as part of the run's output:
+2. **Run the framework** via the script:
    ```
-   git add <test-files>
-   git commit -m "qa({ID}): add executable QA tests from executing-qa run"
+   bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/run-framework.sh <capability-json> "<test-glob>"
    ```
+   Stdout JSON: `{total, passed, failed, errored, failingNames, truncatedOutput, exitCode, durationMs}`. Save the JSON to a temp file for downstream rendering.
+
+3. **Commit the written test files**:
+   ```
+   bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/commit-qa-tests.sh <ID> <test-files...>
+   ```
+   Exit `0` committed; exit `1` no files to commit (info; continue).
 
 ### Verdict derivation (test-framework mode)
 
-Derive the verdict from the framework's actual output — never from self-report:
+Derive the verdict from the runner's actual JSON output -- never from self-report. See `## Report-Only Mode` for the no-remediation constraint.
 
 - All written tests passed AND at least one scenario was exercised: `PASS`
 - Any written test failed: `ISSUES-FOUND`
-- Runner could not compile/parse the written tests (non-zero exit with no test output, framework crash, import error): `ERROR`
+- Runner could not compile/parse the written tests: `ERROR`
 - No tests were written because every scenario was `exploratory`: fall through to Step 5
 
-### Edge case 3: compile errors → ERROR, no retry
+### Edge case 3: compile errors -> ERROR, no retry
 
-If the runner fails to compile or parse the written tests, verdict is `ERROR` and error traces are included in the artifact's `## Findings` or `## Execution Results` section. **Do not retry** — the stop hook accepts a valid `ERROR` artifact as a complete run.
+`run-framework.sh` exits 1 (or counts indicate the runner crashed). Verdict is `ERROR`; stack traces are passed through `truncatedOutput` and rendered into `## Findings` / `## Execution Results`. **Do not retry** and **do not patch the production code** (FR-2 / `## Report-Only Mode`) — the stop hook accepts a valid `ERROR` artifact as a complete run.
 
 ### Edge case 6: missing test directory
 
-If the conventional test directory for the detected framework does not exist, create it. Normal for first-time QA runs on a fresh repo.
+Create it. Normal for first-time QA runs on a fresh repo.
 
 ## Step 5: Exploratory-only mode
 
@@ -180,91 +221,94 @@ Dimensions:
 - **Dependency failure** — external API 5xx/4xx/timeout, rate limiting, partial response
 - **Cross-cutting** — accessibility, internationalization, concurrency, permissions
 
-Populate the artifact's `## Exploratory Mode` section with a `Reason:` line explaining the fallback (e.g., `"No supported test framework detected in consumer repo. Detection attempted: vitest, jest, pytest, go test."`). Set verdict to `EXPLORATORY-ONLY`.
+Populate the artifact's `## Exploratory Mode` section with a `Reason:` line. Set verdict to `EXPLORATORY-ONLY`. Counts in the FR-1 final-message line are `Passed: 0 | Failed: 0 | Errored: 0`.
 
 ## Step 5.5: Build-health gate (BUG-013)
 
-After the test run (test-framework or exploratory-only) but before the reconciliation delta:
+After the test run but before the reconciliation delta:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/verify-build-health.sh" --no-interactive --skip-test
 ```
 
-`--skip-test` avoids re-running the suite Step 4 already executed. See the script header for full semantics. If the gate exits non-zero:
+`--skip-test` avoids re-running the suite. If the gate exits non-zero:
 
-- Force the QA verdict to `ISSUES-FOUND` (regardless of test-framework results).
-- Add a finding to `## Findings` describing the failing build-health stage (e.g., `lint failed: 24 prettier violations`) with the failing command output excerpt — surfaced verbatim from the script's stderr.
+- Force the QA verdict to `ISSUES-FOUND`.
+- Add a finding to `## Findings` describing the failing build-health stage with the failing command output excerpt — surfaced verbatim from the script's stderr.
 
-## Step 6: Reconciliation Delta (FR-5)
+## Step 6: Reconciliation Delta (FR-5 / FR-6)
 
-After the run completes, read the requirements document. **This is the one and only time the requirements doc is consulted** — the planning skill (`documenting-qa`) is forbidden from reading it, so the delta here is the audit trail of spec-demanded vs. QA-tested.
-
-Resolve the requirements-doc path from the ID with:
+Resolve the requirements-doc path:
 
 ```bash
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh" "<ID>"
 ```
 
-The script maps the prefix (`FEAT-`, `CHORE-`, `BUG-`) to the correct directory (`requirements/features/`, `requirements/chores/`, `requirements/bugs/`) and globs `{ID}-*.md`. Exit codes: `0` on exactly-one match (path on stdout); `1` on zero matches — exit 1 triggers **edge case 7** (reconciliation delta skipped with reason, continue to Step 8); `2` on ambiguous (multiple files for the same ID signals workspace inconsistency — log a warning and pick the first alphabetically); `3` on malformed/missing ID.
+Exit `0` (path on stdout) -> run the delta. Exit `1` (zero matches) -> **edge case 7**: skip with reason. Exit `2` (ambiguous) -> warn; pick first alphabetically. Exit `3` -> malformed ID.
 
-Produce a **bidirectional** delta:
+Then run the shared reconciler:
 
-### Coverage surplus
-Enumerate scenarios exercised (or reported-on in exploratory mode) that do not correspond to any FR / NFR / AC / edge case in the spec. Not automatically bad — may indicate diligent adversarial testing or over-testing.
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/qa-reconcile-delta.sh" "<results-doc>" "<requirements-doc>"
+```
 
-### Coverage gap
-Enumerate FRs / NFRs / ACs / edge cases in the spec with **no** corresponding scenario in the plan. A gap signals either an incomplete plan or an over-detailed spec.
+Stdout markdown for the artifact's `## Reconciliation Delta` section: `### Coverage beyond requirements`, `### Coverage gaps`, `### Summary` with `coverage-surplus: N` / `coverage-gap: N`.
 
-### Summary counts
-Emit `coverage-surplus: N` and `coverage-gap: N` lines in the `## Reconciliation Delta` → `### Summary` block so downstream tooling can tally the delta size.
+Exit `0` delta produced. Exit `1` requirements doc not found at the supplied path (caller emits skip-with-reason). Exit `2` missing/invalid args.
 
 ### Edge case 7: missing requirements doc
 
-If no requirements doc exists for the ID, **skip** the reconciliation delta. Emit `Reconciliation delta skipped: no requirements doc for {ID}` under `## Reconciliation Delta` → `### Summary` and continue to Step 8. Do not error out — a missing spec is a different failure mode than an incorrect one.
+If `resolve-requirement-doc.sh` exits 1 OR `qa-reconcile-delta.sh` exits 1, **skip** the reconciliation delta. Emit `Reconciliation delta skipped: no requirements doc for {ID}` under `## Reconciliation Delta` -> `### Summary` and continue. A missing spec is a different failure mode than an incorrect one.
+
+## Step 6.5: Coverage verification (FR-9)
+
+After the artifact is rendered, verify adversarial coverage:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/qa-verify-coverage.sh" "<artifact-path>"
+```
+
+Stdout JSON `{verdict, perDimension, gaps}` where `verdict` is `COVERAGE-ADEQUATE` or `COVERAGE-GAPS`. Coverage gaps are noted in `## Findings` but do not change the QA verdict. This script ships as the FR-9 producer for adversarial coverage verification (replaces the deleted Phase 3 reviewer agent).
 
 ## Step 7: Emit the version-2 results artifact
 
-Save the artifact to `qa/test-results/QA-results-{ID}.md` using the schema from [assets/test-results-template-v2.md](assets/test-results-template-v2.md). Create the `qa/test-results/` directory if absent.
+Render via the script:
 
-Frontmatter (required):
-- `id: {full ID}`
-- `version: 2`
-- `timestamp: <ISO-8601>`
-- `verdict: PASS | ISSUES-FOUND | ERROR | EXPLORATORY-ONLY`
-- `persona: qa`
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/render-qa-results.sh" <ID> <verdict> "<capability-json>" "<execution-json>"
+```
 
-Required top-level sections (in order):
-- `## Summary`
-- `## Capability Report`
-- `## Execution Results` (required for PASS, ISSUES-FOUND, ERROR; optional for EXPLORATORY-ONLY)
-- `## Scenarios Run`
-- `## Findings`
-- `## Reconciliation Delta`
-- `## Exploratory Mode` (required for EXPLORATORY-ONLY only)
+Optional environment overrides for `## Findings`, `## Reconciliation Delta`, `## Scenarios Run`, `## Summary`, `## Exploratory Mode` are documented in the script header. The script writes `qa/test-results/QA-results-{ID}.md` per the Phase-1 contract ([references/qa-return-contract.md](references/qa-return-contract.md)) using the schema in [assets/test-results-template-v2.md](assets/test-results-template-v2.md).
 
-Per-verdict structural rules enforced by the stop hook:
-- **PASS**: `Failed: 0` must appear in `## Execution Results`.
-- **ISSUES-FOUND**: `## Findings` must list at least one failing test name (not a placeholder).
-- **ERROR**: a stack trace must appear somewhere in the artifact.
-- **EXPLORATORY-ONLY**: `## Exploratory Mode` must include a `Reason:` line.
+Exit `0` artifact written. Exit `1` invalid verdict / missing required field. Exit `2` missing/invalid args.
 
-## Step 8: Final message
+The stop hook re-validates the artifact on disk.
 
-State the verdict, the artifact path, and a 1-line run summary in the last message. The stop hook reads the artifact on disk — if it blocks, revise the artifact and try again. Do not summarize by repeating the artifact contents.
+## Step 8: Final message (FR-1)
+
+State the verdict, the artifact path, and a 1-line run summary. Then emit the FR-1 final-message line as the **last** line of the response. Format ([references/qa-return-contract.md](references/qa-return-contract.md)):
+
+```
+Verdict: <PASS|ISSUES-FOUND|ERROR|EXPLORATORY-ONLY> | Passed: <int> | Failed: <int> | Errored: <int>
+```
+
+For `EXPLORATORY-ONLY`, the three counts are `0`. The orchestrator's `parse-qa-return.sh` matches this line with the canonical regex; any deviation is a contract-mismatch error.
 
 ## Verification Checklist
 
 Before finishing, verify:
 
-- [ ] Capability discovery report produced (fresh or reused from `/tmp/qa-capability-{ID}.json`)
-- [ ] Persona overlay composed via `persona-loader.sh`
-- [ ] Mode routed to either test-framework or exploratory-only
-- [ ] Test-framework mode: tests written and executed; verdict derived from actual runner output
-- [ ] Exploratory-only mode: all five dimensions covered with findings or justifications; verdict `EXPLORATORY-ONLY`
-- [ ] Reconciliation delta produced (or skipped with reason per edge case 7)
-- [ ] v2 artifact written to `qa/test-results/QA-results-{ID}.md` with `version: 2` frontmatter
-- [ ] Verdict is one of `PASS | ISSUES-FOUND | ERROR | EXPLORATORY-ONLY`
-- [ ] Per-verdict structural rules satisfied (e.g. `Failed: 0` for PASS, failing-test names listed for ISSUES-FOUND, stack trace present for ERROR, `Reason:` line for EXPLORATORY-ONLY)
+- [ ] `## Report-Only Mode` honored — no production-file edits outside the framework test root or `qa/test-results/` / `qa/test-plans/` (FR-2 / FR-10).
+- [ ] `.sdlc/qa/.executing-active` written; `qa-baseline.sh init <ID>` ran.
+- [ ] `capability-discovery.sh` produced the fresh JSON (or reused the cached `/tmp` copy).
+- [ ] `capability-report-diff.sh` ran; drift recorded in `## Capability Report`.
+- [ ] Persona overlay composed via `persona-loader.sh`.
+- [ ] `check-branch-diff.sh` ran (Step 3 / edge case 5).
+- [ ] Mode routed: test-framework -> `run-framework.sh` + `commit-qa-tests.sh`; exploratory-only -> all five dimensions covered.
+- [ ] `qa-reconcile-delta.sh` produced the delta (or skipped per edge case 7).
+- [ ] `qa-verify-coverage.sh` ran against the artifact.
+- [ ] `render-qa-results.sh` wrote `qa/test-results/QA-results-{ID}.md` with `version: 2` frontmatter and the per-verdict structural rules satisfied.
+- [ ] FR-1 final-message line is the **last** line of the response: `Verdict: <V> | Passed: <N> | Failed: <N> | Errored: <N>`.
 
 ## Relationship to Other Skills
 

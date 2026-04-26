@@ -197,11 +197,25 @@ TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo '```'
   echo ""
   if [[ "$VERDICT" != "EXPLORATORY-ONLY" ]]; then
+    # Counter line shape per stop-hook (FEAT-018 / FEAT-030): leading dash +
+    # space + label + colon. Five required fields: Total, Passed, Failed,
+    # Errored, Exit code. `Total:` is the sum of the others when the runner
+    # JSON omits it; `Exit code:` is mirrored from the runner JSON or 0.
+    EXIT_CODE_VAL="$(printf '%s' "$EXECUTION_JSON" | jq -r '.exitCode // 0')"
+    if [[ -z "$EXIT_CODE_VAL" || "$EXIT_CODE_VAL" == "null" ]]; then
+      EXIT_CODE_VAL=0
+    fi
+    TOTAL_VAL="$(printf '%s' "$EXECUTION_JSON" | jq -r '.total // empty')"
+    if [[ -z "$TOTAL_VAL" || "$TOTAL_VAL" == "null" ]]; then
+      TOTAL_VAL=$((PASSED + FAILED + ERRORED))
+    fi
     echo "## Execution Results"
     echo ""
-    echo "Passed: ${PASSED}"
-    echo "Failed: ${FAILED}"
-    echo "Errored: ${ERRORED}"
+    echo "- Total: ${TOTAL_VAL}"
+    echo "- Passed: ${PASSED}"
+    echo "- Failed: ${FAILED}"
+    echo "- Errored: ${ERRORED}"
+    echo "- Exit code: ${EXIT_CODE_VAL}"
     if [[ "$VERDICT" == "ERROR" ]]; then
       echo ""
       echo '```'

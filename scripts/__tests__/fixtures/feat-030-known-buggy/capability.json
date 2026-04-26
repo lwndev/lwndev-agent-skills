@@ -1,0 +1,10 @@
+{
+  "id": "FEAT-030-FIXTURE",
+  "timestamp": "2026-04-25T00:00:00Z",
+  "mode": "test-framework",
+  "framework": "vitest",
+  "packageManager": "npm",
+  "testCommand": "npm test",
+  "language": "typescript",
+  "notes": []
+}

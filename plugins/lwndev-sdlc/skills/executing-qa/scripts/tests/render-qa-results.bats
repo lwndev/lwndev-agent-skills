@@ -102,7 +102,13 @@ write_exec_error() {
   artifact="$(echo "$output" | tail -n 1)"
   [ -f "$artifact" ]
   grep -q '^verdict: PASS$' "$artifact"
-  grep -q '^Failed: 0$' "$artifact"
+  grep -q '^- Failed: 0$' "$artifact"
+  # FEAT-030 stop-hook contract: Total / Passed / Failed / Errored / Exit
+  # code lines must use the `- <Field>: <int>` shape.
+  grep -q '^- Total: ' "$artifact"
+  grep -q '^- Passed: ' "$artifact"
+  grep -q '^- Errored: ' "$artifact"
+  grep -q '^- Exit code: ' "$artifact"
   # Findings section header present, but the section body is empty.
   grep -q '^## Findings$' "$artifact"
   # Lines between '## Findings' and the next '## ' header should be only blank.
