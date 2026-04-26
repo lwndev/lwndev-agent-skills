@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-030",
+  "type": "feature",
+  "currentStep": 8,
+  "status": "in-progress",
+  "pauseReason": null,
+  "gate": null,
+  "steps": [
+    {"name":"Document feature","skill":"documenting-features","context":"main","status":"complete","artifact":"requirements/features/FEAT-030.md","completedAt":"2026-04-25T10:00:00Z"},
+    {"name":"Review requirements (standard)","skill":"reviewing-requirements","context":"fork","status":"complete","artifact":null,"completedAt":"2026-04-25T10:05:00Z"},
+    {"name":"Create implementation plan","skill":"creating-implementation-plans","context":"fork","status":"complete","artifact":"requirements/implementation/FEAT-030.md","completedAt":"2026-04-25T10:10:00Z"},
+    {"name":"Plan approval","skill":null,"context":"pause","status":"complete","artifact":null,"completedAt":"2026-04-25T10:15:00Z"},
+    {"name":"Document QA test plan","skill":"documenting-qa","context":"main","status":"complete","artifact":"qa/test-plans/QA-plan-FEAT-030.md","completedAt":"2026-04-25T10:20:00Z"},
+    {"name":"Implement phase 1","skill":"implementing-plan-phases","context":"fork","status":"complete","artifact":"requirements/implementation/FEAT-030.md","completedAt":"2026-04-25T10:30:00Z"},
+    {"name":"Create PR","skill":"orchestrator","context":"fork","status":"complete","artifact":null,"completedAt":"2026-04-25T10:35:00Z"},
+    {"name":"PR review","skill":null,"context":"pause","status":"complete","artifact":null,"completedAt":"2026-04-25T10:40:00Z"},
+    {"name":"Execute QA","skill":"executing-qa","context":"main","status":"pending","artifact":null,"completedAt":null},
+    {"name":"Finalize","skill":"finalizing-workflow","context":"fork","status":"pending","artifact":null,"completedAt":null}
+  ],
+  "phases": { "total": 1, "completed": 1 },
+  "prNumber": 42,
+  "branch": "feat/FEAT-030-consolidate-executing-qa",
+  "startedAt": "2026-04-25T10:00:00Z",
+  "lastResumedAt": null,
+  "complexity": "high",
+  "complexityStage": "post-plan",
+  "modelOverride": null,
+  "modelSelections": []
+}

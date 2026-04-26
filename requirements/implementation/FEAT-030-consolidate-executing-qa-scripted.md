@@ -163,7 +163,7 @@ The stop-hook diff guard (FR-10) closes #208 scope item 2 — it blocks the run 
 ### Phase 5: Workflow-state QA findings + orchestrator parser (FR-11, FR-12, FR-14)
 
 **Feature:** [FEAT-030](../features/FEAT-030-consolidate-executing-qa-scripted.md) | [#242](https://github.com/lwndev/lwndev-marketplace/issues/242)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 1
 
 #### Rationale
@@ -190,11 +190,11 @@ This phase closes #208 scope items 3, 4, and the related orchestrator documentat
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` (generalized `record-findings` with `--type qa|review`)
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/parse-qa-return.sh`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/workflow-state-record-findings-qa.bats`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/parse-qa-return.bats`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` (FR-14 parse-path documentation)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` (generalized `record-findings` with `--type qa|review`)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/parse-qa-return.sh`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/workflow-state-record-findings-qa.bats`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/parse-qa-return.bats`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` (FR-14 parse-path documentation)
 
 ---
 
