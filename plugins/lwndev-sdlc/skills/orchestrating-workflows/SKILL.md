@@ -43,6 +43,32 @@ The orchestrator integrates with issue trackers (GitHub Issues, Jira) through th
 
 For the full issue tracking protocol — extraction, invocation pattern, runnable examples, rejected alternatives, and mechanism-failure logging — see [references/issue-tracking.md](references/issue-tracking.md).
 
+## Approval-Marker Grammar (BUG-014)
+
+Every confirmation gate is enforced by a Claude Code hook that requires a fresh `.sdlc/approvals/.approval-<gate>-<ID>` marker. Markers are written by Hook A (`record-approval.sh`) only on real `UserPromptSubmit` events — auto-mode self-prompts produce no marker. To approve a gate, type one of the canonical shapes below verbatim. Case-insensitive on the keyword; the workflow ID is uppercase by convention.
+
+| Shape | Marker written | Use at |
+|-------|----------------|--------|
+| `approve plan-approval <ID>` | `.approval-plan-approval-<ID>` | feature-chain plan-approval pause (step 4) |
+| `approve pr-review <ID>` | `.approval-pr-review-<ID>` | PR-review pause (any chain) |
+| `approve findings-decision <ID>` | `.approval-findings-decision-<ID>` | reviewing-requirements findings-decision gate |
+| `approve review-findings <ID>` | `.approval-review-findings-<ID>` | reviewing-requirements errors-present pause |
+| `proceed <ID>` / `yes <ID>` | resolved against active gate, then pauseReason | shorthand at any pause / gate |
+| `merge <ID>` | `.approval-merge-approval-<ID>` | required for `gh pr merge` and the `finalizing-workflow` fork |
+| `pause <ID>` | `.approval-pause-<ID>` | explicit decline (future use) |
+
+Examples — copy-paste verbatim:
+
+```
+approve plan-approval BUG-014
+approve pr-review FEAT-099
+approve findings-decision CHORE-042
+proceed BUG-014
+merge BUG-014
+```
+
+Unknown shapes are silently ignored. If a hook denies a tool call, the deny message names the exact shape required (e.g. `User must type: approve plan-approval BUG-014`).
+
 ## Quick Start
 
 1. Parse argument — determine new workflow vs resume, and chain type (feature, chore, or bug)
