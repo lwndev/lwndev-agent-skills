@@ -101,7 +101,7 @@ Every gate above reduces to one shape: **the agent must wait for explicit user t
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `In Progress`
 
 ## Notes
 
