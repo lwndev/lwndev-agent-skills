@@ -12,6 +12,10 @@ export default defineConfig({
       'scripts/__tests__/fixtures/feat-030-known-buggy/**',
     ],
     fileParallelism: false,
+    // Default 5000ms is too tight for execSync-heavy tests under full-suite
+    // load (tsx cold-starts of release.ts / scaffold.ts / build.ts can
+    // exceed it on a loaded machine).
+    testTimeout: 15000,
     coverage: {
       include: ['scripts/**/*.ts'],
       exclude: ['scripts/**/__tests__/**'],
