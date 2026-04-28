@@ -100,11 +100,13 @@ marker_mtime_epoch() {
     echo ""
     return
   fi
-  # macOS uses `stat -f %m`; GNU uses `stat -c %Y`.
-  if stat -f %m "$path" 2>/dev/null; then
+  # GNU stat (`-c %Y`) first; on Linux, BSD-style `-f %m` means
+  # `--file-system` mountpoint and silently returns non-numeric garbage,
+  # breaking the arithmetic compare and fail-opening the stale-marker check.
+  if stat -c %Y "$path" 2>/dev/null; then
     return
   fi
-  stat -c %Y "$path" 2>/dev/null || echo ""
+  stat -f %m "$path" 2>/dev/null || echo ""
 }
 
 # iso_to_epoch <iso8601> -> epoch seconds (UTC), or empty if unparsable.

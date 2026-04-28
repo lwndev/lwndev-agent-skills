@@ -69,10 +69,10 @@ Every gate above reduces to one shape: **the agent must wait for explicit user t
 
 ## Affected Files
 
-- `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` — `cmd_pause` (lines 1111-1128) needs `pausedAt` field write; `cmd_resume` (1130-1147), `cmd_set_gate` (2001-2003), and `cmd_clear_gate` (2005-2007) shape the call sites that Hook B must guard
+- `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` (planned but not modified)
 - `plugins/lwndev-sdlc/skills/finalizing-workflow/SKILL.md` (planned but not modified)
 - `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/finalize.sh` (planned but not modified)
-- `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` — must document the approval-marker grammar (`approve <gate> <ID>`, `proceed <ID>`, `merge <ID>`, etc.) so users know what to type
+- `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` (planned but not modified)
 - `plugins/lwndev-sdlc/.claude-plugin/plugin.json` (planned but not modified)
 - New file: `plugins/lwndev-sdlc/hooks/hooks.json` — declares Hook A (`UserPromptSubmit`) and Hooks B+C (`PreToolUse` matchers `Bash` and `Agent`); references the hook scripts via `${CLAUDE_PLUGIN_ROOT}/scripts/hooks/...`
 - New file: `plugins/lwndev-sdlc/scripts/hooks/record-approval.sh` — Hook A implementation (`UserPromptSubmit` → write `.sdlc/approvals/.approval-<gate>-<ID>` markers from canonical user input shapes); placed under the existing flat `plugins/lwndev-sdlc/scripts/` tree (sibling to `prepare-fork.sh`, `verify-build-health.sh`, etc.) in a new `hooks/` subdirectory to match the established `tests/` and `assets/` subdir grouping pattern
@@ -82,18 +82,18 @@ Every gate above reduces to one shape: **the agent must wait for explicit user t
 - New file: `plugins/lwndev-sdlc/scripts/tests/hooks/auto-mode-end-to-end.bats` — synthetic orchestrator workflow regression covering self-resume / self-clear-gate / carve-out fork attempts; CI-runnable (calls `workflow-state.sh` against a temp dir; no real PRs created)
 - New file: managed-settings template / documentation site (illustrative path: `plugins/lwndev-sdlc/.claude-plugin/managed-settings.example.json` or a README addition) — the destructive `Bash(...)` `permissions.deny` list (Hook D)
 - `.sdlc/approvals/` (planned but not modified)
-- `plugins/lwndev-sdlc/.claude-plugin/MANAGED-SETTINGS.md`
-- `plugins/lwndev-sdlc/.claude-plugin/managed-settings.example.json`
-- `plugins/lwndev-sdlc/hooks/hooks.json`
-- `plugins/lwndev-sdlc/scripts/hooks/guard-agent-prompts.sh`
+- `plugins/lwndev-sdlc/.claude-plugin/MANAGED-SETTINGS.md` (planned but not modified)
+- `plugins/lwndev-sdlc/.claude-plugin/managed-settings.example.json` (planned but not modified)
+- `plugins/lwndev-sdlc/hooks/hooks.json` (planned but not modified)
+- `plugins/lwndev-sdlc/scripts/hooks/guard-agent-prompts.sh` (planned but not modified)
 - `plugins/lwndev-sdlc/scripts/hooks/guard-state-transitions.sh`
-- `plugins/lwndev-sdlc/scripts/hooks/record-approval.sh`
-- `plugins/lwndev-sdlc/scripts/tests/hooks/auto-mode-end-to-end.bats`
-- `plugins/lwndev-sdlc/scripts/tests/hooks/guard-agent-prompts.bats`
+- `plugins/lwndev-sdlc/scripts/hooks/record-approval.sh` (planned but not modified)
+- `plugins/lwndev-sdlc/scripts/tests/hooks/auto-mode-end-to-end.bats` (planned but not modified)
+- `plugins/lwndev-sdlc/scripts/tests/hooks/guard-agent-prompts.bats` (planned but not modified)
 - `plugins/lwndev-sdlc/scripts/tests/hooks/guard-state-transitions.bats`
-- `plugins/lwndev-sdlc/scripts/tests/hooks/record-approval.bats`
-- `plugins/lwndev-sdlc/scripts/tests/hooks/workflow-state-pausedat.bats`
-- `requirements/bugs/BUG-014-auto-mode-bypasses-confirmation-gates.md`
+- `plugins/lwndev-sdlc/scripts/tests/hooks/record-approval.bats` (planned but not modified)
+- `plugins/lwndev-sdlc/scripts/tests/hooks/workflow-state-pausedat.bats` (planned but not modified)
+- `requirements/bugs/BUG-014-auto-mode-bypasses-confirmation-gates.md` (planned but not modified)
 
 ## Acceptance Criteria
 
@@ -115,9 +115,9 @@ Every gate above reduces to one shape: **the agent must wait for explicit user t
 
 **Status:** `Complete`
 
-**Completed:** 2026-04-26
+**Completed:** 2026-04-27
 
-**Pull Request:** [#247](https://github.com/lwndev/lwndev-marketplace/pull/247)
+**Pull Request:** [#248](https://github.com/lwndev/lwndev-marketplace/pull/248)
 
 ## Notes
 
