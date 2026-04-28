@@ -33,6 +33,8 @@ const CANONICAL_SCRIPTS = [
   'branch-id-parse.sh',
   'prepare-fork.sh',
   'verify-build-health.sh',
+  'new-requirement.sh',
+  'validate-categories.sh',
 ] as const;
 
 // Scripts where invoking with no args is a valid contract (graceful skip,
@@ -102,7 +104,7 @@ describe('shared-scripts library: bats fixture count', () => {
     expect(existsSync(TESTS_DIR)).toBe(true);
     const batsFiles = readdirSync(TESTS_DIR).filter((f) => f.endsWith('.bats'));
     expect(batsFiles.length).toBe(CANONICAL_SCRIPTS.length);
-    expect(batsFiles.length).toBe(12);
+    expect(batsFiles.length).toBe(14);
   });
 
   it('should have a .bats fixture for every canonical script', () => {
