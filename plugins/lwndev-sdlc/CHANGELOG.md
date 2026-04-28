@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.23.1] - 2026-04-28
+
+### Bug Fixes
+
+- **BUG-014 (security):** add a four-hook confirmation-gate defense layer that closes the gap where state transitions could advance without a real user approval ([#247](https://github.com/lwndev/lwndev-marketplace/pull/247)). Hook A (`record-approval.sh`, UserPromptSubmit) writes approval markers; Hook B (`guard-state-transitions.sh`) blocks `resume`, `clear-gate`, and destructive Bash without a fresh marker, using a `pausedAt` timestamp anchor newly added to `workflow-state.sh cmd_pause`; Hook C (`guard-agent-prompts.sh`) enforces carve-outs and confirmation-owning-skill checks on agent prompts; Hook D ships a managed-settings template for destructive-Bash defense-in-depth at the harness level. Hooks A/B/C are wired in `plugins/lwndev-sdlc/hooks/hooks.json`. The approval-marker grammar is documented in `orchestrating-workflows/SKILL.md`, and an end-to-end auto-mode bats regression covers the full flow (the suite also fixed a BSD `date` UTC handling bug discovered while writing it).
+- **BUG-014 (portability):** make the marker mtime check work on Linux ([#248](https://github.com/lwndev/lwndev-marketplace/pull/248)). The mtime epoch derivation relied on BSD `stat` flags; the fix resolves the platform-specific `stat` arguments so the gate behaves identically on Linux CI and macOS dev machines. Covered by a new test for `marker_mtime_epoch` stat ordering.
+
+### Tests
+
+- Bump global vitest `testTimeout` to 15s to stabilize flaky `execSync`-based tests on slower CI runners.
+- New adversarial vitest suite for BUG-014 covering the hook chain and marker grammar.
+
+[1.23.1]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.23.0...lwndev-sdlc@1.23.1
+
 ## [1.23.0] - 2026-04-26
 
 ### Features
