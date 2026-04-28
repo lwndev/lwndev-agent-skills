@@ -99,11 +99,11 @@ Template assets read by `new-requirement.sh` (existing, no content change expect
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `In Progress`
 
 **Completed:** YYYY-MM-DD
 
-**Pull Request:** [#N](https://github.com/lwndev/lwndev-marketplace/pull/N)
+**Pull Request:** [#250](https://github.com/lwndev/lwndev-marketplace/pull/250)
 
 ## Notes
 
