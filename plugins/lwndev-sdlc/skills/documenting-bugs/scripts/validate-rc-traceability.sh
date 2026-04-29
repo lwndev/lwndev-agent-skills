@@ -120,7 +120,6 @@ for tok in re.findall(r"\bRC-[0-9]+\b", rc_section_clean):
 
 # AC bullets: `^- [ ] ` or `^- [x] ` lines, NOT in HTML comments.
 ac_bullet_re = re.compile(r"^- \[[ x]\] (.+)$")
-rc_tag_re = re.compile(r"\(RC-[0-9]+\)")
 
 ac_bullets = []  # list of (criterion_text, set_of_referenced_rcs)
 # An AC is considered "tagged" if it contains at least one RC reference

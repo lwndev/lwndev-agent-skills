@@ -40,12 +40,7 @@ Create structured bug reports that capture defects with reproduction steps, seve
      [--issue <ref>] [--category <name>] [--severity <name>]
    ```
 
-   Composes `next-id.sh` + `slugify.sh` + the BUG template at
-   `assets/bug-document.md`. Writes
-   `requirements/bugs/BUG-{NNN}-{slug}.md` and prints the path on
-   stdout. `--category` and `--severity` are validated against the
-   enums below; invalid values fail with exit 2. Re-runs allocate a
-   fresh ID monotonically; never overwrites.
+   See `new-requirement.sh` header for output path, flag rules, exit codes.
 5. Fill in description, steps to reproduce, expected/actual behavior, root causes (with `RC-N` IDs), affected files, and acceptance criteria (each tagged `(RC-N)`).
 
 ## Output Style
@@ -143,8 +138,6 @@ Before finalizing:
   ```bash
   bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-categories.sh" BUG "<category>"
   ```
-
-  Exit 0 = valid, exit 2 + `error: invalid bug category '...'` = invalid (re-prompt).
 - [ ] Severity reflects actual impact
 - [ ] Steps to reproduce are clear and complete
 - [ ] Root causes are investigated and documented with file references

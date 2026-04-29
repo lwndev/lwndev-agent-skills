@@ -39,12 +39,7 @@ Create lightweight chore task documents for maintenance work, dependency updates
      [--issue <ref>] [--category <name>]
    ```
 
-   Composes `next-id.sh` + `slugify.sh` + the CHORE template at
-   `assets/chore-document.md`. Writes
-   `requirements/chores/CHORE-{NNN}-{slug}.md` and prints the path on
-   stdout. `--category` is validated against the enum below; invalid
-   values fail with exit 2. `--severity` is rejected for CHORE.
-   Re-runs allocate a fresh ID monotonically; never overwrites.
+   See `new-requirement.sh` header for output path, flag rules, exit codes.
 4. Fill in description, affected files, and acceptance criteria in the rendered file.
 
 ## Output Style
@@ -128,8 +123,6 @@ Before finalizing:
   ```bash
   bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-categories.sh" CHORE "<category>"
   ```
-
-  Exit 0 = valid, exit 2 + `error: invalid chore category '...'` = invalid (re-prompt).
 - [ ] Description clearly explains the work
 - [ ] Affected files list is complete
 - [ ] Acceptance criteria are testable

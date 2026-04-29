@@ -48,11 +48,7 @@ Adapt sections to feature type:
      [--issue <ref>]
    ```
 
-   Composes `next-id.sh` + `slugify.sh` + the FEAT template at
-   `assets/feature-requirements.md`. Writes
-   `requirements/features/FEAT-{NNN}-{slug}.md` and prints the path on
-   stdout. `--category` and `--severity` are rejected for FEAT (exit 2).
-   Re-runs allocate a fresh ID monotonically; never overwrites.
+   See `new-requirement.sh` header for output path, flag rules, exit codes.
 4. Define user story and priority
 5. Document command syntax / API interface (if applicable)
 6. List functional and non-functional requirements
