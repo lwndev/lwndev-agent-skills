@@ -34,9 +34,14 @@ SKILL.md files updated to call the scripts and drop the replaced prose:
 - `plugins/lwndev-sdlc/skills/documenting-bugs/SKILL.md`
 
 Template assets read by `new-requirement.sh` (existing, no content change expected):
-- `plugins/lwndev-sdlc/skills/documenting-features/assets/feature-requirements.md`
-- `plugins/lwndev-sdlc/skills/documenting-chores/assets/chore-document.md`
-- `plugins/lwndev-sdlc/skills/documenting-bugs/assets/bug-document.md`
+- `plugins/lwndev-sdlc/skills/documenting-features/assets/feature-requirements.md` (planned but not modified)
+- `plugins/lwndev-sdlc/skills/documenting-chores/assets/chore-document.md` (planned but not modified)
+- `plugins/lwndev-sdlc/skills/documenting-bugs/assets/bug-document.md` (planned but not modified)
+- `qa/test-plans/QA-plan-CHORE-036.md`
+- `qa/test-results/QA-results-CHORE-036.md`
+- `requirements/chores/CHORE-036-documenting-skills-shared-scripts.md`
+- `scripts/__tests__/qa-CHORE-036.test.ts`
+- `scripts/__tests__/shared-scripts.test.ts`
 
 ## Acceptance Criteria
 
@@ -99,9 +104,9 @@ Template assets read by `new-requirement.sh` (existing, no content change expect
 
 ## Completion
 
-**Status:** `In Progress`
+**Status:** `Complete`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-04-29
 
 **Pull Request:** [#250](https://github.com/lwndev/lwndev-marketplace/pull/250)
 
