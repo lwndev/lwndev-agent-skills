@@ -41,10 +41,18 @@ Adapt sections to feature type:
 
 1. Identify scope and purpose
 2. **Ask for GitHub issue URL** if not provided (optional, recommended for traceability)
-3. Define user story and priority
-4. Document command syntax / API interface (if applicable)
-5. List functional and non-functional requirements
-6. Specify output format, edge cases, testing requirements
+3. Allocate the ID, slugify the title, and render the template in one shot:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/new-requirement.sh" FEAT "<feature title>" \
+     [--issue <ref>]
+   ```
+
+   See `new-requirement.sh` header for output path, flag rules, exit codes.
+4. Define user story and priority
+5. Document command syntax / API interface (if applicable)
+6. List functional and non-functional requirements
+7. Specify output format, edge cases, testing requirements
 
 ## Output Style
 
@@ -64,7 +72,7 @@ Follow the lite-narration rules below. Load-bearing carve-outs MUST be emitted a
 
 The following MUST always be emitted even when they resemble narration:
 
-- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface script and tool stderr verbatim (e.g., `next-id.sh` / `slugify.sh` failures).
+- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface script and tool stderr verbatim (e.g., `new-requirement.sh` failures, including the embedded `next-id.sh` / `slugify.sh` errors).
 - **Security-sensitive warnings** -- destructive-operation confirmations, credential prompts.
 - **Interactive prompts** -- any prompt that blocks the workflow and requires user input (e.g., the GitHub issue URL prompt, the feature scope prompt when no argument is provided, a re-slug prompt when `slugify.sh` returns empty).
 - **Findings display from `reviewing-requirements`** -- N/A for this skill (it does not consume reviewing-requirements findings); bullet retained for consistency with the canonical template.
@@ -78,29 +86,13 @@ The following MUST always be emitted even when they resemble narration:
 
 **Precedence**: when a load-bearing carve-out (error message, `[warn]` structured log, interactive prompt, etc.) conflicts with a lite-narration rule, the carve-out wins and MUST be emitted verbatim even if it reads like narration.
 
-## Feature ID Assignment
-
-Allocate the next Feature ID:
-
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/next-id.sh" FEAT
-```
-
-The script scans `requirements/features/` for `FEAT-NNN-*.md`, returns `max(NNN) + 1` zero-padded to three digits, and prints `001` when none exist. Exit codes: `0` success; `2` missing/invalid type arg.
-
 ## File Locations
 
-- `requirements/features/` - Feature requirement documents
+- `requirements/features/` - Feature requirement documents (Quick Start step 3 writes here)
 - `requirements/implementation/` - Implementation plans
 - `docs/features/` - User-facing feature documentation
 
-Filename format: `FEAT-XXX-{2-4-word-description}.md`. Derive the slug:
-
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<feature title>"
-```
-
-Lowercases, strips punctuation, drops stopwords (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), keeps the first four remaining tokens joined with `-`. Exit codes: `0` success; `1` empty slug after normalization (prompt for a more descriptive title); `2` missing arg.
+Filename format: `FEAT-XXX-{2-4-word-description}.md`. The slug and ID are produced by `new-requirement.sh` (Quick Start step 3); on slugify failure (exit 2) prompt for a more descriptive title and retry.
 
 ## Template
 

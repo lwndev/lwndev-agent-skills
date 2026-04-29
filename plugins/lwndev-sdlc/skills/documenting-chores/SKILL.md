@@ -30,11 +30,17 @@ Create lightweight chore task documents for maintenance work, dependency updates
 
 ## Quick Start
 
-1. Check `requirements/chores/` for the next Chore ID
-2. **Ask for GitHub issue URL** if not provided (optional, recommended for traceability)
-3. Identify the chore category (see [references/categories.md](references/categories.md))
-4. Create the chore document from the template
-5. Save to `requirements/chores/CHORE-XXX-description.md`
+1. **Ask for GitHub issue URL** if not provided (optional, recommended for traceability)
+2. Identify the chore category (see [references/categories.md](references/categories.md))
+3. Allocate ID, slugify, and render the template in one shot:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/new-requirement.sh" CHORE "<chore title>" \
+     [--issue <ref>] [--category <name>]
+   ```
+
+   See `new-requirement.sh` header for output path, flag rules, exit codes.
+4. Fill in description, affected files, and acceptance criteria in the rendered file.
 
 ## Output Style
 
@@ -54,7 +60,7 @@ Follow the lite-narration rules below. Load-bearing carve-outs MUST be emitted a
 
 The following MUST always be emitted even when they resemble narration:
 
-- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface script and tool stderr verbatim (e.g., `next-id.sh` / `slugify.sh` failures).
+- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface script and tool stderr verbatim (e.g., `new-requirement.sh` / `validate-categories.sh` failures, including the embedded `next-id.sh` / `slugify.sh` errors).
 - **Security-sensitive warnings** -- destructive-operation confirmations, credential prompts.
 - **Interactive prompts** -- any prompt that blocks the workflow and requires user input (e.g., the GitHub issue URL prompt, the chore details prompt when no argument is provided, a re-slug prompt when `slugify.sh` returns empty).
 - **Findings display from `reviewing-requirements`** -- N/A for this skill (it does not consume reviewing-requirements findings); bullet retained for consistency with the canonical template.
@@ -70,28 +76,12 @@ The following MUST always be emitted even when they resemble narration:
 
 ## File Location
 
-All chore documents live in `requirements/chores/`. Filename format: `CHORE-XXX-{2-4-word-description}.md`. Derive the slug:
-
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<chore title>"
-```
-
-Lowercases, strips punctuation, drops stopwords (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), keeps the first four remaining tokens joined with `-`. Exit codes: `0` success; `1` empty slug after normalization (prompt for a more descriptive title); `2` missing arg.
+All chore documents live in `requirements/chores/`. Filename format: `CHORE-XXX-{2-4-word-description}.md`. ID and slug are produced by `new-requirement.sh` (Quick Start step 3); on slugify failure (exit 2) prompt for a more descriptive title and retry.
 
 Examples:
 - `CHORE-001-update-dependencies.md`
 - `CHORE-002-fix-readme-typos.md`
 - `CHORE-003-cleanup-unused-imports.md`
-
-## Chore ID Assignment
-
-Allocate the next Chore ID:
-
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/next-id.sh" CHORE
-```
-
-Scans `requirements/chores/` for `CHORE-NNN-*.md`, returns `max(NNN) + 1` zero-padded to three digits, prints `001` when none exist. Exit codes: `0` success; `2` missing/invalid type arg.
 
 ## Template
 
@@ -127,8 +117,12 @@ See [references/categories.md](references/categories.md) for per-category guidan
 
 Before finalizing:
 
-- [ ] Chore ID is unique
-- [ ] Category matches the type of work
+- [ ] Chore ID is unique (`new-requirement.sh` guarantees this; never overwrites)
+- [ ] Category validates against the enum:
+
+  ```bash
+  bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-categories.sh" CHORE "<category>"
+  ```
 - [ ] Description clearly explains the work
 - [ ] Affected files list is complete
 - [ ] Acceptance criteria are testable

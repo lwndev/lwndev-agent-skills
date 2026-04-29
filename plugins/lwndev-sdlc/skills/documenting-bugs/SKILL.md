@@ -30,12 +30,18 @@ Create structured bug reports that capture defects with reproduction steps, seve
 
 ## Quick Start
 
-1. Check `requirements/bugs/` for the next Bug ID
-2. **Ask for GitHub issue URL** if not provided (optional, recommended for traceability)
-3. Identify the bug category (see [references/categories.md](references/categories.md))
-4. **Investigate the codebase** — read files, trace call paths, identify root causes before finalizing
-5. Create the bug document from the template
-6. Save to `requirements/bugs/BUG-XXX-description.md`
+1. **Ask for GitHub issue URL** if not provided (optional, recommended for traceability)
+2. Identify the bug category (see [references/categories.md](references/categories.md)) and severity
+3. **Investigate the codebase** — read files, trace call paths, identify root causes before finalizing
+4. Allocate ID, slugify, and render the template in one shot:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/new-requirement.sh" BUG "<bug title>" \
+     [--issue <ref>] [--category <name>] [--severity <name>]
+   ```
+
+   See `new-requirement.sh` header for output path, flag rules, exit codes.
+5. Fill in description, steps to reproduce, expected/actual behavior, root causes (with `RC-N` IDs), affected files, and acceptance criteria (each tagged `(RC-N)`).
 
 ## Output Style
 
@@ -55,7 +61,7 @@ Follow the lite-narration rules below. Load-bearing carve-outs MUST be emitted a
 
 The following MUST always be emitted even when they resemble narration:
 
-- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface script and tool stderr verbatim (e.g., `next-id.sh` / `slugify.sh` failures).
+- **Error messages from `fail` calls** -- users need the reason the skill halted. Surface script and tool stderr verbatim (e.g., `new-requirement.sh` / `validate-categories.sh` / `validate-rc-traceability.sh` failures, including the embedded `next-id.sh` / `slugify.sh` errors).
 - **Security-sensitive warnings** -- destructive-operation confirmations, credential prompts.
 - **Interactive prompts** -- any prompt that blocks the workflow and requires user input (e.g., the GitHub issue URL prompt, the bug details prompt when no argument is provided, a re-slug prompt when `slugify.sh` returns empty).
 - **Findings display from `reviewing-requirements`** -- N/A for this skill (it does not consume reviewing-requirements findings); bullet retained for consistency with the canonical template.
@@ -71,28 +77,12 @@ The following MUST always be emitted even when they resemble narration:
 
 ## File Location
 
-All bug documents live in `requirements/bugs/`. Filename format: `BUG-XXX-{2-4-word-description}.md`. Derive the slug:
-
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<bug title>"
-```
-
-Lowercases, strips punctuation, drops stopwords (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), keeps the first four remaining tokens joined with `-`. Exit codes: `0` success; `1` empty slug after normalization (prompt for a more descriptive title); `2` missing arg.
+All bug documents live in `requirements/bugs/`. Filename format: `BUG-XXX-{2-4-word-description}.md`. ID and slug are produced by `new-requirement.sh` (Quick Start step 4); on slugify failure (exit 2) prompt for a more descriptive title and retry.
 
 Examples:
 - `BUG-001-auth-token-expired.md`
 - `BUG-002-broken-csv-export.md`
 - `BUG-003-memory-leak-polling.md`
-
-## Bug ID Assignment
-
-Allocate the next Bug ID:
-
-```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/next-id.sh" BUG
-```
-
-Scans `requirements/bugs/` for `BUG-NNN-*.md`, returns `max(NNN) + 1` zero-padded to three digits, prints `001` when none exist. Exit codes: `0` success; `2` missing/invalid type arg.
 
 ## Template
 
@@ -142,13 +132,23 @@ See [references/categories.md](references/categories.md) for per-category guidan
 
 Before finalizing:
 
-- [ ] Bug ID is unique
-- [ ] Category matches the type of defect
+- [ ] Bug ID is unique (`new-requirement.sh` guarantees this; never overwrites)
+- [ ] Category validates against the enum:
+
+  ```bash
+  bash "${CLAUDE_PLUGIN_ROOT}/scripts/validate-categories.sh" BUG "<category>"
+  ```
 - [ ] Severity reflects actual impact
 - [ ] Steps to reproduce are clear and complete
 - [ ] Root causes are investigated and documented with file references
-- [ ] Every root cause has at least one corresponding acceptance criterion
-- [ ] Every acceptance criterion references at least one root cause via `(RC-N)` tags
+- [ ] RC <-> AC round-trip enforced (every RC has >= 1 AC; every AC has `(RC-N)` tag):
+
+  ```bash
+  bash "${CLAUDE_PLUGIN_ROOT}/skills/documenting-bugs/scripts/validate-rc-traceability.sh" \
+    "requirements/bugs/BUG-{NNN}-{slug}.md"
+  ```
+
+  Exit 0 = round-trip satisfied. Exit 1 + JSON `{"missingRCs":[...],"untaggedACs":[...]}` = violations (fix and re-run). Exit 2 = file unreadable or missing required section.
 - [ ] Affected files list is complete
 - [ ] GitHub issue is linked (if one exists)
 
