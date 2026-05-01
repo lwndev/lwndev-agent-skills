@@ -92,7 +92,9 @@ The BUG-014 confirmation-gate hooks contain two structural gaps that allow the o
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `In Progress`
+
+**Pull Request:** [#252](https://github.com/lwndev/lwndev-marketplace/pull/252)
 
 ## Notes
 
