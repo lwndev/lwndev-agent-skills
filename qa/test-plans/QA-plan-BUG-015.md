@@ -11,13 +11,24 @@ The BUG-014 confirmation-gate hooks are wired but two structural gaps allow the 
 
 ## Capability Report
 
+```json
+{
+  "id": "BUG-015",
+  "mode": "test-framework",
+  "framework": "vitest",
+  "packageManager": "npm",
+  "testCommand": "npm test",
+  "language": "typescript"
+}
+```
+
 - Mode: test-framework
-- Framework: bats (for bash hook scripts) and vitest (for TypeScript scaffolding scripts; out of scope for this bug)
+- Framework: vitest (consumer-detected); bats is the actual test framework for the bash hook scripts under change
 - Package manager: npm
 - Test command: `npm test` for vitest; `bats plugins/lwndev-sdlc/scripts/tests/hooks/*.bats` for hook bats fixtures
-- Language: bash (hook scripts under test); typescript (scaffolding only)
+- Language: typescript (consumer); bash (hook scripts under test)
 
-Note: capability-discovery.sh detects vitest at the repo root. The actual test framework for the affected hook scripts is bats, and existing hook-script tests live under `plugins/lwndev-sdlc/scripts/tests/hooks/*.bats`. New `guard-findings-edits.bats` will land in the same directory and be exercised by the same conventions.
+Note: capability-discovery.sh detects vitest at the repo root. The affected files in this bug are bash hook scripts; the fix's test coverage lives under `plugins/lwndev-sdlc/scripts/tests/hooks/*.bats`. The QA execution will exercise both: bats fixtures via the hook bats harness, and any vitest probes against TypeScript-side state (`workflow-state.sh` is bash; vitest probes are not applicable here).
 
 ## Scenarios (by dimension)
 
