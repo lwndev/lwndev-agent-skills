@@ -90,9 +90,16 @@ fi
 embedded_norm="$(printf '%s' "${embedded_name##*:}" | tr '[:upper:]' '[:lower:]')"
 
 case "$embedded_norm" in
-  finalizing-workflow)
+  finalizing-workflow*)
     # Embedded SKILL.md is confirmation-owning — that wins regardless of the
     # tool_input.subagent_type label. Closes BUG-015 RC-2 bypass.
+    #
+    # Prefix glob (`finalizing-workflow*`, not exact `finalizing-workflow`)
+    # closes a tamper variant: a fork shaped as
+    # `name: finalizing-workflow-x` + `subagent_type: general-purpose` would
+    # otherwise fall through to the `*` branch and be classified as
+    # general-purpose, skipping AC8. Anything starting with the
+    # confirmation-owning name is treated as the owning skill.
     target_skill="$embedded_name"
     ;;
   *)
@@ -122,7 +129,7 @@ target_skill_norm="$(printf '%s' "${target_skill##*:}" | tr '[:upper:]' '[:lower
 # embedded SKILL.md content for non-gating skills (e.g.
 # reviewing-requirements/SKILL.md:261 "Skip Step 4 unless APIs referenced").
 case "$target_skill_norm" in
-  finalizing-workflow) is_confirmation_owning=1 ;;
+  finalizing-workflow*) is_confirmation_owning=1 ;;
   *) is_confirmation_owning=0 ;;
 esac
 

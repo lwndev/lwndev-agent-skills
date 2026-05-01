@@ -337,3 +337,53 @@ write_merge_marker() {
   output=$(fire_hook "Run a one-off script for BUG-015." "general-purpose")
   [ "$(decision_of "$output")" = "allow" ]
 }
+
+# ------------------------ BUG-015 RC-2 prefix-tamper regression --------------
+#
+# RC-2 follow-up (PR #252 review): the embedded-name regex captures any
+# `[A-Za-z0-9:_/-]+` identifier, and the case statement originally matched
+# `finalizing-workflow` exactly. A fork shaped as
+# `name: finalizing-workflow-x` + `subagent_type: general-purpose` would
+# therefore fall through to the `*` branch, classify as general-purpose, and
+# skip AC8. The case statement now uses the `finalizing-workflow*` glob so any
+# prefix-matching variant is treated as the confirmation-owning skill.
+
+@test "BUG-015 RC-2: tampered embedded name 'finalizing-workflow-x' still triggers AC8 deny" {
+  echo "BUG-015" > .sdlc/workflows/.active
+  prompt=$'---\nname: finalizing-workflow-x\ndescription: Merges the current PR.\n---\nMerge BUG-015.'
+  output=$(fire_hook "$prompt" "general-purpose")
+  [ "$(decision_of "$output")" = "deny" ]
+  printf '%s' "$output" | grep -q "merge BUG-015"
+}
+
+@test "BUG-015 RC-2: tampered embedded name 'finalizing-workflow-fake' still triggers AC8 deny" {
+  echo "BUG-015" > .sdlc/workflows/.active
+  prompt=$'---\nname: finalizing-workflow-fake\ndescription: Merges the current PR.\n---\nMerge BUG-015.'
+  output=$(fire_hook "$prompt" "general-purpose")
+  [ "$(decision_of "$output")" = "deny" ]
+}
+
+@test "BUG-015 RC-2: tampered embedded name with plugin prefix 'lwndev-sdlc:finalizing-workflow-fork' still denies" {
+  echo "BUG-015" > .sdlc/workflows/.active
+  prompt=$'---\nname: lwndev-sdlc:finalizing-workflow-fork\n---\nMerge.'
+  output=$(fire_hook "$prompt" "general-purpose")
+  [ "$(decision_of "$output")" = "deny" ]
+}
+
+@test "BUG-015 RC-2: tampered embedded name 'finalizing-workflow-x' allowed with merge marker" {
+  echo "BUG-015" > .sdlc/workflows/.active
+  write_merge_marker BUG-015
+  prompt=$'---\nname: finalizing-workflow-x\ndescription: Merges the current PR.\n---\nMerge BUG-015.'
+  output=$(fire_hook "$prompt" "general-purpose")
+  [ "$(decision_of "$output")" = "allow" ]
+}
+
+@test "BUG-015 RC-2: 'not-finalizing-workflow' (non-prefix) is NOT treated as confirmation-owning (no false positive)" {
+  # Sanity check: the prefix glob must not over-match. Names that merely contain
+  # `finalizing-workflow` but do not START with it are non-confirmation-owning
+  # and pass through (subject to subagent_type fallback).
+  echo "BUG-015" > .sdlc/workflows/.active
+  prompt=$'---\nname: not-finalizing-workflow\n---\nDo something else.'
+  output=$(fire_hook "$prompt" "general-purpose")
+  [ "$(decision_of "$output")" = "allow" ]
+}

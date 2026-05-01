@@ -348,3 +348,32 @@ JSON
   [ "$(decision_of "$output")" = "deny" ]
   printf '%s' "$output" | grep -q "approve findings-decision BUG-015"
 }
+
+# ------------------------ marker_mtime_epoch unit ----------------------------
+#
+# `marker_mtime_epoch` is duplicated from guard-state-transitions.sh into this
+# hook (RC-3). The GNU/BSD `stat` flag ordering is load-bearing: if reversed,
+# GNU `stat -f %m` returns a mountpoint string on Linux and the regex below
+# fails. Integration tests would mask this on macOS but fail on Linux CI.
+# These unit tests mirror the dedicated coverage in guard-state-transitions.bats
+# (added in PR #248) so the duplicated copy is independently verified.
+
+@test "marker_mtime_epoch returns numeric epoch on this platform (BUG-014 stat ordering)" {
+  local fixture
+  fixture="$(mktemp)"
+  local fn
+  fn="$(sed -n '/^marker_mtime_epoch()/,/^}/p' "$HOOK")"
+  local result
+  result="$(bash -c "${fn}; marker_mtime_epoch \"$fixture\"")"
+  rm -f "$fixture"
+  [[ "$result" =~ ^[0-9]+$ ]]
+  [ "$result" -gt 1000000000 ]
+}
+
+@test "marker_mtime_epoch returns empty for missing file" {
+  local fn
+  fn="$(sed -n '/^marker_mtime_epoch()/,/^}/p' "$HOOK")"
+  local result
+  result="$(bash -c "${fn}; marker_mtime_epoch /tmp/does-not-exist-$$")"
+  [ -z "$result" ]
+}
