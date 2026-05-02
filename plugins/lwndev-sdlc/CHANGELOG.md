@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.23.2] - 2026-05-02
+
+### Bug Fixes
+
+- **BUG-015 (security):** close the general-purpose-fork edit bypass on the findings-decision gate ([#252](https://github.com/lwndev/lwndev-marketplace/pull/252)). Four reinforcing fixes harden the FEAT-014 confirmation chain so a forked subagent cannot tamper with findings outputs or smuggle an unapproved skill past the gate. **RC-1** extends `guard-state-transitions.sh` to block `Edit` / `Write` / `MultiEdit` against findings-decision artifacts unless a fresh approval marker is present (closing the silent-edit path that allowed a fork to rewrite a `pause-errors` decision into `advance`). **RC-2** teaches Hook C to extract the embedded `name:` frontmatter from inline `SKILL.md` payloads *before* matching `subagent_type`, so a payload claiming a different identity than its embedded contract cannot ride the carve-out. **RC-3** records `gateSetAt` on every gate write so the marker-freshness comparison uses the gate's own timestamp anchor instead of process-start, eliminating the mtime-skew window that allowed a stale marker to satisfy the freshness check. The follow-up commit additionally closes a residual prefix-tampered embedded-name bypass and ports the BSD/Linux mtime unit tests added in BUG-014 to the new gate path. Test surface: bats coverage for `guard-findings-edits` plus an embedded-name parity suite covering all three RC paths.
+
+### Chores
+
+- **CHORE-036:** extract `documenting-*` skill shell into shared scripts ([#250](https://github.com/lwndev/lwndev-marketplace/pull/250)). The three `documenting-*` skills (features, chores, bugs) shared the same boilerplate — new-requirement scaffolding, category validation, requirement-context traceability checks — open-coded inside each `SKILL.md`. The chore lifts that shell into three plugin-scoped scripts (`plugins/lwndev-sdlc/scripts/new-requirement.sh`, `validate-categories.sh`, `validate-rc-traceability.sh`) with bats coverage for each, and rewrites the three `SKILL.md` files to call them. The public contract is unchanged; the change is purely a token-cost and maintenance reduction across the three skills.
+
+[1.23.2]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.23.1...lwndev-sdlc@1.23.2
+
 ## [1.23.1] - 2026-04-28
 
 ### Bug Fixes
