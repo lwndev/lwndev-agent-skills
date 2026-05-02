@@ -95,7 +95,7 @@ Phase 2 depends on Phase 1 because the unified `tests/` root must already exist 
 ### Phase 3: Config + npm-script updates (FR-4, FR-5, FR-6, FR-7, FR-8)
 
 **Feature:** [FEAT-031](../features/FEAT-031-consolidate-test-layout-under.md) | [#255](https://github.com/lwndev/lwndev-marketplace/issues/255)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 2
 **ComplexityOverride:** opus
 
