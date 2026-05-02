@@ -10,7 +10,7 @@
 //   - bats fixtures under plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/
 //   - scripts/__tests__/feat-030-executing-qa.test.ts (regression vitest)
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -56,8 +56,14 @@ describe('FEAT-030 QA: Inputs dimension', () => {
     try {
       const cap = join(tmp, 'cap.json');
       const exec = join(tmp, 'exec.json');
-      writeFileSync(cap, JSON.stringify({ mode: 'test-framework', framework: 'vitest', testCommand: 'npm test' }));
-      writeFileSync(exec, JSON.stringify({ total: 1, passed: 1, failed: 0, errored: 0, exitCode: 0 }));
+      writeFileSync(
+        cap,
+        JSON.stringify({ mode: 'test-framework', framework: 'vitest', testCommand: 'npm test' })
+      );
+      writeFileSync(
+        exec,
+        JSON.stringify({ total: 1, passed: 1, failed: 0, errored: 0, exitCode: 0 })
+      );
       const r = runBash(join(SCRIPTS, 'render-qa-results.sh'), ['FEAT-X', 'BROKEN', cap, exec]);
       expect(r.exitCode).toBe(1);
     } finally {
@@ -74,7 +80,9 @@ describe('FEAT-030 QA: Inputs dimension', () => {
       'More narrative...',
       'Verdict: PASS | Passed: 5 | Failed: 0 | Errored: 0',
     ].join('\n');
-    const r = runBash(join(ORCHESTRATOR_SCRIPTS, 'parse-qa-return.sh'), ['--stdin'], { input: fakeResponse });
+    const r = runBash(join(ORCHESTRATOR_SCRIPTS, 'parse-qa-return.sh'), ['--stdin'], {
+      input: fakeResponse,
+    });
     expect(r.exitCode).toBe(0);
     const parsed = JSON.parse(r.stdout);
     expect(parsed.verdict).toBe('PASS');
@@ -98,18 +106,28 @@ describe('FEAT-030 QA: State transitions dimension', () => {
           currentStep: 0,
           status: 'in-progress',
           steps: [
-            { name: 'Document feature requirements', skill: 'documenting-features', context: 'main', status: 'complete' },
-            { name: 'Review requirements', skill: 'reviewing-requirements', context: 'fork', status: 'pending' },
+            {
+              name: 'Document feature requirements',
+              skill: 'documenting-features',
+              context: 'main',
+              status: 'complete',
+            },
+            {
+              name: 'Review requirements',
+              skill: 'reviewing-requirements',
+              context: 'fork',
+              status: 'pending',
+            },
           ],
           phases: { total: 0, completed: 0 },
           modelSelections: [],
-        }),
+        })
       );
-      const r = runBash(join(ORCHESTRATOR_SCRIPTS, 'workflow-state.sh'), [
-        'record-findings',
-        '--type', 'qa',
-        'FEAT-Y', '1', 'PASS', '1', '0', '0', 'should reject',
-      ], { cwd });
+      const r = runBash(
+        join(ORCHESTRATOR_SCRIPTS, 'workflow-state.sh'),
+        ['record-findings', '--type', 'qa', 'FEAT-Y', '1', 'PASS', '1', '0', '0', 'should reject'],
+        { cwd }
+      );
       expect(r.exitCode).not.toBe(0);
     } finally {
       rmSync(tmp, { recursive: true, force: true });
@@ -134,7 +152,7 @@ describe('FEAT-030 QA: Cross-cutting (i18n, concurrency)', () => {
           'The system shall support 日本語 input.',
           '## Acceptance Criteria',
           '- [ ] 日本語 input round-trips through the parser',
-        ].join('\n'),
+        ].join('\n')
       );
       writeFileSync(
         resDoc,
@@ -144,7 +162,7 @@ describe('FEAT-030 QA: Cross-cutting (i18n, concurrency)', () => {
           '- 日本語 input round-trip test',
           '## Findings',
           '- (none)',
-        ].join('\n'),
+        ].join('\n')
       );
       const r = runBash(join(SCRIPTS, 'qa-reconcile-delta.sh'), [resDoc, reqDoc]);
       expect(r.exitCode).toBe(0);
@@ -168,7 +186,9 @@ describe('FEAT-030 QA: Cross-cutting (i18n, concurrency)', () => {
           type: 'feature',
           currentStep: 0,
           status: 'in-progress',
-          steps: [{ name: 'Execute QA', skill: 'executing-qa', context: 'main', status: 'pending' }],
+          steps: [
+            { name: 'Execute QA', skill: 'executing-qa', context: 'main', status: 'pending' },
+          ],
           phases: { total: 0, completed: 0 },
           modelSelections: [],
         });
@@ -176,14 +196,19 @@ describe('FEAT-030 QA: Cross-cutting (i18n, concurrency)', () => {
       writeFileSync(join(cwd, '.sdlc/workflows/FEAT-B.json'), makeWorkflow('FEAT-B'));
 
       // Persist findings for A — should NOT touch B
-      const r = runBash(join(ORCHESTRATOR_SCRIPTS, 'workflow-state.sh'), [
-        'record-findings', '--type', 'qa',
-        'FEAT-A', '0', 'PASS', '5', '0', '0', 'a summary',
-      ], { cwd });
+      const r = runBash(
+        join(ORCHESTRATOR_SCRIPTS, 'workflow-state.sh'),
+        ['record-findings', '--type', 'qa', 'FEAT-A', '0', 'PASS', '5', '0', '0', 'a summary'],
+        { cwd }
+      );
       expect(r.exitCode).toBe(0);
 
       // Read B back; must lack the findings block
-      const rb = execFileSync('jq', ['-r', '.steps[0].findings // "no findings"', join(cwd, '.sdlc/workflows/FEAT-B.json')], { encoding: 'utf-8' });
+      const rb = execFileSync(
+        'jq',
+        ['-r', '.steps[0].findings // "no findings"', join(cwd, '.sdlc/workflows/FEAT-B.json')],
+        { encoding: 'utf-8' }
+      );
       expect(rb.trim()).toBe('no findings');
     } finally {
       rmSync(tmp, { recursive: true, force: true });
@@ -199,7 +224,9 @@ describe('FEAT-030 QA: Dependency failure dimension', () => {
       'A response with no contract line.',
       'Just narrative all the way down.',
     ].join('\n');
-    const r = runBash(join(ORCHESTRATOR_SCRIPTS, 'parse-qa-return.sh'), ['--stdin'], { input: fakeResponse });
+    const r = runBash(join(ORCHESTRATOR_SCRIPTS, 'parse-qa-return.sh'), ['--stdin'], {
+      input: fakeResponse,
+    });
     expect(r.exitCode).toBe(1);
     expect(r.stderr).toContain('contract mismatch');
   });
