@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { truncate } from '../lib/prompts.js';
+import { truncate } from '../../scripts/lib/prompts.js';
 
 describe('prompts utilities', () => {
   describe('truncate', () => {

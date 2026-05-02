@@ -5,12 +5,12 @@ import { join } from 'node:path';
 import semver from 'semver';
 
 const ROOT = join(__dirname, '..', '..');
-const FIXTURE_PACKAGE_JSON = join(ROOT, 'scripts/__tests__/fixtures/qa-fixture/package.json');
+const FIXTURE_PACKAGE_JSON = join(ROOT, 'tests/fixtures/qa-fixture/package.json');
 const CAPABILITY_DISCOVERY_SH = join(
   ROOT,
   'plugins/lwndev-sdlc/skills/executing-qa/scripts/capability-discovery.sh'
 );
-const QA_FIXTURE_DIR = join(ROOT, 'scripts/__tests__/fixtures/qa-fixture');
+const QA_FIXTURE_DIR = join(ROOT, 'tests/fixtures/qa-fixture');
 
 // GHSA-9crc-q9x8-hgqq / CVE-2025-24964 — advisory's vulnerable ranges
 // transcribed as semver-compatible range strings (coerced to lowercase-only

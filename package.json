@@ -2,6 +2,7 @@
   "type": "module",
   "scripts": {
     "scaffold": "tsx scripts/scaffold.ts",
+    "build": "tsx scripts/build.ts",
     "validate": "tsx scripts/build.ts",
     "test": "vitest run",
     "test:watch": "vitest",

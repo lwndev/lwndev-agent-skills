@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { access, rm, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
-import { PROJECT_SKILLS_DIR, PROJECT_AGENTS_DIR } from '../lib/constants.js';
+import { PROJECT_SKILLS_DIR, PROJECT_AGENTS_DIR } from '../../scripts/lib/constants.js';
 
 const TEST_SKILL = 'documenting-features';
 const TEST_AGENT = 'test-fixture-agent';

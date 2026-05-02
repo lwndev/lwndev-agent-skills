@@ -5,14 +5,14 @@ import { join } from 'node:path';
 import semver from 'semver';
 
 const ROOT = join(__dirname, '..', '..');
-const INTEGRATION_TEST = join(ROOT, 'scripts/__tests__/qa-integration.test.ts');
+const INTEGRATION_TEST = join(ROOT, 'tests/unit/qa-integration.test.ts');
 const ROOT_VITEST_BIN = join(ROOT, 'node_modules/.bin/vitest');
-const FIXTURE_PACKAGE_JSON = join(ROOT, 'scripts/__tests__/fixtures/qa-fixture/package.json');
+const FIXTURE_PACKAGE_JSON = join(ROOT, 'tests/fixtures/qa-fixture/package.json');
 const CAPABILITY_DISCOVERY_SH = join(
   ROOT,
   'plugins/lwndev-sdlc/skills/executing-qa/scripts/capability-discovery.sh'
 );
-const QA_FIXTURE_DIR = join(ROOT, 'scripts/__tests__/fixtures/qa-fixture');
+const QA_FIXTURE_DIR = join(ROOT, 'tests/fixtures/qa-fixture');
 
 const VULNERABLE_WINDOWS = ['<=0.0.125', '>=1.0.0 <1.6.1', '>=2.0.0 <2.1.9', '>=3.0.0 <3.0.5'];
 

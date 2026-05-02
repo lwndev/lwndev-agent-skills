@@ -41,7 +41,7 @@ describe('scaffold script integration', () => {
   });
 
   it('should be discoverable by getSourceSkills after creation', async () => {
-    const { getSourceSkills } = await import('../lib/skill-utils.js');
+    const { getSourceSkills } = await import('../../scripts/lib/skill-utils.js');
     const skills = await getSourceSkills('lwndev-sdlc');
     const testSkill = skills.find((s) => s.name === TEST_SKILL_NAME);
 

@@ -8,7 +8,7 @@ import {
   getPluginSkillsDir,
   getPluginAgentsDir,
   getPluginManifestDir,
-} from '../lib/constants.js';
+} from '../../scripts/lib/constants.js';
 
 describe('constants', () => {
   describe('path constants', () => {

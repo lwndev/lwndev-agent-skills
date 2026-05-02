@@ -44,7 +44,7 @@ const EXECUTING_QA_STOP_HOOK = join(
   ROOT,
   'plugins/lwndev-sdlc/skills/executing-qa/scripts/stop-hook.sh'
 );
-const QA_FIXTURE_SRC = join(ROOT, 'scripts/__tests__/fixtures/qa-fixture');
+const QA_FIXTURE_SRC = join(ROOT, 'tests/fixtures/qa-fixture');
 const QA_FIXTURE_EMPTY_SRC = join(ROOT, 'scripts/__tests__/fixtures/qa-fixture-empty');
 const ROOT_VITEST_BIN = join(ROOT, 'node_modules/.bin/vitest');
 

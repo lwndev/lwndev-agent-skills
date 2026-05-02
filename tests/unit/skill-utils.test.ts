@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { getSourceSkills, getSourcePlugins } from '../lib/skill-utils.js';
+import { getSourceSkills, getSourcePlugins } from '../../scripts/lib/skill-utils.js';
 
 describe('skill-utils', () => {
   describe('getSourcePlugins', () => {
