@@ -171,7 +171,7 @@ The phase's scope sits between layout-config (Phase 3) and the validator (now Ph
 ### Phase 5: Layout validator + shared rule module (FR-9, Edge Case 5)
 
 **Feature:** [FEAT-031](../features/FEAT-031-consolidate-test-layout-under.md) | [#255](https://github.com/lwndev/lwndev-marketplace/issues/255)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 4
 **ComplexityOverride:** opus
 
@@ -205,7 +205,7 @@ Wiring the validator into `npm run validate` and `.husky/pre-commit` happens in 
 ### Phase 6: PreToolUse enforcement hook (FR-10, Edge Case 4)
 
 **Feature:** [FEAT-031](../features/FEAT-031-consolidate-test-layout-under.md) | [#255](https://github.com/lwndev/lwndev-marketplace/issues/255)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 5
 
 #### Rationale
@@ -225,9 +225,9 @@ The hook receives a JSON payload on stdin (`tool_name`, `tool_input.file_path`);
 
 #### Deliverables
 
-- [ ] `scripts/hooks/validate-test-layout-hook.ts` (PreToolUse hook entry point)
-- [ ] `.claude/settings.json` (project-scoped checked-in file with `PreToolUse` `Write|Edit` matcher wired to the hook)
-- [ ] `tests/bats/shared/hooks/validate-test-layout-hook.bats` (Bats coverage including Edge Case 4 fail-open)
+- [x] `scripts/hooks/validate-test-layout-hook.ts` (PreToolUse hook entry point)
+- [x] `.claude/settings.json` (project-scoped checked-in file with `PreToolUse` `Write|Edit` matcher wired to the hook)
+- [x] `tests/bats/shared/hooks/validate-test-layout-hook.bats` (Bats coverage including Edge Case 4 fail-open)
 
 ---
 
