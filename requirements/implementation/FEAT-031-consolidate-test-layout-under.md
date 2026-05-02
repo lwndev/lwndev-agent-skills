@@ -53,7 +53,7 @@ The two stay-in-place exceptions documented in FR-2 are honored: `scripts/__test
 ### Phase 2: Bats test relocation (FR-3)
 
 **Feature:** [FEAT-031](../features/FEAT-031-consolidate-test-layout-under.md) | [#255](https://github.com/lwndev/lwndev-marketplace/issues/255)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 1
 **ComplexityOverride:** opus
 
