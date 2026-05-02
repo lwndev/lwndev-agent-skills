@@ -232,6 +232,27 @@ JSON
   [ -z "$files" ]
 }
 
+@test "BUG-015 RC-3: mv -f advances marker mtime on each UserPromptSubmit (gateSetAt freshness)" {
+  # guard-findings-edits.sh compares marker mtime against gateSetAt. If a
+  # second `approve findings-decision <ID>` did not advance the marker mtime,
+  # a stale marker from before the gate-open could satisfy the gate. mv -f
+  # in write_marker() is the load-bearing primitive — verify it advances
+  # mtime on each fire even when the destination already exists.
+  fire_hook "approve findings-decision BUG-015"
+  marker=".sdlc/approvals/.approval-findings-decision-BUG-015"
+  assert_marker "$marker"
+  # Force the marker mtime backwards so a second mv -f has something to
+  # advance against.
+  touch -t 200001010000 "$marker"
+  before=$(stat -c %Y "$marker" 2>/dev/null || stat -f %m "$marker" 2>/dev/null)
+  # Sleep 1s to ensure any second-resolution mtime tick is observable across
+  # bash and the filesystem.
+  sleep 1
+  fire_hook "approve findings-decision BUG-015"
+  after=$(stat -c %Y "$marker" 2>/dev/null || stat -f %m "$marker" 2>/dev/null)
+  [ "$before" -lt "$after" ]
+}
+
 @test "jq absent: hook exits 0 silently and writes no marker (fail-open per contract)" {
   # record-approval.sh:53-56 documents a fail-open path when jq is missing —
   # Hook B is the fail-secure guard, Hook A is best-effort marker writing.

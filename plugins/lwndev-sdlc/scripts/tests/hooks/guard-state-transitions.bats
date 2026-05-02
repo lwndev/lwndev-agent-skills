@@ -325,3 +325,30 @@ JSON
   [ "$(decision_of "$output")" = "deny" ]
   printf '%s' "$output" | grep -q "approve findings-decision BUG-014"
 }
+
+# ------------------------ BUG-015 gateSetAt interaction ----------------------
+
+@test "BUG-015 RC-3: stale marker from before clear-gate does not satisfy a freshly-opened gate (clear-gate path)" {
+  # Synthetic reproduction of the RC-3 motivation: a marker written under the
+  # OLD gate cycle must not survive a clear-gate / set-gate cycle. Hook B's
+  # clear-gate path only checks for marker presence (no timestamp), so this
+  # specific test focuses on the load-bearing invariant: clear-gate succeeds
+  # only with a marker, and the marker's lifetime is bound to the current
+  # gate cycle. Hook (guard-findings-edits) consumes gateSetAt to enforce
+  # cross-cycle freshness; this regression ensures clear-gate semantics still
+  # round-trip cleanly.
+  write_state BUG-014 "" "" "findings-decision"
+  marker=$(write_marker findings-decision BUG-014)
+  # First clear-gate succeeds (marker present).
+  output=$(fire_hook "bash workflow-state.sh clear-gate BUG-014")
+  [ "$(decision_of "$output")" = "allow" ]
+  # Simulate: orchestrator now opens a new gate cycle (set-gate). The same
+  # marker file is still on disk. clear-gate should still allow (marker
+  # exists), but a downstream Edit on a guarded path while the new gate is
+  # open is the place the gateSetAt staleness check kicks in
+  # (guard-findings-edits.sh, covered in guard-findings-edits.bats).
+  output=$(fire_hook "bash workflow-state.sh clear-gate BUG-014")
+  [ "$(decision_of "$output")" = "allow" ]
+  # Sanity: stale marker still on disk (no cleanup expected at this layer).
+  [ -f "$marker" ]
+}

@@ -72,19 +72,50 @@ fi
 # Resolve the target skill once, before either AC7 or AC8 consults it. Real
 # orchestrator forks pass the SKILL.md verbatim (per orchestrating-workflows
 # references/forked-steps.md) and do NOT set subagent_type on every fork —
-# the model decides whether to populate it. The fallback regex therefore has
-# to recognize the YAML frontmatter `name:` key in addition to prose-style
-# `Skill:` / `fork:` / `target:` references kept for defense in depth.
+# the model decides whether to populate it.
+#
+# BUG-015 / RC-2: extract the embedded SKILL.md `name:` frontmatter FIRST. If
+# the embedded name belongs to the confirmation-owning set, it takes precedence
+# over `tool_input.subagent_type` so a fork shaped as
+# `Agent(subagent_type: general-purpose, prompt: <finalizing-workflow SKILL.md>)`
+# is classified by its real payload (finalizing-workflow), not by its label
+# (general-purpose). The previous order-of-precedence (subagent_type first) let
+# this exact shape bypass AC8.
 subagent_type="$(printf '%s' "$payload" | jq -r '.tool_input.subagent_type // empty' 2>/dev/null || true)"
 
-target_skill="$subagent_type"
-if [[ -z "$target_skill" ]]; then
-  if [[ "$prompt_text" =~ (^|[[:space:]])name[[:space:]]*:[[:space:]]*([A-Za-z0-9:_/-]+) ]]; then
-    target_skill="${BASH_REMATCH[2]}"
-  elif [[ "$prompt_text" =~ (^|[[:space:]])(Skill|skill|fork|target)[[:space:]]*[:=][[:space:]]*([A-Za-z0-9:_/-]+) ]]; then
-    target_skill="${BASH_REMATCH[3]}"
-  fi
+embedded_name=""
+if [[ "$prompt_text" =~ (^|[[:space:]])name[[:space:]]*:[[:space:]]*([A-Za-z0-9:_/-]+) ]]; then
+  embedded_name="${BASH_REMATCH[2]}"
 fi
+embedded_norm="$(printf '%s' "${embedded_name##*:}" | tr '[:upper:]' '[:lower:]')"
+
+case "$embedded_norm" in
+  finalizing-workflow*)
+    # Embedded SKILL.md is confirmation-owning — that wins regardless of the
+    # tool_input.subagent_type label. Closes BUG-015 RC-2 bypass.
+    #
+    # Prefix glob (`finalizing-workflow*`, not exact `finalizing-workflow`)
+    # closes a tamper variant: a fork shaped as
+    # `name: finalizing-workflow-x` + `subagent_type: general-purpose` would
+    # otherwise fall through to the `*` branch and be classified as
+    # general-purpose, skipping AC8. Anything starting with the
+    # confirmation-owning name is treated as the owning skill.
+    target_skill="$embedded_name"
+    ;;
+  *)
+    # Non-confirmation-owning embedded name (or no embedded name at all).
+    # Fall back to subagent_type, then to the prose-style fallback regex chain
+    # for forks that neither label themselves nor embed YAML frontmatter.
+    if [[ -n "$subagent_type" ]]; then
+      target_skill="$subagent_type"
+    else
+      target_skill="$embedded_name"
+      if [[ -z "$target_skill" ]] && [[ "$prompt_text" =~ (^|[[:space:]])(Skill|skill|fork|target)[[:space:]]*[:=][[:space:]]*([A-Za-z0-9:_/-]+) ]]; then
+        target_skill="${BASH_REMATCH[3]}"
+      fi
+    fi
+    ;;
+esac
 
 # Strip plugin prefix and lowercase explicitly. Lowercasing here decouples
 # the case statement below from `nocasematch` shell state — uppercase /
@@ -98,7 +129,7 @@ target_skill_norm="$(printf '%s' "${target_skill##*:}" | tr '[:upper:]' '[:lower
 # embedded SKILL.md content for non-gating skills (e.g.
 # reviewing-requirements/SKILL.md:261 "Skip Step 4 unless APIs referenced").
 case "$target_skill_norm" in
-  finalizing-workflow) is_confirmation_owning=1 ;;
+  finalizing-workflow*) is_confirmation_owning=1 ;;
   *) is_confirmation_owning=0 ;;
 esac
 

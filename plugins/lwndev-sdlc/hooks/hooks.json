@@ -1,5 +1,5 @@
 {
-  "description": "BUG-014 confirmation-gate hooks. Hook A (UserPromptSubmit) writes approval markers from canonical user input shapes. Hook B (PreToolUse Bash) denies workflow-state.sh resume/clear-gate and destructive Bash without a fresh marker. Hook C (PreToolUse Task/Agent) denies carve-out prompts and forks of confirmation-owning skills without a marker.",
+  "description": "BUG-014 + BUG-015 confirmation-gate hooks. Hook A (UserPromptSubmit) writes approval markers from canonical user input shapes. Hook B (PreToolUse Bash) denies workflow-state.sh resume/clear-gate and destructive Bash without a fresh marker. Hook C (PreToolUse Task/Agent) denies carve-out prompts and forks of confirmation-owning skills without a marker. BUG-015 Hook (PreToolUse Edit|Write|MultiEdit) denies edits to requirements docs while findings-decision gate is set without a fresh marker.",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -40,6 +40,16 @@
           {
             "type": "command",
             "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/guard-agent-prompts.sh",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/hooks/guard-findings-edits.sh",
             "timeout": 10
           }
         ]

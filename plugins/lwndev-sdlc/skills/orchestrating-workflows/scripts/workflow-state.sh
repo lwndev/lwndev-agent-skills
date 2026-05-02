@@ -7,13 +7,19 @@ set -euo pipefail
 #
 # State-file schema (top-level fields, partial — see _migrate_state_file for the
 # defensive migration set): id, type, status, currentStep, steps, gate,
-# pauseReason, pausedAt, lastResumedAt, complexity, complexityStage,
+# gateSetAt, pauseReason, pausedAt, lastResumedAt, complexity, complexityStage,
 # modelOverride, modelSelections, error.
 #   * pausedAt (BUG-014 / AC9): optional ISO-8601 string. Written by `cmd_pause`
 #     each time the workflow pauses. Null/missing on workflows that have never
 #     paused. Hook B (guard-state-transitions.sh) compares the mtime of an
 #     approval marker against this field; missing pausedAt is treated as
 #     infinitely old, so a fresh user approval is always required.
+#   * gateSetAt (BUG-015 / RC-3): optional ISO-8601 string. Written by
+#     `cmd_set_gate` each time the orchestrator opens a gate. Reset to null by
+#     `cmd_clear_gate` and `cmd_pause` (which auto-clears the gate).
+#     `guard-findings-edits.sh` compares the mtime of an approval marker
+#     against this field; missing gateSetAt is treated as infinitely old,
+#     mirroring the BUG-014 / AC9 pausedAt convention.
 
 # Check jq availability
 if ! command -v jq &>/dev/null; then
@@ -240,14 +246,15 @@ _migrate_state_file() {
     (has("complexityStage") | not) or
     (has("modelOverride") | not) or
     (has("modelSelections") | not) or
-    (has("gate") | not)
+    (has("gate") | not) or
+    (has("gateSetAt") | not)
   ' "$file" 2>/dev/null || echo "false")
 
   if [[ "$needs_migration" != "true" ]]; then
     return 0
   fi
 
-  echo "[workflow-state] debug: migrating ${file} to add missing state fields (model-selection and gate)" >&2
+  echo "[workflow-state] debug: migrating ${file} to add missing state fields (model-selection, gate, gateSetAt)" >&2
 
   jq '
     (if has("complexity") | not then .complexity = null else . end)
@@ -255,6 +262,7 @@ _migrate_state_file() {
     | (if has("modelOverride") | not then .modelOverride = null else . end)
     | (if has("modelSelections") | not then .modelSelections = [] else . end)
     | (if has("gate") | not then .gate = null else . end)
+    | (if has("gateSetAt") | not then .gateSetAt = null else . end)
   ' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 }
 
@@ -1044,6 +1052,7 @@ cmd_init() {
       status: "in-progress",
       pauseReason: null,
       gate: null,
+      gateSetAt: null,
       steps: $steps,
       phases: { total: 0, completed: 0 },
       prNumber: null,
@@ -1104,7 +1113,8 @@ cmd_advance() {
      | .steps[$step].completedAt = $now
      | (if $artifact != null then .steps[$step].artifact = $artifact else . end)
      | .currentStep = $next
-     | .gate = null' \
+     | .gate = null
+     | .gateSetAt = null' \
     "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   # Update phase completion count if the completed step had a phaseNumber
@@ -1136,8 +1146,11 @@ cmd_pause() {
   local now
   now=$(now_iso)
 
+  # BUG-015 / RC-3: pause auto-clears the gate, so gateSetAt resets to null too.
+  # `guard-findings-edits.sh` reads gateSetAt and treats null as "no gate set"
+  # (the gate-presence short-circuit fires before the timestamp comparison).
   jq --arg reason "$reason" --arg now "$now" \
-    '.status = "paused" | .pauseReason = $reason | .gate = null | .pausedAt = $now' \
+    '.status = "paused" | .pauseReason = $reason | .gate = null | .gateSetAt = null | .pausedAt = $now' \
     "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   cat "$file"
@@ -1156,7 +1169,7 @@ cmd_resume() {
   current_step=$(jq -r '.currentStep' "$file")
 
   jq --arg now "$now" --argjson step "$current_step" \
-    '.status = "in-progress" | .pauseReason = null | .gate = null | .error = null | .lastResumedAt = $now
+    '.status = "in-progress" | .pauseReason = null | .gate = null | .gateSetAt = null | .error = null | .lastResumedAt = $now
      | if .steps[$step].status == "failed" then .steps[$step].status = "pending" else . end' \
     "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
@@ -1182,8 +1195,16 @@ cmd_set_gate() {
     exit 1
   fi
 
-  jq --arg gate "$gate_type" \
-    '.gate = $gate' \
+  # BUG-015 / RC-3: stamp gateSetAt with the current ISO-8601 UTC time.
+  # `guard-findings-edits.sh` compares approval-marker mtime against this
+  # field; missing gateSetAt is treated as infinitely old (mirrors BUG-014 / AC9
+  # pausedAt convention) so a stale marker from a prior gate cycle cannot
+  # satisfy a freshly-opened gate.
+  local now
+  now=$(now_iso)
+
+  jq --arg gate "$gate_type" --arg now "$now" \
+    '.gate = $gate | .gateSetAt = $now' \
     "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   cat "$file"
@@ -1195,7 +1216,9 @@ cmd_clear_gate() {
   file=$(state_file "$id")
   validate_state_file "$file"
 
-  jq '.gate = null' \
+  # BUG-015 / RC-3: clear-gate also resets gateSetAt so the next set-gate
+  # cycle starts with a fresh timestamp.
+  jq '.gate = null | .gateSetAt = null' \
     "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   cat "$file"
