@@ -61,13 +61,17 @@ The BUG-014 confirmation-gate hooks contain two structural gaps that allow the o
 
 - `plugins/lwndev-sdlc/hooks/hooks.json`
 - `plugins/lwndev-sdlc/scripts/hooks/guard-agent-prompts.sh`
-- `plugins/lwndev-sdlc/scripts/hooks/guard-state-transitions.sh`
+- `plugins/lwndev-sdlc/scripts/hooks/guard-state-transitions.sh` (planned but not modified)
 - `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh`
 - `plugins/lwndev-sdlc/scripts/hooks/guard-findings-edits.sh` (new)
 - `plugins/lwndev-sdlc/scripts/tests/hooks/guard-findings-edits.bats` (new)
 - `plugins/lwndev-sdlc/scripts/tests/hooks/guard-agent-prompts.bats`
 - `plugins/lwndev-sdlc/scripts/tests/hooks/guard-state-transitions.bats`
 - `plugins/lwndev-sdlc/scripts/tests/hooks/record-approval.bats`
+- `qa/test-plans/QA-plan-BUG-015.md`
+- `qa/test-results/QA-results-BUG-015.md`
+- `requirements/bugs/BUG-015-general-purpose-fork-edit-bypass.md`
+- `scripts/__tests__/qa-bug-015-gates.test.ts`
 
 ## Acceptance Criteria
 
@@ -92,7 +96,9 @@ The BUG-014 confirmation-gate hooks contain two structural gaps that allow the o
 
 ## Completion
 
-**Status:** `In Progress`
+**Status:** `Complete`
+
+**Completed:** 2026-05-02
 
 **Pull Request:** [#252](https://github.com/lwndev/lwndev-marketplace/pull/252)
 
