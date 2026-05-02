@@ -20,7 +20,7 @@
 setup() {
   SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts" && pwd)"
   SCRIPT="${SCRIPT_DIR}/validate-phase-sizes.sh"
-  FIXTURES="${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures"
+  FIXTURES="${BATS_TEST_DIRNAME}/../../../fixtures/creating-implementation-plans"
   WORK_DIR="$(mktemp -d)"
 }
 

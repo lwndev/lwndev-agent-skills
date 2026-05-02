@@ -15,7 +15,7 @@
 setup() {
   SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts" && pwd)"
   SCRIPT="${SCRIPT_DIR}/verify-phase-deliverables.sh"
-  FIXTURE_SRC="${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/tests/fixtures/verify-deliverables-plan.md"
+  FIXTURE_SRC="${BATS_TEST_DIRNAME}/../../../fixtures/implementing-plan-phases/verify-deliverables-plan.md"
 
   FIXTURE_DIR="$(mktemp -d)"
   STUB_DIR="${FIXTURE_DIR}/stubs"

@@ -9,7 +9,7 @@
 setup() {
   SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/reviewing-requirements/scripts" && pwd)"
   SCRIPT="${SCRIPT_DIR}/reconcile-test-plan.sh"
-  FIXTURES="${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/fixtures"
+  FIXTURES="${BATS_TEST_DIRNAME}/../../../fixtures/reviewing-requirements"
 
   REQ_V2="${FIXTURES}/req-doc-reconcile.md"
   PLAN_V2="${FIXTURES}/qa-plan-v2-prose.md"

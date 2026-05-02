@@ -14,7 +14,7 @@
 
 setup() {
   SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts" && pwd)"
-  FIXTURES_DIR="${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures"
+  FIXTURES_DIR="${BATS_TEST_DIRNAME}/../../../fixtures/orchestrating-workflows"
   WS="${SCRIPT_DIR}/workflow-state.sh"
   TMPDIR_TEST="$(mktemp -d)"
   mkdir -p "${TMPDIR_TEST}/.sdlc/workflows"

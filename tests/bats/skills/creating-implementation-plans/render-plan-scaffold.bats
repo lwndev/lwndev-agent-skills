@@ -19,7 +19,7 @@
 setup() {
   SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts" && pwd)"
   SCRIPT="${SCRIPT_DIR}/render-plan-scaffold.sh"
-  FIXTURES="${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures"
+  FIXTURES="${BATS_TEST_DIRNAME}/../../../fixtures/creating-implementation-plans"
   REAL_PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
   REAL_RESOLVER="${REAL_PLUGIN_ROOT}/scripts/resolve-requirement-doc.sh"
   REAL_TEMPLATE="${REAL_PLUGIN_ROOT}/skills/creating-implementation-plans/assets/implementation-plan.md"

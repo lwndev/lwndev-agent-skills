@@ -129,7 +129,7 @@ Bundling FR-4 through FR-8 into one phase is intentional: each is a single confi
 ### Phase 4: Per-skill test fixture relocation (FR-2 extension, Edge Case 7 closure)
 
 **Feature:** [FEAT-031](../features/FEAT-031-consolidate-test-layout-under.md) | [#255](https://github.com/lwndev/lwndev-marketplace/issues/255)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 3
 **ComplexityOverride:** opus
 
@@ -157,13 +157,13 @@ The phase's scope sits between layout-config (Phase 3) and the validator (now Ph
 
 #### Deliverables
 
-- [ ] `tests/fixtures/creating-implementation-plans/` (9 files moved, `split-overflow-plan.md` dropped)
-- [ ] `tests/fixtures/orchestrating-workflows/` (17 files + `qa-artifacts/` + `sdlc-workflows/` with `BUG-001.json`/`CHORE-001.json`/`CHORE-002-pre-feat030.json` dropped, `FEAT-030-qa.json` retained)
-- [ ] `tests/fixtures/reviewing-requirements/` (5 files moved)
-- [ ] `tests/fixtures/implementing-plan-phases/` (5 files moved)
-- [ ] 21 skill-leaf `*.bats` files with rewritten `FIXTURES=`/`FIXTURE_SRC=` constants
-- [ ] `tests/bats/shared/prepare-fork.bats` (1 line rewritten, `PLUGIN_ROOT` indirection dropped for fixture path)
-- [ ] 3 `tests/unit/*.test.ts` files with rewritten hardcoded paths to `budget-mixed-plan.md` (5 references total)
+- [x] `tests/fixtures/creating-implementation-plans/` (9 files moved, `split-overflow-plan.md` dropped)
+- [x] `tests/fixtures/orchestrating-workflows/` (17 files + `qa-artifacts/` + `sdlc-workflows/` with `BUG-001.json`/`CHORE-001.json`/`CHORE-002-pre-feat030.json` dropped, `FEAT-030-qa.json` retained)
+- [x] `tests/fixtures/reviewing-requirements/` (5 files moved)
+- [x] `tests/fixtures/implementing-plan-phases/` (5 files moved)
+- [x] 21 skill-leaf `*.bats` files with rewritten `FIXTURES=`/`FIXTURE_SRC=` constants
+- [x] `tests/bats/shared/prepare-fork.bats` (1 line rewritten, `PLUGIN_ROOT` indirection dropped for fixture path)
+- [x] 3 `tests/unit/*.test.ts` files with rewritten hardcoded paths to `budget-mixed-plan.md` (5 references total)
 - [ ] Removed `plugins/lwndev-sdlc/skills/{creating-implementation-plans,orchestrating-workflows,reviewing-requirements,implementing-plan-phases}/scripts/tests/` (empty after fixture move, deleted)
 
 ---

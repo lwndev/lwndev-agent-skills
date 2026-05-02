@@ -14,7 +14,7 @@
 
 setup() {
   SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts" && pwd)"
-  FIXTURES_DIR="${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures"
+  FIXTURES_DIR="${BATS_TEST_DIRNAME}/../../../fixtures/orchestrating-workflows"
   PARSE="${SCRIPT_DIR}/parse-qa-return.sh"
   ARTIFACT="${FIXTURES_DIR}/qa-artifacts/QA-results-FEAT-030.md"
   TMPDIR_TEST="$(mktemp -d)"

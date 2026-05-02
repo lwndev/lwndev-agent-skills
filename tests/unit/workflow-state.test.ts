@@ -1662,7 +1662,7 @@ describe('workflow-state.sh', () => {
         // budget-mixed-plan.md scores [haiku, sonnet, opus, opus] → max=opus → high.
         const BUDGET_MIXED_PLAN = join(
           process.cwd(),
-          'plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md'
+          'tests/fixtures/creating-implementation-plans/budget-mixed-plan.md'
         );
 
         it('init medium + max-of-tiers=opus → upgraded to high (audit line emitted)', () => {
@@ -1964,7 +1964,7 @@ describe('workflow-state.sh', () => {
       describe('resolve-tier --phase / --plan-file (FEAT-029 FR-6)', () => {
         const BUDGET_PLAN = join(
           process.cwd(),
-          'plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md'
+          'tests/fixtures/creating-implementation-plans/budget-mixed-plan.md'
         );
 
         it('per-phase haiku phase resolves implementing-plan-phases to haiku', () => {
@@ -2238,7 +2238,7 @@ describe('workflow-state.sh', () => {
           // and triggers a real upgrade (medium → high) under the FR-9 rules.
           mkdirSync(join(testDir, 'requirements/implementation'), { recursive: true });
           const planContent = execSync(
-            `cat "${join(process.cwd(), 'plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md')}"`,
+            `cat "${join(process.cwd(), 'tests/fixtures/creating-implementation-plans/budget-mixed-plan.md')}"`,
             { encoding: 'utf-8' }
           );
           writeFileSync(join(testDir, 'requirements/implementation/FEAT-701-plan.md'), planContent);

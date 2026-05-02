@@ -50,7 +50,7 @@ setup() {
   ln -s "$REAL_PCB" "${FAKE_PLUGIN}/skills/creating-implementation-plans/scripts/phase-complexity-budget.sh"
 
   # Path to the FEAT-029 budget-mixed-plan fixture for FR-8 tests.
-  BUDGET_MIXED_PLAN="${PLUGIN_ROOT}/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md"
+  BUDGET_MIXED_PLAN="${BATS_TEST_DIRNAME}/../../fixtures/creating-implementation-plans/budget-mixed-plan.md"
 
   export CLAUDE_PLUGIN_ROOT="$FAKE_PLUGIN"
   export CLAUDE_SKILL_DIR="${FAKE_PLUGIN}/skills/orchestrating-workflows"

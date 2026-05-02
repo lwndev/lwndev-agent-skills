@@ -12,7 +12,7 @@
 
 setup() {
   SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts" && pwd)"
-  FIXTURES_DIR="${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures"
+  FIXTURES_DIR="${BATS_TEST_DIRNAME}/../../../fixtures/orchestrating-workflows"
   PARSE="${SCRIPT_DIR}/parse-findings.sh"
   TMPDIR_TEST="$(mktemp -d)"
 }

@@ -15,7 +15,7 @@ const SCRIPT = join(
 
 const BUDGET_MIXED_PLAN = join(
   process.cwd(),
-  'plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md'
+  'tests/fixtures/creating-implementation-plans/budget-mixed-plan.md'
 );
 
 const FEATURE_LOW_1PHASE = join(

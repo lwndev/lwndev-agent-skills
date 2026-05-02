@@ -12,7 +12,7 @@
 setup() {
   SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/reviewing-requirements/scripts" && pwd)"
   SCRIPT="${SCRIPT_DIR}/extract-references.sh"
-  FIXTURES="${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/reviewing-requirements/scripts/tests/fixtures"
+  FIXTURES="${BATS_TEST_DIRNAME}/../../../fixtures/reviewing-requirements"
   TMPDIR_TEST="$(mktemp -d)"
 
   # We run the sample fixture inside a disposable git repo whose `origin` is

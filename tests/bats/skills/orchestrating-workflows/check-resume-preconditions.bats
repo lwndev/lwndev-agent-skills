@@ -15,7 +15,7 @@
 
 setup() {
   SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts" && pwd)"
-  FIXTURES_DIR="${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/tests/fixtures"
+  FIXTURES_DIR="${BATS_TEST_DIRNAME}/../../../fixtures/orchestrating-workflows"
   CHECK="${SCRIPT_DIR}/check-resume-preconditions.sh"
   TMPDIR_TEST="$(mktemp -d)"
   STUB_DIR="${TMPDIR_TEST}/stubs"

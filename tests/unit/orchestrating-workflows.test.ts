@@ -1076,7 +1076,7 @@ describe('integration tests', () => {
         mkdirSync(planDir, { recursive: true });
         const budgetPlanPath = join(
           process.cwd(),
-          'plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md'
+          'tests/fixtures/creating-implementation-plans/budget-mixed-plan.md'
         );
         const planContent = execSync(`cat "${budgetPlanPath}"`, { encoding: 'utf-8' });
         writeFileSync(join(planDir, `${id}-test-plan.md`), planContent);
@@ -1355,7 +1355,7 @@ describe('integration tests', () => {
           mkdirSync(planDir, { recursive: true });
           const budgetPlanPath = join(
             process.cwd(),
-            'plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures/budget-mixed-plan.md'
+            'tests/fixtures/creating-implementation-plans/budget-mixed-plan.md'
           );
           const planContent = execSync(`cat "${budgetPlanPath}"`, { encoding: 'utf-8' });
           writeFileSync(join(planDir, `${id}-plan.md`), planContent);

@@ -8,7 +8,7 @@
 setup() {
   SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts" && pwd)"
   SCRIPT="${SCRIPT_DIR}/plan-status-marker.sh"
-  FIXTURES="${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/implementing-plan-phases/scripts/tests/fixtures"
+  FIXTURES="${BATS_TEST_DIRNAME}/../../../fixtures/implementing-plan-phases"
   TMPDIR_TEST="$(mktemp -d)"
   DOC="${TMPDIR_TEST}/plan.md"
 }

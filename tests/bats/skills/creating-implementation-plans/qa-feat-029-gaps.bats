@@ -10,7 +10,7 @@ setup() {
   VALIDATE_DAG="${SCRIPT_DIR}/validate-plan-dag.sh"
   VALIDATE_SIZES="${SCRIPT_DIR}/validate-phase-sizes.sh"
   SPLIT="${SCRIPT_DIR}/split-phase-suggest.sh"
-  FIXTURES="${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/creating-implementation-plans/scripts/tests/fixtures"
+  FIXTURES="${BATS_TEST_DIRNAME}/../../../fixtures/creating-implementation-plans"
   WORK_DIR="$(mktemp -d)"
 }
 
