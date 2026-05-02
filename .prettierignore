@@ -4,3 +4,4 @@ dist-scripts/
 coverage/
 *.skill
 package-lock.json
+tests/fixtures/

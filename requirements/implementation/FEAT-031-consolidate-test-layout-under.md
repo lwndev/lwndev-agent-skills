@@ -171,7 +171,7 @@ The phase's scope sits between layout-config (Phase 3) and the validator (now Ph
 ### Phase 5: Layout validator + shared rule module (FR-9, Edge Case 5)
 
 **Feature:** [FEAT-031](../features/FEAT-031-consolidate-test-layout-under.md) | [#255](https://github.com/lwndev/lwndev-marketplace/issues/255)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 4
 **ComplexityOverride:** opus
 
@@ -194,11 +194,11 @@ Wiring the validator into `npm run validate` and `.husky/pre-commit` happens in 
 
 #### Deliverables
 
-- [ ] `scripts/test-layout-rules.ts` (rule IDs, allow-rule constant, `classifyPath` helper)
-- [ ] `scripts/validate-test-layout.ts` (validator entry point)
-- [ ] `tests/unit/validate-test-layout.test.ts` (Vitest coverage per FR-9)
-- [ ] `package.json` (`validate` script chains layout validator before build validator)
-- [ ] `.husky/pre-commit` (`npm run validate` appended after audit)
+- [x] `scripts/test-layout-rules.ts` (rule IDs, allow-rule constant, `classifyPath` helper)
+- [x] `scripts/validate-test-layout.ts` (validator entry point)
+- [x] `tests/unit/validate-test-layout.test.ts` (Vitest coverage per FR-9)
+- [x] `package.json` (`validate` script chains layout validator before build validator)
+- [x] `.husky/pre-commit` (`npm run validate` appended after audit)
 
 ---
 
