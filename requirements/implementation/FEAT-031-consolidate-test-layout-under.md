@@ -53,7 +53,7 @@ The two stay-in-place exceptions documented in FR-2 are honored: `scripts/__test
 ### Phase 2: Bats test relocation (FR-3)
 
 **Feature:** [FEAT-031](../features/FEAT-031-consolidate-test-layout-under.md) | [#255](https://github.com/lwndev/lwndev-marketplace/issues/255)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 1
 **ComplexityOverride:** opus
 
@@ -77,18 +77,18 @@ Phase 2 depends on Phase 1 because the unified `tests/` root must already exist 
 
 #### Deliverables
 
-- [ ] `tests/bats/shared/*.bats` (14 top-level shared files, paths rewritten)
-- [ ] `tests/bats/shared/hooks/*.bats` (6 hook files, paths rewritten)
-- [ ] `tests/bats/skills/creating-implementation-plans/*.bats` (6 files, paths rewritten)
-- [ ] `tests/bats/skills/documenting-bugs/*.bats` (1 file, paths rewritten)
-- [ ] `tests/bats/skills/executing-qa/*.bats` (9 files, paths rewritten)
-- [ ] `tests/bats/skills/finalizing-workflow/*.bats` (6 files, paths rewritten)
-- [ ] `tests/bats/skills/implementing-plan-phases/*.bats` (6 files, paths rewritten)
-- [ ] `tests/bats/skills/managing-work-items/*.bats` (6 files, paths rewritten)
-- [ ] `tests/bats/skills/orchestrating-workflows/*.bats` (8 files, paths rewritten)
-- [ ] `tests/bats/skills/reviewing-requirements/*.bats` (6 files, paths rewritten)
-- [ ] Removed `plugins/lwndev-sdlc/scripts/tests/` (empty, deleted)
-- [ ] Removed per-skill `plugins/lwndev-sdlc/skills/<skill>/scripts/tests/` (empty, deleted)
+- [x] `tests/bats/shared/` (14 top-level shared `.bats` files, paths rewritten)
+- [x] `tests/bats/shared/hooks/` (6 hook `.bats` files, paths rewritten)
+- [x] `tests/bats/skills/creating-implementation-plans/` (6 files, paths rewritten)
+- [x] `tests/bats/skills/documenting-bugs/` (1 file, paths rewritten)
+- [x] `tests/bats/skills/executing-qa/` (9 files, paths rewritten)
+- [x] `tests/bats/skills/finalizing-workflow/` (6 files, paths rewritten)
+- [x] `tests/bats/skills/implementing-plan-phases/` (6 files, paths rewritten)
+- [x] `tests/bats/skills/managing-work-items/` (6 files, paths rewritten)
+- [x] `tests/bats/skills/orchestrating-workflows/` (8 files, paths rewritten)
+- [x] `tests/bats/skills/reviewing-requirements/` (6 files, paths rewritten)
+- [x] Removed `plugins/lwndev-sdlc/scripts/tests/` (empty, deleted)
+- [x] Removed per-skill `plugins/lwndev-sdlc/skills/<skill>/scripts/tests/` (empty, deleted)
 
 ---
 

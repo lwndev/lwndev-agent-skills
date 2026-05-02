@@ -16,7 +16,7 @@ import { spawnSync } from 'node:child_process';
 // ---------------------------------------------------------------------------
 
 const SCRIPTS_DIR = 'plugins/lwndev-sdlc/scripts';
-const TESTS_DIR = join(SCRIPTS_DIR, 'tests');
+const TESTS_DIR = 'tests/bats/shared';
 const ASSETS_DIR = join(SCRIPTS_DIR, 'assets');
 const PR_BODY_TMPL = join(ASSETS_DIR, 'pr-body.tmpl');
 
