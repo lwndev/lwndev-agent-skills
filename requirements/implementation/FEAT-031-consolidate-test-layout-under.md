@@ -129,7 +129,7 @@ Bundling FR-4 through FR-8 into one phase is intentional: each is a single confi
 ### Phase 4: Per-skill test fixture relocation (FR-2 extension, Edge Case 7 closure)
 
 **Feature:** [FEAT-031](../features/FEAT-031-consolidate-test-layout-under.md) | [#255](https://github.com/lwndev/lwndev-marketplace/issues/255)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 3
 **ComplexityOverride:** opus
 
