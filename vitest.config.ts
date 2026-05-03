@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    testMatch: ['**/__tests__/**/*.test.ts'],
+    testMatch: ['tests/unit/**/*.test.ts'],
     exclude: [
       '**/node_modules/**',
       '.claude/worktrees/**',
@@ -18,7 +18,11 @@ export default defineConfig({
     testTimeout: 15000,
     coverage: {
       include: ['scripts/**/*.ts'],
-      exclude: ['scripts/**/__tests__/**'],
+      exclude: [
+        'tests/**',
+        '**/*.test.ts',
+        'scripts/__tests__/fixtures/feat-030-known-buggy/**',
+      ],
       reportsDirectory: 'coverage',
     },
   },

@@ -175,7 +175,7 @@ Exit `0` -> proceed. Exit `1` -> set verdict `ERROR` with `Reason: no changes to
 For each P0/P1 scenario whose `mode: test-framework` marker is set:
 
 1. **Write a test file** under the framework's test root with a `qa-` filename prefix. Defaults:
-   - vitest / jest: `__tests__/qa-<dimension>.spec.ts` (or `.test.ts` per project config)
+   - vitest / jest: `tests/unit/qa-<dimension>.test.ts`
    - pytest: `tests/test_qa_<dimension>.py`
    - go test: `qa_<dimension>_test.go` next to the package under test
 

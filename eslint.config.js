@@ -11,7 +11,7 @@ export default tseslint.config(
       ecmaVersion: 2022,
       sourceType: 'module',
       parserOptions: {
-        project: './tsconfig.json',
+        project: ['./tsconfig.json', './tsconfig.test.json'],
       },
     },
     rules: {
