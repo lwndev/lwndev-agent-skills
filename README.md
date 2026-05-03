@@ -59,6 +59,17 @@ npm run release          # Run the plugin release workflow
 npm run release:tag      # Tag-only operations for an already-prepared release
 ```
 
+### Git Hooks
+
+Two husky hooks gate local work:
+
+| Hook | Runs | Commands |
+|------|------|----------|
+| `pre-commit` | On every commit | `npx lint-staged`, `npm run lint`, `npm run format:check` |
+| `pre-push` | On every push | `npm test`, `npm audit --audit-level=high`, `npm run validate` |
+
+**Rationale:** fast checks run on every commit to catch style issues early; the full test/audit/validate gate runs on push where the multi-minute cost is acceptable. A locally broken commit can exist between push boundaries — this tradeoff is accepted. CI (`.github/workflows/ci.yml`) remains the authoritative gate; the hooks are a local convenience.
+
 ### Project Structure
 
 ```
