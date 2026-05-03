@@ -59,11 +59,11 @@ CHORE-037 (PR #259) added a QA fixture at `tests/bats/shared/qa-CHORE-037-husky-
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `Completed`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-05-03
 
-**Pull Request:** [#N](https://github.com/lwndev/lwndev-marketplace/pull/N)
+**Pull Request:** [#268](https://github.com/lwndev/lwndev-marketplace/pull/268)
 
 ## Notes
 
