@@ -212,8 +212,9 @@ EOF
   end_ms=$(($(date +%s) * 1000))
   elapsed=$((end_ms - start_ms))
   [ "$status" -eq 0 ]
-  # Allow a generous 5-second ceiling; assert the under-2-second target with
-  # `[ $elapsed -lt 5000 ]` so the test passes on slower CI runners while
-  # still catching pathological regressions.
-  [ "$elapsed" -lt 5000 ]
+  # Ceiling guards against pathological regressions, not the 2s soft target.
+  # Generous because: (1) `date +%s` is second-precision so elapsed can be
+  # inflated by ~1s from boundary rounding, and (2) the suite runs under
+  # `bats --jobs 8` so per-process throughput drops on CI.
+  [ "$elapsed" -lt 15000 ]
 }
