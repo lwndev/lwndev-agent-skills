@@ -234,7 +234,7 @@ The hook receives a JSON payload on stdin (`tool_name`, `tool_input.file_path`);
 ### Phase 7: Documentation alignment + plugin install verification (FR-11, FR-12, NFR-5)
 
 **Feature:** [FEAT-031](../features/FEAT-031-consolidate-test-layout-under.md) | [#255](https://github.com/lwndev/lwndev-marketplace/issues/255)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 6
 **ComplexityOverride:** opus
 
