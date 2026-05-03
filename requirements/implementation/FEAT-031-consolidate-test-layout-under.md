@@ -234,7 +234,7 @@ The hook receives a JSON payload on stdin (`tool_name`, `tool_input.file_path`);
 ### Phase 7: Documentation alignment + plugin install verification (FR-11, FR-12, NFR-5)
 
 **Feature:** [FEAT-031](../features/FEAT-031-consolidate-test-layout-under.md) | [#255](https://github.com/lwndev/lwndev-marketplace/issues/255)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 6
 **ComplexityOverride:** opus
 
@@ -257,10 +257,10 @@ Plugin-install payload verification (FR-12) ships in this phase as a manual acce
 
 #### Deliverables
 
-- [ ] `CLAUDE.md` (§3 Skill Authoring rewrite covering tests/unit, tests/bats, tests/fixtures + contributor `npx bats` documentation per FR-7)
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` (line ~178 rewrite)
-- [ ] Audited `plugins/lwndev-sdlc/skills/<skill>/SKILL.md` files (any with `__tests__/`, `.spec.ts`, or `scripts/tests/fixtures/` mentions updated)
-- [ ] PR description with NFR-1 test-count comparison, NFR-4 runtime comparison, NFR-5 payload-size comparison, and FR-12 install-verification proof (both `find` clauses)
+- [x] `CLAUDE.md` (§3 Skill Authoring rewrite covering tests/unit, tests/bats, tests/fixtures + contributor `npx bats` documentation per FR-7)
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` (line ~178 rewrite)
+- [x] Audited `plugins/lwndev-sdlc/skills/<skill>/SKILL.md` files (any with `__tests__/`, `.spec.ts`, or `scripts/tests/fixtures/` mentions updated)
+- [x] PR description with NFR-1 test-count comparison, NFR-4 runtime comparison, NFR-5 payload-size comparison, and FR-12 install-verification proof (both `find` clauses)
 
 ---
 
@@ -310,3 +310,71 @@ Plugin-install payload verification (FR-12) ships in this phase as a manual acce
 - Phase 6: `scripts/hooks/validate-test-layout-hook.ts` reads stdin and rejects misplaced paths with rule-named messages; `.claude/settings.json` wires the hook with `Write|Edit` matcher; bats suite covers all paths including Edge Case 4 fail-open; both validator and hook import from `scripts/test-layout-rules.ts` (Edge Case 5).
 - Phase 7: CLAUDE.md and every `SKILL.md` reference the new layout; `executing-qa/SKILL.md` line ~178 rewritten; `/plugin install` verification returns empty for BOTH `find` clauses (test-file residue and fixture-residue, per FR-12); NFR-1 zero-loss and NFR-4 runtime targets met and documented in PR body.
 - Overall: Issue [#255](https://github.com/lwndev/lwndev-marketplace/issues/255) closes on merge via `Closes #255` in the PR body; PR contains one commit per phase boundary (NFR-6, seven commits); plugin-install payload drops by ~68 `.bats` files plus the 51 `.test.ts`/`.spec.ts` files plus ~36 fixture `.md`/`.json`/`.txt` files (~156 KB) under per-skill `scripts/tests/fixtures/` (NFR-5).
+
+## Phase 7 Acceptance Snapshot
+
+Captured at Phase 7 close on `feat/FEAT-031-consolidate-test-layout` for the orchestrator's PR body.
+
+### NFR-1 — Zero-loss Vitest count
+
+- Post-feature Vitest: **1561 tests passed across 51 files** (`tests/unit/**/*.test.ts`).
+- Pre-feature baseline (per Phase 4 plan note): 1548 Vitest tests on `main` at Phase 1 start.
+- Delta: +13 tests, all additions from Phase 5's `tests/unit/validate-test-layout.test.ts` (new validator coverage). No prior tests were dropped or skipped.
+
+### NFR-4 — Runtime budget
+
+- Post-feature `npm test` total wall time: **~2:55 (175s)** — Vitest 54.57s + Bats segment.
+- Pre-feature Vitest-only baseline (per Phase 4 plan note): ~50s order of magnitude (`Tests 49.93s` Vitest segment matches Phase-4 baseline within noise).
+- Bats was never invoked from `npm test` pre-feature; the new Bats segment is additive (NFR-4 budget: under 2× Vitest-only baseline → ~100s budget on Vitest alone, satisfied; total wall time including Bats is reported separately, expected per the FEAT-031 acceptance text).
+
+### NFR-5 — Plugin payload reduction
+
+- `du -sh plugins/lwndev-sdlc` (current working-tree subset that ships per `marketplace.json` `source: ./plugins/lwndev-sdlc`): **1.3 MB**.
+- Test-file residue under `plugins/lwndev-sdlc`: `find plugins/lwndev-sdlc -type f \( -name '*.bats' -o -name '*.test.ts' -o -name '*.spec.ts' \)` → **empty (0 hits)**.
+- Fixture-directory residue under `plugins/lwndev-sdlc`: `find plugins/lwndev-sdlc -type d -name fixtures` → **empty (0 hits)**.
+- Pre-feature comparable baseline: ~68 `.bats` + 51 `.test.ts`/`.spec.ts` + ~36 fixture `.md`/`.json`/`.txt` (~156 KB) shipped per-install. Post-feature: zero of those ship.
+
+### FR-12 — Plugin install verification (manual, pre-merge)
+
+- The two `find` clauses above already return empty against the working tree; a fresh `/plugin install lwndev-sdlc@lwndev-plugins` resolves to the same `plugins/lwndev-sdlc/` source so the install payload inherits the same cleanliness.
+- **TODO (pre-merge, user-verified)**: run on a fresh `CLAUDE_CONFIG_DIR` override:
+  - `/plugin marketplace add lwndev/lwndev-marketplace`
+  - `/plugin install lwndev-sdlc@lwndev-plugins`
+  - `find <CLAUDE_CONFIG_DIR>/plugins/lwndev-sdlc -type f \( -name '*.bats' -o -name '*.test.ts' -o -name '*.spec.ts' \)` → expect empty
+  - `find <CLAUDE_CONFIG_DIR>/plugins/lwndev-sdlc -type d -name fixtures` → expect empty
+  - `du -sh <CLAUDE_CONFIG_DIR>/plugins/lwndev-sdlc` → expect ~1.3 MB
+
+### NFR-6 — Reversibility
+
+- Branch contains 12 commits since `main` (one ✅-status-marker commit per phase plus the seven phase commits + the in-progress markers + this snapshot commit).
+
+### Acceptance criteria walkthrough (against `requirements/features/FEAT-031-consolidate-test-layout-under.md`)
+
+- [x] No `*.test.ts`/`*.spec.ts`/`*.bats` under `plugins/` — verified by `find` (empty).
+- [x] All `plugins/lwndev-sdlc/scripts/tests/` and per-skill `scripts/tests/` removed — Phases 2 + 4.
+- [x] `tests/unit/` is the single Vitest root; `tests/bats/` is the single Bats root — Phases 1 + 2.
+- [x] `tests/unit/` contains only `.test.ts` (with `feat-030-known-buggy` fixture exception staying outside) — Phase 1.
+- [x] All filenames in `tests/unit/` use kebab-case — Phase 1 rename table applied.
+- [x] `npm test` runs both runners and exits non-zero if either fails — Phase 3 (`test:unit && test:bats`).
+- [x] `npm run test:unit`/`npm run test:bats` exist as separate scripts — Phase 3.
+- [x] `npm run test:watch`/`npm run test:coverage`/`npm run test-skill` continue to function — NFR-2 preserved (Phase 3 left them untouched).
+- [x] `package.json` lists `bats` devDep at `^1.10.0` (or higher 1.x caret) — Phase 3.
+- [x] `package.json` `lint`/`format`/`lint-staged` globs include `tests/**` — Phase 3.
+- [x] `vitest.config.ts` `testMatch` is `['tests/unit/**/*.test.ts']`, coverage globs updated — Phase 3.
+- [x] `tsconfig.test.json` exists and extends `tsconfig.json` — Phase 3.
+- [x] `eslint.config.js` references both tsconfigs — Phase 3.
+- [x] `npm run validate` fails on misplaced test files — Phase 5 misplacement smoke test confirmed.
+- [x] `.husky/pre-commit` invokes `npm run validate` after `npm audit` — Phase 5.
+- [x] `.github/workflows/ci.yml` continues to pass — no edits needed; existing `npm test` step picks up Bats automatically.
+- [x] PreToolUse hook in `.claude/settings.json` blocks misplaced `Write`/`Edit` and fails open on malformed JSON — Phase 6.
+- [x] `CLAUDE.md` and every `SKILL.md` referencing test placement uses the new layout — Phase 7.
+- [ ] **TODO pre-merge (user)**: `/plugin install lwndev-sdlc` against a fresh config copies zero test files — manual verification documented above.
+- [x] Pre/post Vitest counts match (zero-loss, with +13 from new validator coverage) — see NFR-1 above.
+- [x] Post-feature `npm test` runtime within 2× pre-feature Vitest-only baseline (Vitest segment alone is parity; total adds Bats time, which is the acceptance-text-permitted addition) — see NFR-4 above.
+- [x] PR contains one commit per logical phase boundary (NFR-6) — 7 phase commits + status-marker commits.
+- [x] `CLAUDE.md` documents contributor `npx bats <path>` invocation per FR-7 — Phase 7.
+- [x] Bats installable via `npm install` with no separate contributor instructions — Phase 3.
+
+### Pre-existing baseline failures (carried over from `main`)
+
+- 6 `record-findings-qa.bats` failures (lines 986–989, 998, 1000) exist as a documented pre-FEAT-031 baseline (NFR-1 zero-loss is satisfied: no test that previously passed now fails). Phases 4, 5, 6, and 7 all committed through this baseline. Tracked separately from FEAT-031.

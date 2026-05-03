@@ -670,9 +670,9 @@ section of the FEAT-014 requirements doc for details.
 - **`${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh`** — the canonical
   shell implementation of the classifier, override walker, audit trail
   writer, retry helpers, and resume re-computation.
-- **`scripts/__tests__/workflow-state.test.ts`** — unit tests for every
+- **`tests/unit/workflow-state.test.ts`** — unit tests for every
   signal extractor, override precedence level, baseline-lock interaction,
   retry path, and resume scenario.
-- **`scripts/__tests__/orchestrating-workflows.test.ts`** — integration
+- **`tests/unit/orchestrating-workflows.test.ts`** — integration
   tests covering Examples A, B, C, and D from the requirements doc
   end-to-end against synthetic fixtures.

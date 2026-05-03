@@ -18,10 +18,13 @@ npm run release:tag     # Tag-only operations for an already-prepared release
 
 ### Development
 ```bash
-npm test                # Run all tests
-npm run test:watch      # Run tests in watch mode
-npm run test:coverage   # Run tests with coverage reporting
-npm test -- --testPathPatterns=<pattern>  # Run specific test file
+npm test                # Run all tests (Vitest + Bats)
+npm run test:unit       # Run Vitest only (tests/unit/**/*.test.ts)
+npm run test:bats       # Run Bats only (tests/bats/**/*.bats)
+npm run test:watch      # Run Vitest in watch mode
+npm run test:coverage   # Run Vitest with coverage reporting
+npm test -- --testPathPatterns=<pattern>  # Run specific Vitest file
+npx bats tests/bats/<path>                # Run specific Bats file or subtree
 npm run test-skill      # Drive a single skill end-to-end against a fixture
 npm run lint            # Check for linting issues
 npm run lint:fix        # Auto-fix linting issues
@@ -29,7 +32,7 @@ npm run format          # Format code with Prettier
 npm run format:check    # Check formatting
 ```
 
-When running tests, always scope to the relevant file (`--testPathPatterns=<pattern>`) and pipe output through `tail` (e.g. `| tail -50`) or redirect to a file to avoid flooding context with full run output.
+When running tests, always scope to the relevant file (`--testPathPatterns=<pattern>` for Vitest, a path argument for `npx bats`) and pipe output through `tail` (e.g. `| tail -50`) or redirect to a file to avoid flooding context with full run output. Bats ships as an npm devDep (`^1.10.0`); contributors get `npx bats` automatically after `npm install`.
 
 ## Architecture
 
@@ -109,7 +112,7 @@ Push behavior into deterministic scripts, not SKILL.md prose. This is a first-cl
 
 - **Logic lives in `skills/<name>/scripts/`, not in SKILL.md.** SKILL.md describes the contract (inputs, outputs, when to invoke); scripts implement it. Prefer a single script entry point the skill calls (e.g. `workflow-state.sh <subcommand>`) over inline `jq`, `git`, `date`, or arithmetic in SKILL.md.
 - **Derived data must be computed in scripts.** Durations, counts, gaps, aggregations, totals, rendered reports — anything the model could "reconstruct" — is computed by the script and emitted as the source of truth. Do not rely on the model to do the math.
-- **Every script behavior needs bats coverage.** New subcommands and branches land alongside the existing bats suites (`*.bats` next to the script). If a behavior matters, it has a test. If it has a test, the model doesn't need to remember it.
+- **Every script behavior needs test coverage at the canonical leaf.** TS modules → Vitest under `tests/unit/<name>.test.ts`. Shell scripts → Bats under `tests/bats/skills/<skill>/<name>.bats` (per-skill) or `tests/bats/shared/<name>.bats` (shared/hook). Cross-runner shared fixtures go under `tests/fixtures/<skill>/` or `tests/fixtures/qa-fixture/`. New test files land at the canonical leaf — the layout validator (`scripts/validate-test-layout.ts`) and PreToolUse hook (`scripts/hooks/validate-test-layout-hook.ts`) block any commit or `Write`/`Edit` that misplaces them. If a behavior matters, it has a test. If it has a test, the model doesn't need to remember it.
 - **Keep SKILL.md lean.** SKILL.md is a hot path for token cost on every invocation. Long-form logic belongs in scripts; long-form detail belongs under `references/`. A SKILL.md change should typically be a one-line invocation swap plus a contract note — not a procedure rewrite.
 - **Load-bearing output from scripts is contract.** Tagged lines (`[info]`, `[warn]`, `[model]`, FR-14 echoes, report paths) are the script's structured log and the skill emits them verbatim. Do not paraphrase.
 - **Write prose at Caveman "Lite" grunt level to cut tokens.** Adopt the style described at https://github.com/juliusbrussee/caveman: drop filler, keep grammar. Professional tone, no fluff. Contrast: *"Your component re-renders because you create a new object reference each render. Inline object props fail shallow comparison every time. Wrap it in `useMemo`."* (Lite) vs. the Full-grunt *"New object ref each render. Inline object prop = new ref = re-render. Wrap in `useMemo`."* Lite keeps articles and full sentences so the guidance still reads as technical writing, but strips hedges, restatements, and narration. Apply this to SKILL.md bodies, `references/` docs, issue descriptions, commit messages, and PR bodies in this repo. Load-bearing carve-outs (orchestrator error messages, security warnings, interactive prompts, structured log lines) stay verbatim — Lite does not override contracts.
