@@ -227,27 +227,35 @@ Not applicable.
 
 ## Acceptance Criteria
 
-- [ ] No `*.test.ts`, `*.spec.ts`, or `*.bats` file exists under `plugins/`.
-- [ ] All `plugins/lwndev-sdlc/scripts/tests/` and `plugins/lwndev-sdlc/skills/<skill>/scripts/tests/` directories are removed post-move (FR-3, Edge Case 8).
-- [ ] `tests/unit/` is the single Vitest root; `tests/bats/` is the single Bats root.
-- [ ] `tests/unit/` contains only `.test.ts` files (with the documented `feat-030-known-buggy` fixture exception staying outside `tests/unit/`).
-- [ ] All file names in `tests/unit/` use kebab-case.
-- [ ] `npm test` runs both Vitest and Bats and exits non-zero if either runner fails.
-- [ ] `npm run test:unit` runs Vitest only; `npm run test:bats` runs Bats only.
-- [ ] `npm run test:watch`, `npm run test:coverage`, and `npm run test-skill` continue to function on the post-feature tree (NFR-2).
-- [ ] `package.json` lists `bats` as a devDependency pinned to `^1.10.0` (or higher 1.x caret).
-- [ ] `package.json` `lint`, `format`, and `lint-staged` globs include `tests/**` (FR-6).
-- [ ] `vitest.config.ts` `testMatch` is `['tests/unit/**/*.test.ts']`; `coverage.include` and `coverage.exclude` reflect the new layout (FR-4).
-- [ ] `tsconfig.test.json` exists and extends `tsconfig.json`.
-- [ ] `eslint.config.js` references both tsconfigs.
-- [ ] `npm run validate` fails on misplaced test files (validated by an artificial misplacement during implementation, then reverted).
-- [ ] `.husky/pre-commit` invokes `npm run validate` after `npm audit` (FR-9, NFR-3).
-- [ ] `.github/workflows/ci.yml` continues to pass on the feature branch — no workflow edits required, the existing `npm test` step picks up Bats automatically (NFR-3).
-- [ ] PreToolUse hook in `.claude/settings.json` blocks `Write`/`Edit` to disallowed paths and fails open on malformed `tool_input` JSON (FR-10, Edge Case 4).
-- [ ] `CLAUDE.md` and every `SKILL.md` that mentions test placement reference the new layout.
-- [ ] `/plugin install lwndev-sdlc` against a fresh config copies zero test files into the user's plugin directory.
-- [ ] Pre- and post-feature Vitest test counts match (NFR-1). The post-feature Bats count is recorded separately for reference but is not subject to the no-loss check (Bats was never invoked via `npm test` pre-feature).
-- [ ] Post-feature `npm test` runtime is within 2× the pre-feature Vitest-only runtime (NFR-4); document the measured before/after numbers in the PR description.
-- [ ] PR contains one commit per logical phase boundary (Vitest relocation; Bats relocation; config + npm-script updates; validator; hook; doc alignment) so the relocation is reviewable and revertible (NFR-6).
-- [ ] `CLAUDE.md` (or `README.md` if a contributors section is added) documents the contributor `npx bats <path>` invocation per FR-7.
-- [ ] Bats runner is installable via `npm install` with no separate contributor instructions required.
+- [x] No `*.test.ts`, `*.spec.ts`, or `*.bats` file exists under `plugins/`.
+- [x] All `plugins/lwndev-sdlc/scripts/tests/` and `plugins/lwndev-sdlc/skills/<skill>/scripts/tests/` directories are removed post-move (FR-3, Edge Case 8).
+- [x] `tests/unit/` is the single Vitest root; `tests/bats/` is the single Bats root.
+- [x] `tests/unit/` contains only `.test.ts` files (with the documented `feat-030-known-buggy` fixture exception staying outside `tests/unit/`).
+- [x] All file names in `tests/unit/` use kebab-case.
+- [x] `npm test` runs both Vitest and Bats and exits non-zero if either runner fails.
+- [x] `npm run test:unit` runs Vitest only; `npm run test:bats` runs Bats only.
+- [x] `npm run test:watch`, `npm run test:coverage`, and `npm run test-skill` continue to function on the post-feature tree (NFR-2).
+- [x] `package.json` lists `bats` as a devDependency pinned to `^1.10.0` (or higher 1.x caret).
+- [x] `package.json` `lint`, `format`, and `lint-staged` globs include `tests/**` (FR-6).
+- [x] `vitest.config.ts` `testMatch` is `['tests/unit/**/*.test.ts']`; `coverage.include` and `coverage.exclude` reflect the new layout (FR-4).
+- [x] `tsconfig.test.json` exists and extends `tsconfig.json`.
+- [x] `eslint.config.js` references both tsconfigs.
+- [x] `npm run validate` fails on misplaced test files (validated by an artificial misplacement during implementation, then reverted).
+- [x] `.husky/pre-commit` invokes `npm run validate` after `npm audit` (FR-9, NFR-3).
+- [x] `.github/workflows/ci.yml` continues to pass on the feature branch — no workflow edits required, the existing `npm test` step picks up Bats automatically (NFR-3).
+- [x] PreToolUse hook in `.claude/settings.json` blocks `Write`/`Edit` to disallowed paths and fails open on malformed `tool_input` JSON (FR-10, Edge Case 4).
+- [x] `CLAUDE.md` and every `SKILL.md` that mentions test placement reference the new layout.
+- [x] `/plugin install lwndev-sdlc` against a fresh config copies zero test files into the user's plugin directory.
+- [x] Pre- and post-feature Vitest test counts match (NFR-1). The post-feature Bats count is recorded separately for reference but is not subject to the no-loss check (Bats was never invoked via `npm test` pre-feature).
+- [x] Post-feature `npm test` runtime is within 2× the pre-feature Vitest-only runtime (NFR-4); document the measured before/after numbers in the PR description.
+- [x] PR contains one commit per logical phase boundary (Vitest relocation; Bats relocation; config + npm-script updates; validator; hook; doc alignment) so the relocation is reviewable and revertible (NFR-6).
+- [x] `CLAUDE.md` (or `README.md` if a contributors section is added) documents the contributor `npx bats <path>` invocation per FR-7.
+- [x] Bats runner is installable via `npm install` with no separate contributor instructions required.
+
+## Completion
+
+**Status:** `Complete`
+
+**Completed:** 2026-05-03
+
+**Pull Request:** [#256](https://github.com/lwndev/lwndev-marketplace/pull/256)
