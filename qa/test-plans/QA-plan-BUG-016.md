@@ -11,11 +11,16 @@ CHORE-037 added a 15th `.bats` file to `tests/bats/shared/`, breaking the 1:1 pa
 
 ## Capability Report
 
-- Mode: test-framework
-- Framework: vitest
-- Package manager: npm
-- Test command: npm test
-- Language: typescript
+```json
+{
+  "id": "BUG-016",
+  "mode": "test-framework",
+  "framework": "vitest",
+  "packageManager": "npm",
+  "testCommand": "npm test",
+  "language": "typescript"
+}
+```
 
 ## Scenarios (by dimension)
 
