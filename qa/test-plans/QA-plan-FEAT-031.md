@@ -17,6 +17,16 @@ FEAT-031 collapses two divergent test trees (TS under `scripts/__tests__/`, Bats
 - Test command: npm test
 - Language: typescript
 
+```json
+{
+  "mode": "test-framework",
+  "framework": "vitest",
+  "packageManager": "npm",
+  "testCommand": "npm test",
+  "language": "typescript"
+}
+```
+
 ## Scenarios (by dimension)
 
 ### Inputs
