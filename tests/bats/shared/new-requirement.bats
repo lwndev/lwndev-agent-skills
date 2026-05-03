@@ -206,7 +206,9 @@ set_origin_non_github() {
 
 @test "missing template returns exit 1" {
   # Move the FEAT template aside to force the template-not-found branch.
-  TEMPLATE="/Users/leif/Projects/lwndev-marketplace/plugins/lwndev-sdlc/skills/documenting-features/assets/feature-requirements.md"
+  local repo_root
+  repo_root="$(cd "${BATS_TEST_DIRNAME}/../../.." && pwd)"
+  TEMPLATE="${repo_root}/plugins/lwndev-sdlc/skills/documenting-features/assets/feature-requirements.md"
   if [ -f "$TEMPLATE" ]; then
     mv "$TEMPLATE" "${TEMPLATE}.bats-bak"
   fi

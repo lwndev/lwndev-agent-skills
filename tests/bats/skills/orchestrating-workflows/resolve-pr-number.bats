@@ -22,10 +22,6 @@ setup() {
   STUB_DIR="${TMPDIR_TEST}/bin"
   mkdir -p "$STUB_DIR"
   ORIGINAL_PATH="$PATH"
-  # Resolve bash to an absolute path so `hide_gh` (which prunes PATH dirs that
-  # contain `gh`) does not also evict `bash` on Linux runners where both live
-  # under /usr/bin.
-  BASH_BIN="$(command -v bash)"
 }
 
 teardown() {
@@ -51,20 +47,24 @@ EOF
   export PATH="${STUB_DIR}:${ORIGINAL_PATH}"
 }
 
-# Build a filtered PATH excluding any directory that contains `gh`.
+# Build a sandbox bin dir containing symlinks to the tools the script and
+# tests need, omitting `gh`. Naively pruning every PATH dir that happens to
+# contain `gh` (the previous approach) was unsafe on Linux runners where
+# `gh` and `grep`/`jq`/etc. all share `/usr/bin`.
 hide_gh() {
-  local new_path=""
-  local IFS=:
-  for dir in $ORIGINAL_PATH; do
-    if [ -n "$dir" ] && [ ! -x "${dir}/gh" ]; then
-      if [ -z "$new_path" ]; then
-        new_path="$dir"
-      else
-        new_path="${new_path}:${dir}"
-      fi
+  local shadow_dir="${TMPDIR_TEST}/no-gh-bin"
+  mkdir -p "$shadow_dir"
+  local tool path
+  for tool in bash sh grep jq sed awk cat printf cut tr head tail wc \
+              env mktemp rm chmod mkdir cp mv ln test ls dirname basename \
+              od dd stat sort uniq find git tee; do
+    path="$(PATH="$ORIGINAL_PATH" command -v "$tool" 2>/dev/null || true)"
+    if [ -n "$path" ]; then
+      ln -sf "$path" "${shadow_dir}/${tool}"
     fi
   done
-  export PATH="$new_path"
+  # Critically, do NOT link `gh` — that's the whole point.
+  export PATH="$shadow_dir"
 }
 
 # ---- gh primary (happy path) ------------------------------------------------
@@ -202,14 +202,14 @@ EOF
 @test "gh missing on PATH + no subagent match → [warn] stderr, exit 1" {
   hide_gh
   local err_file="${TMPDIR_TEST}/err.log"
-  run "$BASH_BIN" -c "'$BASH_BIN' '$RPR' chore/CHORE-001-foo 2>'$err_file'"
+  run bash -c "bash '$RPR' chore/CHORE-001-foo 2>'$err_file'"
   [ "$status" -eq 1 ]
   grep -q '\[warn\] resolve-pr-number: gh unavailable' "$err_file"
 }
 
 @test "gh missing on PATH + subagent parse succeeds → use parsed number" {
   hide_gh
-  run "$BASH_BIN" "$RPR" chore/CHORE-001-foo "${FIXTURES_DIR}/exec-output-with-hash.txt"
+  run bash "$RPR" chore/CHORE-001-foo "${FIXTURES_DIR}/exec-output-with-hash.txt"
   [ "$status" -eq 0 ]
   [ "$output" = "232" ]
 }

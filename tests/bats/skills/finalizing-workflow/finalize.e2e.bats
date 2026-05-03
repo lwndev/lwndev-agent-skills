@@ -69,15 +69,19 @@ case "$1" in
 esac
 
 if [ "$1" = "pr" ] && [ "$2" = "view" ]; then
-  # Detect --json files form → emit one path per line.
-  if printf '%s\n' "$@" | grep -q -- "--json files"; then
-    # Support both `--jq '.files[].path'` and plain JSON output; in practice
-    # reconcile-affected-files.sh pipes through --jq so we emit raw lines.
-    for p in $GH_PR_FILES; do
-      printf '%s\n' "$p"
-    done
-    exit 0
-  fi
+  # Detect --json files form → emit one path per line. Args arrive as
+  # separate tokens, so match against the joined arg list (with surrounding
+  # spaces so the first/last token matches too).
+  case " $* " in
+    *" --json files "*)
+      # reconcile-affected-files.sh pipes through gh's built-in --jq so the
+      # stub emits raw paths.
+      for p in $GH_PR_FILES; do
+        printf '%s\n' "$p"
+      done
+      exit 0
+      ;;
+  esac
   # Generic `gh pr view --json number,title,state,mergeable,url` form.
   if command -v jq >/dev/null 2>&1; then
     jq -cn \
