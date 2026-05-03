@@ -34,11 +34,11 @@ Split the husky hook tiers so `.husky/pre-commit` runs only fast checks (lint-st
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `Complete`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-05-03
 
-**Pull Request:** [#N](https://github.com/lwndev/lwndev-marketplace/pull/N)
+**Pull Request:** [#259](https://github.com/lwndev/lwndev-marketplace/pull/259)
 
 ## Notes
 
