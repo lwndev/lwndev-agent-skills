@@ -22,6 +22,10 @@ setup() {
   STUB_DIR="${TMPDIR_TEST}/bin"
   mkdir -p "$STUB_DIR"
   ORIGINAL_PATH="$PATH"
+  # Resolve bash to an absolute path so `hide_gh` (which prunes PATH dirs that
+  # contain `gh`) does not also evict `bash` on Linux runners where both live
+  # under /usr/bin.
+  BASH_BIN="$(command -v bash)"
 }
 
 teardown() {
@@ -198,14 +202,14 @@ EOF
 @test "gh missing on PATH + no subagent match → [warn] stderr, exit 1" {
   hide_gh
   local err_file="${TMPDIR_TEST}/err.log"
-  run bash -c "bash '$RPR' chore/CHORE-001-foo 2>'$err_file'"
+  run "$BASH_BIN" -c "'$BASH_BIN' '$RPR' chore/CHORE-001-foo 2>'$err_file'"
   [ "$status" -eq 1 ]
   grep -q '\[warn\] resolve-pr-number: gh unavailable' "$err_file"
 }
 
 @test "gh missing on PATH + subagent parse succeeds → use parsed number" {
   hide_gh
-  run bash "$RPR" chore/CHORE-001-foo "${FIXTURES_DIR}/exec-output-with-hash.txt"
+  run "$BASH_BIN" "$RPR" chore/CHORE-001-foo "${FIXTURES_DIR}/exec-output-with-hash.txt"
   [ "$status" -eq 0 ]
   [ "$output" = "232" ]
 }

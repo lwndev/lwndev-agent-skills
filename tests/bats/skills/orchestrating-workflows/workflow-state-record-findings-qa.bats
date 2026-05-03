@@ -12,6 +12,8 @@
 #   * Reject stepIndex pointing to a non-QA step → exit 1
 #   * Existing record-findings (no --type flag) continues to work — zero regression
 
+bats_require_minimum_version 1.5.0
+
 setup() {
   SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts" && pwd)"
   FIXTURES_DIR="${BATS_TEST_DIRNAME}/../../../fixtures/orchestrating-workflows"
@@ -38,7 +40,7 @@ seed_state() {
 @test "record-findings --type qa PASS verdict persists verdict/counts/summary" {
   seed_state "FEAT-030-qa" "FEAT-030"
   cd "$TMPDIR_TEST"
-  run bash "$WS" record-findings --type qa FEAT-030 8 PASS 12 0 0 "All tests passed."
+  run --separate-stderr bash "$WS" record-findings --type qa FEAT-030 8 PASS 12 0 0 "All tests passed."
   [ "$status" -eq 0 ]
   local verdict
   verdict=$(echo "$output" | jq -r '.steps[8].findings.verdict')
@@ -62,7 +64,7 @@ seed_state() {
 @test "record-findings --type qa ISSUES-FOUND verdict persists correctly" {
   seed_state "FEAT-030-qa" "FEAT-030"
   cd "$TMPDIR_TEST"
-  run bash "$WS" record-findings --type qa FEAT-030 8 ISSUES-FOUND 9 3 0 "3 tests failed."
+  run --separate-stderr bash "$WS" record-findings --type qa FEAT-030 8 ISSUES-FOUND 9 3 0 "3 tests failed."
   [ "$status" -eq 0 ]
   local verdict
   verdict=$(echo "$output" | jq -r '.steps[8].findings.verdict')
@@ -77,7 +79,7 @@ seed_state() {
 @test "record-findings --type qa ERROR verdict persists correctly" {
   seed_state "FEAT-030-qa" "FEAT-030"
   cd "$TMPDIR_TEST"
-  run bash "$WS" record-findings --type qa FEAT-030 8 ERROR 0 0 1 "Runner crash."
+  run --separate-stderr bash "$WS" record-findings --type qa FEAT-030 8 ERROR 0 0 1 "Runner crash."
   [ "$status" -eq 0 ]
   local verdict
   verdict=$(echo "$output" | jq -r '.steps[8].findings.verdict')
@@ -92,7 +94,7 @@ seed_state() {
 @test "record-findings --type qa EXPLORATORY-ONLY verdict persists correctly" {
   seed_state "FEAT-030-qa" "FEAT-030"
   cd "$TMPDIR_TEST"
-  run bash "$WS" record-findings --type qa FEAT-030 8 EXPLORATORY-ONLY 0 0 0 "No test framework."
+  run --separate-stderr bash "$WS" record-findings --type qa FEAT-030 8 EXPLORATORY-ONLY 0 0 0 "No test framework."
   [ "$status" -eq 0 ]
   local verdict
   verdict=$(echo "$output" | jq -r '.steps[8].findings.verdict')
@@ -174,7 +176,7 @@ seed_state() {
   seed_state "CHORE-002-pre-feat030" "CHORE-002"
   cd "$TMPDIR_TEST"
   # QA step is at index 5 in CHORE-002 fixture.
-  run bash "$WS" record-findings --type qa CHORE-002 5 PASS 8 0 0 "All clean."
+  run --separate-stderr bash "$WS" record-findings --type qa CHORE-002 5 PASS 8 0 0 "All clean."
   [ "$status" -eq 0 ]
   local verdict
   verdict=$(echo "$output" | jq -r '.steps[5].findings.verdict')
@@ -202,7 +204,7 @@ seed_state() {
   seed_state "FEAT-030-qa" "FEAT-030"
   cd "$TMPDIR_TEST"
   # Step 1 is reviewing-requirements — valid for review type.
-  run bash "$WS" record-findings FEAT-030 1 2 1 0 advanced "Minor warnings."
+  run --separate-stderr bash "$WS" record-findings FEAT-030 1 2 1 0 advanced "Minor warnings."
   [ "$status" -eq 0 ]
   local decision
   decision=$(echo "$output" | jq -r '.steps[1].findings.decision')
