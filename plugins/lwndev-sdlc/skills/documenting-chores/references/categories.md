@@ -102,7 +102,7 @@ Code cleanup, restructuring, and naming improvements.
 ### Typical Affected Files
 
 - Source files in `src/`
-- Test files under `tests/` (Vitest under `tests/unit/`, Bats under `tests/bats/`) or other project-specific test roots
+- Test files under `tests/` (Vitest under `tests/unit/`, Bats under `tests/bats/`)
 - Type definition files (`.d.ts`)
 - Import statements across the codebase
 

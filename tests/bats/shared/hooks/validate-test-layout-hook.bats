@@ -30,6 +30,14 @@ fire_hook() {
     | tsx "$HOOK"
 }
 
+# Helper: fire the hook with a MultiEdit-shaped payload (single file_path,
+# multiple edits) — exercises the matcher's MultiEdit entry point.
+fire_hook_multiedit() {
+  local file_path="$1"
+  printf '{"tool_name":"MultiEdit","tool_input":{"file_path":"%s","edits":[{"old_string":"a","new_string":"b"}]}}' "$file_path" \
+    | tsx "$HOOK"
+}
+
 # ---------------------------------------------------------------------------
 # Rule: ts-outside-tests-unit — *.test.ts outside tests/unit/ is rejected
 # ---------------------------------------------------------------------------
@@ -154,6 +162,28 @@ fire_hook() {
 
 @test "allows *.sh scripts (no-op)" {
   run fire_hook "plugins/lwndev-sdlc/scripts/hooks/guard-state-transitions.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"reject"* ]]
+}
+
+# ---------------------------------------------------------------------------
+# MultiEdit entry point — same hook script, MultiEdit-shaped payload
+# ---------------------------------------------------------------------------
+
+@test "MultiEdit: rejects misplaced *.bats" {
+  run fire_hook_multiedit "plugins/lwndev-sdlc/scripts/tests/x.bats"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"violates bats-outside-tests-bats"* ]]
+}
+
+@test "MultiEdit: rejects *.spec.ts" {
+  run fire_hook_multiedit "tests/unit/foo.spec.ts"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"violates spec-extension-disallowed"* ]]
+}
+
+@test "MultiEdit: allows *.test.ts under tests/unit/" {
+  run fire_hook_multiedit "tests/unit/foo.test.ts"
   [ "$status" -eq 0 ]
   [[ "$output" != *"reject"* ]]
 }

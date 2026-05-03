@@ -32,7 +32,7 @@ npm run format          # Format code with Prettier
 npm run format:check    # Check formatting
 ```
 
-When running tests, always scope to the relevant file (`--testPathPatterns=<pattern>` for Vitest, a path argument for `npx bats`) and pipe output through `tail` (e.g. `| tail -50`) or redirect to a file to avoid flooding context with full run output. Bats ships as an npm devDep (`^1.10.0`); contributors get `npx bats` automatically after `npm install`.
+When running tests, always scope to the relevant file (`--testPathPatterns=<pattern>` for Vitest, a path argument for `npx bats`) and pipe output through `tail` (e.g. `| tail -50`) or redirect to a file to avoid flooding context with full run output. Bats ships as an npm devDep (`^1.13.0`); contributors get `npx bats` automatically after `npm install`. The full-suite `test:bats` script parallelizes across files via `bats --jobs 8`, which requires GNU parallel (`brew install parallel` on macOS, `apt-get install parallel` on Debian/Ubuntu); a single-file `npx bats <path>` invocation does not need it.
 
 ## Architecture
 
