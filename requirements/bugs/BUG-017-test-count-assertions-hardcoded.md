@@ -57,11 +57,11 @@ Skill-count assertions derive the expected count from the actual `plugins/lwndev
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `Completed-on-merge`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-05-09
 
-**Pull Request:** [#N](https://github.com/lwndev/lwndev-marketplace/pull/N)
+**Pull Request:** [#275](https://github.com/lwndev/lwndev-marketplace/pull/275)
 
 ## Notes
 
