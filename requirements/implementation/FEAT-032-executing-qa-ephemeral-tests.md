@@ -306,7 +306,7 @@ The FR-11 audit is documented as a structured deliverable per the requirements d
 ### Phase 7: End-to-end Bats fixture (NFR-4 acceptance)
 
 **Feature:** [FEAT-032](../features/FEAT-032-executing-qa-ephemeral-tests.md) | [#267](https://github.com/lwndev/lwndev-marketplace/issues/267)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 1, Phase 2, Phase 3, Phase 4, Phase 5
 
 #### Rationale
