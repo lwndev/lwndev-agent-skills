@@ -48,7 +48,7 @@ Skill-count assertions derive the expected count from the actual `plugins/lwndev
 ## Acceptance Criteria
 
 - [x] `tests/unit/argument-hint.test.ts:41` derives the expected skill count from the `plugins/lwndev-sdlc/skills/` directory listing (filtering `.`-prefix and `_`-prefix entries) instead of hardcoding `13` (RC-1)
-- [x] `tests/unit/build.test.ts:42` and `tests/unit/build.test.ts:90` derive the expected count from the same source-of-truth directory listing rather than hardcoding `13` (RC-2)
+- [x] `tests/unit/build.test.ts:42` derives the expected count from the source-of-truth directory listing rather than hardcoding `13`; the redundant `expect(skillDirs.length).toBe(13)` originally at `tests/unit/build.test.ts:90` is removed (the explicit `toContain` block above it already enforces the named-skill set, and the `should validate every skill in the plugin` test cross-checks the on-disk count against build output) (RC-2)
 - [x] The `readdir` filter at `tests/unit/build.test.ts:74` and `:96` excludes both `.`-prefix and `_`-prefix entries, matching the `argument-hint.test.ts:31-33` filter and `getSourceSkills` behavior (RC-2)
 - [x] The `it()` test names at `tests/unit/build.test.ts:39` and `:71` no longer embed the literal `13` (e.g., "should validate every skill in the plugin") (RC-2)
 - [x] After RC-3 changes, the `frontmatter presence`, `hint value constraints`, `YAML quoting for bracket values`, and `argument-handling instructions in SKILL.md body` describe blocks in `tests/unit/argument-hint.test.ts` each pass independently of whether the line-41 prerequisite assertion succeeds — i.e., a forced failure of the prerequisite (e.g., a temporary `expect(false).toBe(true)` at line 41) does not cause more than 1 test to fail (RC-3)

@@ -92,10 +92,6 @@ describe('plugin structure', () => {
     expect(skillDirs).toContain('finalizing-workflow');
     expect(skillDirs).toContain('orchestrating-workflows');
     expect(skillDirs).toContain('managing-work-items');
-
-    // Count must equal the actual on-disk count (no hardcoded literal)
-    const expectedCount = skillDirs.length;
-    expect(skillDirs.length).toBe(expectedCount);
   });
 
   it('should include SKILL.md in each skill directory', async () => {
