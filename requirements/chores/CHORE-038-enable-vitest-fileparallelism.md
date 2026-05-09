@@ -26,12 +26,12 @@ Flip `fileParallelism: false` -> `true` in `vitest.config.ts` to cut unit-test w
 
 ## Acceptance Criteria
 
-- [ ] `vitest.config.ts:14` set to `fileParallelism: true`
-- [ ] The 3 listed test files no longer mutate the real `plugins/` tree concurrently — either rerouted to `mkdtemp` or marked with `describe.sequential` / `test.sequential`
-- [ ] `npm run test:unit` wall time on a clean checkout ≤ 20s
-- [ ] `npm run test:unit` pass/fail count is identical to a baseline sequential run on the same commit (no new failures introduced by parallelization)
-- [ ] 10 consecutive `npm run test:unit` runs produce identical results (no new flake)
-- [ ] `CLAUDE.md` Key Patterns note no longer claims tests run sequentially; it accurately describes the new isolation strategy
+- [x] `vitest.config.ts:14` set to `fileParallelism: true`
+- [x] The 3 listed test files no longer mutate the real `plugins/` tree concurrently — either rerouted to `mkdtemp` or marked with `describe.sequential` / `test.sequential`
+- [x] `npm run test:unit` wall time on a clean checkout ≤ 20s
+- [x] `npm run test:unit` pass/fail count is identical to a baseline sequential run on the same commit (no new failures introduced by parallelization)
+- [x] 10 consecutive `npm run test:unit` runs produce identical results (no new flake)
+- [x] `CLAUDE.md` Key Patterns note no longer claims tests run sequentially; it accurately describes the new isolation strategy
 
 ## Completion
 
