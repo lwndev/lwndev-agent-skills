@@ -26,6 +26,17 @@ set -euo pipefail
 #   QA_SUMMARY_BODY       Markdown body for `## Summary`
 #                         (default: one-line verdict summary).
 #   QA_OUTPUT_DIR         Output dir (default: qa/test-results under PWD).
+#   QA_TEST_FILES         FEAT-032 FR-2. Newline-separated list of QA test file
+#                         paths (relative to repo root) to embed under each
+#                         finding's `## Reproduction` block. Only honored for
+#                         ISSUES-FOUND verdict (PASS has no findings; ERROR
+#                         passes through truncatedOutput; EXPLORATORY-ONLY has
+#                         no committed test files). Each file becomes one
+#                         `### Reproduction: <path>` block with a language-aware
+#                         fenced code block plus a path-comment header. Files
+#                         that do not exist on disk are skipped with a `[warn]`
+#                         line on stderr (best-effort embedding so a missing
+#                         file does not block artifact rendering).
 #
 # Exit codes:
 #   0  artifact written
@@ -138,6 +149,58 @@ else
   SCENARIOS_BODY="- Ran ${PASSED} passing tests, ${FAILED} failing tests, ${ERRORED} errored tests."
 fi
 
+# FEAT-032 FR-2 — language-aware embedding of QA test source files under each
+# finding's `## Reproduction` block. Pure function: takes a list of paths on
+# stdin, emits markdown to stdout.
+embed_qa_test_files() {
+  local file
+  local first=1
+  while IFS= read -r file; do
+    [[ -z "$file" ]] && continue
+    if [[ ! -f "$file" ]]; then
+      echo "[warn] QA test file not found for embedding: $file" >&2
+      continue
+    fi
+    local fence comment_prefix
+    case "$file" in
+      *.ts|*.tsx)
+        fence="typescript"
+        comment_prefix="// "
+        ;;
+      *.js|*.mjs|*.cjs|*.jsx)
+        fence="javascript"
+        comment_prefix="// "
+        ;;
+      *.bats|*.sh|*.bash)
+        fence="bash"
+        comment_prefix="# "
+        ;;
+      *.py)
+        fence="python"
+        comment_prefix="# "
+        ;;
+      *.go)
+        fence="go"
+        comment_prefix="// "
+        ;;
+      *)
+        fence=""
+        comment_prefix="# "
+        ;;
+    esac
+    if [[ "$first" -eq 0 ]]; then
+      echo ""
+    fi
+    first=0
+    echo "### Reproduction: ${file}"
+    echo ""
+    echo '```'"${fence}"
+    echo "${comment_prefix}${file}"
+    cat "$file"
+    echo '```'
+  done
+}
+
 # Default findings body, per verdict.
 if [[ -n "${QA_FINDINGS_BODY:-}" ]]; then
   FINDINGS_BODY="$QA_FINDINGS_BODY"
@@ -149,6 +212,21 @@ else
     ISSUES-FOUND)
       # One bullet per failing test name.
       FINDINGS_BODY="$(printf '%s' "$FAILING_NAMES_JSON" | jq -r '.[] | "- " + .')"
+      # FEAT-032 FR-2 — append per-finding `## Reproduction` blocks embedding
+      # the QA test source(s). The QA_TEST_FILES env var lists file paths
+      # newline-separated; the embedder dedupes nothing (caller is responsible
+      # for de-dup), language-detects via extension, and prepends a path
+      # header comment.
+      if [[ -n "${QA_TEST_FILES:-}" ]]; then
+        EMBED_BODY="$(printf '%s\n' "${QA_TEST_FILES}" | embed_qa_test_files)"
+        if [[ -n "$EMBED_BODY" ]]; then
+          FINDINGS_BODY="${FINDINGS_BODY}
+
+## Reproduction
+
+${EMBED_BODY}"
+        fi
+      fi
       ;;
     ERROR)
       # Pass through the truncated output verbatim inside a fenced block.

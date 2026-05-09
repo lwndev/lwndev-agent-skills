@@ -57,7 +57,7 @@ The phase is intentionally schema-and-validator only: no orchestrator branching 
 ### Phase 2: addressing-qa-findings skill + adopt-qa-test.sh (FR-4, FR-5, FR-6, FR-13)
 
 **Feature:** [FEAT-032](../features/FEAT-032-executing-qa-ephemeral-tests.md) | [#267](https://github.com/lwndev/lwndev-marketplace/issues/267)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 1
 **ComplexityOverride:** opus
 
@@ -108,7 +108,7 @@ The skill ships with two auto-detected phases (fix, adopt) per FR-4, dispatched 
 ### Phase 3: executing-qa re-QA mode + artifact embedding + artifact commit ownership (FR-1, FR-2, FR-3, FR-12)
 
 **Feature:** [FEAT-032](../features/FEAT-032-executing-qa-ephemeral-tests.md) | [#267](https://github.com/lwndev/lwndev-marketplace/issues/267)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 2
 **ComplexityOverride:** opus
 
@@ -145,12 +145,12 @@ Phase 3 depends on Phase 2 because re-QA mode and the artifact-embedding contrac
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/assets/test-results-template-v2.md` (per-finding `## Reproduction` block placeholder)
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/scripts/render-qa-results.sh` (FR-2 language-aware embedding + path-comment header)
-- [ ] `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` (FR-3 auto-detect + re-QA branch + FR-12 artifact commit + FR-13 ownership rule body)
-- [ ] `tests/bats/skills/executing-qa/render-qa-results.bats` (extended with FR-2 embedding cases)
-- [ ] `tests/bats/skills/executing-qa/re-qa-mode.bats` (FR-3 + FR-13 negative)
-- [ ] `tests/bats/skills/executing-qa/artifact-commit.bats` (FR-12)
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/assets/test-results-template-v2.md` (per-finding `## Reproduction` block placeholder)
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/scripts/render-qa-results.sh` (FR-2 language-aware embedding + path-comment header)
+- [x] `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` (FR-3 auto-detect + re-QA branch + FR-12 artifact commit + FR-13 ownership rule body)
+- [x] `tests/bats/skills/executing-qa/render-qa-results.bats` (extended with FR-2 embedding cases)
+- [x] `tests/bats/skills/executing-qa/re-qa-mode.bats` (FR-3 + FR-13 negative)
+- [x] `tests/bats/skills/executing-qa/artifact-commit.bats` (FR-12)
 
 ---
 
