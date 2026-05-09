@@ -11,7 +11,7 @@ export default defineConfig({
       // a child vitest process pointed at the fixture's own config.
       'scripts/__tests__/fixtures/feat-030-known-buggy/**',
     ],
-    fileParallelism: false,
+    fileParallelism: true,
     // Default 5000ms is too tight for execSync-heavy tests under full-suite
     // load (tsx cold-starts of release.ts / scaffold.ts / build.ts can
     // exceed it on a loaded machine).

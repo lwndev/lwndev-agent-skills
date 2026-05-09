@@ -102,7 +102,7 @@ Thirteen skills exist that form three workflow chains. The `orchestrating-workfl
 
 - Skill validation uses the `ai-skills-manager` programmatic API (`validate()`)
 - Skills use YAML frontmatter in SKILL.md for metadata extraction
-- Tests run sequentially (`fileParallelism: false` in `vitest.config.ts`) to prevent race conditions with shared `plugins/` directories
+- Tests run in parallel (`fileParallelism: true` in `vitest.config.ts`); test files that previously mutated the real `plugins/` tree are isolated via `mkdtemp` so parallel runs stay deterministic. Directories starting with `_` inside `plugins/lwndev-sdlc/skills/` are treated as temp/test fixtures and excluded from skill discovery and skill-count assertions.
 - Plugin discovery is filesystem-driven: directories under `plugins/` with `.claude-plugin/plugin.json` are treated as plugins
 - No build output — plugins live in their final structure under `plugins/` and marketplace source paths point directly to them
 

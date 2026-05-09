@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execSync } from 'node:child_process';
-import { access, readdir, readFile, rm, mkdir, writeFile } from 'node:fs/promises';
+import { access, readdir, readFile, rm, mkdir, writeFile, mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import semver from 'semver';
+import { validate, type DetailedValidateResult } from 'ai-skills-manager';
 
 const PLUGIN_DIR = 'plugins/lwndev-sdlc';
 const MANIFEST_PATH = join(PLUGIN_DIR, '.claude-plugin', 'plugin.json');
@@ -67,7 +69,11 @@ describe('plugin structure', () => {
   });
 
   it('should have skills directory with all 13 skills', async () => {
-    const skillDirs = await readdir(SKILLS_DIR);
+    const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
+    // Exclude hidden and temp dirs (. and _ prefixes) to avoid races with parallel test files.
+    const skillDirs = entries
+      .filter((e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_'))
+      .map((e) => e.name);
 
     expect(skillDirs).toContain('documenting-features');
     expect(skillDirs).toContain('creating-implementation-plans');
@@ -86,7 +92,11 @@ describe('plugin structure', () => {
   });
 
   it('should include SKILL.md in each skill directory', async () => {
-    const skillDirs = await readdir(SKILLS_DIR);
+    const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
+    // Exclude hidden and temp dirs (. and _ prefixes) to avoid races with parallel test files.
+    const skillDirs = entries
+      .filter((e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_'))
+      .map((e) => e.name);
 
     for (const skillDir of skillDirs) {
       const skillMdPath = join(SKILLS_DIR, skillDir, 'SKILL.md');
@@ -131,32 +141,32 @@ describe('marketplace manifest validation', () => {
 });
 
 describe('build script failure handling', () => {
-  const badSkillDir = join('plugins', 'lwndev-sdlc', 'skills', '_test-bad-skill');
+  // Use mkdtemp to isolate the bad-skill fixture — no writes to the real plugins/ tree.
+  // The validate() API is called directly with the tmp dir path.
+  let tmpDir: string;
+
+  beforeAll(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), 'build-bad-skill-'));
+    await mkdir(tmpDir, { recursive: true });
+    await writeFile(
+      join(tmpDir, 'SKILL.md'),
+      '---\nname: wrong-name-mismatch\ndescription: A test skill with intentional issues\n---\n\n# Bad Skill\n'
+    );
+  });
 
   afterAll(async () => {
-    await rm(badSkillDir, { recursive: true, force: true });
+    await rm(tmpDir, { recursive: true, force: true });
   });
 
   it('should display failed check details for invalid skills', async () => {
-    await mkdir(badSkillDir, { recursive: true });
-    await writeFile(
-      join(badSkillDir, 'SKILL.md'),
-      '---\nname: wrong-name-mismatch\ndescription: A test skill with intentional issues\n---\n\n# Bad Skill\n'
-    );
+    // Call validate() directly — no need to inject into the real plugins/ tree.
+    const result = (await validate(tmpDir, { detailed: true })) as DetailedValidateResult;
 
-    let stdout = '';
-    try {
-      execSync('npm run validate', {
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-    } catch (err: unknown) {
-      stdout = (err as { stdout: string }).stdout;
-    }
-
-    // Should show per-check failure details (check name + error message)
-    expect(stdout).toContain('nameMatchesDirectory');
-    // Should show the checks failed summary
-    expect(stdout).toMatch(/\d+\/\d+ checks failed/);
+    expect(result.valid).toBe(false);
+    // nameMatchesDirectory check must fail (dir is a random tmp name, skill name is wrong-name-mismatch)
+    expect(result.checks.nameMatchesDirectory?.passed).toBe(false);
+    // At least one check must have failed
+    const failedChecks = Object.entries(result.checks).filter(([, c]) => !c.passed);
+    expect(failedChecks.length).toBeGreaterThanOrEqual(1);
   });
 });

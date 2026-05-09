@@ -27,7 +27,10 @@ describe('argument-hint across all skills', () => {
   // Load all SKILL.md files once
   it('should load all skill SKILL.md files', async () => {
     const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
-    const skillDirs = entries.filter((e) => e.isDirectory() && !e.name.startsWith('.'));
+    // Exclude hidden and temp dirs (. and _ prefixes) to avoid races with parallel test files.
+    const skillDirs = entries.filter(
+      (e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_')
+    );
 
     for (const dir of skillDirs) {
       const raw = await readFile(join(SKILLS_DIR, dir.name, 'SKILL.md'), 'utf-8');
@@ -93,8 +96,9 @@ describe('argument-hint across all skills', () => {
   describe('skill coverage completeness', () => {
     it('every skill except finalizing-workflow should have argument-hint', async () => {
       const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
+      // Exclude hidden and temp dirs (. and _ prefixes) to avoid races with parallel test files.
       const skillNames = entries
-        .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
+        .filter((e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_'))
         .map((e) => e.name);
 
       for (const name of skillNames) {
