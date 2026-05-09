@@ -175,10 +175,10 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh record-findings --type qa {ID} {st
   "$(echo "$qa_parsed" | jq -r .summary)"
 ```
 
-Then advance:
+Also persist the verdict to the QA-loop field:
 
 ```bash
-${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-results-{ID}.md"
+${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-qa-verdict {ID} "$(echo "$qa_parsed" | jq -r .verdict)"
 ```
 
 On parse mismatch (non-zero exit from `parse-qa-return.sh`), halt the workflow:
@@ -189,7 +189,34 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh fail {ID} "<contract-mismatch erro
 
 Surface the contract-mismatch error verbatim — this is a load-bearing carve-out, not narration.
 
-**Note**: the orchestrator does NOT change advance behavior based on verdict. Verdict-based gating is out of scope; FR-12 is persistence-only.
+After persisting findings, run the QA dispatch and branch on the result (FR-7). After QA, advance behavior is verdict-gated per `qa-dispatch.sh`. See `references/qa-loop.md` for the dispatch table.
+
+```bash
+dispatch=$(bash "${CLAUDE_SKILL_DIR}/scripts/qa-dispatch.sh" {ID})
+```
+
+Branch on `$dispatch`:
+
+- `advance`: call `workflow-state.sh advance {ID} "qa/test-results/QA-results-{ID}.md"` and continue to the next step.
+- `adopt-phase`: fork `addressing-qa-findings` (the skill auto-detects adopt phase from state per FR-4). On its `done | phase=adopted` return, call `workflow-state.sh advance {ID} "qa/test-results/QA-results-{ID}.md"` and continue.
+- `fix-phase`: increment `qaFixAttempts` and record a state event; fork `addressing-qa-findings` (auto-detects fix phase); on its `done | phase=fix-committed` return, re-invoke `executing-qa` (which auto-detects re-QA mode per FR-3). After re-QA completes, persist findings, set-qa-verdict, then re-run `qa-dispatch.sh` and loop.
+  ```bash
+  new_count=$(bash "${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh" inc-qa-fix-attempts {ID})
+  # [info] qa-loop: fix attempt ${new_count} of ${qaLoopCap} for {ID}
+  # fork addressing-qa-findings, then re-invoke executing-qa
+  ```
+- `pause:qa-loop-exhausted`: pause the workflow and surface the resume options to the user (load-bearing carve-out):
+  ```
+  QA loop exhausted after {qaFixAttempts} fix attempt(s). Issues remain unresolved.
+  Resume options:
+    --approve-advance   advance past QA with issues unresolved (counter preserved)
+    --qa-loop-cap <N>   raise the cap to N and retry (resets counter to 0)
+  To abandon: close this workflow and address the issues manually.
+  ```
+  Then: `workflow-state.sh pause {ID} qa-loop-exhausted`
+- `pause:qa-error`: surface the QA ERROR reason; `workflow-state.sh pause {ID} qa-error`. User resolves manually then re-invokes.
+- `pause:fix-suite-failed`: surface the FR-4 failure reason; `workflow-state.sh pause {ID} fix-suite-failed`. User resolves manually then re-invokes.
+- `pause:adoption-failed`: surface the FR-5 partial-success reason (adoptedTests is preserved per FR-4); `workflow-state.sh pause {ID} adoption-failed`. User resolves manually then re-invokes.
 
 #### Chore Chain Main-Context Steps (Steps 1, 3, 6)
 
@@ -220,13 +247,15 @@ ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh record-findings --type qa {ID} {st
   "$(echo "$qa_parsed" | jq -r .summary)"
 ```
 
-Then advance:
+Also persist the verdict:
 
 ```bash
-${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID} "qa/test-results/QA-results-{ID}.md"
+${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-qa-verdict {ID} "$(echo "$qa_parsed" | jq -r .verdict)"
 ```
 
-On parse mismatch, halt with `fail` and surface the contract-mismatch error verbatim (load-bearing carve-out). The orchestrator does NOT gate advance on verdict — verdict-based gating is out of scope.
+On parse mismatch, halt with `fail` and surface the contract-mismatch error verbatim (load-bearing carve-out).
+
+After persisting findings, run the QA dispatch and branch on the result — same logic as feature chain step 5+N+3. After QA, advance behavior is verdict-gated per `qa-dispatch.sh`. See `references/qa-loop.md` for the dispatch table.
 
 ### Forked Steps
 

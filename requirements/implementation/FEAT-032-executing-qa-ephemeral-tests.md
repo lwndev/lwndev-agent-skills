@@ -108,7 +108,7 @@ The skill ships with two auto-detected phases (fix, adopt) per FR-4, dispatched 
 ### Phase 3: executing-qa re-QA mode + artifact embedding + artifact commit ownership (FR-1, FR-2, FR-3, FR-12)
 
 **Feature:** [FEAT-032](../features/FEAT-032-executing-qa-ephemeral-tests.md) | [#267](https://github.com/lwndev/lwndev-marketplace/issues/267)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 2
 **ComplexityOverride:** opus
 
@@ -157,7 +157,7 @@ Phase 3 depends on Phase 2 because re-QA mode and the artifact-embedding contrac
 ### Phase 4: Orchestrator verdict-branching + re-QA loop + resume dispatch (FR-7, FR-8 dispatch)
 
 **Feature:** [FEAT-032](../features/FEAT-032-executing-qa-ephemeral-tests.md) | [#267](https://github.com/lwndev/lwndev-marketplace/issues/267)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 1, Phase 2, Phase 3
 
 #### Rationale
@@ -209,12 +209,12 @@ This phase also updates the existing comment in `orchestrating-workflows/SKILL.m
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/qa-dispatch.sh`
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` (FR-7 dispatch wiring + FR-8 resume dispatch + comment rewrite)
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/qa-loop.md` (FR-7 dispatch table + FR-8 loop semantics + resume-flag map)
-- [ ] `tests/bats/skills/orchestrating-workflows/qa-dispatch.bats`
-- [ ] `tests/bats/skills/orchestrating-workflows/qa-loop-resume.bats`
-- [ ] `tests/bats/skills/orchestrating-workflows/qa-loop-state-events.bats`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/qa-dispatch.sh`
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` (FR-7 dispatch wiring + FR-8 resume dispatch + comment rewrite)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/references/qa-loop.md` (FR-7 dispatch table + FR-8 loop semantics + resume-flag map)
+- [x] `tests/bats/skills/orchestrating-workflows/qa-dispatch.bats`
+- [x] `tests/bats/skills/orchestrating-workflows/qa-loop-resume.bats`
+- [x] `tests/bats/skills/orchestrating-workflows/qa-loop-state-events.bats`
 
 ---
 

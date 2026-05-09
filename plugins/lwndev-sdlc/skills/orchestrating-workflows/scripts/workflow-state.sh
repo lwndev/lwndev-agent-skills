@@ -111,8 +111,11 @@ usage() {
   echo "                                FEAT-032 QA-loop. Persist .qaLastVerdict (PASS|ISSUES-FOUND|ERROR|EXPLORATORY-ONLY)." >&2
   echo "  inc-qa-fix-attempts <ID>" >&2
   echo "                                FEAT-032 QA-loop. Increment .qaFixAttempts; emit the new count on stdout." >&2
+  echo "                                Also appends a {type:'qa-fix-attempt', attempt:<N>, at:<ISO>} event to .stateEvents." >&2
   echo "  reset-qa-fix-attempts <ID>" >&2
   echo "                                FEAT-032 QA-loop. Reset .qaFixAttempts to 0 (used by --qa-loop-cap resume)." >&2
+  echo "  set-qa-loop-cap <ID> <N>" >&2
+  echo "                                FEAT-032 QA-loop. Set .qaLoopCap to a positive integer N." >&2
   echo "  record-adopted-test <ID> <path>" >&2
   echo "                                FEAT-032 QA-loop. Append <path> to .adoptedTests." >&2
   echo "  get-qa-state <ID>             FEAT-032 QA-loop. Emit {qaFixAttempts,qaLastVerdict,adoptedTests} JSON to stdout." >&2
@@ -260,14 +263,15 @@ _migrate_state_file() {
     (has("qaFixAttempts") | not) or
     (has("qaLastVerdict") | not) or
     (has("adoptedTests") | not) or
-    (has("qaLoopCap") | not)
+    (has("qaLoopCap") | not) or
+    (has("stateEvents") | not)
   ' "$file" 2>/dev/null || echo "false")
 
   if [[ "$needs_migration" != "true" ]]; then
     return 0
   fi
 
-  echo "[workflow-state] debug: migrating ${file} to add missing state fields (model-selection, gate, gateSetAt, qa-loop)" >&2
+  echo "[workflow-state] debug: migrating ${file} to add missing state fields (model-selection, gate, gateSetAt, qa-loop, stateEvents)" >&2
 
   jq '
     (if has("complexity") | not then .complexity = null else . end)
@@ -280,6 +284,7 @@ _migrate_state_file() {
     | (if has("qaLastVerdict") | not then .qaLastVerdict = null else . end)
     | (if has("adoptedTests") | not then .adoptedTests = [] else . end)
     | (if has("qaLoopCap") | not then .qaLoopCap = 2 else . end)
+    | (if has("stateEvents") | not then .stateEvents = [] else . end)
   ' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 }
 
@@ -1083,7 +1088,8 @@ cmd_init() {
       qaFixAttempts: 0,
       qaLastVerdict: null,
       adoptedTests: [],
-      qaLoopCap: 2
+      qaLoopCap: 2,
+      stateEvents: []
     }' > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   cat "$file"
@@ -1978,14 +1984,25 @@ cmd_set_qa_verdict() {
 
 # inc-qa-fix-attempts <ID>
 # Increment qaFixAttempts; emit the new count on stdout.
+# Also appends {type:"qa-fix-attempt", attempt:<N>, at:<ISO>} to stateEvents
+# per Edge Case 15 so the loop history is traceable.
 cmd_inc_qa_fix_attempts() {
   local id="$1"
   local file
   file=$(state_file "$id")
   validate_state_file "$file"
 
-  jq '.qaFixAttempts = ((.qaFixAttempts // 0) + 1)' \
-    "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+  local now
+  now=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+  jq --arg now "$now" '
+    .qaFixAttempts = ((.qaFixAttempts // 0) + 1)
+    | .stateEvents = ((.stateEvents // []) + [{
+        type: "qa-fix-attempt",
+        attempt: .qaFixAttempts,
+        at: $now
+      }])
+  ' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   jq -r '.qaFixAttempts' "$file"
 }
@@ -1999,6 +2016,29 @@ cmd_reset_qa_fix_attempts() {
   validate_state_file "$file"
 
   jq '.qaFixAttempts = 0' \
+    "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+
+  cat "$file"
+}
+
+# set-qa-loop-cap <ID> <N>
+# Set qaLoopCap to a positive integer N (used by the --qa-loop-cap resume path).
+cmd_set_qa_loop_cap() {
+  local id="$1"
+  local cap="$2"
+  if [[ -z "$cap" ]]; then
+    echo "Error: set-qa-loop-cap requires <ID> <N>." >&2
+    exit 1
+  fi
+  if ! [[ "$cap" =~ ^[1-9][0-9]*$ ]]; then
+    echo "Error: set-qa-loop-cap N must be a positive integer; got '${cap}'." >&2
+    exit 1
+  fi
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  jq --argjson cap "$cap" '.qaLoopCap = $cap' \
     "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   cat "$file"
@@ -2183,6 +2223,10 @@ case "$command" in
   reset-qa-fix-attempts)
     [[ $# -ge 1 ]] || { echo "Error: reset-qa-fix-attempts requires <ID>" >&2; exit 1; }
     cmd_reset_qa_fix_attempts "$1"
+    ;;
+  set-qa-loop-cap)
+    [[ $# -ge 2 ]] || { echo "Error: set-qa-loop-cap requires <ID> <N>" >&2; exit 1; }
+    cmd_set_qa_loop_cap "$1" "$2"
     ;;
   record-adopted-test)
     [[ $# -ge 2 ]] || { echo "Error: record-adopted-test requires <ID> <path>" >&2; exit 1; }
