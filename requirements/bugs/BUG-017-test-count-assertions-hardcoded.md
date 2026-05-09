@@ -44,6 +44,10 @@ Skill-count assertions derive the expected count from the actual `plugins/lwndev
 
 - `tests/unit/argument-hint.test.ts`
 - `tests/unit/build.test.ts`
+- `qa/test-plans/QA-plan-BUG-017.md`
+- `qa/test-results/QA-results-BUG-017.md`
+- `requirements/bugs/BUG-017-test-count-assertions-hardcoded.md`
+- `tests/unit/qa-skill-count-derivation.test.ts`
 
 ## Acceptance Criteria
 
@@ -57,7 +61,7 @@ Skill-count assertions derive the expected count from the actual `plugins/lwndev
 
 ## Completion
 
-**Status:** `Completed-on-merge`
+**Status:** `Complete`
 
 **Completed:** 2026-05-09
 
