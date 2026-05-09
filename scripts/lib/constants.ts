@@ -1,6 +1,8 @@
 import { join } from 'node:path';
 
-export const PLUGINS_DIR = 'plugins';
+// PLUGINS_DIR can be overridden via env var so tests can point build.ts at a
+// fixture tree without mutating the real plugins/ directory.
+export const PLUGINS_DIR = process.env.PLUGINS_DIR ?? 'plugins';
 export const PROJECT_SKILLS_DIR = join('.claude', 'skills');
 export const PROJECT_AGENTS_DIR = join('.claude', 'agents');
 

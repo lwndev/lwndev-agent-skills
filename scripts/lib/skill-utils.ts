@@ -37,39 +37,46 @@ export async function getSourcePlugins(): Promise<string[]> {
 }
 
 /**
- * Get all skills for a specific plugin by reading SKILL.md frontmatter
+ * Discover skills under a directory by reading SKILL.md frontmatter from each subdirectory.
  */
-export async function getSourceSkills(pluginName: string): Promise<SkillInfo[]> {
+export async function getSkillsFromDir(skillsDir: string): Promise<SkillInfo[]> {
   const skills: SkillInfo[] = [];
-  const skillsDir = getPluginSkillsDir(pluginName);
 
-  try {
-    const entries = await readdir(skillsDir, { withFileTypes: true });
+  const entries = await readdir(skillsDir, { withFileTypes: true });
 
-    for (const entry of entries) {
-      if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+  for (const entry of entries) {
+    if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
 
-      const skillPath = join(skillsDir, entry.name);
-      const skillMdPath = join(skillPath, 'SKILL.md');
+    const skillPath = join(skillsDir, entry.name);
+    const skillMdPath = join(skillPath, 'SKILL.md');
 
-      try {
-        const content = await readFile(skillMdPath, 'utf-8');
-        const { data } = matter(content);
+    try {
+      const content = await readFile(skillMdPath, 'utf-8');
+      const { data } = matter(content);
 
-        if (data.name && data.description) {
-          skills.push({
-            name: data.name,
-            description: data.description,
-            path: skillPath,
-          });
-        }
-      } catch {
-        // Skip directories without valid SKILL.md
+      if (data.name && data.description) {
+        skills.push({
+          name: data.name,
+          description: data.description,
+          path: skillPath,
+        });
       }
+    } catch {
+      // Skip directories without valid SKILL.md
     }
-  } catch (err) {
-    throw new Error(`Failed to read skills directory for plugin "${pluginName}": ${err}`);
   }
 
   return skills.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Get all skills for a specific plugin by reading SKILL.md frontmatter
+ */
+export async function getSourceSkills(pluginName: string): Promise<SkillInfo[]> {
+  const skillsDir = getPluginSkillsDir(pluginName);
+  try {
+    return await getSkillsFromDir(skillsDir);
+  } catch (err) {
+    throw new Error(`Failed to read skills directory for plugin "${pluginName}": ${err}`);
+  }
 }

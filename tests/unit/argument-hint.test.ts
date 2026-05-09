@@ -1,5 +1,6 @@
-import { describe, it, expect, afterAll } from 'vitest';
-import { readFile, readdir, mkdir, writeFile, rm } from 'node:fs/promises';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { readFile, readdir, writeFile, rm, mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import matter from 'gray-matter';
 import { validate, type DetailedValidateResult } from 'ai-skills-manager';
@@ -27,7 +28,9 @@ describe('argument-hint across all skills', () => {
   // Load all SKILL.md files once
   it('should load all skill SKILL.md files', async () => {
     const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
-    const skillDirs = entries.filter((e) => e.isDirectory() && !e.name.startsWith('.'));
+    const skillDirs = entries.filter(
+      (e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_')
+    );
 
     for (const dir of skillDirs) {
       const raw = await readFile(join(SKILLS_DIR, dir.name, 'SKILL.md'), 'utf-8');
@@ -94,7 +97,7 @@ describe('argument-hint across all skills', () => {
     it('every skill except finalizing-workflow should have argument-hint', async () => {
       const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
       const skillNames = entries
-        .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
+        .filter((e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_'))
         .map((e) => e.name);
 
       for (const name of skillNames) {
@@ -115,18 +118,21 @@ describe('argument-hint across all skills', () => {
 });
 
 describe('ai-skills-manager validate API for argument-hint', () => {
-  const tempSkillDir = join(SKILLS_DIR, '_test-argument-hint');
+  let tempSkillDir: string;
+
+  beforeAll(async () => {
+    tempSkillDir = await mkdtemp(join(tmpdir(), 'argument-hint-'));
+  });
 
   afterAll(async () => {
     await rm(tempSkillDir, { recursive: true, force: true });
   });
 
   it('should pass argumentHintFormat check with angle-bracket hint', async () => {
-    await mkdir(tempSkillDir, { recursive: true });
     await writeFile(
       join(tempSkillDir, 'SKILL.md'),
       `---
-name: _test-argument-hint
+name: argument-hint-fixture
 description: Temporary skill for argument-hint validation test
 argument-hint: <query>
 ---
@@ -143,7 +149,7 @@ argument-hint: <query>
     await writeFile(
       join(tempSkillDir, 'SKILL.md'),
       `---
-name: _test-argument-hint
+name: argument-hint-fixture
 description: Temporary skill for argument-hint validation test
 argument-hint: "[feature-name or #issue-number]"
 ---
@@ -160,7 +166,7 @@ argument-hint: "[feature-name or #issue-number]"
     await writeFile(
       join(tempSkillDir, 'SKILL.md'),
       `---
-name: _test-argument-hint
+name: argument-hint-fixture
 description: Temporary skill for argument-hint validation test
 argument-hint: "<plan-file> [phase-number]"
 ---
