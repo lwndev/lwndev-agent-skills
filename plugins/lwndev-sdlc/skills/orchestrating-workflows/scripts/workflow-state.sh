@@ -107,6 +107,15 @@ usage() {
   echo "                                verdict must be one of: PASS, ISSUES-FOUND, ERROR, EXPLORATORY-ONLY." >&2
   echo "                                passed, failed, errored must be non-negative integers." >&2
   echo "                                Step at stepIndex must have skill 'executing-qa'." >&2
+  echo "  set-qa-verdict <ID> <verdict>" >&2
+  echo "                                FEAT-032 QA-loop. Persist .qaLastVerdict (PASS|ISSUES-FOUND|ERROR|EXPLORATORY-ONLY)." >&2
+  echo "  inc-qa-fix-attempts <ID>" >&2
+  echo "                                FEAT-032 QA-loop. Increment .qaFixAttempts; emit the new count on stdout." >&2
+  echo "  reset-qa-fix-attempts <ID>" >&2
+  echo "                                FEAT-032 QA-loop. Reset .qaFixAttempts to 0 (used by --qa-loop-cap resume)." >&2
+  echo "  record-adopted-test <ID> <path>" >&2
+  echo "                                FEAT-032 QA-loop. Append <path> to .adoptedTests." >&2
+  echo "  get-qa-state <ID>             FEAT-032 QA-loop. Emit {qaFixAttempts,qaLastVerdict,adoptedTests} JSON to stdout." >&2
   exit 1
 }
 
@@ -247,14 +256,18 @@ _migrate_state_file() {
     (has("modelOverride") | not) or
     (has("modelSelections") | not) or
     (has("gate") | not) or
-    (has("gateSetAt") | not)
+    (has("gateSetAt") | not) or
+    (has("qaFixAttempts") | not) or
+    (has("qaLastVerdict") | not) or
+    (has("adoptedTests") | not) or
+    (has("qaLoopCap") | not)
   ' "$file" 2>/dev/null || echo "false")
 
   if [[ "$needs_migration" != "true" ]]; then
     return 0
   fi
 
-  echo "[workflow-state] debug: migrating ${file} to add missing state fields (model-selection, gate, gateSetAt)" >&2
+  echo "[workflow-state] debug: migrating ${file} to add missing state fields (model-selection, gate, gateSetAt, qa-loop)" >&2
 
   jq '
     (if has("complexity") | not then .complexity = null else . end)
@@ -263,6 +276,10 @@ _migrate_state_file() {
     | (if has("modelSelections") | not then .modelSelections = [] else . end)
     | (if has("gate") | not then .gate = null else . end)
     | (if has("gateSetAt") | not then .gateSetAt = null else . end)
+    | (if has("qaFixAttempts") | not then .qaFixAttempts = 0 else . end)
+    | (if has("qaLastVerdict") | not then .qaLastVerdict = null else . end)
+    | (if has("adoptedTests") | not then .adoptedTests = [] else . end)
+    | (if has("qaLoopCap") | not then .qaLoopCap = 2 else . end)
   ' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
 }
 
@@ -1062,7 +1079,11 @@ cmd_init() {
       complexity: null,
       complexityStage: "init",
       modelOverride: null,
-      modelSelections: []
+      modelSelections: [],
+      qaFixAttempts: 0,
+      qaLastVerdict: null,
+      adoptedTests: [],
+      qaLoopCap: 2
     }' > "${file}.tmp" && mv "${file}.tmp" "$file"
 
   cat "$file"
@@ -1135,10 +1156,13 @@ cmd_pause() {
   file=$(state_file "$id")
   validate_state_file "$file"
 
-  if [[ "$reason" != "plan-approval" && "$reason" != "pr-review" && "$reason" != "review-findings" ]]; then
-    echo "Error: Invalid pause reason '${reason}'. Expected 'plan-approval', 'pr-review', or 'review-findings'." >&2
-    exit 1
-  fi
+  case "$reason" in
+    plan-approval|pr-review|review-findings|qa-error|qa-loop-exhausted|fix-suite-failed|adoption-failed) ;;
+    *)
+      echo "Error: Invalid pause reason '${reason}'. Expected one of: plan-approval, pr-review, review-findings, qa-error, qa-loop-exhausted, fix-suite-failed, adoption-failed." >&2
+      exit 1
+      ;;
+  esac
 
   # BUG-014 / AC9: write `pausedAt` (ISO-8601) so Hook B can compare an approval
   # marker's mtime against the most recent pause time. Missing `pausedAt` on a
@@ -1918,6 +1942,105 @@ cmd_check_claude_version() {
   return 1
 }
 
+# --- FEAT-032 QA-loop state subcommands ---
+#
+# Reads/writes three new fields the QA fix loop depends on:
+#   qaFixAttempts (integer, default 0)
+#   qaLastVerdict (string, default null)  — one of PASS|ISSUES-FOUND|ERROR|EXPLORATORY-ONLY
+#   adoptedTests  (array of strings, default [])
+# qaLoopCap (integer, default 2) lives alongside but is set elsewhere via
+# resume-flag dispatch in Phase 4. NFR-3 in-place migration is handled by
+# `_migrate_state_file`; defaults are read at point of use here.
+
+# set-qa-verdict <ID> <verdict>
+# Persist the most-recent QA verdict.
+cmd_set_qa_verdict() {
+  local id="$1"
+  local verdict="$2"
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  case "$verdict" in
+    PASS|ISSUES-FOUND|ERROR|EXPLORATORY-ONLY) ;;
+    *)
+      echo "Error: set-qa-verdict verdict must be one of: PASS, ISSUES-FOUND, ERROR, EXPLORATORY-ONLY; got '${verdict}'." >&2
+      exit 1
+      ;;
+  esac
+
+  jq --arg verdict "$verdict" \
+    '.qaLastVerdict = $verdict' \
+    "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+
+  cat "$file"
+}
+
+# inc-qa-fix-attempts <ID>
+# Increment qaFixAttempts; emit the new count on stdout.
+cmd_inc_qa_fix_attempts() {
+  local id="$1"
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  jq '.qaFixAttempts = ((.qaFixAttempts // 0) + 1)' \
+    "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+
+  jq -r '.qaFixAttempts' "$file"
+}
+
+# reset-qa-fix-attempts <ID>
+# Reset qaFixAttempts to 0 (used by the --qa-loop-cap resume path).
+cmd_reset_qa_fix_attempts() {
+  local id="$1"
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  jq '.qaFixAttempts = 0' \
+    "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+
+  cat "$file"
+}
+
+# record-adopted-test <ID> <path>
+# Append <path> to adoptedTests.
+cmd_record_adopted_test() {
+  local id="$1"
+  local path="$2"
+  if [[ -z "$path" ]]; then
+    echo "Error: record-adopted-test requires <ID> <path>." >&2
+    exit 1
+  fi
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  jq --arg path "$path" \
+    '.adoptedTests = ((.adoptedTests // []) + [$path])' \
+    "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+
+  cat "$file"
+}
+
+# get-qa-state <ID>
+# Emit {qaFixAttempts, qaLastVerdict, adoptedTests} as JSON to stdout. Defaults
+# are read at point of use so a pre-FEAT-032 state file emits the same shape as
+# a freshly-migrated one.
+cmd_get_qa_state() {
+  local id="$1"
+  local file
+  file=$(state_file "$id")
+  validate_state_file "$file"
+
+  jq -c '{
+    qaFixAttempts: (.qaFixAttempts // 0),
+    qaLastVerdict: (.qaLastVerdict // null),
+    adoptedTests: (.adoptedTests // [])
+  }' "$file"
+}
+
 # --- Main ---
 
 if [[ $# -lt 1 ]]; then
@@ -2048,6 +2171,26 @@ case "$command" in
   record-findings)
     [[ $# -ge 1 ]] || { echo "Error: record-findings requires at least <ID> or --type flag plus args." >&2; exit 2; }
     cmd_record_findings "$@"
+    ;;
+  set-qa-verdict)
+    [[ $# -ge 2 ]] || { echo "Error: set-qa-verdict requires <ID> <verdict>" >&2; exit 1; }
+    cmd_set_qa_verdict "$1" "$2"
+    ;;
+  inc-qa-fix-attempts)
+    [[ $# -ge 1 ]] || { echo "Error: inc-qa-fix-attempts requires <ID>" >&2; exit 1; }
+    cmd_inc_qa_fix_attempts "$1"
+    ;;
+  reset-qa-fix-attempts)
+    [[ $# -ge 1 ]] || { echo "Error: reset-qa-fix-attempts requires <ID>" >&2; exit 1; }
+    cmd_reset_qa_fix_attempts "$1"
+    ;;
+  record-adopted-test)
+    [[ $# -ge 2 ]] || { echo "Error: record-adopted-test requires <ID> <path>" >&2; exit 1; }
+    cmd_record_adopted_test "$1" "$2"
+    ;;
+  get-qa-state)
+    [[ $# -ge 1 ]] || { echo "Error: get-qa-state requires <ID>" >&2; exit 1; }
+    cmd_get_qa_state "$1"
     ;;
   *)
     echo "Error: Unknown command '${command}'" >&2

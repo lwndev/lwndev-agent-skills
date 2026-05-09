@@ -17,7 +17,7 @@ The build order is dictated by data-flow dependencies: workflow-state schema and
 ### Phase 1: Workflow-state schema + pauseReason enum + orchestrator resume flags (FR-7a, FR-8 flag scaffold, NFR-3 migration)
 
 **Feature:** [FEAT-032](../features/FEAT-032-executing-qa-ephemeral-tests.md) | [#267](https://github.com/lwndev/lwndev-marketplace/issues/267)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** none
 
 #### Rationale
@@ -45,12 +45,12 @@ The phase is intentionally schema-and-validator only: no orchestrator branching 
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` (pauseReason enum extension, three new state fields with defaults + migration, new subcommands)
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/check-resume-preconditions.sh` (resume branches for four new pause reasons)
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/parse-model-flags.sh` (or sibling resume-flag parser; new `--approve-advance` / `--qa-loop-cap <N>` flags + mutual-exclusion guard)
-- [ ] `tests/bats/skills/orchestrating-workflows/workflow-state-record-findings-qa.bats` (extended with four new pause-reason cases + verbatim rejection message)
-- [ ] `tests/bats/skills/orchestrating-workflows/workflow-state.bats` (new subcommand coverage + NFR-3 migration path)
-- [ ] `tests/bats/skills/orchestrating-workflows/parse-model-flags.bats` (new flag coverage + FR-8 mutual-exclusion message verbatim)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/workflow-state.sh` (pauseReason enum extension, three new state fields with defaults + migration, new subcommands)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/check-resume-preconditions.sh` (resume branches for four new pause reasons)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts/parse-model-flags.sh` (or sibling resume-flag parser; new `--approve-advance` / `--qa-loop-cap <N>` flags + mutual-exclusion guard)
+- [x] `tests/bats/skills/orchestrating-workflows/workflow-state-record-findings-qa.bats` (extended with four new pause-reason cases + verbatim rejection message)
+- [x] `tests/bats/skills/orchestrating-workflows/workflow-state.bats` (new subcommand coverage + NFR-3 migration path)
+- [x] `tests/bats/skills/orchestrating-workflows/parse-model-flags.bats` (new flag coverage + FR-8 mutual-exclusion message verbatim)
 
 ---
 

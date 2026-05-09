@@ -213,3 +213,81 @@ seed_state() {
   errors=$(echo "$output" | jq -r '.steps[1].findings.errors')
   [ "$errors" = "2" ]
 }
+
+# ---- FEAT-032 FR-7a: pause-reason allow-list extension ----------------------
+#
+# The cmd_pause allow-list now accepts the four new QA-loop reasons in
+# addition to the original three. The rejection message is pinned verbatim per
+# FR-7a (load-bearing carve-out).
+
+@test "FR-7a: pause qa-error → status=paused, pauseReason=qa-error" {
+  seed_state "FEAT-030-qa" "FEAT-030"
+  cd "$TMPDIR_TEST"
+  run --separate-stderr bash "$WS" pause FEAT-030 qa-error
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.status')" = "paused" ]
+  [ "$(echo "$output" | jq -r '.pauseReason')" = "qa-error" ]
+}
+
+@test "FR-7a: pause qa-loop-exhausted → status=paused, pauseReason=qa-loop-exhausted" {
+  seed_state "FEAT-030-qa" "FEAT-030"
+  cd "$TMPDIR_TEST"
+  run --separate-stderr bash "$WS" pause FEAT-030 qa-loop-exhausted
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.status')" = "paused" ]
+  [ "$(echo "$output" | jq -r '.pauseReason')" = "qa-loop-exhausted" ]
+}
+
+@test "FR-7a: pause fix-suite-failed → status=paused, pauseReason=fix-suite-failed" {
+  seed_state "FEAT-030-qa" "FEAT-030"
+  cd "$TMPDIR_TEST"
+  run --separate-stderr bash "$WS" pause FEAT-030 fix-suite-failed
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.status')" = "paused" ]
+  [ "$(echo "$output" | jq -r '.pauseReason')" = "fix-suite-failed" ]
+}
+
+@test "FR-7a: pause adoption-failed → status=paused, pauseReason=adoption-failed" {
+  seed_state "FEAT-030-qa" "FEAT-030"
+  cd "$TMPDIR_TEST"
+  run --separate-stderr bash "$WS" pause FEAT-030 adoption-failed
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.status')" = "paused" ]
+  [ "$(echo "$output" | jq -r '.pauseReason')" = "adoption-failed" ]
+}
+
+@test "FR-7a: existing reasons still accepted — pause plan-approval" {
+  seed_state "FEAT-030-qa" "FEAT-030"
+  cd "$TMPDIR_TEST"
+  run --separate-stderr bash "$WS" pause FEAT-030 plan-approval
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.pauseReason')" = "plan-approval" ]
+}
+
+@test "FR-7a: existing reasons still accepted — pause pr-review" {
+  seed_state "FEAT-030-qa" "FEAT-030"
+  cd "$TMPDIR_TEST"
+  run --separate-stderr bash "$WS" pause FEAT-030 pr-review
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.pauseReason')" = "pr-review" ]
+}
+
+@test "FR-7a: existing reasons still accepted — pause review-findings" {
+  seed_state "FEAT-030-qa" "FEAT-030"
+  cd "$TMPDIR_TEST"
+  run --separate-stderr bash "$WS" pause FEAT-030 review-findings
+  [ "$status" -eq 0 ]
+  [ "$(echo "$output" | jq -r '.pauseReason')" = "review-findings" ]
+}
+
+@test "FR-7a: unknown pause reason → exit 1 with verbatim rejection message" {
+  seed_state "FEAT-030-qa" "FEAT-030"
+  cd "$TMPDIR_TEST"
+  run --separate-stderr bash "$WS" pause FEAT-030 nonsense-reason
+  [ "$status" -eq 1 ]
+  # FR-7a load-bearing carve-out — message text pinned verbatim.
+  # The NFR-3 migration debug line may precede the error; assert the rejection
+  # message appears in stderr verbatim rather than asserting equality against
+  # the full stderr blob.
+  [[ "$stderr" == *"Error: Invalid pause reason 'nonsense-reason'. Expected one of: plan-approval, pr-review, review-findings, qa-error, qa-loop-exhausted, fix-suite-failed, adoption-failed."* ]]
+}

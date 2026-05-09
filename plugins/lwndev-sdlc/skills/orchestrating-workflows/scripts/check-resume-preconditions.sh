@@ -26,12 +26,17 @@
 #   {
 #     "type": "feature|chore|bug",
 #     "status": "in-progress|paused|failed|complete",
-#     "pauseReason": "plan-approval|pr-review|review-findings|null",
+#     "pauseReason": "plan-approval|pr-review|review-findings|qa-error|qa-loop-exhausted|fix-suite-failed|adoption-failed|null",
 #     "currentStep": <int>,
 #     "chainTable": "feature|chore|bug",
 #     "complexity": "low|medium|high",
 #     "complexityStage": "init|post-plan"
 #   }
+#
+# pauseReason set extended in FEAT-032 with the four QA-loop reasons
+# (qa-error, qa-loop-exhausted, fix-suite-failed, adoption-failed). The script
+# does not branch on the reason — it relays whatever value workflow-state.sh
+# stores; the orchestrator's resume dispatch (Phase 4) keys off the value.
 #
 # `pauseReason` is JSON `null` when `status != "paused"`.
 # `chainTable` always equals `type`.
