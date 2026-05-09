@@ -100,14 +100,10 @@ describe('shared-scripts library: pr-body.tmpl asset', () => {
 });
 
 describe('shared-scripts library: bats fixture count', () => {
-  it('should contain a .bats fixture per canonical script', () => {
-    expect(existsSync(TESTS_DIR)).toBe(true);
-    const batsFiles = readdirSync(TESTS_DIR).filter((f) => f.endsWith('.bats'));
-    expect(batsFiles.length).toBe(CANONICAL_SCRIPTS.length);
-    expect(batsFiles.length).toBe(14);
-  });
-
   it('should have a .bats fixture for every canonical script', () => {
+    // Set-based parity: assert each script has a peer .bats, not a hard-coded count.
+    // *.qa.bats adopted siblings are allowed in this directory per the FEAT-032 convention.
+    expect(existsSync(TESTS_DIR)).toBe(true);
     const batsFiles = new Set(readdirSync(TESTS_DIR).filter((f) => f.endsWith('.bats')));
     for (const scriptName of CANONICAL_SCRIPTS) {
       const expectedBats = scriptName.replace(/\.sh$/, '.bats');

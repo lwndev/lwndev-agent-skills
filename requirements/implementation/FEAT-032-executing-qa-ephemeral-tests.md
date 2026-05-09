@@ -221,7 +221,7 @@ This phase also updates the existing comment in `orchestrating-workflows/SKILL.m
 ### Phase 5: finalizing-workflow safety-net check (FR-9)
 
 **Feature:** [FEAT-032](../features/FEAT-032-executing-qa-ephemeral-tests.md) | [#267](https://github.com/lwndev/lwndev-marketplace/issues/267)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 2
 
 #### Rationale
@@ -257,7 +257,7 @@ The check has zero new script files (writes to `$tmpdir/qa-leakage.reason` per F
 ### Phase 6: Test-layout audit + length-assertion relaxation + CLAUDE.md docs (FR-10, FR-11, FR-14)
 
 **Feature:** [FEAT-032](../features/FEAT-032-executing-qa-ephemeral-tests.md) | [#267](https://github.com/lwndev/lwndev-marketplace/issues/267)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 2
 
 #### Rationale
@@ -297,9 +297,9 @@ The FR-11 audit is documented as a structured deliverable per the requirements d
 
 #### Deliverables
 
-- [ ] `tests/unit/shared-scripts.test.ts` (FR-10 set-based parity replacement; hard-coded `14` literal removed)
-- [ ] `tests/unit/<files-from-FR-11-audit>.test.ts` (FR-11 audit-driven relaxations / filters / documented-strict comments — exact files determined by the audit run in Step 2; recorded in the `## Length-Assertion Audit` table)
-- [ ] `CLAUDE.md` (FR-14 lifecycle + `*.qa.*` convention + safety-net documentation + chain-description updates + Edge Case 17 lockstep note)
+- [x] `tests/unit/shared-scripts.test.ts` (FR-10 set-based parity replacement; hard-coded `14` literal removed)
+- [x] `tests/unit/<files-from-FR-11-audit>.test.ts` (FR-11 audit-driven relaxations / filters / documented-strict comments — exact files determined by the audit run in Step 2; recorded in the `## Length-Assertion Audit` table)
+- [x] `CLAUDE.md` (FR-14 lifecycle + `*.qa.*` convention + safety-net documentation + chain-description updates + Edge Case 17 lockstep note)
 
 ---
 

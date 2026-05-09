@@ -18,9 +18,12 @@ describe('BUG-016: relocated QA fixture — inputs', () => {
     expect(existsSync(POST_MOVE_PATH)).toBe(true);
   });
 
-  it('[P0] tests/bats/shared/ contains exactly 14 .bats files', () => {
+  it('[P0] tests/bats/shared/ contains exactly 14 canonical .bats files', () => {
     expect(existsSync(SHARED_DIR)).toBe(true);
-    const batsFiles = readdirSync(SHARED_DIR).filter((f) => f.endsWith('.bats'));
+    // Filter out *.qa.bats adopted siblings (FEAT-032 convention); count only canonical peers.
+    const batsFiles = readdirSync(SHARED_DIR).filter(
+      (f) => f.endsWith('.bats') && !f.includes('.qa.')
+    );
     expect(batsFiles.length).toBe(14);
   });
 
