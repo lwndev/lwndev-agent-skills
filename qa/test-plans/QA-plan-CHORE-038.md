@@ -11,6 +11,17 @@ Flips Vitest's `fileParallelism: false` to `true` to cut unit-test wall time rou
 
 ## Capability Report
 
+```json
+{
+  "id": "CHORE-038",
+  "mode": "test-framework",
+  "framework": "vitest",
+  "packageManager": "npm",
+  "testCommand": "npm test",
+  "language": "typescript"
+}
+```
+
 - Mode: test-framework
 - Framework: vitest
 - Package manager: npm
