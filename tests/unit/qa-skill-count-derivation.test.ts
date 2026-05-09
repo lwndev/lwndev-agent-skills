@@ -194,18 +194,12 @@ describe('QA / BUG-017 / skill count derivation — Dependency failure dimension
     expect(actualCount).toBe(13); // current count snapshot — update when skills are added
   });
 
-  it('[P1] npm run validate emits one Validating: line per real skill (no extra, no missing)', () => {
+  it('[P1] npm run validate emits one Validating: line per real skill (no extra, no missing)', async () => {
     const skillsDir = 'plugins/lwndev-sdlc/skills';
     const out = execSync('npm run validate', { encoding: 'utf-8' });
     const validatingLines = (out.match(/Validating: /g) ?? []).length;
-    // Note: cannot use readdirSync at top-level of `it`; resolve synchronously via execSync trick
-    // would be brittle. Instead, derive via the same filter expression at runtime.
-    const fs = require('node:fs');
-    const dirEntries = fs.readdirSync(skillsDir, { withFileTypes: true });
-    const expectedCount = dirEntries.filter(
-      (e: { isDirectory: () => boolean; name: string }) =>
-        e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_')
-    ).length;
+    const dirEntries = await readdir(skillsDir, { withFileTypes: true });
+    const expectedCount = filterSkillEntries(dirEntries).length;
     expect(validatingLines).toBe(expectedCount);
   }, 60_000);
 });
