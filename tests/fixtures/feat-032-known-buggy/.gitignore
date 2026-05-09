@@ -1,0 +1,4 @@
+# In a real product workflow, .sdlc/workflows/* is ephemeral state and is
+# .gitignored. The fixture mirrors that posture so workflow-state.sh
+# mutations during the e2e drive do NOT dirty the tracked working tree.
+.sdlc/workflows/

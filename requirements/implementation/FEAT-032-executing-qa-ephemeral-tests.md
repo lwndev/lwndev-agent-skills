@@ -257,7 +257,7 @@ The check has zero new script files (writes to `$tmpdir/qa-leakage.reason` per F
 ### Phase 6: Test-layout audit + length-assertion relaxation + CLAUDE.md docs (FR-10, FR-11, FR-14)
 
 **Feature:** [FEAT-032](../features/FEAT-032-executing-qa-ephemeral-tests.md) | [#267](https://github.com/lwndev/lwndev-marketplace/issues/267)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 2
 
 #### Rationale
@@ -306,7 +306,7 @@ The FR-11 audit is documented as a structured deliverable per the requirements d
 ### Phase 7: End-to-end Bats fixture (NFR-4 acceptance)
 
 **Feature:** [FEAT-032](../features/FEAT-032-executing-qa-ephemeral-tests.md) | [#267](https://github.com/lwndev/lwndev-marketplace/issues/267)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 1, Phase 2, Phase 3, Phase 4, Phase 5
 
 #### Rationale
@@ -347,9 +347,9 @@ A negative-variant test asserts the safety-net DOES trip when adoption is skippe
 
 #### Deliverables
 
-- [ ] `tests/fixtures/feat-032-known-buggy/` (fixture directory: vitest project + peer test + buggy SUT + QA test + capability JSON + baseline marker + workflow-state file + README)
-- [ ] `tests/bats/skills/orchestrating-workflows/qa-loop-end-to-end.bats` (NFR-4 happy-path integration)
-- [ ] `tests/bats/skills/orchestrating-workflows/qa-loop-end-to-end-safety-net.bats` (negative variant — safety-net trips when adoption skipped)
+- [x] `tests/fixtures/feat-032-known-buggy/` (fixture directory: vitest project + peer test + buggy SUT + QA test + capability JSON + baseline marker + workflow-state file + README)
+- [x] `tests/bats/skills/orchestrating-workflows/qa-loop-end-to-end.bats` (NFR-4 happy-path integration)
+- [x] `tests/bats/skills/orchestrating-workflows/qa-loop-end-to-end-safety-net.bats` (negative variant — safety-net trips when adoption skipped)
 
 ---
 
