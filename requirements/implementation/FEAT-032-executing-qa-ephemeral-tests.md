@@ -157,7 +157,7 @@ Phase 3 depends on Phase 2 because re-QA mode and the artifact-embedding contrac
 ### Phase 4: Orchestrator verdict-branching + re-QA loop + resume dispatch (FR-7, FR-8 dispatch)
 
 **Feature:** [FEAT-032](../features/FEAT-032-executing-qa-ephemeral-tests.md) | [#267](https://github.com/lwndev/lwndev-marketplace/issues/267)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 1, Phase 2, Phase 3
 
 #### Rationale
@@ -221,7 +221,7 @@ This phase also updates the existing comment in `orchestrating-workflows/SKILL.m
 ### Phase 5: finalizing-workflow safety-net check (FR-9)
 
 **Feature:** [FEAT-032](../features/FEAT-032-executing-qa-ephemeral-tests.md) | [#267](https://github.com/lwndev/lwndev-marketplace/issues/267)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 2
 
 #### Rationale
@@ -249,8 +249,8 @@ The check has zero new script files (writes to `$tmpdir/qa-leakage.reason` per F
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/preflight-checks.sh` (extended with FR-9 safety-net subshell + verbatim error message)
-- [ ] `tests/bats/skills/finalizing-workflow/safety-net.bats`
+- [x] `plugins/lwndev-sdlc/skills/finalizing-workflow/scripts/preflight-checks.sh` (extended with FR-9 safety-net subshell + verbatim error message)
+- [x] `tests/bats/skills/finalizing-workflow/safety-net.bats`
 
 ---
 
