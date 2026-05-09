@@ -40,14 +40,12 @@ describe('scaffold script integration', () => {
     expect(content).toContain('description:');
   });
 
-  it('should be discoverable by getSourceSkills after creation', async () => {
-    // This test validates getSourceSkills against the real plugins/ tree;
-    // tmpDir is separate, so we just verify the function works without error.
-    const { getSourceSkills } = await import('../../scripts/lib/skill-utils.js');
-    const skills = await getSourceSkills('lwndev-sdlc');
-    // Confirm the function returns a non-empty list (the real skills).
-    expect(skills.length).toBeGreaterThan(0);
-    // The tmp-dir skill is not under plugins/, so it won't appear — that's expected.
+  it('should be discoverable by skill-discovery logic after creation', async () => {
+    const { getSkillsFromDir } = await import('../../scripts/lib/skill-utils.js');
+    const skills = await getSkillsFromDir(tmpDir);
+    const scaffolded = skills.find((s) => s.name === TEST_SKILL_NAME);
+    expect(scaffolded).toBeDefined();
+    expect(scaffolded?.description).toBe('A test skill created by automated tests');
   });
 });
 

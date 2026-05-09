@@ -70,9 +70,8 @@ describe('plugin structure', () => {
 
   it('should have skills directory with all 13 skills', async () => {
     const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
-    // Exclude hidden and temp dirs (. and _ prefixes) to avoid races with parallel test files.
     const skillDirs = entries
-      .filter((e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_'))
+      .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
       .map((e) => e.name);
 
     expect(skillDirs).toContain('documenting-features');
@@ -93,9 +92,8 @@ describe('plugin structure', () => {
 
   it('should include SKILL.md in each skill directory', async () => {
     const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
-    // Exclude hidden and temp dirs (. and _ prefixes) to avoid races with parallel test files.
     const skillDirs = entries
-      .filter((e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_'))
+      .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
       .map((e) => e.name);
 
     for (const skillDir of skillDirs) {
@@ -141,32 +139,67 @@ describe('marketplace manifest validation', () => {
 });
 
 describe('build script failure handling', () => {
-  // Use mkdtemp to isolate the bad-skill fixture — no writes to the real plugins/ tree.
-  // The validate() API is called directly with the tmp dir path.
-  let tmpDir: string;
+  // Build a fake plugins/ tree containing a bad skill, then run `npm run validate`
+  // pointed at it via the PLUGINS_DIR env override. Asserts the CLI rendering
+  // (printError lines, summary) end-to-end without touching the real plugins/ tree.
+  let pluginsRoot: string;
+  let buildOutput: string;
+  let buildExitCode: number;
 
   beforeAll(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), 'build-bad-skill-'));
-    await mkdir(tmpDir, { recursive: true });
+    pluginsRoot = await mkdtemp(join(tmpdir(), 'build-bad-plugins-'));
+    const pluginDir = join(pluginsRoot, 'fixture-plugin');
+    await mkdir(join(pluginDir, '.claude-plugin'), { recursive: true });
     await writeFile(
-      join(tmpDir, 'SKILL.md'),
+      join(pluginDir, '.claude-plugin', 'plugin.json'),
+      JSON.stringify({
+        name: 'fixture-plugin',
+        version: '0.0.0',
+        description: 'Bad-skill fixture',
+        author: { name: 'tests' },
+      })
+    );
+    const skillDir = join(pluginDir, 'skills', 'bad-skill-dir');
+    await mkdir(skillDir, { recursive: true });
+    await writeFile(
+      join(skillDir, 'SKILL.md'),
       '---\nname: wrong-name-mismatch\ndescription: A test skill with intentional issues\n---\n\n# Bad Skill\n'
     );
+
+    try {
+      buildOutput = execSync('npm run validate', {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: { ...process.env, PLUGINS_DIR: pluginsRoot },
+      });
+      buildExitCode = 0;
+    } catch (err) {
+      const e = err as { stdout?: Buffer | string; stderr?: Buffer | string; status?: number };
+      buildOutput = (e.stdout?.toString() ?? '') + (e.stderr?.toString() ?? '');
+      buildExitCode = e.status ?? 1;
+    }
   });
 
   afterAll(async () => {
-    await rm(tmpDir, { recursive: true, force: true });
+    await rm(pluginsRoot, { recursive: true, force: true });
   });
 
-  it('should display failed check details for invalid skills', async () => {
-    // Call validate() directly — no need to inject into the real plugins/ tree.
-    const result = (await validate(tmpDir, { detailed: true })) as DetailedValidateResult;
+  it('should exit non-zero when validation fails', () => {
+    expect(buildExitCode).not.toBe(0);
+  });
 
+  it('should render the failed check name in CLI output', () => {
+    expect(buildOutput).toContain('nameMatchesDirectory');
+  });
+
+  it('should render a failure summary line', () => {
+    expect(buildOutput).toMatch(/Validation failed: \d+\/\d+ checks failed/);
+  });
+
+  it('should still validate via the API for unit-level coverage', async () => {
+    const skillPath = join(pluginsRoot, 'fixture-plugin', 'skills', 'bad-skill-dir');
+    const result = (await validate(skillPath, { detailed: true })) as DetailedValidateResult;
     expect(result.valid).toBe(false);
-    // nameMatchesDirectory check must fail (dir is a random tmp name, skill name is wrong-name-mismatch)
     expect(result.checks.nameMatchesDirectory?.passed).toBe(false);
-    // At least one check must have failed
-    const failedChecks = Object.entries(result.checks).filter(([, c]) => !c.passed);
-    expect(failedChecks.length).toBeGreaterThanOrEqual(1);
   });
 });
