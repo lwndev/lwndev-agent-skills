@@ -102,7 +102,7 @@ Thirteen skills exist that form three workflow chains. The `orchestrating-workfl
 
 - Skill validation uses the `ai-skills-manager` programmatic API (`validate()`)
 - Skills use YAML frontmatter in SKILL.md for metadata extraction
-- Tests run sequentially (`fileParallelism: false` in `vitest.config.ts`) to prevent race conditions with shared `plugins/` directories
+- Tests run in parallel (`fileParallelism: true` in `vitest.config.ts`); any test that needs to mutate a skill or plugin tree must use `mkdtemp` outside `plugins/` (writing into the real `plugins/` tree races with other parallel test files). For tests that need to drive `npm run validate` against a fixture tree, set `PLUGINS_DIR=<tmp>` in the child env — `scripts/lib/constants.ts` reads it at module load.
 - Plugin discovery is filesystem-driven: directories under `plugins/` with `.claude-plugin/plugin.json` are treated as plugins
 - No build output — plugins live in their final structure under `plugins/` and marketplace source paths point directly to them
 

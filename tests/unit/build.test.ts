@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execSync } from 'node:child_process';
-import { access, readdir, readFile, rm, mkdir, writeFile } from 'node:fs/promises';
+import { access, readdir, readFile, rm, mkdir, writeFile, mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import semver from 'semver';
+import { validate, type DetailedValidateResult } from 'ai-skills-manager';
 
 const PLUGIN_DIR = 'plugins/lwndev-sdlc';
 const MANIFEST_PATH = join(PLUGIN_DIR, '.claude-plugin', 'plugin.json');
@@ -34,10 +36,15 @@ describe('build script validation', () => {
     expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('should validate all 14 skills', () => {
+  it('should validate every skill in the plugin', async () => {
+    const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
+    const expectedCount = entries.filter(
+      (e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_')
+    ).length;
+
     const validatedPattern = /Validating: /g;
     const matches = buildOutput.match(validatedPattern) ?? [];
-    expect(matches.length).toBe(14);
+    expect(matches.length).toBe(expectedCount);
   });
 });
 
@@ -66,8 +73,11 @@ describe('plugin structure', () => {
     expect(entry.version).toBe(pluginManifest.version);
   });
 
-  it('should have skills directory with all 14 skills', async () => {
-    const skillDirs = await readdir(SKILLS_DIR);
+  it('should have skills directory with all expected skills', async () => {
+    const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
+    const skillDirs = entries
+      .filter((e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_'))
+      .map((e) => e.name);
 
     expect(skillDirs).toContain('documenting-features');
     expect(skillDirs).toContain('creating-implementation-plans');
@@ -83,11 +93,13 @@ describe('plugin structure', () => {
     expect(skillDirs).toContain('orchestrating-workflows');
     expect(skillDirs).toContain('managing-work-items');
     expect(skillDirs).toContain('addressing-qa-findings');
-    expect(skillDirs.length).toBe(14);
   });
 
   it('should include SKILL.md in each skill directory', async () => {
-    const skillDirs = await readdir(SKILLS_DIR);
+    const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
+    const skillDirs = entries
+      .filter((e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_'))
+      .map((e) => e.name);
 
     for (const skillDir of skillDirs) {
       const skillMdPath = join(SKILLS_DIR, skillDir, 'SKILL.md');
@@ -132,32 +144,67 @@ describe('marketplace manifest validation', () => {
 });
 
 describe('build script failure handling', () => {
-  const badSkillDir = join('plugins', 'lwndev-sdlc', 'skills', '_test-bad-skill');
+  // Build a fake plugins/ tree containing a bad skill, then run `npm run validate`
+  // pointed at it via the PLUGINS_DIR env override. Asserts the CLI rendering
+  // (printError lines, summary) end-to-end without touching the real plugins/ tree.
+  let pluginsRoot: string;
+  let buildOutput: string;
+  let buildExitCode: number;
 
-  afterAll(async () => {
-    await rm(badSkillDir, { recursive: true, force: true });
-  });
-
-  it('should display failed check details for invalid skills', async () => {
-    await mkdir(badSkillDir, { recursive: true });
+  beforeAll(async () => {
+    pluginsRoot = await mkdtemp(join(tmpdir(), 'build-bad-plugins-'));
+    const pluginDir = join(pluginsRoot, 'fixture-plugin');
+    await mkdir(join(pluginDir, '.claude-plugin'), { recursive: true });
     await writeFile(
-      join(badSkillDir, 'SKILL.md'),
+      join(pluginDir, '.claude-plugin', 'plugin.json'),
+      JSON.stringify({
+        name: 'fixture-plugin',
+        version: '0.0.0',
+        description: 'Bad-skill fixture',
+        author: { name: 'tests' },
+      })
+    );
+    const skillDir = join(pluginDir, 'skills', 'bad-skill-dir');
+    await mkdir(skillDir, { recursive: true });
+    await writeFile(
+      join(skillDir, 'SKILL.md'),
       '---\nname: wrong-name-mismatch\ndescription: A test skill with intentional issues\n---\n\n# Bad Skill\n'
     );
 
-    let stdout = '';
     try {
-      execSync('npm run validate', {
+      buildOutput = execSync('npm run validate', {
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
+        env: { ...process.env, PLUGINS_DIR: pluginsRoot },
       });
-    } catch (err: unknown) {
-      stdout = (err as { stdout: string }).stdout;
+      buildExitCode = 0;
+    } catch (err) {
+      const e = err as { stdout?: Buffer | string; stderr?: Buffer | string; status?: number };
+      buildOutput = (e.stdout?.toString() ?? '') + (e.stderr?.toString() ?? '');
+      buildExitCode = e.status ?? 1;
     }
+  });
 
-    // Should show per-check failure details (check name + error message)
-    expect(stdout).toContain('nameMatchesDirectory');
-    // Should show the checks failed summary
-    expect(stdout).toMatch(/\d+\/\d+ checks failed/);
+  afterAll(async () => {
+    await rm(pluginsRoot, { recursive: true, force: true });
+  });
+
+  it('should exit non-zero when validation fails', () => {
+    expect(buildExitCode).not.toBe(0);
+  });
+
+  it('should render the failed check name in CLI output', () => {
+    expect(buildOutput).toContain('nameMatchesDirectory');
+  });
+
+  it('should render a failure summary line', () => {
+    expect(buildOutput).toMatch(/Validation failed: \d+\/\d+ checks failed/);
+  });
+
+  it('should still validate via the API for unit-level coverage', async () => {
+    const skillPath = join(pluginsRoot, 'fixture-plugin', 'skills', 'bad-skill-dir');
+    const result = (await validate(skillPath, { detailed: true })) as DetailedValidateResult;
+    expect(result.valid).toBe(false);
+    expect(result.checks.nameMatchesDirectory?.passed).toBe(false);
   });
 });
