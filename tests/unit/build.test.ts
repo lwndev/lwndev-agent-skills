@@ -36,10 +36,15 @@ describe('build script validation', () => {
     expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('should validate all 13 skills', () => {
+  it('should validate every skill in the plugin', async () => {
+    const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
+    const expectedCount = entries.filter(
+      (e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_')
+    ).length;
+
     const validatedPattern = /Validating: /g;
     const matches = buildOutput.match(validatedPattern) ?? [];
-    expect(matches.length).toBe(13);
+    expect(matches.length).toBe(expectedCount);
   });
 });
 
@@ -68,10 +73,10 @@ describe('plugin structure', () => {
     expect(entry.version).toBe(pluginManifest.version);
   });
 
-  it('should have skills directory with all 13 skills', async () => {
+  it('should have skills directory with all expected skills', async () => {
     const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
     const skillDirs = entries
-      .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
+      .filter((e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_'))
       .map((e) => e.name);
 
     expect(skillDirs).toContain('documenting-features');
@@ -87,13 +92,12 @@ describe('plugin structure', () => {
     expect(skillDirs).toContain('finalizing-workflow');
     expect(skillDirs).toContain('orchestrating-workflows');
     expect(skillDirs).toContain('managing-work-items');
-    expect(skillDirs.length).toBe(13);
   });
 
   it('should include SKILL.md in each skill directory', async () => {
     const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
     const skillDirs = entries
-      .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
+      .filter((e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_'))
       .map((e) => e.name);
 
     for (const skillDir of skillDirs) {
