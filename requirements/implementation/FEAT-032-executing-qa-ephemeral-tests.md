@@ -17,7 +17,7 @@ The build order is dictated by data-flow dependencies: workflow-state schema and
 ### Phase 1: Workflow-state schema + pauseReason enum + orchestrator resume flags (FR-7a, FR-8 flag scaffold, NFR-3 migration)
 
 **Feature:** [FEAT-032](../features/FEAT-032-executing-qa-ephemeral-tests.md) | [#267](https://github.com/lwndev/lwndev-marketplace/issues/267)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** none
 
 #### Rationale
@@ -57,7 +57,7 @@ The phase is intentionally schema-and-validator only: no orchestrator branching 
 ### Phase 2: addressing-qa-findings skill + adopt-qa-test.sh (FR-4, FR-5, FR-6, FR-13)
 
 **Feature:** [FEAT-032](../features/FEAT-032-executing-qa-ephemeral-tests.md) | [#267](https://github.com/lwndev/lwndev-marketplace/issues/267)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 1
 **ComplexityOverride:** opus
 
@@ -96,12 +96,12 @@ The skill ships with two auto-detected phases (fix, adopt) per FR-4, dispatched 
 
 #### Deliverables
 
-- [ ] `plugins/lwndev-sdlc/skills/addressing-qa-findings/SKILL.md`
-- [ ] `plugins/lwndev-sdlc/skills/addressing-qa-findings/scripts/adopt-qa-test.sh`
-- [ ] `tests/bats/skills/addressing-qa-findings/adopt-qa-test.bats`
-- [ ] `tests/bats/skills/addressing-qa-findings/skill-fix-phase.bats`
-- [ ] `tests/bats/skills/addressing-qa-findings/skill-adopt-phase.bats`
-- [ ] `tests/bats/skills/addressing-qa-findings/deletion-ownership.bats`
+- [x] `plugins/lwndev-sdlc/skills/addressing-qa-findings/SKILL.md`
+- [x] `plugins/lwndev-sdlc/skills/addressing-qa-findings/scripts/adopt-qa-test.sh`
+- [x] `tests/bats/skills/addressing-qa-findings/adopt-qa-test.bats`
+- [x] `tests/bats/skills/addressing-qa-findings/skill-fix-phase.bats`
+- [x] `tests/bats/skills/addressing-qa-findings/skill-adopt-phase.bats`
+- [x] `tests/bats/skills/addressing-qa-findings/deletion-ownership.bats`
 
 ---
 

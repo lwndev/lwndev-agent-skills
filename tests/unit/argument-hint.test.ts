@@ -35,7 +35,7 @@ describe('argument-hint across all skills', () => {
       skillData[dir.name] = { frontmatter: data, content };
     }
 
-    expect(Object.keys(skillData).length).toBe(13);
+    expect(Object.keys(skillData).length).toBe(14);
   });
 
   describe('frontmatter presence', () => {
