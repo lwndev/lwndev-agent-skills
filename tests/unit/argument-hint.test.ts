@@ -25,8 +25,10 @@ const EXCLUDED_SKILLS = ['finalizing-workflow'];
 describe('argument-hint across all skills', () => {
   const skillData: Record<string, { frontmatter: Record<string, unknown>; content: string }> = {};
 
-  // Load all SKILL.md files once
-  it('should load all skill SKILL.md files', async () => {
+  // Load all SKILL.md files once before any tests run so dependent describe blocks
+  // are not coupled to this setup step. A failure here surfaces once (setup error)
+  // rather than cascading across every downstream assertion.
+  beforeAll(async () => {
     const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
     const skillDirs = entries.filter(
       (e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_')
@@ -37,8 +39,15 @@ describe('argument-hint across all skills', () => {
       const { data, content } = matter(raw);
       skillData[dir.name] = { frontmatter: data, content };
     }
+  });
 
-    expect(Object.keys(skillData).length).toBe(13);
+  it('should load all skill SKILL.md files', async () => {
+    const entries = await readdir(SKILLS_DIR, { withFileTypes: true });
+    const expectedCount = entries.filter(
+      (e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_')
+    ).length;
+
+    expect(Object.keys(skillData).length).toBe(expectedCount);
   });
 
   describe('frontmatter presence', () => {
