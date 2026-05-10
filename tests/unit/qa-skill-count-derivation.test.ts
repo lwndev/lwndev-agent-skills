@@ -191,7 +191,7 @@ describe('QA / BUG-017 / skill count derivation — Dependency failure dimension
     // The fix for BUG-017 makes both argument-hint.test.ts and build.test.ts
     // derive their expected count from this same filter expression. If actualCount
     // changes, both should adapt automatically.
-    expect(actualCount).toBe(13); // current count snapshot — update when skills are added
+    expect(actualCount).toBe(14); // current count snapshot — update when skills are added (14 after FEAT-032 Phase 2 added addressing-qa-findings)
   });
 
   it('[P1] npm run validate emits one Validating: line per real skill (no extra, no missing)', async () => {

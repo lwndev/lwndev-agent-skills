@@ -4,18 +4,26 @@
 #
 # Usage: parse-model-flags.sh "$@"
 #
-# Recognised flags (all use the two-token `--flag value` shape; `=` form rejected):
+# Recognised flags (all use the two-token `--flag value` shape unless noted; `=` form rejected):
 #   --model <tier>          hard blanket override; <tier> in {haiku,sonnet,opus}
 #   --complexity <tier>     soft blanket override; <tier> in
 #                           {haiku,sonnet,opus,low,medium,high} with low→haiku,
 #                           medium→sonnet, high→opus normalisation
 #   --model-for <step>:<tier>   hard per-step override; repeatable, later
 #                               entries overwrite earlier ones for the same step
+#   --approve-advance       FEAT-032 FR-8 boolean. Resume past `qa-loop-exhausted`
+#                           by advancing past the QA loop without resetting the
+#                           counter. Single token, no value.
+#   --qa-loop-cap <N>       FEAT-032 FR-8 positive integer. Resume by raising
+#                           the QA fix-attempt cap to <N> and resetting the
+#                           counter to 0. Mutually exclusive with --approve-advance.
 #
-# Emits one JSON object on stdout with all four fields always present:
+# Emits one JSON object on stdout with all six fields always present:
 #   {"cliModel":"<tier>|null",
 #    "cliComplexity":"<tier>|null",
 #    "cliModelFor":{"<step>":"<tier>"}|null,
+#    "approveAdvance":true|false,
+#    "qaLoopCap":<int>|null,
 #    "positional":"<token-or-empty-string>"}
 #
 # Uses jq for JSON assembly when available; pure-bash printf fallback otherwise.
@@ -60,6 +68,10 @@ cli_complexity=""
 model_for_steps=()
 model_for_tiers=()
 
+# FEAT-032 FR-8 resume flags.
+approve_advance=0
+qa_loop_cap=""
+
 positional=""
 positional_count=0
 
@@ -68,7 +80,7 @@ while [ "$#" -gt 0 ]; do
 
   # Reject the `=`-form explicitly.
   case "$arg" in
-    --model=*|--complexity=*|--model-for=*)
+    --model=*|--complexity=*|--model-for=*|--qa-loop-cap=*)
       echo "[error] parse-model-flags: equals-sign form not supported: $arg" >&2
       exit 2
       ;;
@@ -138,6 +150,22 @@ while [ "$#" -gt 0 ]; do
       fi
       shift 2
       ;;
+    --approve-advance)
+      approve_advance=1
+      shift 1
+      ;;
+    --qa-loop-cap)
+      if [ "$#" -lt 2 ]; then
+        echo "[error] parse-model-flags: --qa-loop-cap requires a positive integer argument" >&2
+        exit 2
+      fi
+      if ! [[ "$2" =~ ^[1-9][0-9]*$ ]]; then
+        echo "[error] parse-model-flags: --qa-loop-cap must be a positive integer; got: $2" >&2
+        exit 2
+      fi
+      qa_loop_cap="$2"
+      shift 2
+      ;;
     --*)
       echo "[error] parse-model-flags: unknown flag: $arg" >&2
       exit 2
@@ -153,6 +181,13 @@ while [ "$#" -gt 0 ]; do
       ;;
   esac
 done
+
+# --- FEAT-032 FR-8 mutual-exclusion guard ------------------------------------
+
+if [ "$approve_advance" -eq 1 ] && [ -n "$qa_loop_cap" ]; then
+  echo "Error: --approve-advance and --qa-loop-cap are mutually exclusive" >&2
+  exit 2
+fi
 
 # --- JSON emission ----------------------------------------------------------
 
@@ -177,15 +212,28 @@ emit_json() {
       done
     fi
 
+    local approve_advance_json="false"
+    if [ "$approve_advance" -eq 1 ]; then
+      approve_advance_json="true"
+    fi
+    local qa_loop_cap_json="null"
+    if [ -n "$qa_loop_cap" ]; then
+      qa_loop_cap_json="$qa_loop_cap"
+    fi
+
     jq -n \
       --arg cliModel "$cli_model" \
       --arg cliComplexity "$cli_complexity" \
       --argjson cliModelFor "$model_for_json" \
+      --argjson approveAdvance "$approve_advance_json" \
+      --argjson qaLoopCap "$qa_loop_cap_json" \
       --arg positional "$positional" \
       '{
         cliModel: (if $cliModel == "" then null else $cliModel end),
         cliComplexity: (if $cliComplexity == "" then null else $cliComplexity end),
         cliModelFor: $cliModelFor,
+        approveAdvance: $approveAdvance,
+        qaLoopCap: $qaLoopCap,
         positional: $positional
       }' -c
     return
@@ -220,6 +268,18 @@ emit_json() {
     out+="}"
   else
     out+="\"cliModelFor\":null"
+  fi
+  out+=","
+  if [ "$approve_advance" -eq 1 ]; then
+    out+="\"approveAdvance\":true"
+  else
+    out+="\"approveAdvance\":false"
+  fi
+  out+=","
+  if [ -n "$qa_loop_cap" ]; then
+    out+="\"qaLoopCap\":$qa_loop_cap"
+  else
+    out+="\"qaLoopCap\":null"
   fi
   out+=","
   # Escape positional value's backslashes and double-quotes for JSON.

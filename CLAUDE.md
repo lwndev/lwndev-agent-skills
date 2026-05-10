@@ -93,10 +93,34 @@ skill-name/
 ```
 
 ### Existing Skills (lwndev-sdlc plugin)
-Thirteen skills exist that form three workflow chains. The `orchestrating-workflows` skill drives any chain end-to-end from a single invocation, sequencing sub-skill calls, forking per-step subagents, and persisting state across pause points (plan approval, PR review). The `reviewing-requirements` skill appears at multiple points and selects its mode (standard, test-plan reconciliation, code-review reconciliation) automatically based on context. The `managing-work-items` skill is invoked inline (not as a numbered step) for issue-tracker operations. Reconciliation steps are optional but recommended.
-1. **documenting-features** → **reviewing-requirements** → **creating-implementation-plans** → **documenting-qa** → **reviewing-requirements** *(reconciliation)* → **implementing-plan-phases** → *PR review* → **reviewing-requirements** *(reconciliation)* → **executing-qa** → **finalizing-workflow**
-2. **documenting-chores** → **reviewing-requirements** → **documenting-qa** → **reviewing-requirements** *(reconciliation)* → **executing-chores** → *PR review* → **reviewing-requirements** *(reconciliation)* → **executing-qa** → **finalizing-workflow**
-3. **documenting-bugs** → **reviewing-requirements** → **documenting-qa** → **reviewing-requirements** *(reconciliation)* → **executing-bug-fixes** → *PR review* → **reviewing-requirements** *(reconciliation)* → **executing-qa** → **finalizing-workflow**
+Fourteen skills exist that form three workflow chains. The `orchestrating-workflows` skill drives any chain end-to-end from a single invocation, sequencing sub-skill calls, forking per-step subagents, and persisting state across pause points (plan approval, PR review, QA verdict). The `reviewing-requirements` skill appears at multiple points and selects its mode (standard, test-plan reconciliation, code-review reconciliation) automatically based on context. The `managing-work-items` skill is invoked inline (not as a numbered step) for issue-tracker operations. Reconciliation steps are optional but recommended.
+
+After `executing-qa`, the orchestrator branches on verdict:
+- `PASS` (first run) or `EXPLORATORY-ONLY` → advance to `finalizing-workflow`.
+- `ISSUES-FOUND` → fork `addressing-qa-findings` (fix phase); re-invoke `executing-qa` (re-QA mode); on `PASS` → fork `addressing-qa-findings` (adopt phase) → advance. Loop cap: 2 fix attempts (configurable via `--qa-loop-cap`). On exhaustion, pause with `qa-loop-exhausted`.
+- `ERROR` → pause with `qa-error`.
+
+1. **documenting-features** → **reviewing-requirements** → **creating-implementation-plans** → **documenting-qa** → **reviewing-requirements** *(reconciliation)* → **implementing-plan-phases** → *PR review* → **reviewing-requirements** *(reconciliation)* → **executing-qa** → *[verdict-branch]* → **addressing-qa-findings** *(if ISSUES-FOUND)* → **finalizing-workflow**
+2. **documenting-chores** → **reviewing-requirements** → **documenting-qa** → **reviewing-requirements** *(reconciliation)* → **executing-chores** → *PR review* → **reviewing-requirements** *(reconciliation)* → **executing-qa** → *[verdict-branch]* → **addressing-qa-findings** *(if ISSUES-FOUND)* → **finalizing-workflow**
+3. **documenting-bugs** → **reviewing-requirements** → **documenting-qa** → **reviewing-requirements** *(reconciliation)* → **executing-bug-fixes** → *PR review* → **reviewing-requirements** *(reconciliation)* → **executing-qa** → *[verdict-branch]* → **addressing-qa-findings** *(if ISSUES-FOUND)* → **finalizing-workflow**
+
+### QA Test Lifecycle
+
+QA-authored tests are ephemeral by design: they are committed to the branch during `executing-qa`, consumed by `addressing-qa-findings`, and promoted (moved) into the regression suite by the adopt phase. They are NOT permanent fixtures and must not accumulate in the repo.
+
+**Naming convention:**
+- QA-phase files: `tests/unit/qa-*.test.ts`, `tests/unit/qa-*.test.js`, `tests/bats/qa/qa-*.bats`
+- Adopted (permanent) siblings: `{dir}/{base}.qa.{ext}` — placed next to the existing peer test for the same SUT
+  - Example: `tests/unit/foo.test.ts` → adopted QA sibling: `tests/unit/foo.qa.test.ts`
+  - Example: `tests/bats/shared/check-acceptance.bats` → adopted sibling: `tests/bats/shared/check-acceptance.qa.bats`
+
+**Adoption:** `addressing-qa-findings/scripts/adopt-qa-test.sh` is the **sole** owner of QA-test deletion. It uses `git mv` to move a `qa-*.test.ts` (or `.bats`) to its `*.qa.*` sibling path. No other script or skill deletes `qa-*` files (FR-13 invariant).
+
+**Safety-net:** `finalizing-workflow` runs a preflight check (`preflight-checks.sh`) that blocks merge if any tracked `qa-*` files remain on the branch (FR-9). The check uses `git ls-files` against the v1 glob set anchored to canonical ephemeral paths: `tests/unit/qa-*.test.ts`, `tests/unit/qa-*.test.js`, `tests/bats/qa/qa-*.bats`. Anchoring keeps permanent QA-loop infrastructure tests under `tests/bats/skills/<skill>/` (e.g. `qa-dispatch.bats`, `qa-baseline.bats`) clear of the gate. Untracked files do not block. Adopted `*.qa.*` siblings pass cleanly — only the `qa-*` prefix is checked.
+
+**Lockstep constraint (Edge Case 17):** FR-9 safety-net globs for pytest (`qa-*.py`) and go-test (`qa-*.go`) are intentionally absent in v1 because `adopt-qa-test.sh` only emits structured stub failures for those frameworks (`framework not supported in v1: pytest|go-test`). Adding the globs to FR-9 must land in lockstep with replacing those stubs with real FR-5 dispatch — do not enable one without the other.
+
+**Length assertions over directories that may receive `*.qa.*` siblings** (e.g. `tests/bats/shared/`) must filter out `*.qa.bats` files before counting canonical peers, or use set-based parity checks instead of hard-coded totals. See `tests/unit/shared-scripts.test.ts` and `tests/unit/qa-BUG-016.test.ts` for examples.
 
 ## Key Patterns
 

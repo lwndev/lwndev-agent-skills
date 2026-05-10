@@ -19,14 +19,22 @@ export const CANONICAL_DESTINATIONS: Readonly<Record<string, string>> = {
 };
 
 /**
- * Allow-rule paths. The single allowed exception is the FEAT-030 known-buggy
- * fixture, which is invoked as a child Vitest process by its harness and must
- * stay at its existing path.
+ * Allow-rule paths. Allowed exceptions are known-buggy fixtures consumed by
+ * harnessed driver tests; the production tree never imports them directly.
+ *
+ *   * FEAT-030 fixture is invoked as a child Vitest process by its harness.
+ *   * FEAT-032 fixture is copied into a tempdir by Bats e2e drivers under
+ *     tests/bats/skills/orchestrating-workflows/qa-loop-end-to-end*.bats and
+ *     mutated via `git init` + `git mv` (the QA test must live under
+ *     tests/unit/ within the fixture so adopt-qa-test.sh's SUT-resolution
+ *     heuristic resolves the peer test in the canonical layout).
  *
  * Paths are repo-root-relative and use forward slashes regardless of platform.
  */
 export const ALLOWED_FIXTURE_PATHS: readonly string[] = [
   'scripts/__tests__/fixtures/feat-030-known-buggy/__tests__/qa-buggy.spec.ts',
+  'tests/fixtures/feat-032-known-buggy/tests/unit/buggy-fn.test.ts',
+  'tests/fixtures/feat-032-known-buggy/tests/unit/qa-input-validation.test.ts',
 ];
 
 /**

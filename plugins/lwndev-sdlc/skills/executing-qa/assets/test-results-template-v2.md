@@ -56,7 +56,37 @@ persona: qa
 {Per finding: severity | dimension | title | reproduction | evidence.
  For ISSUES-FOUND verdict, at least one entry listing a failing test name is
  required. For ERROR verdict, include the stack trace here or in
- `## Execution Results`.}
+ `## Execution Results`.
+
+ Each finding under ISSUES-FOUND MUST include a `## Reproduction` block
+ (FEAT-032 FR-2) embedding the QA test source as a language-aware fenced
+ code block with a single-line path-comment header naming the relative
+ source path:
+   - `.ts` / `.tsx`  -> ```typescript fence + `// path/to/file.ts` header
+   - `.js`           -> ```javascript fence + `// path/to/file.js` header
+   - `.bats` / `.sh` -> ```bash       fence + `# path/to/file.bats` header
+   - `.py`           -> ```python     fence + `# path/to/file.py` header
+   - `.go`           -> ```go         fence + `// path/to/file.go` header
+ The embedded source is the load-bearing input for the
+ `addressing-qa-findings` fix phase.}
+
+### Example finding (shape)
+
+#### Finding: tests/unit/qa-input-validation.test.ts > rejects empty input
+
+##### Reproduction
+
+```typescript
+// tests/unit/qa-input-validation.test.ts
+import { validate } from '../../src/buggy-fn';
+import { describe, it, expect } from 'vitest';
+
+describe('validate', () => {
+  it('rejects empty input', () => {
+    expect(() => validate('')).toThrow();
+  });
+});
+```
 
 ## Reconciliation Delta
 

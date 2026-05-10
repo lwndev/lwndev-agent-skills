@@ -92,6 +92,7 @@ describe('plugin structure', () => {
     expect(skillDirs).toContain('finalizing-workflow');
     expect(skillDirs).toContain('orchestrating-workflows');
     expect(skillDirs).toContain('managing-work-items');
+    expect(skillDirs).toContain('addressing-qa-findings');
   });
 
   it('should include SKILL.md in each skill directory', async () => {

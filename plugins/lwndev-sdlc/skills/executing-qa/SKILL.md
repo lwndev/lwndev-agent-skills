@@ -44,20 +44,21 @@ Script paths below are relative to `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/sc
 1. Accept a requirement ID; record the active marker; record the diff baseline:
    - `Write .sdlc/qa/.executing-active`
    - `bash "$SCRIPTS/qa-baseline.sh" init <ID>`
-2. Capability discovery + drift check:
+2. Mode auto-detect (FEAT-032 FR-3): `bash "$SCRIPTS/detect-re-qa-mode.sh" <ID>`. JSON `{mode, files}`. `mode=re-qa` -> Step 5 re-QA branch (skip persona-loaded test-writing); `mode=initial` -> initial-run path.
+3. Capability discovery + drift check:
    - `bash "$SCRIPTS/capability-discovery.sh" <consumer-root> <ID>`
    - `bash "$SCRIPTS/capability-report-diff.sh" "<plan-file>" "<fresh-json>"`
-3. Load the v2 test plan; mode-route (test-framework or exploratory-only).
-4. Pre-flight branch-diff check: `bash "$SCRIPTS/check-branch-diff.sh"`. Empty diff -> ERROR verdict path.
-5. Test-framework mode:
-   - Write tests under the framework's test root.
-   - `bash "$SCRIPTS/run-framework.sh" <capability-json> "<test-glob>"`
-   - `bash "$SCRIPTS/commit-qa-tests.sh" <ID> <test-files...>`
-6. Build-health gate: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/verify-build-health.sh" --no-interactive --skip-test`.
-7. Reconciliation delta: `bash "$SCRIPTS/qa-reconcile-delta.sh" "<results-doc>" "<requirements-doc>"`.
-8. Coverage check: `bash "$SCRIPTS/qa-verify-coverage.sh" "<artifact-path>"`.
-9. Emit artifact: `bash "$SCRIPTS/render-qa-results.sh" <ID> <verdict> <capability-json> <execution-json>`.
-10. Emit the FR-1 final-message line as the **last line** of the response.
+4. Load the v2 test plan (initial run only — re-QA reuses the prior plan-derived tests on disk); mode-route (test-framework or exploratory-only).
+5. Pre-flight branch-diff check: `bash "$SCRIPTS/check-branch-diff.sh"`. Empty diff -> ERROR verdict path.
+6. Test-framework mode:
+   - **Initial run**: write tests under the framework's test root (with `qa-` filename prefix); `bash "$SCRIPTS/run-framework.sh" <capability-json> "<test-glob>"`; `bash "$SCRIPTS/commit-qa-tests.sh" <ID> <test-files...>`.
+   - **Re-QA run** (FEAT-032 FR-3): skip writing tests; pass the existing `files` list from `detect-re-qa-mode.sh` to `run-framework.sh` as the test glob; SKIP `commit-qa-tests.sh` (no new tests). If `run-framework.sh` reports zero executable tests for the supplied paths -> verdict `ERROR` with `Reason: re-QA invoked but no prior QA test files found for {ID}` (NFR-2).
+7. Build-health gate: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/verify-build-health.sh" --no-interactive --skip-test`.
+8. Reconciliation delta: `bash "$SCRIPTS/qa-reconcile-delta.sh" "<results-doc>" "<requirements-doc>"`.
+9. Coverage check: `bash "$SCRIPTS/qa-verify-coverage.sh" "<artifact-path>"`.
+10. Emit artifact (FEAT-032 FR-2 embedding via `QA_TEST_FILES`): `QA_TEST_FILES="$FILES_FROM_DETECT_OR_WRITTEN" bash "$SCRIPTS/render-qa-results.sh" <ID> <verdict> <capability-json> <execution-json>`. Re-QA runs OVERWRITE the artifact in place (FR-12) — no manual delete required.
+11. Commit the artifact (FEAT-032 FR-12): `bash "$SCRIPTS/commit-qa-artifact.sh" <ID> <mode> [<attempt>]`. `mode=initial` for initial run; `mode=re-qa <attempt>` for re-QA runs (`<attempt>` is `qaFixAttempts` read from `workflow-state.sh get-qa-state`). Post-condition: clean working tree (FR-4 fix-phase precheck).
+12. Emit the FR-1 final-message line as the **last line** of the response.
 
 ## Output Style
 
@@ -124,21 +125,29 @@ If no ID is provided, ask for one.
 
 2. **Initialize state**:
    - `Write .sdlc/qa/.executing-active` (empty file).
-   - `bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/qa-baseline.sh init <ID>` — writes the diff-guard baseline.
+   - `bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/qa-baseline.sh init <ID>` — writes the diff-guard baseline. Idempotent on re-QA: rewrites the marker to the current HEAD (the marker's existence — not its SHA — is what `detect-re-qa-mode.sh` keys on).
 
-3. **Capability discovery**: if a fresh `/tmp/qa-capability-{ID}.json` from this session (mtime within the last hour) exists, reuse it. Otherwise:
+3. **Mode auto-detect (FEAT-032 FR-3)**:
+   ```
+   bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/detect-re-qa-mode.sh <ID>
+   ```
+   Stdout JSON `{mode, files}`. `mode=initial` -> proceed with the initial-run path. `mode=re-qa` -> the run is a follow-up after a prior `ISSUES-FOUND` plus an `addressing-qa-findings` fix attempt; capture `files` (the v1 glob set: `tests/unit/qa-*.test.ts`, `tests/unit/qa-*.test.js`, `tests/bats/qa/qa-*.bats`) and pass it as the test glob to `run-framework.sh` in Step 4 instead of writing new tests. Emit the load-bearing log line:
+   > [info] re-QA mode: re-executing N committed QA tests for {ID}
+   Re-QA mode CANNOT return `EXPLORATORY-ONLY` (FR-3 / Edge Case 6). The verdict set for re-QA is `{PASS, ISSUES-FOUND, ERROR}`.
+
+4. **Capability discovery**: if a fresh `/tmp/qa-capability-{ID}.json` from this session (mtime within the last hour) exists, reuse it. Otherwise:
    ```
    bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/capability-discovery.sh <consumer-root> <ID>
    ```
    Capture the JSON. Fields: `mode` (`test-framework` | `exploratory-only`), `framework`, `packageManager`, `testCommand`, `language`. If `capability-discovery.sh` exits non-zero, treat as `mode: exploratory-only` with a recorded reason.
 
-4. **Drift check** against the plan-embedded capability report:
+5. **Drift check** against the plan-embedded capability report:
    ```
    bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/capability-report-diff.sh "<plan-file>" "<fresh-json>"
    ```
    Stdout JSON `{drift, fields}`. Drift JSON goes into the artifact's `## Capability Report` section verbatim; the fresh JSON is the source of truth for downstream steps.
 
-5. **Compose the `qa` persona overlay**:
+6. **Compose the `qa` persona overlay**:
    ```
    source ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/persona-loader.sh
    load_persona qa ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa
@@ -172,6 +181,8 @@ Exit `0` -> proceed. Exit `1` -> set verdict `ERROR` with `Reason: no changes to
 
 ## Step 4: Test-framework mode -- write and run
 
+### Initial-run path (`mode=initial` from `detect-re-qa-mode.sh`)
+
 For each P0/P1 scenario whose `mode: test-framework` marker is set:
 
 1. **Write a test file** under the framework's test root with a `qa-` filename prefix. Defaults:
@@ -192,6 +203,24 @@ For each P0/P1 scenario whose `mode: test-framework` marker is set:
    bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/commit-qa-tests.sh <ID> <test-files...>
    ```
    Exit `0` committed; exit `1` no files to commit (info; continue).
+
+### Re-QA path (FEAT-032 FR-3 — `mode=re-qa` from `detect-re-qa-mode.sh`)
+
+Re-QA mode is a behavior-mode of this same skill — NOT a separate `re-executing-qa` skill. It re-runs the prior committed QA tests against the current branch state to grade an `addressing-qa-findings` fix attempt.
+
+1. **Skip test-writing**. The QA tests already exist on the branch from the initial run; rewriting them would discard the fix-grade signal.
+
+2. **Run the framework** against the existing test files:
+   ```
+   bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/run-framework.sh <capability-json> "<files-from-detect>"
+   ```
+   The `files` array from `detect-re-qa-mode.sh` is the test glob. If `run-framework.sh` reports zero executable tests for the supplied paths (NFR-2 / Edge Case 8 — the marker exists but the user manually deleted the QA files mid-workflow): set verdict `ERROR` with the verbatim reason:
+   > Reason: re-QA invoked but no prior QA test files found for {ID}
+   The orchestrator (Phase 4) pauses with `qa-error`. **Do NOT regenerate** — re-QA mode never writes new tests.
+
+3. **Skip `commit-qa-tests.sh`**. No new tests were written; nothing to commit at this stage. The artifact commit in Step 7 is the only commit re-QA produces.
+
+> **FR-13 ownership rule (load-bearing)**: `executing-qa` — in either initial or re-QA mode — NEVER deletes QA test files. Deletion is owned exclusively by `addressing-qa-findings/scripts/adopt-qa-test.sh` via `git mv` (the move IS the deletion). The existing FR-10 stop-hook diff guard remains report-only; this skill MAY edit the QA artifact and (initial run only) write new `qa-*` test files, and that is the complete write surface.
 
 ### Verdict derivation (test-framework mode)
 
@@ -272,17 +301,38 @@ Stdout JSON `{verdict, perDimension, gaps}` where `verdict` is `COVERAGE-ADEQUAT
 
 ## Step 7: Emit the version-2 results artifact
 
-Render via the script:
+Render via the script. Pass the QA test files to embed via `QA_TEST_FILES` (FEAT-032 FR-2). For initial runs, use the list of test files just written; for re-QA runs, use the `files` array from `detect-re-qa-mode.sh`. Newline-separated:
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/render-qa-results.sh" <ID> <verdict> "<capability-json>" "<execution-json>"
+QA_TEST_FILES="$(printf '%s\n' "${QA_FILES[@]}")" \
+  bash "${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/render-qa-results.sh" <ID> <verdict> "<capability-json>" "<execution-json>"
 ```
 
-Optional environment overrides for `## Findings`, `## Reconciliation Delta`, `## Scenarios Run`, `## Summary`, `## Exploratory Mode` are documented in the script header. The script writes `qa/test-results/QA-results-{ID}.md` per the Phase-1 contract ([references/qa-return-contract.md](references/qa-return-contract.md)) using the schema in [assets/test-results-template-v2.md](assets/test-results-template-v2.md).
+For ISSUES-FOUND verdicts, the script appends a `## Reproduction` block to `## Findings` containing one `### Reproduction: <path>` sub-block per file: a language-aware fenced code block (typescript / javascript / bash / python / go) plus a single-line path-comment header naming the relative source path. The embedded source is the load-bearing input for the `addressing-qa-findings` fix phase (FEAT-032 FR-2).
+
+Optional environment overrides for `## Findings`, `## Reconciliation Delta`, `## Scenarios Run`, `## Summary`, `## Exploratory Mode` are documented in the script header. The script writes `qa/test-results/QA-results-{ID}.md` per the Phase-1 contract ([references/qa-return-contract.md](references/qa-return-contract.md)) using the schema in [assets/test-results-template-v2.md](assets/test-results-template-v2.md). **Re-QA runs OVERWRITE the artifact in place per FEAT-032 FR-12** — no manual delete required and no historical accumulation.
 
 Exit `0` artifact written. Exit `1` invalid verdict / missing required field. Exit `2` missing/invalid args.
 
 The stop hook re-validates the artifact on disk.
+
+## Step 7.5: Commit the QA artifact (FEAT-032 FR-12)
+
+Stage and commit `qa/test-results/QA-results-{ID}.md` so the working tree is clean for the `addressing-qa-findings` fix-phase precheck (FR-4):
+
+```bash
+# initial run
+bash "${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/commit-qa-artifact.sh" <ID> initial
+
+# re-QA run — pass the current attempt count from workflow-state
+ATTEMPT=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/orchestrating-workflows/scripts/workflow-state.sh" get-qa-state <ID> | jq -r '.qaFixAttempts')
+bash "${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/commit-qa-artifact.sh" <ID> re-qa "$ATTEMPT"
+```
+
+Initial-run commit message (verbatim, load-bearing): `qa({ID}): record QA results`.
+Re-QA commit message (verbatim, load-bearing): `qa({ID}): re-record QA results after fix attempt {N}`.
+
+Exit `0` artifact committed. Exit `1` artifact missing or already committed unchanged (informational). Exit `2` missing/invalid args.
 
 ## Step 8: Final message (FR-1)
 
@@ -300,14 +350,17 @@ Before finishing, verify:
 
 - [ ] `## Report-Only Mode` honored — no production-file edits outside the framework test root or `qa/test-results/` / `qa/test-plans/` (FR-2 / FR-10).
 - [ ] `.sdlc/qa/.executing-active` written; `qa-baseline.sh init <ID>` ran.
+- [ ] `detect-re-qa-mode.sh` ran; mode (`initial` | `re-qa`) recorded; on `re-qa`, the `[info] re-QA mode: re-executing N committed QA tests for {ID}` log line emitted (FEAT-032 FR-3).
 - [ ] `capability-discovery.sh` produced the fresh JSON (or reused the cached `/tmp` copy).
 - [ ] `capability-report-diff.sh` ran; drift recorded in `## Capability Report`.
 - [ ] Persona overlay composed via `persona-loader.sh`.
 - [ ] `check-branch-diff.sh` ran (Step 3 / edge case 5).
-- [ ] Mode routed: test-framework -> `run-framework.sh` + `commit-qa-tests.sh`; exploratory-only -> all five dimensions covered.
+- [ ] Mode routed: test-framework initial -> `run-framework.sh` + `commit-qa-tests.sh`; test-framework re-QA -> `run-framework.sh` only, NO `commit-qa-tests.sh` (FR-3); exploratory-only -> all five dimensions covered. Re-QA cannot return `EXPLORATORY-ONLY` (FR-3).
 - [ ] `qa-reconcile-delta.sh` produced the delta (or skipped per edge case 7).
 - [ ] `qa-verify-coverage.sh` ran against the artifact.
-- [ ] `render-qa-results.sh` wrote `qa/test-results/QA-results-{ID}.md` with `version: 2` frontmatter and the per-verdict structural rules satisfied.
+- [ ] `render-qa-results.sh` wrote `qa/test-results/QA-results-{ID}.md` with `version: 2` frontmatter and the per-verdict structural rules satisfied. For ISSUES-FOUND, `QA_TEST_FILES` was passed and the `## Reproduction` block embedding lands per FEAT-032 FR-2.
+- [ ] `commit-qa-artifact.sh` committed the artifact with the FR-12 message template (`record QA results` for initial run; `re-record QA results after fix attempt {N}` for re-QA). Working tree clean post-commit.
+- [ ] FR-13 ownership rule held: this skill did not delete any `qa-*` files (deletion is owned exclusively by `addressing-qa-findings/scripts/adopt-qa-test.sh`).
 - [ ] FR-1 final-message line is the **last** line of the response: `Verdict: <V> | Passed: <N> | Failed: <N> | Errored: <N>`.
 
 ## Relationship to Other Skills

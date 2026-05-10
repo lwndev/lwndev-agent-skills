@@ -10,6 +10,10 @@ export default defineConfig({
       // and exist only to be invoked by feat-030-executing-qa.test.ts via
       // a child vitest process pointed at the fixture's own config.
       'scripts/__tests__/fixtures/feat-030-known-buggy/**',
+      // FEAT-032 known-buggy fixture: contents are deliberately failing
+      // (the QA test fails against the buggy SUT). Consumed by Bats e2e
+      // drivers via a copied tempdir; never executed by the host vitest.
+      'tests/fixtures/feat-032-known-buggy/**',
     ],
     fileParallelism: true,
     // Default 5000ms is too tight for execSync-heavy tests under full-suite
@@ -22,6 +26,7 @@ export default defineConfig({
         'tests/**',
         '**/*.test.ts',
         'scripts/__tests__/fixtures/feat-030-known-buggy/**',
+        'tests/fixtures/feat-032-known-buggy/**',
       ],
       reportsDirectory: 'coverage',
     },

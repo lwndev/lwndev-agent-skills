@@ -3,8 +3,8 @@
 #
 # Usage: preflight-checks.sh
 #
-# Runs three read-only checks in parallel, then a sequential build-health
-# gate (BUG-013) once the parallel checks pass:
+# Runs three read-only checks in parallel, then two sequential gates once
+# the parallel checks pass:
 #   1. `git status --porcelain` must be empty (clean working directory).
 #   2. `git branch --show-current` must NOT be `main` or `master`.
 #   3. `gh pr view --json number,title,state,mergeable,url` must return an
@@ -13,6 +13,12 @@
 #   4. Shared `verify-build-health.sh --no-interactive` must exit 0 (lint /
 #      format:check / test / build all pass, or graceful skip when no
 #      package.json / npm absent).
+#   5. FR-9 QA safety-net: `git ls-files` must return no tracked files matching
+#      the v1 QA glob set anchored to canonical ephemeral paths
+#      (tests/unit/qa-*.test.ts, tests/unit/qa-*.test.js, tests/bats/qa/qa-*.bats).
+#      Runs after build-health (last gate before merge). Blocks merge if any
+#      pre-adoption qa-* files survive. pytest/go-test globs are intentionally
+#      omitted in v1 per Edge Case 17 lockstep (stub-only adopt dispatch).
 #
 # Output:
 #   On success: single-line JSON on stdout
@@ -313,6 +319,53 @@ pr_url="$(cat "$tmpdir/pr.url")"
 
 if [ "$pr_reason" = "unknown-retry" ]; then
   echo "[info] PR mergeable state UNKNOWN after retry — proceeding." >&2
+fi
+
+# FR-9 QA safety-net: block merge if any tracked qa-* files remain unadopted.
+# Runs after build-health (last gate before merge). Uses `git ls-files` so
+# untracked files do not trigger a false positive. The *.qa.* adopted infix
+# (e.g. foo.qa.test.ts) is NOT matched — only the qa-* prefix.
+# v1 glob set is anchored to canonical ephemeral paths per CLAUDE.md naming
+# convention so permanent infrastructure tests under tests/bats/skills/<skill>/
+# (e.g. qa-dispatch.bats, qa-baseline.bats) do NOT trip the gate.
+# pytest (qa-*.py) and go-test (qa-*.go) globs intentionally omitted: per the
+# Edge Case 17 lockstep constraint they cannot land until adopt-qa-test.sh has
+# real FR-5 dispatch support for those frameworks (currently stub-only).
+(
+  set +e
+  leaked="$(git ls-files \
+    'tests/unit/qa-*.test.ts' \
+    'tests/unit/qa-*.test.js' \
+    'tests/bats/qa/qa-*.bats' \
+    2>/dev/null)"
+  if [ -n "$leaked" ]; then
+    # Build the bullet list for the verbatim error message.
+    bullets=""
+    while IFS= read -r path; do
+      [ -n "$path" ] && bullets="${bullets}  - ${path}"$'\n'
+    done <<< "$leaked"
+    # Strip trailing newline from bullets.
+    bullets="${bullets%$'\n'}"
+    printf '%s\n' "$leaked" > "$tmpdir/qa-leakage.reason"
+    printf '%s\n' "$bullets" > "$tmpdir/qa-leakage.bullets"
+    exit 1
+  fi
+  printf '' > "$tmpdir/qa-leakage.reason"
+  exit 0
+) &
+pid_qa_leakage=$!
+
+set +e
+wait "$pid_qa_leakage"; rc_qa_leakage=$?
+set -e
+
+if [ "$rc_qa_leakage" -ne 0 ]; then
+  bullets=""
+  [ -f "$tmpdir/qa-leakage.bullets" ] && bullets="$(cat "$tmpdir/qa-leakage.bullets")"
+  abort "$(printf '%s\n%s\n%s' \
+    "QA test files were not adopted; the addressing-qa-findings skill did not complete cleanly:" \
+    "$bullets" \
+    "Resolve by running addressing-qa-findings to adoption, or manually adopting/deleting these files.")"
 fi
 
 emit_ok_json "$pr_number" "$pr_title" "$pr_url"

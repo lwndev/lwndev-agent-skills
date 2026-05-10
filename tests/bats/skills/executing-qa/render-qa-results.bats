@@ -186,3 +186,128 @@ write_exec_error() {
   artifact="$(echo "$output" | tail -n 1)"
   grep -q '(custom surplus)' "$artifact"
 }
+
+# --- FEAT-032 FR-2: per-finding `## Reproduction` block embedding -----------
+
+@test "FR-2: ISSUES-FOUND with QA_TEST_FILES TS file — typescript fence + // path header" {
+  write_exec_issues
+  mkdir -p tests/unit
+  cat > tests/unit/qa-input-validation.test.ts <<'EOF'
+import { describe, it, expect } from 'vitest';
+
+describe('validate', () => {
+  it('rejects empty input', () => {
+    expect(() => validate('')).toThrow();
+  });
+});
+EOF
+  QA_TEST_FILES="tests/unit/qa-input-validation.test.ts" \
+    run bash "$SCRIPT" FEAT-032 ISSUES-FOUND "$CAP" exec.json
+  [ "$status" -eq 0 ]
+  artifact="$(echo "$output" | tail -n 1)"
+  grep -q '^## Reproduction$' "$artifact"
+  grep -q '^### Reproduction: tests/unit/qa-input-validation.test.ts$' "$artifact"
+  grep -q '^```typescript$' "$artifact"
+  grep -q '^// tests/unit/qa-input-validation.test.ts$' "$artifact"
+  grep -q "rejects empty input" "$artifact"
+}
+
+@test "FR-2: ISSUES-FOUND with QA_TEST_FILES bats file — bash fence + # path header" {
+  write_exec_issues
+  mkdir -p tests/bats/qa
+  # Build the .bats fixture content via printf to avoid bats preprocessing
+  # the heredoc `@test ...` markers in this enclosing test file.
+  {
+    printf '#!/usr/bin/env bats\n\n'
+    printf '%s\n' "@test 'rejects empty arg' {"
+    printf '  run bash my-script.sh ""\n'
+    printf '  [ "$status" -ne 0 ]\n'
+    printf '}\n'
+  } > tests/bats/qa/qa-shell-input.bats
+  QA_TEST_FILES="tests/bats/qa/qa-shell-input.bats" \
+    run bash "$SCRIPT" FEAT-032 ISSUES-FOUND "$CAP" exec.json
+  [ "$status" -eq 0 ]
+  artifact="$(echo "$output" | tail -n 1)"
+  grep -q '^### Reproduction: tests/bats/qa/qa-shell-input.bats$' "$artifact"
+  grep -q '^```bash$' "$artifact"
+  grep -q '^# tests/bats/qa/qa-shell-input.bats$' "$artifact"
+  grep -q "rejects empty arg" "$artifact"
+}
+
+@test "FR-2: ISSUES-FOUND with .py QA file — python fence + # path header" {
+  write_exec_issues
+  mkdir -p tests/python
+  cat > tests/python/qa_validation.py <<'EOF'
+def test_rejects_empty():
+    assert validate("") is None
+EOF
+  QA_TEST_FILES="tests/python/qa_validation.py" \
+    run bash "$SCRIPT" FEAT-032 ISSUES-FOUND "$CAP" exec.json
+  [ "$status" -eq 0 ]
+  artifact="$(echo "$output" | tail -n 1)"
+  grep -q '^```python$' "$artifact"
+  grep -q '^# tests/python/qa_validation.py$' "$artifact"
+}
+
+@test "FR-2: ISSUES-FOUND with .go QA file — go fence + // path header" {
+  write_exec_issues
+  mkdir -p pkg/validate
+  cat > pkg/validate/qa_input_test.go <<'EOF'
+package validate
+
+import "testing"
+
+func TestRejectsEmpty(t *testing.T) {
+  if got := Validate(""); got == nil {
+    t.Fatal("expected error")
+  }
+}
+EOF
+  QA_TEST_FILES="pkg/validate/qa_input_test.go" \
+    run bash "$SCRIPT" FEAT-032 ISSUES-FOUND "$CAP" exec.json
+  [ "$status" -eq 0 ]
+  artifact="$(echo "$output" | tail -n 1)"
+  grep -q '^```go$' "$artifact"
+  grep -q '^// pkg/validate/qa_input_test.go$' "$artifact"
+}
+
+@test "FR-2: multiple QA test files — one Reproduction block per file" {
+  jq -n '{total:6,passed:4,failed:2,errored:0,failingNames:["a > t1","b > t2"],truncatedOutput:"",exitCode:1,durationMs:42}' > exec.json
+  mkdir -p tests/unit
+  printf "// file a\n" > tests/unit/qa-a.test.ts
+  printf "// file b\n" > tests/unit/qa-b.test.ts
+  QA_TEST_FILES="$(printf 'tests/unit/qa-a.test.ts\ntests/unit/qa-b.test.ts')" \
+    run bash "$SCRIPT" FEAT-032 ISSUES-FOUND "$CAP" exec.json
+  [ "$status" -eq 0 ]
+  artifact="$(echo "$output" | tail -n 1)"
+  grep -q '^### Reproduction: tests/unit/qa-a.test.ts$' "$artifact"
+  grep -q '^### Reproduction: tests/unit/qa-b.test.ts$' "$artifact"
+  # exactly one ## Reproduction header — sub-blocks share it.
+  count="$(grep -c '^## Reproduction$' "$artifact")"
+  [ "$count" -eq 1 ]
+  # exactly two ### Reproduction sub-headers.
+  sub="$(grep -c '^### Reproduction: ' "$artifact")"
+  [ "$sub" -eq 2 ]
+}
+
+@test "FR-2: missing QA test file — warn on stderr, no Reproduction block emitted, artifact still written" {
+  write_exec_issues
+  QA_TEST_FILES="tests/unit/does-not-exist.test.ts" \
+    run bash "$SCRIPT" FEAT-032 ISSUES-FOUND "$CAP" exec.json
+  [ "$status" -eq 0 ]
+  artifact="$(echo "$output" | tail -n 1)"
+  [ -f "$artifact" ]
+  ! grep -q '^### Reproduction: ' "$artifact"
+  [[ "$output" == *"[warn] QA test file not found for embedding"* ]]
+}
+
+@test "FR-2: PASS verdict ignores QA_TEST_FILES (no findings = no Reproduction)" {
+  write_exec_pass
+  mkdir -p tests/unit
+  printf "// file a\n" > tests/unit/qa-a.test.ts
+  QA_TEST_FILES="tests/unit/qa-a.test.ts" \
+    run bash "$SCRIPT" FEAT-032 PASS "$CAP" exec.json
+  [ "$status" -eq 0 ]
+  artifact="$(echo "$output" | tail -n 1)"
+  ! grep -q '^### Reproduction: ' "$artifact"
+}
