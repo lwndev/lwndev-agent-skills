@@ -17,6 +17,16 @@ When `executing-qa` returns an `ISSUES-FOUND` verdict, the orchestrator invokes 
 - Test command: npm test
 - Language: typescript
 
+```json
+{
+  "mode": "test-framework",
+  "framework": "vitest",
+  "packageManager": "npm",
+  "testCommand": "npm test",
+  "language": "typescript"
+}
+```
+
 ## Scenarios (by dimension)
 
 ### Inputs

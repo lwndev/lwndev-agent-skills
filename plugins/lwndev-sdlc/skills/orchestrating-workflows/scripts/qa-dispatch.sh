@@ -71,10 +71,17 @@ fi
 # --- read QA state ---
 
 qa_json=""
-if ! qa_json=$(bash "$WORKFLOW_STATE" get-qa-state "$id" 2>&1); then
-  echo "[error] qa-dispatch: get-qa-state failed for $id: $qa_json" >&2
+qa_state_tmp=$(mktemp)
+if ! qa_json=$(bash "$WORKFLOW_STATE" get-qa-state "$id" 2>"$qa_state_tmp"); then
+  cat "$qa_state_tmp" >&2
+  rm -f "$qa_state_tmp"
+  echo "[error] qa-dispatch: get-qa-state failed for $id" >&2
   exit 1
 fi
+# Relay stderr verbatim on success — captures FR-13 migration debug line
+# (`[workflow-state] debug: migrating ...`) without contaminating qa_json.
+cat "$qa_state_tmp" >&2
+rm -f "$qa_state_tmp"
 
 if ! echo "$qa_json" | jq -e 'type == "object"' >/dev/null 2>&1; then
   echo "[error] qa-dispatch: malformed JSON from get-qa-state: $qa_json" >&2

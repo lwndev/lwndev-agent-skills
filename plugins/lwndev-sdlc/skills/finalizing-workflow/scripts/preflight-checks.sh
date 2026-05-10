@@ -14,9 +14,11 @@
 #      format:check / test / build all pass, or graceful skip when no
 #      package.json / npm absent).
 #   5. FR-9 QA safety-net: `git ls-files` must return no tracked files matching
-#      the v1 QA glob set (qa-*.test.ts, qa-*.test.js, qa-*.bats) or the
-#      forward-compat globs (qa-*.py, qa-*.go). Runs after build-health (last
-#      gate before merge). Blocks merge if any pre-adoption qa-* files survive.
+#      the v1 QA glob set anchored to canonical ephemeral paths
+#      (tests/unit/qa-*.test.ts, tests/unit/qa-*.test.js, tests/bats/qa/qa-*.bats).
+#      Runs after build-health (last gate before merge). Blocks merge if any
+#      pre-adoption qa-* files survive. pytest/go-test globs are intentionally
+#      omitted in v1 per Edge Case 17 lockstep (stub-only adopt dispatch).
 #
 # Output:
 #   On success: single-line JSON on stdout
@@ -323,16 +325,18 @@ fi
 # Runs after build-health (last gate before merge). Uses `git ls-files` so
 # untracked files do not trigger a false positive. The *.qa.* adopted infix
 # (e.g. foo.qa.test.ts) is NOT matched — only the qa-* prefix.
-# v1 glob set: qa-*.test.ts, qa-*.test.js, qa-*.bats
-# forward-compat globs (no-ops in v1): qa-*.py, qa-*.go
+# v1 glob set is anchored to canonical ephemeral paths per CLAUDE.md naming
+# convention so permanent infrastructure tests under tests/bats/skills/<skill>/
+# (e.g. qa-dispatch.bats, qa-baseline.bats) do NOT trip the gate.
+# pytest (qa-*.py) and go-test (qa-*.go) globs intentionally omitted: per the
+# Edge Case 17 lockstep constraint they cannot land until adopt-qa-test.sh has
+# real FR-5 dispatch support for those frameworks (currently stub-only).
 (
   set +e
   leaked="$(git ls-files \
-    '**/qa-*.test.ts' \
-    '**/qa-*.test.js' \
-    '**/qa-*.bats' \
-    '**/qa-*.py' \
-    '**/qa-*.go' \
+    'tests/unit/qa-*.test.ts' \
+    'tests/unit/qa-*.test.js' \
+    'tests/bats/qa/qa-*.bats' \
     2>/dev/null)"
   if [ -n "$leaked" ]; then
     # Build the bullet list for the verbatim error message.

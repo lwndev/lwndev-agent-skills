@@ -163,11 +163,9 @@ EOF
   # Step 12 — finalize safety-net would NOT trip: no tracked qa-* files match
   # the FR-9 v1 glob set after adoption.
   leaked="$(git ls-files \
-    '**/qa-*.test.ts' \
-    '**/qa-*.test.js' \
-    '**/qa-*.bats' \
-    '**/qa-*.py' \
-    '**/qa-*.go' 2>/dev/null)"
+    'tests/unit/qa-*.test.ts' \
+    'tests/unit/qa-*.test.js' \
+    'tests/bats/qa/qa-*.bats' 2>/dev/null)"
   [ -z "$leaked" ]
 
   # Step 12a — adopted-sibling glob (the *.qa.* infix) is NOT matched by the

@@ -190,3 +190,36 @@ EOF
   run --separate-stderr bash "$QD" invalid-id
   [ "$status" -eq 2 ]
 }
+
+# ---- migration path: pre-FEAT-032 state file does not contaminate JSON capture ---
+# Regression: get-qa-state writes a `[workflow-state] debug: migrating ...` line
+# to stderr on first read of an unmigrated state file. qa-dispatch must capture
+# stderr separately so that line does not break the `jq -e 'type == "object"'`
+# guard on the qa_json output.
+
+@test "unmigrated state file (missing qa-loop fields) → migration debug stays out of JSON capture, dispatch=advance" {
+  cat > "${TMPDIR_TEST}/.sdlc/workflows/FEAT-032.json" <<'EOF'
+{
+  "id": "FEAT-032",
+  "type": "feature",
+  "currentStep": 0,
+  "status": "in-progress",
+  "pauseReason": null,
+  "steps": [
+    {"name":"Doc","skill":"documenting-features","context":"main","status":"in-progress","artifact":null,"completedAt":null}
+  ],
+  "phases": {"total": 0, "completed": 0},
+  "prNumber": null,
+  "branch": null,
+  "startedAt": "2026-04-23T00:00:00Z",
+  "lastResumedAt": null,
+  "complexity": "medium",
+  "complexityStage": "init"
+}
+EOF
+  cd "$TMPDIR_TEST"
+  run --separate-stderr bash "$QD" FEAT-032
+  [ "$status" -eq 0 ]
+  [ "$output" = "dispatch=advance" ]
+  [[ "$stderr" == *"migrating"* ]]
+}

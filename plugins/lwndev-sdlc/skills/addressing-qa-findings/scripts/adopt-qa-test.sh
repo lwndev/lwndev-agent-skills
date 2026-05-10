@@ -319,7 +319,7 @@ EOF
     exit 1
   fi
 
-  if ! git mv "$qa_file" "$target" 2>&1; then
+  if ! git mv "$qa_file" "$target"; then
     exit 1
   fi
   echo "$target"
@@ -418,7 +418,7 @@ EOF
     exit 1
   fi
 
-  if ! git mv "$qa_file" "$target" 2>&1; then
+  if ! git mv "$qa_file" "$target"; then
     exit 1
   fi
   echo "$target"

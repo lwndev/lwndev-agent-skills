@@ -104,11 +104,9 @@ EOF
 
   # Pre-condition: the QA file is still tracked because we skipped adopt.
   leaked="$(git ls-files \
-    '**/qa-*.test.ts' \
-    '**/qa-*.test.js' \
-    '**/qa-*.bats' \
-    '**/qa-*.py' \
-    '**/qa-*.go' 2>/dev/null)"
+    'tests/unit/qa-*.test.ts' \
+    'tests/unit/qa-*.test.js' \
+    'tests/bats/qa/qa-*.bats' 2>/dev/null)"
   [ -n "$leaked" ]
   echo "$leaked" | grep -qxF "tests/unit/qa-input-validation.test.ts"
 

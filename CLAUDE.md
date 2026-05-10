@@ -116,9 +116,9 @@ QA-authored tests are ephemeral by design: they are committed to the branch duri
 
 **Adoption:** `addressing-qa-findings/scripts/adopt-qa-test.sh` is the **sole** owner of QA-test deletion. It uses `git mv` to move a `qa-*.test.ts` (or `.bats`) to its `*.qa.*` sibling path. No other script or skill deletes `qa-*` files (FR-13 invariant).
 
-**Safety-net:** `finalizing-workflow` runs a preflight check (`preflight-checks.sh`) that blocks merge if any tracked `qa-*` files remain on the branch (FR-9). The check uses `git ls-files` against the v1 glob set (`qa-*.test.ts`, `qa-*.test.js`, `qa-*.bats`). Untracked files do not block. Adopted `*.qa.*` siblings pass cleanly — only the `qa-*` prefix is checked.
+**Safety-net:** `finalizing-workflow` runs a preflight check (`preflight-checks.sh`) that blocks merge if any tracked `qa-*` files remain on the branch (FR-9). The check uses `git ls-files` against the v1 glob set anchored to canonical ephemeral paths: `tests/unit/qa-*.test.ts`, `tests/unit/qa-*.test.js`, `tests/bats/qa/qa-*.bats`. Anchoring keeps permanent QA-loop infrastructure tests under `tests/bats/skills/<skill>/` (e.g. `qa-dispatch.bats`, `qa-baseline.bats`) clear of the gate. Untracked files do not block. Adopted `*.qa.*` siblings pass cleanly — only the `qa-*` prefix is checked.
 
-**Lockstep constraint (Edge Case 17):** Enabling FR-9 safety-net globs for pytest (`qa-*.py`) and go-test (`qa-*.go`) must land in lockstep with FR-5 dispatch support for those frameworks in `adopt-qa-test.sh`. Do not enable one without the other.
+**Lockstep constraint (Edge Case 17):** FR-9 safety-net globs for pytest (`qa-*.py`) and go-test (`qa-*.go`) are intentionally absent in v1 because `adopt-qa-test.sh` only emits structured stub failures for those frameworks (`framework not supported in v1: pytest|go-test`). Adding the globs to FR-9 must land in lockstep with replacing those stubs with real FR-5 dispatch — do not enable one without the other.
 
 **Length assertions over directories that may receive `*.qa.*` siblings** (e.g. `tests/bats/shared/`) must filter out `*.qa.bats` files before counting canonical peers, or use set-based parity checks instead of hard-coded totals. See `tests/unit/shared-scripts.test.ts` and `tests/unit/qa-BUG-016.test.ts` for examples.
 

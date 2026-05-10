@@ -136,34 +136,63 @@ EOF
   [[ "$output" == *'"status":"ok"'* ]]
 }
 
-@test "v1 forward-compat globs: qa-*.py is no-op in v1 (stub returns it) → trips gate" {
-  # FR-9: forward-compat globs qa-*.py / qa-*.go are included in the check.
-  # If git ls-files returns them, the gate trips (ensuring lockstep with FR-5
-  # framework dispatch per Edge Case 17).
-  write_git_stub_with_ls "tests/qa-foo.py
-"
+@test "Edge Case 17 lockstep: v1 globs do NOT include qa-*.py (pytest dispatch is stub-only)" {
+  # The lockstep constraint requires py/go globs to be active only when
+  # adopt-qa-test.sh has real FR-5 dispatch. Currently dispatch is stub-only,
+  # so the v1 globs must NOT pass qa-*.py to git ls-files. Verify by logging
+  # the git args and inspecting them.
+  ARGS_LOG="${STUB_DIR}/git.args"
+  cat > "${STUB_DIR}/git" <<EOF
+#!/usr/bin/env bash
+if [ "\$1" = "status" ] && [ "\$2" = "--porcelain" ]; then exit 0; fi
+if [ "\$1" = "branch" ] && [ "\$2" = "--show-current" ]; then
+  printf 'feat/FEAT-032-test\n'; exit 0
+fi
+if [ "\$1" = "ls-files" ]; then
+  printf '%s\n' "\$@" >> "${ARGS_LOG}"
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "${STUB_DIR}/git"
   write_gh_stub_ok
   run bash "$PREFLIGHT"
-  [ "$status" -eq 1 ]
-  [[ "$output" == *'"status":"abort"'* ]]
-  [[ "$output" == *'QA test files were not adopted'* ]]
-  [[ "$output" == *'qa-foo.py'* ]]
+  [ "$status" -eq 0 ]
+  ! grep -q 'qa-\*\.py' "$ARGS_LOG"
+  ! grep -q 'qa-\*\.go' "$ARGS_LOG"
 }
 
-@test "v1 forward-compat globs: qa-*.go (stub returns it) → trips gate" {
-  write_git_stub_with_ls "tests/qa-bar.go
-"
+@test "v1 globs are anchored to canonical paths per CLAUDE.md naming convention" {
+  # The v1 globs MUST include the canonical anchored paths so ephemeral QA
+  # tests at the convention's locations trip the gate. Permanent infrastructure
+  # tests under tests/bats/skills/<skill>/qa-*.bats must NOT match.
+  ARGS_LOG="${STUB_DIR}/git.args"
+  cat > "${STUB_DIR}/git" <<EOF
+#!/usr/bin/env bash
+if [ "\$1" = "status" ] && [ "\$2" = "--porcelain" ]; then exit 0; fi
+if [ "\$1" = "branch" ] && [ "\$2" = "--show-current" ]; then
+  printf 'feat/FEAT-032-test\n'; exit 0
+fi
+if [ "\$1" = "ls-files" ]; then
+  printf '%s\n' "\$@" >> "${ARGS_LOG}"
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "${STUB_DIR}/git"
   write_gh_stub_ok
   run bash "$PREFLIGHT"
-  [ "$status" -eq 1 ]
-  [[ "$output" == *'"status":"abort"'* ]]
-  [[ "$output" == *'QA test files were not adopted'* ]]
-  [[ "$output" == *'qa-bar.go'* ]]
+  [ "$status" -eq 0 ]
+  grep -q 'tests/unit/qa-\*\.test\.ts' "$ARGS_LOG"
+  grep -q 'tests/unit/qa-\*\.test\.js' "$ARGS_LOG"
+  grep -q 'tests/bats/qa/qa-\*\.bats' "$ARGS_LOG"
 }
 
-@test "Edge Case 10: manually-named qa-foo.test.ts outside workflow trips gate" {
-  # Convention reserves qa-* prefix for QA-authored tests; acceptable false positive.
-  write_git_stub_with_ls "qa-foo.test.ts
+@test "Edge Case 10: post-glob abort path emits the leaked path in the verbatim error" {
+  # Any non-empty git ls-files result must abort with the leaked path embedded
+  # in the FR-9 error message. The path content here is irrelevant to the
+  # globs (stub bypasses real glob matching) — this test pins the abort path.
+  write_git_stub_with_ls "tests/unit/qa-foo.test.ts
 "
   write_gh_stub_ok
   run bash "$PREFLIGHT"
