@@ -16,8 +16,10 @@ coverage/
 # Don't include environment variable files
 *.env
 
-# Don't include SDLC workflow state (local per-developer)
-.sdlc/
+# Don't include SDLC workflow state (local per-developer).
+# Anchored at repo root so test fixtures (e.g. tests/fixtures/*/.sdlc/) can
+# track their own .sdlc/ trees as test data.
+/.sdlc/
 
 # Don't include temp directory
 temp/
