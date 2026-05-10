@@ -28,8 +28,11 @@ a copied tempdir.
   glue scripts).
 - `.sdlc/qa/.executing-qa-baseline-FEAT-999` — re-QA marker required by
   `detect-re-qa-mode.sh`.
-- `.sdlc/workflows/FEAT-999.json` — workflow-state seed: verdict
-  `ISSUES-FOUND`, `qaFixAttempts: 0`, `adoptedTests: []`, `qaLoopCap: 2`.
+- `seed/FEAT-999-state.json` — workflow-state seed (verdict `ISSUES-FOUND`,
+  `qaFixAttempts: 0`, `adoptedTests: []`, `qaLoopCap: 2`). The fixture's own
+  `.gitignore` matches `.sdlc/workflows/` to mirror the ephemeral-state
+  posture, so the seed is tracked under `seed/` and copied to
+  `.sdlc/workflows/FEAT-999.json` by the Bats `setup()` after `cp -R`.
 - `qa/test-results/QA-results-FEAT-999.md` — pre-existing QA artifact
   so `check-fix-prechecks.sh` passes.
 

@@ -30,6 +30,13 @@ setup() {
   WORKDIR="${TMPDIR_TEST}/repo"
   cp -R "$FIXTURE_SRC" "$WORKDIR"
 
+  # The fixture's .gitignore matches `.sdlc/workflows/`, so the workflow-state
+  # seed cannot live there in the source tree (CI would never see it). Stage
+  # it from the tracked seed/ directory into the runtime path before git init.
+  mkdir -p "${WORKDIR}/.sdlc/workflows"
+  mv "${WORKDIR}/seed/FEAT-999-state.json" "${WORKDIR}/.sdlc/workflows/FEAT-999.json"
+  rmdir "${WORKDIR}/seed"
+
   cd "$WORKDIR"
   git init -q
   git config user.email "test@bats"
