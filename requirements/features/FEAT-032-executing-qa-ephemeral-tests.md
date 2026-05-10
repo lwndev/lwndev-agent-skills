@@ -412,31 +412,39 @@ Verdict: <PASS|ISSUES-FOUND|ERROR|EXPLORATORY-ONLY> | Passed: <N> | Failed: <N> 
 
 ## Acceptance Criteria
 
-- [ ] `executing-qa` no longer leaks `qa-<dimension>` prefixed files past merge (verified by `finalizing-workflow` safety-net)
-- [ ] New `addressing-qa-findings` skill exists at `plugins/lwndev-sdlc/skills/addressing-qa-findings/SKILL.md` with developer persona
-- [ ] `addressing-qa-findings` consumes `qa/test-results/QA-results-{ID}.md`, reproduces failures, writes production fixes, and runs adoption
-- [ ] `addressing-qa-findings` operates in two distinct phases (fix, adopt) with auto-detected dispatch from the `{qaLastVerdict, qaFixAttempts, adoptedTests}` triple per FR-4 (fix iff `qaLastVerdict == ISSUES-FOUND` AND `adoptedTests` empty; adopt iff `qaLastVerdict == PASS` AND `qaFixAttempts > 0` AND `adoptedTests` empty); emits the corresponding return contract for each
-- [ ] `adopt-qa-test.sh` deterministically renames QA tests to `{module}.qa.{ext}` siblings; supports Vitest and Bats; exits 2 on unresolvable SUT
-- [ ] Orchestrator branches to `addressing-qa-findings` (fix phase) on `ISSUES-FOUND` verdict; loops with cap N=2; pauses with `qa-loop-exhausted` on exhaustion
-- [ ] `EXPLORATORY-ONLY` and initial-run `PASS` verdicts advance directly to `finalizing-workflow` (no fix loop)
-- [ ] `PASS` verdict in re-QA mode (after fix phase) triggers `addressing-qa-findings` adopt phase, then advance
-- [ ] `ERROR` verdict pauses with `qa-error` (no fix loop)
-- [ ] `finalizing-workflow` safety-net blocks merge if any `qa-*` file remains; allows `*.qa.*` siblings
-- [ ] `tests/unit/shared-scripts.test.ts:102-117` parity assertion is set-based; tolerates `*.qa.bats` siblings; hard-coded `14` literal at line 107 is removed
-- [ ] All length-based assertions over QA-relevant directories are audited and either relaxed or documented as intentional
-- [ ] `CLAUDE.md` documents the new QA lifecycle and `*.qa.*` adoption convention
-- [ ] Workflow state schema includes `qaFixAttempts`, `qaLastVerdict`, `adoptedTests`
-- [ ] QA artifact embeds test source under each finding's `## Reproduction` section
-- [ ] FR-12: `executing-qa` re-QA mode overwrites `qa/test-results/QA-results-{ID}.md` (does not version per-attempt); Bats fixture asserts the artifact matches the latest run
-- [ ] FR-13: no skill or script other than `addressing-qa-findings` deletes any `qa-*` file (assertion via grep over plugin scripts and a Bats negative test)
-- [ ] Re-QA loop attempt = full pass over all findings + 1 re-QA execution (per FR-8); per-finding loops do NOT consume separate attempts; verified by the loop fixture
-- [ ] `--qa-loop-cap <N>` flag accepted on resume from `qa-loop-exhausted`; resets counter and continues
-- [ ] Full test suite green; new behaviors covered by Vitest or Bats at the canonical leaf
-- [ ] End-to-end Bats fixture exercises `ISSUES-FOUND → addressing-qa-findings (fix) → re-QA → addressing-qa-findings (adopt) → finalize` without shortcuts
-- [ ] FR-2: `render-qa-results.sh` emits language-aware fences (e.g. ` ```typescript `, ` ```bash `) and a path-comment header on the embedded QA test source under each finding's `## Reproduction` section
-- [ ] FR-3: re-QA mode is entered iff the `qa-baseline` marker file `.sdlc/qa/.executing-qa-baseline-{ID}` is present AND at least one file matches the v1 glob set (`tests/unit/qa-*.test.ts`, `tests/unit/qa-*.test.js`, `tests/bats/qa/qa-*.bats`)
-- [ ] FR-4: fix-phase pre-check fails fast on a dirty working tree with the literal message `failed | working tree dirty; commit or stash before re-running`; no auto-stash
-- [ ] FR-5: on the first `adopt-qa-test.sh` exit-2 across N candidate files, the M previously-moved files remain at their `*.qa.*` paths (committed, not reverted), `adoptedTests` length equals M, and the skill returns `failed | adoption failed for <path>; <N> adopted, <M> remaining`
-- [ ] FR-12: `executing-qa` commits `qa/test-results/QA-results-{ID}.md` before returning, with message `qa({ID}): record QA results` (initial) or `qa({ID}): re-record QA results after fix attempt {N}` (re-QA)
-- [ ] FR-7a: `workflow-state.sh` `cmd_pause` accepts the four new pause reasons (`qa-error`, `qa-loop-exhausted`, `fix-suite-failed`, `adoption-failed`); unknown reasons still exit 1; rejection message enumerates all seven accepted values literally and is pinned by a Bats assertion
-- [ ] FR-8: `--approve-advance` and `--qa-loop-cap <N>` flags accepted by `orchestrating-workflows` resume; unknown flags rejected with exit 2; passing both flags on the same invocation exits 2 with `Error: --approve-advance and --qa-loop-cap are mutually exclusive`
+- [x] `executing-qa` no longer leaks `qa-<dimension>` prefixed files past merge (verified by `finalizing-workflow` safety-net)
+- [x] New `addressing-qa-findings` skill exists at `plugins/lwndev-sdlc/skills/addressing-qa-findings/SKILL.md` with developer persona
+- [x] `addressing-qa-findings` consumes `qa/test-results/QA-results-{ID}.md`, reproduces failures, writes production fixes, and runs adoption
+- [x] `addressing-qa-findings` operates in two distinct phases (fix, adopt) with auto-detected dispatch from the `{qaLastVerdict, qaFixAttempts, adoptedTests}` triple per FR-4 (fix iff `qaLastVerdict == ISSUES-FOUND` AND `adoptedTests` empty; adopt iff `qaLastVerdict == PASS` AND `qaFixAttempts > 0` AND `adoptedTests` empty); emits the corresponding return contract for each
+- [x] `adopt-qa-test.sh` deterministically renames QA tests to `{module}.qa.{ext}` siblings; supports Vitest and Bats; exits 2 on unresolvable SUT
+- [x] Orchestrator branches to `addressing-qa-findings` (fix phase) on `ISSUES-FOUND` verdict; loops with cap N=2; pauses with `qa-loop-exhausted` on exhaustion
+- [x] `EXPLORATORY-ONLY` and initial-run `PASS` verdicts advance directly to `finalizing-workflow` (no fix loop)
+- [x] `PASS` verdict in re-QA mode (after fix phase) triggers `addressing-qa-findings` adopt phase, then advance
+- [x] `ERROR` verdict pauses with `qa-error` (no fix loop)
+- [x] `finalizing-workflow` safety-net blocks merge if any `qa-*` file remains; allows `*.qa.*` siblings
+- [x] `tests/unit/shared-scripts.test.ts:102-117` parity assertion is set-based; tolerates `*.qa.bats` siblings; hard-coded `14` literal at line 107 is removed
+- [x] All length-based assertions over QA-relevant directories are audited and either relaxed or documented as intentional
+- [x] `CLAUDE.md` documents the new QA lifecycle and `*.qa.*` adoption convention
+- [x] Workflow state schema includes `qaFixAttempts`, `qaLastVerdict`, `adoptedTests`
+- [x] QA artifact embeds test source under each finding's `## Reproduction` section
+- [x] FR-12: `executing-qa` re-QA mode overwrites `qa/test-results/QA-results-{ID}.md` (does not version per-attempt); Bats fixture asserts the artifact matches the latest run
+- [x] FR-13: no skill or script other than `addressing-qa-findings` deletes any `qa-*` file (assertion via grep over plugin scripts and a Bats negative test)
+- [x] Re-QA loop attempt = full pass over all findings + 1 re-QA execution (per FR-8); per-finding loops do NOT consume separate attempts; verified by the loop fixture
+- [x] `--qa-loop-cap <N>` flag accepted on resume from `qa-loop-exhausted`; resets counter and continues
+- [x] Full test suite green; new behaviors covered by Vitest or Bats at the canonical leaf
+- [x] End-to-end Bats fixture exercises `ISSUES-FOUND → addressing-qa-findings (fix) → re-QA → addressing-qa-findings (adopt) → finalize` without shortcuts
+- [x] FR-2: `render-qa-results.sh` emits language-aware fences (e.g. ` ```typescript `, ` ```bash `) and a path-comment header on the embedded QA test source under each finding's `## Reproduction` section
+- [x] FR-3: re-QA mode is entered iff the `qa-baseline` marker file `.sdlc/qa/.executing-qa-baseline-{ID}` is present AND at least one file matches the v1 glob set (`tests/unit/qa-*.test.ts`, `tests/unit/qa-*.test.js`, `tests/bats/qa/qa-*.bats`)
+- [x] FR-4: fix-phase pre-check fails fast on a dirty working tree with the literal message `failed | working tree dirty; commit or stash before re-running`; no auto-stash
+- [x] FR-5: on the first `adopt-qa-test.sh` exit-2 across N candidate files, the M previously-moved files remain at their `*.qa.*` paths (committed, not reverted), `adoptedTests` length equals M, and the skill returns `failed | adoption failed for <path>; <N> adopted, <M> remaining`
+- [x] FR-12: `executing-qa` commits `qa/test-results/QA-results-{ID}.md` before returning, with message `qa({ID}): record QA results` (initial) or `qa({ID}): re-record QA results after fix attempt {N}` (re-QA)
+- [x] FR-7a: `workflow-state.sh` `cmd_pause` accepts the four new pause reasons (`qa-error`, `qa-loop-exhausted`, `fix-suite-failed`, `adoption-failed`); unknown reasons still exit 1; rejection message enumerates all seven accepted values literally and is pinned by a Bats assertion
+- [x] FR-8: `--approve-advance` and `--qa-loop-cap <N>` flags accepted by `orchestrating-workflows` resume; unknown flags rejected with exit 2; passing both flags on the same invocation exits 2 with `Error: --approve-advance and --qa-loop-cap are mutually exclusive`
+
+## Completion
+
+**Status:** `Complete`
+
+**Completed:** 2026-05-10
+
+**Pull Request:** [#276](https://github.com/lwndev/lwndev-marketplace/pull/276)
