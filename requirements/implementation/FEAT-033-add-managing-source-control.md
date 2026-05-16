@@ -265,7 +265,7 @@ The work is structured in six phases: scaffold the skill + backend detection (Ph
 
 ### Phase 6: NFR-5 enforcing check + final validation
 **Feature:** [FEAT-033](../features/FEAT-033-add-managing-source-control.md) | [#120](https://github.com/lwndev/lwndev-marketplace/issues/120)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 5
 **ComplexityOverride:** opus
 
