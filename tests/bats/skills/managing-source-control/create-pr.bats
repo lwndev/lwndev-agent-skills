@@ -1,16 +1,17 @@
 #!/usr/bin/env bats
 bats_require_minimum_version 1.5.0
-# Bats fixture for managing-source-control/scripts/create-pr.sh (FEAT-033 Phase 3).
+# Bats fixture for managing-source-control/scripts/create-pr.sh (FEAT-033
+# Phases 3 + 4).
 #
-# Strategy: PATH-prepend a stub directory containing fake `git` and `gh`
-# scripts. The fake `git` honors REAL_GIT for `remote get-url origin` (so the
-# real repo metadata flows through) and stubs `rev-parse` / `push`.
+# Strategy: PATH-prepend a stub directory containing fake `git`, `gh`, and
+# `az` scripts. The fake `git` honors REAL_GIT for `remote get-url origin`
+# (so the real repo metadata flows through) and stubs `rev-parse` / `push`.
 #
-# Coverage (Phase 3 plan):
-#   1. gh stub on PATH, GitHub origin → PR URL on stdout, exit 0.
-#   2. gh NOT on PATH (GitHub origin) → [warn] line on stderr, exit 0.
-#   3. az stub on PATH, AzDO origin → stub [warn] (not-yet-implemented), exit 0.
-#   4. Unrecognized origin (e.g. gitlab) → [info] skip, exit 0.
+# Coverage:
+#   - GitHub path: success, [warn] skip on missing gh, missing auth, etc.
+#   - Azure DevOps path: success, [warn] skip on missing az, missing devops
+#     extension, missing auth, az repos pr create failure.
+#   - Unrecognized origin (e.g. gitlab) → [info] skip, exit 0.
 
 setup() {
   SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/managing-source-control/scripts" && pwd)"
@@ -105,11 +106,50 @@ esac
 STUBEOF
   chmod +x "${STUBDIR}/gh"
 
+  # Fake `az`: emits the PR URL via --query '_links.web.href' -o tsv.
+  cat > "${STUBDIR}/az" <<STUBEOF
+#!/usr/bin/env bash
+if [ "\$1" = "repos" ] && [ "\$2" = "pr" ] && [ "\$3" = "-h" ]; then
+  if [ -n "\${AZ_EXT_MISSING:-}" ]; then
+    echo "extension missing" >&2
+    exit 1
+  fi
+  echo "az repos pr help"
+  exit 0
+fi
+if [ "\$1" = "account" ] && [ "\$2" = "show" ]; then
+  if [ -n "\${AZ_NOT_AUTH:-}" ]; then
+    echo "not authenticated" >&2
+    exit 1
+  fi
+  exit 0
+fi
+if [ "\$1" = "repos" ] && [ "\$2" = "pr" ] && [ "\$3" = "create" ]; then
+  touch "${STUBDIR}/az.invoked"
+  : > "${STUBDIR}/az.args"
+  for a in "\$@"; do
+    printf '%s\n' "\$a" >> "${STUBDIR}/az.args"
+  done
+  if [ -n "\${AZ_CREATE_FAIL:-}" ]; then
+    echo "az repos pr create stub failure" >&2
+    exit 1
+  fi
+  # With --query '_links.web.href' -o tsv, az emits just the URL line.
+  echo "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo/pullrequest/77"
+  exit 0
+fi
+exit 0
+STUBEOF
+  chmod +x "${STUBDIR}/az"
+
   PATH="${STUBDIR}:${PATH}"
   export PATH
   unset GIT_PUSH_FAIL
   unset GH_FAIL
   unset GH_NOT_AUTH
+  unset AZ_EXT_MISSING
+  unset AZ_NOT_AUTH
+  unset AZ_CREATE_FAIL
   unset SDLC_SCM_BACKEND
 }
 
@@ -158,11 +198,56 @@ set_origin() {
   [ ! -f "${STUBDIR}/gh.invoked" ]
 }
 
-@test "AzDO origin → stub [warn] not-yet-implemented, exit 0" {
+@test "AzDO origin success → PR URL on stdout, az invoked with correct args" {
   set_origin "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
-  run --separate-stderr bash "$CREATE_PR" feat FEAT-033 "summary"
+  run bash "$CREATE_PR" feat FEAT-033 "managing source control"
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"[warn] Azure DevOps PR creation not yet implemented."* ]]
+  [[ "$output" == *"https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo/pullrequest/77"* ]]
+  [ -f "${STUBDIR}/az.invoked" ]
+  grep -qF -- "--source-branch" "${STUBDIR}/az.args"
+  grep -qF -- "--target-branch" "${STUBDIR}/az.args"
+  grep -qF -- "--title" "${STUBDIR}/az.args"
+  grep -qF -- "feat(FEAT-033): managing source control" "${STUBDIR}/az.args"
+  grep -qF -- "--organization" "${STUBDIR}/az.args"
+  grep -qF -- "https://dev.azure.com/contoso/" "${STUBDIR}/az.args"
+  grep -qF -- "--project" "${STUBDIR}/az.args"
+  grep -qF -- "sdlc-tools" "${STUBDIR}/az.args"
+}
+
+@test "AzDO origin: --issue-ref token rendered in description" {
+  set_origin "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
+  run bash "$CREATE_PR" feat FEAT-033 "summary" --issue-ref "AB#1234"
+  [ "$status" -eq 0 ]
+  grep -qF -- "AB#1234" "${STUBDIR}/az.args"
+}
+
+@test "AzDO origin: az absent → [warn] skip, exit 0" {
+  set_origin "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
+  rm -f "${STUBDIR}/az"
+  run --separate-stderr env PATH="${STUBDIR}:/usr/bin:/bin" bash "$CREATE_PR" feat FEAT-033 "summary"
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"[warn] Azure CLI (az) not found on PATH."* ]]
+}
+
+@test "AzDO origin: az devops extension missing → [warn] skip, exit 0" {
+  set_origin "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
+  AZ_EXT_MISSING=1 run --separate-stderr bash "$CREATE_PR" feat FEAT-033 "summary"
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"[warn] az devops extension not available"* ]]
+}
+
+@test "AzDO origin: az not logged in → [warn] skip, exit 0" {
+  set_origin "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
+  AZ_NOT_AUTH=1 run --separate-stderr bash "$CREATE_PR" feat FEAT-033 "summary"
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"[warn] Azure CLI not authenticated"* ]]
+}
+
+@test "AzDO origin: az repos pr create failure → [warn] skip, exit 0" {
+  set_origin "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
+  AZ_CREATE_FAIL=1 run --separate-stderr bash "$CREATE_PR" feat FEAT-033 "summary"
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"[warn] az repos pr create failed"* ]]
 }
 
 @test "unrecognized origin (gitlab) → [info] skip, exit 0" {

@@ -1,14 +1,19 @@
 #!/usr/bin/env bats
 bats_require_minimum_version 1.5.0
-# Bats fixture for managing-source-control/scripts/view-pr.sh (FEAT-033 Phase 3).
+# Bats fixture for managing-source-control/scripts/view-pr.sh (FEAT-033
+# Phases 3 + 4).
 #
-# Strategy: PATH-prepend stubs for `git` (pass through) and `gh` (emit fixed
-# JSON for `pr view`).
+# Strategy: PATH-prepend stubs for `git` (pass through, with fetch/diff
+# interceptors for the AzDO files-reconstruction path), `gh` (emit fixed
+# JSON for `pr view`), and `az` (emit native PR object for `pr show`).
 #
-# Coverage (Phase 3 plan):
-#   1. gh stub success → GitHub-shape JSON on stdout.
-#   2. gh absent (GitHub origin) → [warn] skip, exit 0.
-#   3. Azure DevOps stub path → [warn] not-yet-implemented, exit 0.
+# Coverage:
+#   - GitHub path: success with PR number / no PR number; missing gh; not
+#     authenticated; gh pr view failure.
+#   - Azure DevOps path: success with normalized JSON shape (FR-5); resolves
+#     PR id by branch when no arg; NFR-1 skips (missing az, missing devops
+#     extension, missing auth, az repos pr show failure).
+#   - Unrecognized origin → [info] skip.
 
 setup() {
   SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/managing-source-control/scripts" && pwd)"
@@ -21,9 +26,35 @@ setup() {
   REAL_GIT="$(command -v git)"
   "$REAL_GIT" init --quiet --initial-branch=main >/dev/null 2>&1 || "$REAL_GIT" init --quiet >/dev/null 2>&1
 
+  # Fake `git`: pass through but intercept `rev-parse --abbrev-ref HEAD`
+  # (deterministic branch name for the az-path branch lookup), `fetch`, and
+  # `diff --name-only` (file list reconstruction for the az path).
   cat > "${STUBDIR}/git" <<STUBEOF
 #!/usr/bin/env bash
-exec "${REAL_GIT}" "\$@"
+REAL_GIT="${REAL_GIT}"
+case "\$1" in
+  rev-parse)
+    if [ "\$2" = "--abbrev-ref" ] && [ "\$3" = "HEAD" ]; then
+      echo "feat/FEAT-033-managing-source-control"
+      exit 0
+    fi
+    exec "\$REAL_GIT" "\$@"
+    ;;
+  fetch)
+    exit 0
+    ;;
+  diff)
+    if [ "\$2" = "--name-only" ]; then
+      echo "a.txt"
+      echo "b.txt"
+      exit 0
+    fi
+    exec "\$REAL_GIT" "\$@"
+    ;;
+  *)
+    exec "\$REAL_GIT" "\$@"
+    ;;
+esac
 STUBEOF
   chmod +x "${STUBDIR}/git"
 
@@ -63,10 +94,61 @@ esac
 STUBEOF
   chmod +x "${STUBDIR}/gh"
 
+  # Fake `az`: stubs `repos pr -h`, `account show`, `repos pr list` (for the
+  # branch→id lookup), and `repos pr show` (native PR object).
+  cat > "${STUBDIR}/az" <<STUBEOF
+#!/usr/bin/env bash
+if [ "\$1" = "repos" ] && [ "\$2" = "pr" ] && [ "\$3" = "-h" ]; then
+  if [ -n "\${AZ_EXT_MISSING:-}" ]; then
+    echo "extension missing" >&2
+    exit 1
+  fi
+  echo "az repos pr help"
+  exit 0
+fi
+if [ "\$1" = "account" ] && [ "\$2" = "show" ]; then
+  if [ -n "\${AZ_NOT_AUTH:-}" ]; then
+    echo "not authenticated" >&2
+    exit 1
+  fi
+  exit 0
+fi
+if [ "\$1" = "repos" ] && [ "\$2" = "pr" ] && [ "\$3" = "list" ]; then
+  if [ -n "\${AZ_LIST_EMPTY:-}" ]; then
+    # Simulate jq -r '[0].pullRequestId' projection miss (returns "null").
+    echo "null"
+    exit 0
+  fi
+  echo "42"
+  exit 0
+fi
+if [ "\$1" = "repos" ] && [ "\$2" = "pr" ] && [ "\$3" = "show" ]; then
+  touch "${STUBDIR}/az.invoked"
+  : > "${STUBDIR}/az.args"
+  for a in "\$@"; do
+    printf '%s\n' "\$a" >> "${STUBDIR}/az.args"
+  done
+  if [ -n "\${AZ_SHOW_FAIL:-}" ]; then
+    echo "az repos pr show stub failure" >&2
+    exit 1
+  fi
+  cat <<'JSONEOF'
+{"pullRequestId":42,"title":"feat: example AzDO PR","status":"active","mergeStatus":"succeeded","_links":{"web":{"href":"https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo/pullrequest/42"}},"targetRefName":"refs/heads/main"}
+JSONEOF
+  exit 0
+fi
+exit 0
+STUBEOF
+  chmod +x "${STUBDIR}/az"
+
   PATH="${STUBDIR}:${PATH}"
   export PATH
   unset GH_VIEW_FAIL
   unset GH_NOT_AUTH
+  unset AZ_EXT_MISSING
+  unset AZ_NOT_AUTH
+  unset AZ_SHOW_FAIL
+  unset AZ_LIST_EMPTY
   unset SDLC_SCM_BACKEND
 }
 
@@ -128,11 +210,65 @@ set_origin() {
   [[ "$stderr" == *"[warn] gh pr view failed"* ]]
 }
 
-@test "Azure DevOps origin → [warn] not-yet-implemented, exit 0" {
+@test "Azure DevOps origin (with PR number) → normalized JSON on stdout (FR-5 transform)" {
   set_origin "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
-  run --separate-stderr bash "$VIEW_PR" 42
+  run bash "$VIEW_PR" 42
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"[warn] Azure DevOps PR view not yet implemented."* ]]
+  [[ "$output" == *'"number":42'* ]]
+  [[ "$output" == *'"title":"feat: example AzDO PR"'* ]]
+  [[ "$output" == *'"state":"OPEN"'* ]]
+  [[ "$output" == *'"mergeable":"MERGEABLE"'* ]]
+  [[ "$output" == *'"url":"https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo/pullrequest/42"'* ]]
+  # files reconstructed from `git diff --name-only origin/main...HEAD` stub.
+  [[ "$output" == *'"path":"a.txt"'* ]]
+  [[ "$output" == *'"path":"b.txt"'* ]]
+}
+
+@test "Azure DevOps origin (no PR number) → resolves via branch lookup, normalized JSON" {
+  set_origin "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
+  run bash "$VIEW_PR"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"number":42'* ]]
+  # Show invocation should have happened with --id 42 from the list lookup.
+  [ -f "${STUBDIR}/az.invoked" ]
+  grep -qF -- "--id" "${STUBDIR}/az.args"
+  grep -qF -- "42" "${STUBDIR}/az.args"
+}
+
+@test "Azure DevOps origin (no PR number, no open PR) → [warn] skip, exit 0" {
+  set_origin "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
+  AZ_LIST_EMPTY=1 run --separate-stderr bash "$VIEW_PR"
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"[warn] no open PR for current branch"* ]]
+}
+
+@test "Azure DevOps origin: az absent → [warn] skip, exit 0" {
+  set_origin "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
+  rm -f "${STUBDIR}/az"
+  run --separate-stderr env PATH="${STUBDIR}:/usr/bin:/bin" bash "$VIEW_PR" 42
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"[warn] Azure CLI (az) not found on PATH."* ]]
+}
+
+@test "Azure DevOps origin: az devops extension missing → [warn] skip, exit 0" {
+  set_origin "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
+  AZ_EXT_MISSING=1 run --separate-stderr bash "$VIEW_PR" 42
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"[warn] az devops extension not available"* ]]
+}
+
+@test "Azure DevOps origin: az not logged in → [warn] skip, exit 0" {
+  set_origin "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
+  AZ_NOT_AUTH=1 run --separate-stderr bash "$VIEW_PR" 42
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"[warn] Azure CLI not authenticated"* ]]
+}
+
+@test "Azure DevOps origin: az repos pr show failure → [warn] skip, exit 0" {
+  set_origin "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
+  AZ_SHOW_FAIL=1 run --separate-stderr bash "$VIEW_PR" 42
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"[warn] az repos pr show failed"* ]]
 }
 
 @test "unrecognized origin → [info] skip, exit 0" {

@@ -163,7 +163,7 @@ The work is structured in six phases: scaffold the skill + backend detection (Ph
 
 ### Phase 4: Remaining PR dispatchers + Azure DevOps path
 **Feature:** [FEAT-033](../features/FEAT-033-add-managing-source-control.md) | [#120](https://github.com/lwndev/lwndev-marketplace/issues/120)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 3
 **ComplexityOverride:** opus
 
@@ -207,12 +207,12 @@ The work is structured in six phases: scaffold the skill + backend detection (Ph
 8. Run `npm test` and `npx bats tests/bats/skills/managing-source-control/`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/merge-pr.sh` — GitHub + AzDO paths; all NFR-1 skips
-- [ ] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/list-pr.sh` — GitHub + AzDO paths; normalized JSON shape
-- [ ] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/pr-diff.sh` — GitHub + AzDO paths; pre-fetch on AzDO path
-- [ ] `create-pr.sh` and `view-pr.sh` AzDO stubs replaced with real `az` implementations
-- [ ] `tests/bats/skills/managing-source-control/merge-pr.bats`, `list-pr.bats`, `pr-diff.bats` — all matrix cases pass
-- [ ] Updated `create-pr.bats`, `view-pr.bats` with AzDO cases
+- [x] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/merge-pr.sh` — GitHub + AzDO paths; all NFR-1 skips
+- [x] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/list-pr.sh` — GitHub + AzDO paths; normalized JSON shape
+- [x] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/pr-diff.sh` — GitHub + AzDO paths; pre-fetch on AzDO path
+- [x] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/create-pr.sh` and `plugins/lwndev-sdlc/skills/managing-source-control/scripts/view-pr.sh` AzDO stubs replaced with real `az` implementations (plus `plugins/lwndev-sdlc/skills/managing-source-control/scripts/az-shape-transform.sh` JSON-shape helper sourced by `view-pr.sh` and `list-pr.sh`; covered by `tests/bats/skills/managing-source-control/az-shape-transform.bats`)
+- [x] `tests/bats/skills/managing-source-control/merge-pr.bats`, `list-pr.bats`, `pr-diff.bats` — all matrix cases pass
+- [x] Updated `create-pr.bats`, `view-pr.bats` with AzDO cases
 
 ---
 

@@ -14,7 +14,19 @@
 #        (still authoritative for GitHub; documented in references/pr-templates-github.md).
 #      - Substitute placeholders ${TYPE}, ${ID}, ${SUMMARY}, ${CLOSES_LINE}, ${GENERATED_WITH}.
 #      - `gh pr create --title <title> --body <body>` → URL on stdout, exit 0.
-#   4. Azure DevOps path (Phase 3 stub): `[warn] Azure DevOps PR creation not yet implemented.` exit 0.
+#   4. Azure DevOps path (FEAT-033 / Phase 4):
+#      - NFR-1 skips: `az` missing, `az devops` extension missing, `az` not
+#        authenticated, network/non-zero CLI exit → `[warn]` + exit 0.
+#      - Resolve organization + project + repo from `backend-detect.sh`.
+#      - Push current branch (always — parity with the gh path).
+#      - Discover the default base branch via `git symbolic-ref`-style logic
+#        (fall back to `main`).
+#      - `az repos pr create --source-branch <branch> --target-branch <base>
+#         --title <title> --description <body>
+#         --organization https://dev.azure.com/<org>/ --project <project>
+#         --repository <repo>`.
+#      - Extract `_links.web.href` via `--query` for parity with `gh`'s URL
+#        stdout.
 #   5. Unrecognized / null backend: `[info] No recognized SCM backend detected from origin.` exit 0.
 #
 # `--closes <issueRef>` is the GitHub auto-close token (`Closes #N`). The token
@@ -114,9 +126,8 @@ if [ "$closes_set" -eq 1 ]; then
   fi
 fi
 
-# Suppress unused-variable warning when issue_ref is set but not used (Phase 3
-# stub path doesn't consume it yet — Phase 4 will). Reference the variable so
-# `set -u` does not bite if a later edit reads it.
+# Ensure issue_ref / issue_ref_set are always defined for `set -u` safety
+# (the GitHub path does not consume them; the AzDO path optionally does).
 : "${issue_ref:=}"
 : "${issue_ref_set:=0}"
 
@@ -127,12 +138,27 @@ DETECT="${SCRIPT_DIR}/backend-detect.sh"
 detect_out="$(bash "$DETECT" 2>/dev/null || true)"
 
 backend=""
+az_org=""
+az_project=""
+az_repo=""
 if [ -n "$detect_out" ] && [ "$detect_out" != "null" ]; then
   if command -v jq >/dev/null 2>&1; then
     backend="$(printf '%s' "$detect_out" | jq -r '.backend // ""' 2>/dev/null || true)"
+    az_org="$(printf '%s' "$detect_out" | jq -r '.organization // ""' 2>/dev/null || true)"
+    az_project="$(printf '%s' "$detect_out" | jq -r '.project // ""' 2>/dev/null || true)"
+    az_repo="$(printf '%s' "$detect_out" | jq -r '.repo // ""' 2>/dev/null || true)"
   else
     if [[ "$detect_out" =~ \"backend\":\"([^\"]+)\" ]]; then
       backend="${BASH_REMATCH[1]}"
+    fi
+    if [[ "$detect_out" =~ \"organization\":\"([^\"]+)\" ]]; then
+      az_org="${BASH_REMATCH[1]}"
+    fi
+    if [[ "$detect_out" =~ \"project\":\"([^\"]+)\" ]]; then
+      az_project="${BASH_REMATCH[1]}"
+    fi
+    if [[ "$detect_out" =~ \"repo\":\"([^\"]+)\" ]]; then
+      az_repo="${BASH_REMATCH[1]}"
     fi
   fi
 fi
@@ -192,8 +218,82 @@ case "$backend" in
     exit 0
     ;;
   azdo)
-    # Phase 3 stub — Phase 4 implements the full `az repos pr create` path.
-    echo "[warn] Azure DevOps PR creation not yet implemented." >&2
+    # NFR-1: graceful skip paths.
+    if ! command -v az >/dev/null 2>&1; then
+      echo "[warn] Azure CLI (az) not found on PATH." >&2
+      exit 0
+    fi
+    if ! az repos pr -h >/dev/null 2>&1; then
+      echo "[warn] az devops extension not available -- run az extension add --name azure-devops." >&2
+      exit 0
+    fi
+    if ! az account show >/dev/null 2>&1; then
+      echo "[warn] Azure CLI not authenticated -- run az login (Azure AD) or az devops login --pat <token>." >&2
+      exit 0
+    fi
+
+    branch="$(git rev-parse --abbrev-ref HEAD)"
+    if ! git push -u origin "$branch"; then
+      exit 1
+    fi
+
+    # Discover base branch. Prefer origin/HEAD; fall back to "main".
+    base_branch="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||' || true)"
+    if [ -z "$base_branch" ]; then
+      base_branch="main"
+    fi
+
+    title="${type}(${id}): ${summary}"
+
+    # Build the AzDO body — preserve Summary / Test Plan / Changes section
+    # structure documented in references/pr-templates-azdo.md.
+    if [ "$issue_ref_set" -eq 1 ] && [ -n "$issue_ref" ]; then
+      issue_token="${issue_ref}"
+    elif [ "$closes_set" -eq 1 ]; then
+      issue_token="${closes}"
+    else
+      issue_token=""
+    fi
+
+    body="## Summary"
+    body="${body}"$'\n\n'"${summary}"
+    if [ -n "$issue_token" ]; then
+      body="${body}"$'\n\n'"Related: ${issue_token}"
+    fi
+    body="${body}"$'\n\n'"## Test Plan"$'\n\n'"- Verify ${type}(${id}) behaves as documented."
+    body="${body}"$'\n\n'"## Changes"$'\n\n'"See diff."
+    body="${body}"$'\n\n'"🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+
+    az_org_url=""
+    if [ -n "$az_org" ]; then
+      az_org_url="https://dev.azure.com/${az_org}/"
+    fi
+
+    az_stderr_file="$(mktemp)"
+    set +e
+    az_out="$(az repos pr create \
+      --source-branch "$branch" \
+      --target-branch "$base_branch" \
+      --title "$title" \
+      --description "$body" \
+      --query '_links.web.href' \
+      -o tsv \
+      ${az_org_url:+--organization "$az_org_url"} \
+      ${az_project:+--project "$az_project"} \
+      ${az_repo:+--repository "$az_repo"} \
+      2>"$az_stderr_file")"
+    rc=$?
+    set -e
+    if [ "$rc" -ne 0 ]; then
+      az_err="$(head -n 1 "$az_stderr_file" 2>/dev/null || true)"
+      rm -f "$az_stderr_file"
+      echo "[warn] az repos pr create failed: ${az_err}" >&2
+      exit 0
+    fi
+    rm -f "$az_stderr_file"
+
+    # Emit the URL on stdout for parity with the gh path.
+    printf '%s\n' "$az_out"
     exit 0
     ;;
   "")
