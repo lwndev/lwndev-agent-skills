@@ -265,7 +265,7 @@ The work is structured in six phases: scaffold the skill + backend detection (Ph
 
 ### Phase 6: NFR-5 enforcing check + final validation
 **Feature:** [FEAT-033](../features/FEAT-033-add-managing-source-control.md) | [#120](https://github.com/lwndev/lwndev-marketplace/issues/120)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 5
 **ComplexityOverride:** opus
 
@@ -292,12 +292,12 @@ The work is structured in six phases: scaffold the skill + backend detection (Ph
 6. Run `npm run lint` — no lint errors.
 
 #### Deliverables
-- [ ] `scripts/validate-no-inline-scm.ts` — exits 1 on inline `gh pr`/`gh issue`/`az repos`/`az boards` outside allow-list
-- [ ] `package.json` — `validate` script includes `validate-no-inline-scm.ts`
-- [ ] `tests/unit/validate-no-inline-scm.test.ts` — 4 cases pass
-- [ ] `npm run validate` passes
-- [ ] `npm test` passes
-- [ ] `npm run lint` passes
+- [x] `scripts/validate-no-inline-scm.ts` — exits 1 on inline `gh pr`/`gh issue`/`az repos`/`az boards` outside allow-list
+- [x] `package.json` — `validate` script includes `validate-no-inline-scm.ts`
+- [x] `tests/unit/validate-no-inline-scm.test.ts` — 4 cases pass
+- [x] `npm run validate` passes
+- [x] `npm test` passes
+- [x] `npm run lint` passes
 
 
 ## Shared Infrastructure
