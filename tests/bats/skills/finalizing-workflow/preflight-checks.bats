@@ -213,20 +213,35 @@ EOF
 }
 
 @test "build-health gate: shared script unresolvable → exit 1 with 'build-health gate unavailable'" {
-  # Copy preflight-checks.sh to a deeply-nested isolated tmp dir so
-  # PREFLIGHT_DIR/../../../scripts/verify-build-health.sh resolves to a path
-  # inside the freshly-created tmp tree (no verify-build-health.sh present).
-  # Nesting beyond the typical 3-deep fallback prevents the escape into any
-  # ambient /scripts/ dir that might exist on CI runners. CLAUDE_PLUGIN_ROOT
-  # must also be unset (or point to a path without scripts/verify-build-health.sh)
-  # for the gate to fail.
+  # Copy preflight-checks.sh into an isolated tmp dir, then point
+  # CLAUDE_PLUGIN_ROOT at a non-existent path to fail the first branch of
+  # the gate's lookup. To force the second (relative `../../../scripts/`)
+  # branch to fail, we nest the copy deeply enough that the 3-up traversal
+  # lands inside a freshly-created tmp subtree we control.
+  #
+  # On CI the previous shallow `mktemp -d` layout let the fallback escape
+  # into an ambient `scripts/` dir (the runner ships verify-build-health.sh
+  # via the repo checkout). Nesting 4 deep keeps the resolved path inside
+  # ${TMPROOT}, which we then plant with an empty `scripts/` dir so the
+  # `[ -f ... ]` check definitively returns false.
   TMPROOT="$(mktemp -d)"
   ISOLATED="${TMPROOT}/a/b/c/d"
   mkdir -p "$ISOLATED"
+  # Plant an empty scripts/ at the fallback target so the bracket test
+  # cannot pick up an unrelated scripts/ from outside the tmp tree.
+  mkdir -p "${TMPROOT}/scripts"
   cp "$PREFLIGHT" "${ISOLATED}/preflight-checks.sh"
   write_git_stub "" "feat/FEAT-022-foo"
   write_gh_stub "ok"
-  run env -u CLAUDE_PLUGIN_ROOT bash "${ISOLATED}/preflight-checks.sh"
+  run env CLAUDE_PLUGIN_ROOT="${TMPROOT}/missing" bash "${ISOLATED}/preflight-checks.sh"
+  if ! [[ "$output" == *'build-health gate unavailable'* ]]; then
+    # Diagnostic for CI: surface the path resolution context so future
+    # editors can see why the gate didn't trip.
+    echo "DIAG TMPROOT=${TMPROOT}" >&2
+    echo "DIAG ISOLATED=${ISOLATED}" >&2
+    echo "DIAG fallback=${TMPROOT}/scripts/verify-build-health.sh exists? $([ -f "${TMPROOT}/scripts/verify-build-health.sh" ] && echo yes || echo no)" >&2
+    echo "DIAG output=${output}" >&2
+  fi
   [ "$status" -eq 1 ]
   [[ "$output" == *'"status":"abort"'* ]]
   [[ "$output" == *'build-health gate unavailable'* ]]
