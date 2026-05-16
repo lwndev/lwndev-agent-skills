@@ -192,7 +192,7 @@ case "$backend" in
       git fetch origin "$base_branch" >/dev/null 2>&1 || true
       files_raw="$(git diff --name-only "origin/${base_branch}...HEAD" 2>/dev/null || true)"
       if [ -n "$files_raw" ]; then
-        files_json="$(printf '%s\n' "$files_raw" | jq -Rc '[ inputs | { path: . } ]' 2>/dev/null || true)"
+        files_json="$(printf '%s\n' "$files_raw" | jq -Rcn '[ inputs | { path: . } ]' 2>/dev/null || true)"
         if [ -z "$files_json" ]; then
           files_json="[]"
         fi

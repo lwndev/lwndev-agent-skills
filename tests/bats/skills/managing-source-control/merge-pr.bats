@@ -88,6 +88,17 @@ exit 0
 STUBEOF
   chmod +x "${STUBDIR}/az"
 
+  # Symlink the system binaries the dispatcher needs so the "gh/az NOT on
+  # PATH" tests below can use PATH="${STUBDIR}" without losing access to
+  # bash, dirname, jq. CI runners have gh/az in /usr/bin which leaks through
+  # PATH="${STUBDIR}:/usr/bin:/bin" and defeats the absent-CLI assertion.
+  for _tool in bash dirname jq; do
+    _real="$(command -v "$_tool" 2>/dev/null || true)"
+    if [ -n "$_real" ]; then
+      ln -sf "$_real" "${STUBDIR}/${_tool}"
+    fi
+  done
+
   PATH="${STUBDIR}:${PATH}"
   export PATH
   unset GH_MERGE_FAIL GH_NOT_AUTH AZ_EXT_MISSING AZ_NOT_AUTH AZ_UPDATE_FAIL SDLC_SCM_BACKEND
@@ -124,7 +135,7 @@ set_origin() {
 @test "gh absent (GitHub origin) → [warn] skip, exit 0" {
   set_origin "https://github.com/lwndev/lwndev-marketplace.git"
   rm -f "${STUBDIR}/gh"
-  run --separate-stderr env PATH="${STUBDIR}:/usr/bin:/bin" bash "$MERGE_PR" 42
+  run --separate-stderr env PATH="${STUBDIR}" bash "$MERGE_PR" 42
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"[warn] GitHub CLI (gh) not found on PATH."* ]]
 }
@@ -158,7 +169,7 @@ set_origin() {
 @test "az absent (AzDO origin) → [warn] skip, exit 0" {
   set_origin "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
   rm -f "${STUBDIR}/az"
-  run --separate-stderr env PATH="${STUBDIR}:/usr/bin:/bin" bash "$MERGE_PR" 42
+  run --separate-stderr env PATH="${STUBDIR}" bash "$MERGE_PR" 42
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"[warn] Azure CLI (az) not found on PATH."* ]]
 }

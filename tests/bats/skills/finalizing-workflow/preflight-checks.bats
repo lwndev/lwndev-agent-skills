@@ -213,11 +213,16 @@ EOF
 }
 
 @test "build-health gate: shared script unresolvable → exit 1 with 'build-health gate unavailable'" {
-  # Copy preflight-checks.sh to an isolated tmp dir so PREFLIGHT_DIR's
-  # ../../../scripts relative fallback resolves to a directory without
-  # verify-build-health.sh. CLAUDE_PLUGIN_ROOT must also be unset (or point
-  # to a path without scripts/verify-build-health.sh) for the gate to fail.
-  ISOLATED="$(mktemp -d)"
+  # Copy preflight-checks.sh to a deeply-nested isolated tmp dir so
+  # PREFLIGHT_DIR/../../../scripts/verify-build-health.sh resolves to a path
+  # inside the freshly-created tmp tree (no verify-build-health.sh present).
+  # Nesting beyond the typical 3-deep fallback prevents the escape into any
+  # ambient /scripts/ dir that might exist on CI runners. CLAUDE_PLUGIN_ROOT
+  # must also be unset (or point to a path without scripts/verify-build-health.sh)
+  # for the gate to fail.
+  TMPROOT="$(mktemp -d)"
+  ISOLATED="${TMPROOT}/a/b/c/d"
+  mkdir -p "$ISOLATED"
   cp "$PREFLIGHT" "${ISOLATED}/preflight-checks.sh"
   write_git_stub "" "feat/FEAT-022-foo"
   write_gh_stub "ok"
@@ -225,7 +230,7 @@ EOF
   [ "$status" -eq 1 ]
   [[ "$output" == *'"status":"abort"'* ]]
   [[ "$output" == *'build-health gate unavailable'* ]]
-  rm -rf "$ISOLATED"
+  rm -rf "$TMPROOT"
 }
 
 @test "gh missing on PATH → exit 1 with missing-gh stderr" {
