@@ -16,7 +16,7 @@ The work is structured in six phases: scaffold the skill + backend detection (Ph
 
 ### Phase 1: Scaffold skill + backend-detect
 **Feature:** [FEAT-033](../features/FEAT-033-add-managing-source-control.md) | [#120](https://github.com/lwndev/lwndev-marketplace/issues/120)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** None
 **ComplexityOverride:** opus
 
@@ -72,7 +72,7 @@ The work is structured in six phases: scaffold the skill + backend detection (Ph
 
 ### Phase 2: Move backend-agnostic scripts
 **Feature:** [FEAT-033](../features/FEAT-033-add-managing-source-control.md) | [#120](https://github.com/lwndev/lwndev-marketplace/issues/120)
-**Status:** Pending
+**Status:** ✅ Complete
 **Depends on:** Phase 1
 **ComplexityOverride:** opus
 
@@ -97,11 +97,11 @@ The work is structured in six phases: scaffold the skill + backend detection (Ph
 8. Run `npm test` (full suite) and `npx bats tests/bats/skills/` — all must remain green.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/ensure-branch.sh` (moved from `plugins/lwndev-sdlc/scripts/`)
-- [ ] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/build-branch-name.sh` (moved)
-- [ ] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/commit-work.sh` (moved)
-- [ ] `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md`, `implementing-plan-phases/SKILL.md` — path references updated to new skill location
-- [ ] Existing tests remain green post-move
+- [x] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/ensure-branch.sh` (moved from `plugins/lwndev-sdlc/scripts/`)
+- [x] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/build-branch-name.sh` (moved)
+- [x] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/commit-work.sh` (moved)
+- [x] `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md`, `implementing-plan-phases/SKILL.md` — path references updated to new skill location
+- [x] Existing tests remain green post-move
 
 ---
 

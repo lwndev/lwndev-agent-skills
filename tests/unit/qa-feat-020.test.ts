@@ -31,16 +31,21 @@ import { spawnSync, spawn } from 'node:child_process';
 
 const REPO_ROOT = process.cwd();
 const SCRIPTS = join(REPO_ROOT, 'plugins/lwndev-sdlc/scripts');
+// FEAT-033 Phase 2: build-branch-name.sh, ensure-branch.sh, and commit-work.sh
+// were moved into the managing-source-control skill. slugify.sh stays at the
+// plugin-root scripts/ dir; build-branch-name.sh resolves it via CLAUDE_PLUGIN_ROOT
+// or a relative ../../../scripts/ fallback.
+const MSC_SCRIPTS = join(REPO_ROOT, 'plugins/lwndev-sdlc/skills/managing-source-control/scripts');
 
 const SH = {
   nextId: join(SCRIPTS, 'next-id.sh'),
   slugify: join(SCRIPTS, 'slugify.sh'),
   resolveDoc: join(SCRIPTS, 'resolve-requirement-doc.sh'),
-  buildBranch: join(SCRIPTS, 'build-branch-name.sh'),
-  ensureBranch: join(SCRIPTS, 'ensure-branch.sh'),
+  buildBranch: join(MSC_SCRIPTS, 'build-branch-name.sh'),
+  ensureBranch: join(MSC_SCRIPTS, 'ensure-branch.sh'),
   checkAc: join(SCRIPTS, 'check-acceptance.sh'),
   flipAll: join(SCRIPTS, 'checkbox-flip-all.sh'),
-  commitWork: join(SCRIPTS, 'commit-work.sh'),
+  commitWork: join(MSC_SCRIPTS, 'commit-work.sh'),
   createPr: join(SCRIPTS, 'create-pr.sh'),
   branchParse: join(SCRIPTS, 'branch-id-parse.sh'),
 };
@@ -455,11 +460,15 @@ describe('[QA FEAT-020] Cross-cutting: shell-metacharacter safety in create-pr.s
 });
 
 describe('[QA FEAT-020] Cross-cutting: ${BASH_SOURCE%/*} sibling resolution under symlink', () => {
-  it('build-branch-name.sh finds slugify.sh when scripts/ is reached via symlink', () => {
+  it('build-branch-name.sh finds slugify.sh when its scripts/ dir is reached via symlink', () => {
+    // FEAT-033 Phase 2: build-branch-name.sh moved into the managing-source-control
+    // skill. slugify.sh still lives at the plugin-root scripts/ dir. The script
+    // resolves slugify via the BASH_SOURCE-relative fallback (../../../scripts/),
+    // so the symlink alias must preserve the path-walk-up to the real plugin tree.
     const tmp = makeTmp();
     try {
       const linkDir = join(tmp, 'alias');
-      symlinkSync(SCRIPTS, linkDir);
+      symlinkSync(MSC_SCRIPTS, linkDir);
       const linkedBuild = join(linkDir, 'build-branch-name.sh');
       const res = runBash(linkedBuild, ['feat', 'FEAT-001', 'sample title here']);
       expect(res.status).toBe(0);

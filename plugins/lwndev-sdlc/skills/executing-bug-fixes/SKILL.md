@@ -41,8 +41,8 @@ Execute bug fix workflows with root cause driven execution from branch creation 
 4. Create the git branch. Build the name and ensure checkout with:
 
    ```bash
-   branch=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" fix "<BUG-NNN>" "<2-4 word description>")
-   bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-branch.sh" "$branch"
+   branch=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/build-branch-name.sh" fix "<BUG-NNN>" "<2-4 word description>")
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/ensure-branch.sh" "$branch"
    ```
 
    `build-branch-name.sh` calls `slugify.sh` internally (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<description>"`) — handles lowercasing, punctuation stripping, stopword removal (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), and the 4-token cap. Exit codes: `build-branch-name.sh` returns `1` on empty slug (ask for a more descriptive title) and `2` on invalid type. `ensure-branch.sh` returns `0` on success, `2` on missing arg, `3` on dirty working tree (stash or commit first).
@@ -57,7 +57,7 @@ Execute bug fix workflows with root cause driven execution from branch creation 
 7. Commit changes with:
 
    ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/scripts/commit-work.sh" fix <category> "<description>"
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/commit-work.sh" fix <category> "<description>"
    ```
 
    **The script does not stage files** — run `git add <paths>` first. It runs `git commit -m "fix(<category>): <description>"` and prints the short SHA on success. Exit codes: `0` on success (SHA on stdout); `1` on commit failure (git stderr passes through); `2` on missing/invalid type arg.
@@ -160,7 +160,7 @@ If a new root cause surfaces during execution:
 
 ## Branch Naming
 
-Format: `fix/BUG-XXX-{2-4-word-description}`. Always assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" fix "<BUG-NNN>" "<description>"` (see Quick Start step 4) — the script applies slugify normalization uniformly.
+Format: `fix/BUG-XXX-{2-4-word-description}`. Always assemble via `bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/build-branch-name.sh" fix "<BUG-NNN>" "<description>"` (see Quick Start step 4) — the script applies slugify normalization uniformly.
 
 - Uses Bug ID (not GitHub issue number) for consistent naming
 - Keep the description brief but descriptive (2-4 words)
@@ -172,7 +172,7 @@ Examples:
 
 ## Commit Message Format
 
-Format: `fix(category): brief description`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/commit-work.sh" fix <category> "<description>"` (see Quick Start step 7). **Callers must `git add` relevant paths before invoking** — the script does not auto-stage.
+Format: `fix(category): brief description`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/commit-work.sh" fix <category> "<description>"` (see Quick Start step 7). **Callers must `git add` relevant paths before invoking** — the script does not auto-stage.
 
 | Category | Use When |
 |----------|----------|

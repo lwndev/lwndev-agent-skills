@@ -40,8 +40,8 @@ Execute chore task workflows with systematic tracking from branch creation throu
 3. Create the git branch. Build the name and ensure checkout with:
 
    ```bash
-   branch=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" chore "<CHORE-NNN>" "<2-4 word description>")
-   bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-branch.sh" "$branch"
+   branch=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/build-branch-name.sh" chore "<CHORE-NNN>" "<2-4 word description>")
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/ensure-branch.sh" "$branch"
    ```
 
    `build-branch-name.sh` calls `slugify.sh` internally — lowercasing, punctuation stripping, stopword removal (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), 4-token cap. Exit codes: `build-branch-name.sh` returns `1` on empty slug (ask for a more descriptive title), `2` on invalid type. `ensure-branch.sh` returns `0` on success, `2` on missing arg, `3` on dirty working tree (stash or commit first).
@@ -56,7 +56,7 @@ Execute chore task workflows with systematic tracking from branch creation throu
 6. Commit changes with:
 
    ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/scripts/commit-work.sh" chore <category> "<description>"
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/commit-work.sh" chore <category> "<description>"
    ```
 
    **The script does not stage files** — run `git add <paths>` first. Runs `git commit -m "chore(<category>): <description>"` and prints the short SHA. Exit codes: `0` on success (SHA on stdout); `1` on commit failure (git stderr passes through); `2` on missing/invalid type arg.
@@ -137,7 +137,7 @@ See [references/workflow-details.md](references/workflow-details.md) for detaile
 
 ## Branch Naming
 
-Format: `chore/CHORE-XXX-{2-4-word-description}`. Always assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" chore "<CHORE-NNN>" "<description>"` (see Quick Start step 3) — the script applies slugify normalization uniformly.
+Format: `chore/CHORE-XXX-{2-4-word-description}`. Always assemble via `bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/build-branch-name.sh" chore "<CHORE-NNN>" "<description>"` (see Quick Start step 3) — the script applies slugify normalization uniformly.
 
 - Uses Chore ID (not GitHub issue number) for consistent naming
 - Brief but descriptive (2-4 words)
@@ -149,7 +149,7 @@ Examples:
 
 ## Commit Message Format
 
-Format: `chore(category): brief description`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/commit-work.sh" chore <category> "<description>"` (Quick Start step 6). **Callers must `git add` relevant paths before invoking** — the script does not auto-stage.
+Format: `chore(category): brief description`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/commit-work.sh" chore <category> "<description>"` (Quick Start step 6). **Callers must `git add` relevant paths before invoking** — the script does not auto-stage.
 
 Categories: `dependencies`, `documentation`, `refactoring`, `configuration`, `cleanup`
 

@@ -75,8 +75,8 @@ git checkout -b feat/{Feature ID}-{2-3-word-summary}
 Assemble the name via `build-branch-name.sh` and create/switch with `ensure-branch.sh`:
 
 ```bash
-branch=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<summary>")
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-branch.sh" "$branch"
+branch=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<summary>")
+bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/ensure-branch.sh" "$branch"
 ```
 
 **Naming guidelines:**

@@ -5,7 +5,7 @@
 # so no branch operations touch the marketplace repo itself.
 
 setup() {
-  SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../plugins/lwndev-sdlc/scripts" && pwd)"
+  SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/managing-source-control/scripts" && pwd)"
   ENSURE="${SCRIPT_DIR}/ensure-branch.sh"
   TMPDIR_TEST="$(mktemp -d)"
   cd "$TMPDIR_TEST"

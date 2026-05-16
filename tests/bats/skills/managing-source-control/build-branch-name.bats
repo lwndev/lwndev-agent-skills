@@ -2,7 +2,7 @@
 # Bats fixture for build-branch-name.sh (FR-4).
 
 setup() {
-  SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../plugins/lwndev-sdlc/scripts" && pwd)"
+  SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/managing-source-control/scripts" && pwd)"
   BUILD="${SCRIPT_DIR}/build-branch-name.sh"
 }
 

@@ -6,7 +6,7 @@
 # missing args (exit 2), commit-message format verified via git log.
 
 setup() {
-  SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../plugins/lwndev-sdlc/scripts" && pwd)"
+  SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/managing-source-control/scripts" && pwd)"
   COMMIT="${SCRIPT_DIR}/commit-work.sh"
   TMPDIR_TEST="$(mktemp -d)"
   cd "$TMPDIR_TEST"

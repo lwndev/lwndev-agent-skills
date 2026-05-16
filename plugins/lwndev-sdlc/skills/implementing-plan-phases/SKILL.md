@@ -36,8 +36,8 @@ Script paths below are relative to `${CLAUDE_PLUGIN_ROOT}/skills/implementing-pl
 4. Create the feature branch (if not already on it):
 
    ```bash
-   branch=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<2-3 word summary>")
-   bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-branch.sh" "$branch"
+   branch=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<2-3 word summary>")
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/ensure-branch.sh" "$branch"
    ```
 
    `build-branch-name.sh`: exit `1` = empty slug (re-prompt for a more descriptive summary); `2` = invalid type. `ensure-branch.sh`: `0` on success (`on <branch>` / `switched to <branch>` / `created <branch>`); `2` missing arg; `3` dirty tree (stash or commit first, then retry).
@@ -126,7 +126,7 @@ Plans use `### Phase N: <name>` headings with a `**Status:**` line (`Pending` / 
 
 ## Branch Naming
 
-Format: `feat/{Feature ID}-{2-3-word-summary}`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<summary>"` (see Step 4) rather than hand-kebabing. Examples: `feat/FEAT-001-scaffold-skill-command`, `feat/FEAT-002-validate-skill-command`, `feat/FEAT-007-chore-task-skill`.
+Format: `feat/{Feature ID}-{2-3-word-summary}`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<summary>"` (see Step 4) rather than hand-kebabing. Examples: `feat/FEAT-001-scaffold-skill-command`, `feat/FEAT-002-validate-skill-command`, `feat/FEAT-007-chore-task-skill`.
 
 ## Verification
 
