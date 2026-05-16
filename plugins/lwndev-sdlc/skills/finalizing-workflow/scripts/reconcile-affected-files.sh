@@ -5,8 +5,10 @@
 # Usage: reconcile-affected-files.sh <doc-path> <prNumber>
 #
 # Behavior:
-#   - Fetches PR file list via `gh pr view <prNumber> --json files --jq
-#     '.files[].path' | sort`. On `gh` failure: exit 1, stderr
+#   - Fetches PR file list via the managing-source-control dispatcher
+#     (`view-pr.sh <prNumber>`) and extracts `.files[].path` from the
+#     normalized JSON (NFR-3). On dispatcher failure or graceful-skip
+#     ([warn]/[info]): exit 1, stderr
 #     `[warn] reconcile-affected-files: gh failure — <first line>`, no stdout.
 #   - If `## Affected Files` section is absent (real, unfenced): exit 0,
 #     stdout `0 0`, no diff.
@@ -55,17 +57,46 @@ if [ ! -r "$doc" ]; then
   exit 2
 fi
 
-# Fetch PR file list.
+# Fetch PR file list via the managing-source-control dispatcher.
 gh_stderr_file="$(mktemp)"
 cleanup() {
   rm -f "${gh_stderr_file:-}" "${tmpfile:-}" "${new_bullets_file:-}"
 }
 trap cleanup EXIT
 
-if ! pr_files="$(gh pr view "$pr_number_arg" --json files --jq '.files[].path' 2>"$gh_stderr_file" | LC_ALL=C sort)"; then
+# Resolve view-pr.sh dispatcher path (FEAT-033 FR-4).
+RECONCILE_SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/view-pr.sh" ]; then
+  VIEW_PR="${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/view-pr.sh"
+elif [ -f "${RECONCILE_SCRIPT_DIR}/../../managing-source-control/scripts/view-pr.sh" ]; then
+  VIEW_PR="$(cd "${RECONCILE_SCRIPT_DIR}/../../managing-source-control/scripts" && pwd)/view-pr.sh"
+else
+  echo "[warn] reconcile-affected-files: view-pr.sh dispatcher not found" >&2
+  exit 1
+fi
+
+set +e
+view_json="$(bash "$VIEW_PR" "$pr_number_arg" 2>"$gh_stderr_file")"
+view_rc=$?
+set -e
+
+# Treat dispatcher non-zero exit, empty output, or [warn]/[info] stderr lines
+# as failure: reconcile cannot proceed without a real PR file list.
+if [ "$view_rc" -ne 0 ] || [ -z "$view_json" ] || grep -Eq '^\[(warn|info)\]' "$gh_stderr_file" 2>/dev/null; then
   first_err_line="$(head -n 1 "$gh_stderr_file" 2>/dev/null || echo "gh failure")"
   echo "[warn] reconcile-affected-files: gh failure — ${first_err_line}" >&2
   exit 1
+fi
+
+# Extract .files[].path from the normalized JSON.
+if command -v jq >/dev/null 2>&1; then
+  pr_files="$(printf '%s' "$view_json" | jq -r '.files[]?.path' 2>/dev/null | LC_ALL=C sort)"
+else
+  # Pure-bash fallback: scrape "path" fields from the files array.
+  pr_files="$(printf '%s' "$view_json" \
+    | tr ',' '\n' \
+    | sed -n 's/.*"path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+    | LC_ALL=C sort)"
 fi
 
 # Detect line-ending (by sniffing the first line).

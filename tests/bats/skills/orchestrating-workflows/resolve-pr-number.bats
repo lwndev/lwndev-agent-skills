@@ -22,6 +22,22 @@ setup() {
   STUB_DIR="${TMPDIR_TEST}/bin"
   mkdir -p "$STUB_DIR"
   ORIGINAL_PATH="$PATH"
+
+  # FEAT-033: resolve-pr-number.sh now delegates to list-pr.sh. Point
+  # CLAUDE_PLUGIN_ROOT at the real plugin so the dispatcher resolves.
+  REAL_PLUGIN_ROOT="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc" && pwd)"
+  export CLAUDE_PLUGIN_ROOT="$REAL_PLUGIN_ROOT"
+
+  # Default git stub so backend-detect.sh resolves a github backend.
+  cat > "${STUB_DIR}/git" <<'EOF'
+#!/usr/bin/env bash
+if [ "$1" = "remote" ] && [ "$2" = "get-url" ] && [ "$3" = "origin" ]; then
+  printf '%s\n' "https://github.com/foo/bar"
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "${STUB_DIR}/git"
 }
 
 teardown() {
@@ -31,16 +47,26 @@ teardown() {
   fi
 }
 
-# Install a `gh` stub that echoes $STDOUT_FIXTURE (a JSON array) and exits
-# $EXIT_CODE. The script calls `gh pr list ... --json number --limit 2` so
-# the expected shape is `[{"number":232}]` (length 1) or `[]` (length 0) or
-# `[{"number":1},{"number":2}]` (length 2+).
+# Install a `gh` stub. The dispatcher (list-pr.sh) calls
+#   gh pr list --head <branch> --json number,state
+# so the stub must return a JSON array including a `state` field. We accept
+# the legacy shape `[{"number":232}]` and inject `"state":"OPEN"` if missing
+# so existing test bodies stay terse.
 install_gh_stub() {
   local stdout_value="$1"
   local exit_code="${2:-0}"
+  # Auto-inject state:OPEN for any {"number":N} entry that lacks a state field.
+  # This is a regex-based patch — simpler than re-encoding every fixture.
+  local patched
+  patched="$(printf '%s' "$stdout_value" \
+    | sed -E 's/(\{"number":[0-9]+)(\})/\1,"state":"OPEN"\2/g')"
   cat > "${STUB_DIR}/gh" <<EOF
 #!/usr/bin/env bash
-printf '%s\n' '${stdout_value}'
+# FEAT-033: dispatcher calls "gh auth status" before "gh pr list".
+if [ "\$1" = "auth" ] && [ "\$2" = "status" ]; then
+  exit 0
+fi
+printf '%s\n' '${patched}'
 exit ${exit_code}
 EOF
   chmod +x "${STUB_DIR}/gh"

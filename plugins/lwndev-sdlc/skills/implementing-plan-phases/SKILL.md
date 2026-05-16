@@ -51,7 +51,7 @@ Script paths below are relative to `${CLAUDE_PLUGIN_ROOT}/skills/implementing-pl
 
     ```bash
     bash "$SCRIPTS/verify-all-phases-complete.sh" "<plan-path>"
-    bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-pr.sh" feat "<FEAT-NNN>" "<summary>" [--closes <issueRef>]
+    bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/create-pr.sh" feat "<FEAT-NNN>" "<summary>" [--closes <issueRef>]
     ```
 
     `verify-all-phases-complete.sh`: exit `0` with `all phases complete` only when every phase is `✅ Complete`; otherwise `1` with JSON `{"incomplete":[{"phase":<N>,...}...]}` — or stderr `[error] no phase blocks found in plan` when the plan has no `### Phase` blocks. Treat any non-zero as "do not create PR". `create-pr.sh`: reads current branch, runs `git push -u origin <branch>`, assembles title `feat(<FEAT-NNN>): <summary>`, substitutes `scripts/assets/pr-body.tmpl`, runs `gh pr create`. Pass `--closes #N` when a GitHub issue exists. Exit `0` PR URL on stdout; `1` on git/gh failure; `2` on malformed args.

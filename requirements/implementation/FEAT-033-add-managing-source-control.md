@@ -218,7 +218,7 @@ The work is structured in six phases: scaffold the skill + backend detection (Ph
 
 ### Phase 5: Consumer refactor
 **Feature:** [FEAT-033](../features/FEAT-033-add-managing-source-control.md) | [#120](https://github.com/lwndev/lwndev-marketplace/issues/120)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 4
 **ComplexityOverride:** opus
 
@@ -249,17 +249,17 @@ The work is structured in six phases: scaffold the skill + backend detection (Ph
 12. Run full `npm test` and `npx bats tests/bats/skills/` — all must remain green (NFR-2 regression gate).
 
 #### Deliverables
-- [ ] `finalizing-workflow/scripts/finalize.sh` — `merge-pr.sh` delegation; git sync stays
-- [ ] `finalizing-workflow/scripts/preflight-checks.sh` — `view-pr.sh` delegation
-- [ ] `finalizing-workflow/scripts/reconcile-affected-files.sh` — `view-pr.sh` delegation
-- [ ] `finalizing-workflow/SKILL.md` — inline `gh pr view` prose removed
-- [ ] `reviewing-requirements/scripts/pr-diff-vs-plan.sh` — `pr-diff.sh` delegation
-- [ ] `reviewing-requirements/scripts/detect-review-mode.sh` — `list-pr.sh` delegation
-- [ ] `orchestrating-workflows/scripts/resolve-pr-number.sh` — `list-pr.sh` delegation; FEAT-028 fallback contract preserved
-- [ ] `reviewing-requirements/scripts/verify-references.sh` — delegates to `managing-work-items/scripts/fetch-issue.sh`; classification semantics preserved; Bats updated to stub `fetch-issue.sh`
-- [ ] `implementing-plan-phases/SKILL.md`, `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md` — `create-pr.sh` path references updated
-- [ ] Plugin-level `scripts/create-pr.sh` shim removed
-- [ ] All existing tests pass (NFR-2)
+- [x] `finalizing-workflow/scripts/finalize.sh` — `merge-pr.sh` delegation; git sync stays
+- [x] `finalizing-workflow/scripts/preflight-checks.sh` — `view-pr.sh` delegation
+- [x] `finalizing-workflow/scripts/reconcile-affected-files.sh` — `view-pr.sh` delegation
+- [x] `finalizing-workflow/SKILL.md` — inline `gh pr view` prose removed
+- [x] `reviewing-requirements/scripts/pr-diff-vs-plan.sh` — `pr-diff.sh` delegation
+- [x] `reviewing-requirements/scripts/detect-review-mode.sh` — `list-pr.sh` delegation
+- [x] `orchestrating-workflows/scripts/resolve-pr-number.sh` — `list-pr.sh` delegation; FEAT-028 fallback contract preserved
+- [x] `reviewing-requirements/scripts/verify-references.sh` — delegates to `managing-work-items/scripts/fetch-issue.sh`; classification semantics preserved; Bats updated to stub `fetch-issue.sh`
+- [x] `implementing-plan-phases/SKILL.md`, `executing-chores/SKILL.md`, `executing-bug-fixes/SKILL.md` — `create-pr.sh` path references updated
+- [x] Plugin-level `scripts/create-pr.sh` shim removed
+- [x] All existing tests pass (NFR-2)
 
 ---
 

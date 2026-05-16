@@ -18,6 +18,22 @@ setup() {
   : > "$TRACER"
   export TRACER
 
+  # FEAT-033: detect-review-mode.sh now delegates to list-pr.sh. Point
+  # CLAUDE_PLUGIN_ROOT at the real plugin so the dispatcher resolves.
+  REAL_PLUGIN_ROOT="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc" && pwd)"
+  export CLAUDE_PLUGIN_ROOT="$REAL_PLUGIN_ROOT"
+
+  # Default git stub so backend-detect.sh returns a github backend.
+  cat > "${STUB_DIR}/git" <<'EOF'
+#!/usr/bin/env bash
+if [ "$1" = "remote" ] && [ "$2" = "get-url" ] && [ "$3" = "origin" ]; then
+  printf '%s\n' "https://github.com/foo/bar"
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "${STUB_DIR}/git"
+
   TEST_CWD="${FIXTURE_DIR}/work"
   mkdir -p "${TEST_CWD}/qa/test-plans"
   cd "$TEST_CWD"
@@ -74,6 +90,18 @@ empty_path_for_no_gh() {
       ln -sf "/opt/homebrew/bin/$bin" "$dir/$bin" 2>/dev/null || true
     fi
   done
+  # Provide a git stub so backend-detect.sh resolves a github backend; the
+  # dispatcher then hits its `command -v gh` check and emits a graceful-skip
+  # [warn] (silently dropped by detect-review-mode.sh).
+  cat > "$dir/git" <<'EOF'
+#!/usr/bin/env bash
+if [ "$1" = "remote" ] && [ "$2" = "get-url" ] && [ "$3" = "origin" ]; then
+  printf '%s\n' "https://github.com/foo/bar"
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "$dir/git"
   printf '%s' "$dir"
 }
 
@@ -161,7 +189,8 @@ empty_path_for_no_gh() {
   GH_PR_LIST_STDOUT='[{"number":10,"state":"OPEN"}]' \
     PATH="${STUB_DIR}:${PATH}" run bash "$SCRIPT" "FEAT-100"
   [ "$status" -eq 0 ]
-  grep -F "TRACE:gh:pr list --head feat/FEAT-100-*" "$TRACER"
+  # FEAT-033: the dispatcher now invokes `gh pr list --head <branch> --json number,state`.
+  grep -F "TRACE:gh:pr list --head feat/FEAT-100-* --json number,state" "$TRACER"
 }
 
 @test "CHORE- prefix uses branch prefix chore in gh pr list --head" {
@@ -169,7 +198,7 @@ empty_path_for_no_gh() {
   GH_PR_LIST_STDOUT='[{"number":11,"state":"OPEN"}]' \
     PATH="${STUB_DIR}:${PATH}" run bash "$SCRIPT" "CHORE-200"
   [ "$status" -eq 0 ]
-  grep -F "TRACE:gh:pr list --head chore/CHORE-200-*" "$TRACER"
+  grep -F "TRACE:gh:pr list --head chore/CHORE-200-* --json number,state" "$TRACER"
 }
 
 @test "BUG- prefix uses branch prefix fix in gh pr list --head" {
@@ -177,7 +206,7 @@ empty_path_for_no_gh() {
   GH_PR_LIST_STDOUT='[{"number":12,"state":"OPEN"}]' \
     PATH="${STUB_DIR}:${PATH}" run bash "$SCRIPT" "BUG-300"
   [ "$status" -eq 0 ]
-  grep -F "TRACE:gh:pr list --head fix/BUG-300-*" "$TRACER"
+  grep -F "TRACE:gh:pr list --head fix/BUG-300-* --json number,state" "$TRACER"
 }
 
 @test "gh pr list returns empty array -> falls through" {

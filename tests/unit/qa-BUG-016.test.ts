@@ -18,15 +18,17 @@ describe('BUG-016: relocated QA fixture — inputs', () => {
     expect(existsSync(POST_MOVE_PATH)).toBe(true);
   });
 
-  it('[P0] tests/bats/shared/ contains exactly 11 canonical .bats files', () => {
+  it('[P0] tests/bats/shared/ contains exactly 10 canonical .bats files', () => {
     expect(existsSync(SHARED_DIR)).toBe(true);
     // Filter out *.qa.bats adopted siblings (FEAT-032 convention); count only canonical peers.
     // FEAT-033 Phase 2 relocated build-branch-name.bats, ensure-branch.bats, and
     // commit-work.bats to tests/bats/skills/managing-source-control/ (was 14, now 11).
+    // FEAT-033 Phase 5 also removed the plugin-level create-pr.sh shim (and its
+    // shared/create-pr.bats peer), so the canonical count drops to 10.
     const batsFiles = readdirSync(SHARED_DIR).filter(
       (f) => f.endsWith('.bats') && !f.includes('.qa.')
     );
-    expect(batsFiles.length).toBe(11);
+    expect(batsFiles.length).toBe(10);
   });
 
   it('[P0] relocated file is non-empty and a regular file', () => {

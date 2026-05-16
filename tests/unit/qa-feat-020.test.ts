@@ -46,7 +46,8 @@ const SH = {
   checkAc: join(SCRIPTS, 'check-acceptance.sh'),
   flipAll: join(SCRIPTS, 'checkbox-flip-all.sh'),
   commitWork: join(MSC_SCRIPTS, 'commit-work.sh'),
-  createPr: join(SCRIPTS, 'create-pr.sh'),
+  // FEAT-033 Phase 5: create-pr.sh moved to managing-source-control skill.
+  createPr: join(MSC_SCRIPTS, 'create-pr.sh'),
   branchParse: join(SCRIPTS, 'branch-id-parse.sh'),
 };
 
@@ -365,29 +366,11 @@ describe('[QA FEAT-020] Dependency failure: create-pr.sh error paths with PATH-s
       // Copy the real backend-detect.sh + the real skill create-pr.sh into the
       // synthetic plugin tree. The plugin layout puts pr-body.tmpl at
       // <plugin>/scripts/assets/pr-body.tmpl — and we leave that dir empty so
-      // the template is missing at runtime.
-      const skillCreatePr = join(
-        join(
-          SH.createPr,
-          '..',
-          '..',
-          'skills',
-          'managing-source-control',
-          'scripts',
-          'create-pr.sh'
-        )
-      );
-      const skillBackendDetect = join(
-        join(
-          SH.createPr,
-          '..',
-          '..',
-          'skills',
-          'managing-source-control',
-          'scripts',
-          'backend-detect.sh'
-        )
-      );
+      // the template is missing at runtime. SH.createPr already points to the
+      // skill-scoped path (FEAT-033 Phase 5), so source the real script
+      // directly from its sibling.
+      const skillCreatePr = SH.createPr;
+      const skillBackendDetect = join(MSC_SCRIPTS, 'backend-detect.sh');
       const createPrSrc = readFileSync(skillCreatePr, 'utf8');
       const backendDetectSrc = readFileSync(skillBackendDetect, 'utf8');
       const createPrCopy = join(skillScriptsDir, 'create-pr.sh');

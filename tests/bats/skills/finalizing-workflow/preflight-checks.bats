@@ -43,6 +43,12 @@ if [ "\$1" = "branch" ] && [ "\$2" = "--show-current" ]; then
   printf '%s\n' '${branch}'
   exit 0
 fi
+# FEAT-033: backend-detect.sh (called by view-pr.sh dispatcher) reads the
+# origin URL to determine which SCM backend to dispatch on.
+if [ "\$1" = "remote" ] && [ "\$2" = "get-url" ] && [ "\$3" = "origin" ]; then
+  printf '%s\n' "\${GIT_REMOTE_ORIGIN:-https://github.com/foo/bar}"
+  exit 0
+fi
 exit 0
 EOF
   chmod +x "${STUB_DIR}/git"

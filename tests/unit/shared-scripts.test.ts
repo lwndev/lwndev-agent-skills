@@ -26,7 +26,7 @@ const CANONICAL_SCRIPTS = [
   'resolve-requirement-doc.sh',
   'check-acceptance.sh',
   'checkbox-flip-all.sh',
-  'create-pr.sh',
+  // create-pr.sh moved to managing-source-control skill in FEAT-033 Phase 5.
   'branch-id-parse.sh',
   'prepare-fork.sh',
   'verify-build-health.sh',

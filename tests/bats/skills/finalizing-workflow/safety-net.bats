@@ -12,6 +12,12 @@ setup() {
   STUB_DIR="$(mktemp -d)"
   export PATH="${STUB_DIR}:${PATH}"
 
+  # FEAT-033: preflight delegates PR-state to managing-source-control's
+  # view-pr.sh — point CLAUDE_PLUGIN_ROOT at the real plugin so the
+  # dispatcher resolves.
+  REAL_PLUGIN_ROOT="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc" && pwd)"
+  export CLAUDE_PLUGIN_ROOT="$REAL_PLUGIN_ROOT"
+
   # Default npm stub: always succeed (build-health gate passes).
   cat > "${STUB_DIR}/npm" <<'EOF'
 #!/usr/bin/env bash
@@ -44,6 +50,11 @@ if [ "\$1" = "branch" ] && [ "\$2" = "--show-current" ]; then
 fi
 if [ "\$1" = "ls-files" ]; then
   printf '%s' '${ls_output}'
+  exit 0
+fi
+# FEAT-033: backend-detect.sh probes the origin URL.
+if [ "\$1" = "remote" ] && [ "\$2" = "get-url" ] && [ "\$3" = "origin" ]; then
+  printf '%s\n' "https://github.com/foo/bar"
   exit 0
 fi
 exit 0
@@ -152,6 +163,10 @@ if [ "\$1" = "ls-files" ]; then
   printf '%s\n' "\$@" >> "${ARGS_LOG}"
   exit 0
 fi
+# FEAT-033: backend-detect.sh probes origin URL.
+if [ "\$1" = "remote" ] && [ "\$2" = "get-url" ] && [ "\$3" = "origin" ]; then
+  printf '%s\n' "https://github.com/foo/bar"; exit 0
+fi
 exit 0
 EOF
   chmod +x "${STUB_DIR}/git"
@@ -176,6 +191,10 @@ fi
 if [ "\$1" = "ls-files" ]; then
   printf '%s\n' "\$@" >> "${ARGS_LOG}"
   exit 0
+fi
+# FEAT-033: backend-detect.sh probes origin URL.
+if [ "\$1" = "remote" ] && [ "\$2" = "get-url" ] && [ "\$3" = "origin" ]; then
+  printf '%s\n' "https://github.com/foo/bar"; exit 0
 fi
 exit 0
 EOF

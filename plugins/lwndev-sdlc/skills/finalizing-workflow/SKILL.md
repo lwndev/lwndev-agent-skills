@@ -60,7 +60,7 @@ This skill is forked by `orchestrating-workflows` as the terminal step of every 
 Capture the branch, confirm intent up-front, then delegate the full sequence (pre-flight, bookkeeping, merge, reset) to `finalize.sh`:
 
 1. Capture the branch: `branch=$(git branch --show-current)`.
-2. Fetch PR number and title for the prompt: `gh pr view --json number,title`. Display only — the real pre-flight (clean tree, PR state, mergeability) runs inside `finalize.sh`.
+2. Fetch PR number and title for the prompt via the managing-source-control dispatcher: `bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/view-pr.sh"`. Display only — the real pre-flight (clean tree, PR state, mergeability) runs inside `finalize.sh`.
 3. Ask the user exactly once:
 
    > Ready to merge PR #\<N\> ("\<title\>") and finalize the requirement document. Proceed?

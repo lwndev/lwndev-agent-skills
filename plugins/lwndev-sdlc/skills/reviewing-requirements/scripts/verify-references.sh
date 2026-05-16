@@ -16,10 +16,10 @@
 #                 ok (1..19 matches) / ambiguous (>=20) / missing (0).
 #   crossRefs   — `ls requirements/{features,chores,bugs}/<REF>-*.md`.
 #                 Buckets: ok / ambiguous / missing.
-#   ghRefs      — `gh issue view <N> --json number,state`. Buckets:
-#                 ok / missing (404) / unavailable (gh missing / unauth /
-#                 non-404 error). One `[info]` line per invocation when any
-#                 ghRef is marked unavailable, not one per ref.
+#   ghRefs      — managing-work-items `fetch-issue.sh "#N"` (FEAT-033 FR-7).
+#                 Buckets: ok / missing (not found) / unavailable (CLI missing
+#                 / unauth / generic failure). One `[info]` line per invocation
+#                 when any ghRef is marked unavailable, not one per ref.
 #
 # Usage:
 #   verify-references.sh <refs-json>
@@ -35,9 +35,10 @@
 #   2  missing arg
 #
 # Dependencies:
-#   bash, git, grep, ls. `gh` optional (graceful skip if missing /
-#   unauthenticated). `jq` is optional — used for JSON parsing and assembly
-#   when available; pure-bash fallback otherwise.
+#   bash, git, grep, ls. `fetch-issue.sh` (managing-work-items dispatcher) —
+#   owns the optional `gh`/`acli` plumbing and emits its own [warn] lines on
+#   missing CLI / unauthenticated. `jq` is optional — used for JSON parsing
+#   and assembly when available; pure-bash fallback otherwise.
 
 set -euo pipefail
 
@@ -258,16 +259,22 @@ while IFS= read -r cr; do
 done <<< "$CROSS_REFS"
 
 # --- ghRefs verification ------------------------------------------------------
-# gh-availability is checked once per invocation. When unavailable, all ghRefs
-# get classified as `unavailable` and we emit a single `[info]` line.
+# Delegates to managing-work-items/scripts/fetch-issue.sh (FEAT-033 FR-7).
+# The dispatcher owns gh availability + auth checks and emits its own [warn]
+# lines on stderr. We map back to OK / MISSING / UNAVAILABLE classes by
+# inspecting stdout (valid JSON `state` → OK) and stderr ([warn] markers →
+# MISSING / UNAVAILABLE).
+#
+# We still emit a single `[info]` line per verify-references invocation when
+# any ghRef ends up unavailable — that contract is owned by this script, not
+# the dispatcher.
 
-gh_available=0
-gh_auth_rc=1
-if command -v gh >/dev/null 2>&1; then
-  gh_available=1
-  if gh auth status >/dev/null 2>&1; then
-    gh_auth_rc=0
-  fi
+_VR_SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+FETCH_ISSUE_DISPATCHER=""
+if [[ -n "${CLAUDE_PLUGIN_ROOT:-}" && -f "${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/fetch-issue.sh" ]]; then
+  FETCH_ISSUE_DISPATCHER="${CLAUDE_PLUGIN_ROOT}/skills/managing-work-items/scripts/fetch-issue.sh"
+elif [[ -f "${_VR_SCRIPT_DIR}/../../managing-work-items/scripts/fetch-issue.sh" ]]; then
+  FETCH_ISSUE_DISPATCHER="$(cd "${_VR_SCRIPT_DIR}/../../managing-work-items/scripts" && pwd)/fetch-issue.sh"
 fi
 
 gh_unavailable_refs=()
@@ -282,34 +289,62 @@ verify_gh_ref() {
     gh_unavailable_reason="non-#N reference (full URL); cannot resolve without repo context"
     return
   fi
-  local num="${BASH_REMATCH[1]}"
 
-  if [[ "$gh_available" -ne 1 ]]; then
+  if [[ -z "$FETCH_ISSUE_DISPATCHER" ]]; then
     gh_unavailable_refs+=("$ref")
-    gh_unavailable_reason="gh CLI not on PATH"
-    return
-  fi
-  if [[ "$gh_auth_rc" -ne 0 ]]; then
-    gh_unavailable_refs+=("$ref")
-    gh_unavailable_reason="gh not authenticated"
+    gh_unavailable_reason="fetch-issue.sh dispatcher not found"
     return
   fi
 
-  local out err rc
-  err_tmp=$(mktemp)
-  if out=$(gh issue view "$num" --json number,state 2>"$err_tmp"); then
-    append_line OK_LINES "ghRefs" "$ref" "issue exists"
-    rm -f "$err_tmp"
-  else
-    rc=$?
-    err=$(cat "$err_tmp" 2>/dev/null || true)
-    rm -f "$err_tmp"
-    # Detect 404 / not-found -> missing. Otherwise unavailable.
-    if [[ "$err" == *"not found"* || "$err" == *"404"* || "$err" == *"Not Found"* || "$err" == *"Could not resolve"* ]]; then
-      append_line MISSING_LINES "ghRefs" "$ref" "issue not found (404)"
+  local fi_stderr_tmp fi_stdout
+  fi_stderr_tmp=$(mktemp)
+  fi_stdout="$(bash "$FETCH_ISSUE_DISPATCHER" "$ref" 2>"$fi_stderr_tmp" || true)"
+  local fi_stderr
+  fi_stderr=$(cat "$fi_stderr_tmp" 2>/dev/null || true)
+  rm -f "$fi_stderr_tmp"
+
+  # Classify: stderr [warn] markers map to MISSING (the specific
+  # "issue view returned not found" pattern) or UNAVAILABLE (everything else
+  # — including the CLI-missing message which mentions "not found on PATH").
+  # When stderr is empty, valid JSON stdout with a `state` field → OK;
+  # literal `null` → UNAVAILABLE (dispatcher saw no backend match).
+  if [[ -n "$fi_stderr" ]]; then
+    if printf '%s' "$fi_stderr" | grep -Eq '\[warn\] .*(issue view returned not found|gh issue view returned not found|acli .*not found|Jira issue .*not found|returned not found for)'; then
+      append_line MISSING_LINES "ghRefs" "$ref" "issue not found"
+    elif printf '%s' "$fi_stderr" | grep -Eq '^\[(warn|info)\]'; then
+      gh_unavailable_refs+=("$ref")
+      first_line=$(printf '%s' "$fi_stderr" | head -n 1)
+      gh_unavailable_reason="${first_line}"
     else
       gh_unavailable_refs+=("$ref")
-      gh_unavailable_reason="gh issue view failed: ${err:-rc=$rc}"
+      gh_unavailable_reason="fetch-issue stderr: ${fi_stderr}"
+    fi
+    return
+  fi
+
+  if [[ -z "$fi_stdout" || "$fi_stdout" == "null" ]]; then
+    gh_unavailable_refs+=("$ref")
+    gh_unavailable_reason="fetch-issue returned no backend match"
+    return
+  fi
+
+  # Validate that stdout looks like a JSON object with at least a state field.
+  if [[ "$HAS_JQ" -eq 1 ]]; then
+    local state
+    state=$(printf '%s' "$fi_stdout" | jq -r '.state // empty' 2>/dev/null || true)
+    if [[ -n "$state" ]]; then
+      append_line OK_LINES "ghRefs" "$ref" "issue exists"
+    else
+      gh_unavailable_refs+=("$ref")
+      gh_unavailable_reason="fetch-issue response missing 'state' field"
+    fi
+  else
+    # Pure-bash gate: presence of `"state"` token is good enough.
+    if [[ "$fi_stdout" == *'"state"'* ]]; then
+      append_line OK_LINES "ghRefs" "$ref" "issue exists"
+    else
+      gh_unavailable_refs+=("$ref")
+      gh_unavailable_reason="fetch-issue response missing 'state' field"
     fi
   fi
 }

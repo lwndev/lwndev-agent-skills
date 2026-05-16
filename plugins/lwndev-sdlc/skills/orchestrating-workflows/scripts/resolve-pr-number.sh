@@ -5,18 +5,21 @@
 # Usage: resolve-pr-number.sh <branch> [subagent-output-file]
 #
 # Resolution strategy (first match wins):
-#   1. `gh pr list --head "<branch>" --state open --json number --limit 2`.
-#      If the result is an array of length 1, its `.[0].number` is canonical.
-#      This is the authoritative source — the GitHub API knows which PR the
-#      branch currently tracks.
+#   1. Delegate to the managing-source-control `list-pr.sh --head <branch>`
+#      dispatcher (FEAT-033 FR-4). The dispatcher returns a normalized JSON
+#      array of `{number, state}` entries (NFR-3); we filter for `state ==
+#      "OPEN"` and take the first element when exactly one OPEN PR exists.
+#      This is the authoritative source — the underlying SCM (GitHub or
+#      Azure DevOps) knows which PR the branch currently tracks.
 #   2. Fallback: scan <subagent-output-file> (if supplied and readable) for
 #      `#<digits>` tokens and `https://github.com/<owner>/<repo>/pull/<N>`
 #      URLs. Fenced markdown code blocks (```...```) are skipped so example
 #      snippets don't pollute the match. The last match in line-order wins.
 #   3. If neither source yields a number: empty stdout, exit 1.
 #
-# `gh` or `jq` missing → skip step 1 and fall through to step 2. If step 2
-# also fails AND `gh`/`jq` were missing, emit:
+# Dispatcher graceful-skip ([warn]/[info]) or `jq` missing → skip step 1 and
+# fall through to step 2. If step 2 also fails AND the dispatcher was
+# unavailable, emit:
 #   [warn] resolve-pr-number: gh unavailable; could not fall back to gh pr list.
 # to stderr and exit 1.
 #
@@ -40,19 +43,35 @@ fi
 branch="$1"
 subagent_output="${2:-}"
 
-# --- step 1: gh pr list --head authoritative lookup --------------------------
+# --- step 1: list-pr.sh authoritative lookup ---------------------------------
+
+_RPN_SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LIST_PR_DISPATCHER=""
+if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/list-pr.sh" ]; then
+  LIST_PR_DISPATCHER="${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/list-pr.sh"
+elif [ -f "${_RPN_SCRIPT_DIR}/../../managing-source-control/scripts/list-pr.sh" ]; then
+  LIST_PR_DISPATCHER="$(cd "${_RPN_SCRIPT_DIR}/../../managing-source-control/scripts" && pwd)/list-pr.sh"
+fi
 
 gh_available=0
-if command -v gh >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+if [ -n "$LIST_PR_DISPATCHER" ] && command -v jq >/dev/null 2>&1; then
   gh_available=1
-  gh_out=""
-  gh_status=0
-  gh_out=$(gh pr list --head "$branch" --state open --json number --limit 2 2>/dev/null) || gh_status=$?
+  _rpn_stderr_tmp="$(mktemp)"
+  gh_out="$(bash "$LIST_PR_DISPATCHER" --head "$branch" 2>"$_rpn_stderr_tmp" || true)"
+  gh_stderr="$(cat "$_rpn_stderr_tmp" 2>/dev/null || true)"
+  rm -f "$_rpn_stderr_tmp"
 
-  if [ "$gh_status" -eq 0 ]; then
-    gh_count=$(printf '%s' "$gh_out" | jq -r 'length' 2>/dev/null || echo "err")
-    if [ "$gh_count" = "1" ]; then
-      gh_num=$(printf '%s' "$gh_out" | jq -r '.[0].number' 2>/dev/null || echo "")
+  # Treat dispatcher graceful-skip ([warn]/[info]) as unavailable.
+  if printf '%s' "$gh_stderr" | grep -Eq '^\[(warn|info)\]'; then
+    gh_available=0
+  else
+    # Filter for OPEN entries only — the dispatcher returns all states on the
+    # GitHub path (`--state open` was previously a gh flag; we replicate via
+    # post-filter for cross-backend consistency).
+    open_entries=$(printf '%s' "$gh_out" | jq -c '[.[] | select(.state=="OPEN")]' 2>/dev/null || echo "")
+    open_count=$(printf '%s' "$open_entries" | jq -r 'length' 2>/dev/null || echo "err")
+    if [ "$open_count" = "1" ]; then
+      gh_num=$(printf '%s' "$open_entries" | jq -r '.[0].number' 2>/dev/null || echo "")
       if [[ "$gh_num" =~ ^[0-9]+$ ]]; then
         printf '%s\n' "$gh_num"
         exit 0
@@ -60,7 +79,6 @@ if command -v gh >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     fi
     # 0 or 2+ results → fall through to subagent-output parsing.
   fi
-  # gh_status != 0 → fall through (auth error, network, detached HEAD, etc.)
 fi
 
 # --- step 2: scan subagent output with fence filter + line-order match -------

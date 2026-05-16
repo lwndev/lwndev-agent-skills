@@ -72,7 +72,7 @@ Execute bug fix workflows with root cause driven execution from branch creation 
 10. Create the pull request with:
 
     ```bash
-    bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-pr.sh" fix "<BUG-NNN>" "<summary>" [--closes <issueRef>]
+    bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/create-pr.sh" fix "<BUG-NNN>" "<summary>" [--closes <issueRef>]
     ```
 
     Does `git push -u origin <branch>` then `gh pr create` against `scripts/assets/pr-body.tmpl`. **MUST include `--closes #N` if an issue exists** — auto-closes the linked issue on merge. Exit codes: `0` on success (PR URL on stdout); `1` on push or PR-creation failure; `2` on missing/invalid args.

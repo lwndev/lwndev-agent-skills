@@ -7,9 +7,12 @@
 # the parallel checks pass:
 #   1. `git status --porcelain` must be empty (clean working directory).
 #   2. `git branch --show-current` must NOT be `main` or `master`.
-#   3. `gh pr view --json number,title,state,mergeable,url` must return an
-#      OPEN PR with `mergeable` in {MERGEABLE, UNKNOWN}. On UNKNOWN, sleep 2
-#      and retry once. If still UNKNOWN, accept and emit a stderr info note.
+#   3. Delegate PR-state lookup to the managing-source-control dispatcher
+#      (`view-pr.sh`) — returns JSON with `number,title,state,mergeable,url`.
+#      PR must be OPEN with `mergeable` in {MERGEABLE, UNKNOWN}. On UNKNOWN,
+#      sleep 2 and retry once. If still UNKNOWN, accept and emit a stderr
+#      info note. The dispatcher's [warn]/[info] graceful-skip output is
+#      treated as "no PR" for finalize purposes.
 #   4. Shared `verify-build-health.sh --no-interactive` must exit 0 (lint /
 #      format:check / test / build all pass, or graceful skip when no
 #      package.json / npm absent).
@@ -94,8 +97,22 @@ fatal_gh() {
   exit 1
 }
 
-# Check gh presence and authentication UP FRONT so we can distinguish
-# "gh missing" from "PR not found" later.
+# Resolve the managing-source-control view-pr dispatcher (FEAT-033 FR-4).
+# Prefer the cached plugin location ($CLAUDE_PLUGIN_ROOT) when set; fall back
+# to the in-repo location relative to this script.
+PREFLIGHT_SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/view-pr.sh" ]; then
+  VIEW_PR="${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/view-pr.sh"
+elif [ -f "${PREFLIGHT_SCRIPT_DIR}/../../managing-source-control/scripts/view-pr.sh" ]; then
+  VIEW_PR="$(cd "${PREFLIGHT_SCRIPT_DIR}/../../managing-source-control/scripts" && pwd)/view-pr.sh"
+else
+  fatal_gh "view-pr.sh dispatcher not found"
+fi
+
+# Pre-flight gh presence / auth checks: the dispatcher emits [warn] on these
+# conditions and exits 0, but finalize requires an actual PR. Probing here
+# preserves the legacy error-message contract so callers see the canonical
+# `gh CLI not found on PATH` / `gh CLI not authenticated` aborts.
 if ! command -v gh >/dev/null 2>&1; then
   fatal_gh "gh CLI not found on PATH"
 fi
@@ -146,14 +163,17 @@ pid_status=$!
 ) &
 pid_branch=$!
 
-# Check 3: gh pr view — OPEN + (MERGEABLE | UNKNOWN w/ retry).
+# Check 3: view-pr.sh dispatcher — OPEN + (MERGEABLE | UNKNOWN w/ retry).
+# The dispatcher returns a JSON object with `number,title,state,mergeable,url,files`
+# (NFR-3 shape stability); we ignore `files` here and consume the same five
+# fields the legacy `gh pr view` call returned.
 (
   set +e
-  pr_json="$(gh pr view --json number,title,state,mergeable,url 2>"$tmpdir/pr.stderr")"
+  pr_json="$(bash "$VIEW_PR" 2>"$tmpdir/pr.stderr")"
   rc=$?
-  if [ "$rc" -ne 0 ]; then
-    # Treat any gh-view failure as "no PR for current branch" per the
-    # Error Handling table row.
+  if [ "$rc" -ne 0 ] || [ -z "$pr_json" ] || grep -Eq '^\[(warn|info)\]' "$tmpdir/pr.stderr" 2>/dev/null; then
+    # Treat dispatcher graceful-skip or non-zero exit as "no PR for current
+    # branch" per the Error Handling table row.
     printf 'no-pr\n' > "$tmpdir/pr.reason"
     exit 1
   fi
@@ -196,8 +216,8 @@ pid_branch=$!
       ;;
     UNKNOWN)
       sleep 2
-      # Retry once.
-      pr_json2="$(gh pr view --json number,title,state,mergeable,url 2>"$tmpdir/pr.stderr2" || true)"
+      # Retry once via the dispatcher.
+      pr_json2="$(bash "$VIEW_PR" 2>"$tmpdir/pr.stderr2" || true)"
       if command -v jq >/dev/null 2>&1; then
         pr_mergeable2="$(printf '%s' "$pr_json2" | jq -r '.mergeable' 2>/dev/null || printf 'UNKNOWN')"
         pr_state2="$(printf '%s' "$pr_json2" | jq -r '.state' 2>/dev/null || printf 'UNKNOWN')"
