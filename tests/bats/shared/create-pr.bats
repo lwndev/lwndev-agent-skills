@@ -17,7 +17,10 @@ setup() {
   STUBDIR="${TMPDIR_TEST}/bin"
   mkdir -p "$STUBDIR"
 
-  # Fake `git`: supports rev-parse --abbrev-ref HEAD and push.
+  # Fake `git`: supports rev-parse --abbrev-ref HEAD, push, and remote get-url
+  # origin (consumed by the FEAT-033 backend-detect dispatcher chain — the
+  # plugin-level create-pr.sh is now a thin shim that delegates to the skill
+  # script which always calls backend-detect.sh first).
   cat > "${STUBDIR}/git" <<'STUBEOF'
 #!/usr/bin/env bash
 case "$1" in
@@ -38,6 +41,15 @@ case "$1" in
     echo "To origin: pushed (stub)"
     exit 0
     ;;
+  remote)
+    # `git remote get-url origin` — used by backend-detect.sh in the dispatcher.
+    if [ "$2" = "get-url" ] && [ "$3" = "origin" ]; then
+      echo "https://github.com/example/repo.git"
+      exit 0
+    fi
+    echo "fake-git: unexpected remote args: $*" >&2
+    exit 99
+    ;;
   *)
     echo "fake-git: unhandled subcommand: $*" >&2
     exit 99
@@ -46,35 +58,47 @@ esac
 STUBEOF
   chmod +x "${STUBDIR}/git"
 
-  # Fake `gh`: expects `pr create --title <t> --body <b>`.
+  # Fake `gh`: supports `auth status` (NFR-1 gate) and `pr create`.
   cat > "${STUBDIR}/gh" <<STUBEOF
 #!/usr/bin/env bash
-touch "${STUBDIR}/gh.invoked"
-# Persist every arg on its own line.
-: > "${STUBDIR}/gh.args"
-for a in "\$@"; do
-  printf '%s\n' "\$a" >> "${STUBDIR}/gh.args"
-done
-# Capture --body for assertions.
-body=""
-while [ "\$#" -gt 0 ]; do
-  case "\$1" in
-    --body)
-      body="\$2"
-      shift 2
-      ;;
-    *)
-      shift
-      ;;
-  esac
-done
-printf '%s' "\$body" > "${STUBDIR}/gh.body"
-if [ -n "\${GH_FAIL:-}" ]; then
-  echo "gh: stub failure" >&2
-  exit 1
-fi
-echo "https://github.com/example/repo/pull/123"
-exit 0
+case "\$1" in
+  auth)
+    # FEAT-033 dispatcher gates on \`gh auth status\`. Default success;
+    # GH_NOT_AUTH=1 forces failure.
+    if [ -n "\${GH_NOT_AUTH:-}" ]; then
+      echo "not authenticated" >&2
+      exit 1
+    fi
+    exit 0
+    ;;
+  pr)
+    if [ "\$2" = "create" ]; then
+      touch "${STUBDIR}/gh.invoked"
+      : > "${STUBDIR}/gh.args"
+      for a in "\$@"; do
+        printf '%s\n' "\$a" >> "${STUBDIR}/gh.args"
+      done
+      body=""
+      while [ "\$#" -gt 0 ]; do
+        case "\$1" in
+          --body) body="\$2"; shift 2 ;;
+          *) shift ;;
+        esac
+      done
+      printf '%s' "\$body" > "${STUBDIR}/gh.body"
+      if [ -n "\${GH_FAIL:-}" ]; then
+        echo "gh: stub failure" >&2
+        exit 1
+      fi
+      echo "https://github.com/example/repo/pull/123"
+      exit 0
+    fi
+    exit 0
+    ;;
+  *)
+    exit 0
+    ;;
+esac
 STUBEOF
   chmod +x "${STUBDIR}/gh"
 

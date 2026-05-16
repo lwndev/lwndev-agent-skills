@@ -107,7 +107,7 @@ The work is structured in six phases: scaffold the skill + backend detection (Ph
 
 ### Phase 3: PR dispatchers — GitHub path + create-pr/view-pr rewrite
 **Feature:** [FEAT-033](../features/FEAT-033-add-managing-source-control.md) | [#120](https://github.com/lwndev/lwndev-marketplace/issues/120)
-**Status:** Pending
+**Status:** ✅ Complete
 **Depends on:** Phase 1
 **ComplexityOverride:** opus
 
@@ -152,12 +152,12 @@ The work is structured in six phases: scaffold the skill + backend detection (Ph
 8. Run `npm test` and `npx bats tests/bats/skills/managing-source-control/`.
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/create-pr.sh` — dispatcher; GitHub path fully functional; AzDO path stubbed
-- [ ] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/view-pr.sh` — dispatcher; GitHub path functional; AzDO path stubbed
-- [ ] `plugins/lwndev-sdlc/skills/managing-source-control/references/pr-templates-github.md`
-- [ ] `plugins/lwndev-sdlc/skills/managing-source-control/references/pr-templates-azdo.md`
-- [ ] `tests/bats/skills/managing-source-control/create-pr.bats` — 4 cases pass
-- [ ] `tests/bats/skills/managing-source-control/view-pr.bats` — 3 cases pass
+- [x] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/create-pr.sh` — dispatcher; GitHub path fully functional; AzDO path stubbed
+- [x] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/view-pr.sh` — dispatcher; GitHub path functional; AzDO path stubbed
+- [x] `plugins/lwndev-sdlc/skills/managing-source-control/references/pr-templates-github.md`
+- [x] `plugins/lwndev-sdlc/skills/managing-source-control/references/pr-templates-azdo.md`
+- [x] `tests/bats/skills/managing-source-control/create-pr.bats` — 4 cases pass
+- [x] `tests/bats/skills/managing-source-control/view-pr.bats` — 3 cases pass
 
 ---
 
