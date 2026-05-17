@@ -66,21 +66,21 @@ The orchestrator's `Output Style -> Load-bearing carve-outs` section must explic
 
 ## Acceptance Criteria
 
-- [ ] `cmd_advance` refuses to advance past a `context: "pause"` step without atomically pausing the workflow in the same operation; `status` becomes `"paused"`, `pauseReason` is derived from the destination step's `name` (lower-case + spaces-to-hyphens; e.g. `"Plan approval"` → `plan-approval`, `"PR review"` → `pr-review`) and validated against the existing `cmd_pause` whitelist (rejected if unmapped), and `pausedAt` is stamped (RC-1)
-- [ ] Non-pause-context steps continue to advance and bump `currentStep` exactly as before — no `pausedAt` written, no `status` change, no rejection (RC-1)
-- [ ] A second `cmd_advance` call on a `status: "paused"` workflow is rejected with a clear error unless `cmd_resume` has run (RC-1)
-- [ ] The explicit `pause` call documented in `references/step-execution-details.md:97-104` is retired in favor of the atomic auto-pause in `advance` (RC-1)
-- [ ] A Bats regression at `tests/bats/skills/orchestrating-workflows/workflow-state-advance-pause-context.bats` asserts the orchestrator-style sequence `advance` -> `advance` -> `advance` past step 4 of a feature workflow leaves step 4 paused (not skipped) and rejects the third call (RC-1)
-- [ ] `record-findings` `auto-fixed` decision is removed from the valid set at `workflow-state.sh:1397`; any call passing `auto-fixed` exits non-zero with a clear error message (RC-2)
-- [ ] A Bats regression asserts `record-findings ... auto-fixed` is rejected and that the orchestrator's apply-fixes path emits one of the remaining valid decisions (`advanced` / `user-advanced` / `paused` / `auto-advanced`) instead (RC-2)
-- [ ] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` `Output Style -> Load-bearing carve-outs` section gains an explicit paragraph that (a) cites the "work without stopping for clarifying questions" reminder phrase verbatim and (b) states the carve-out does NOT apply to workflow-defined approval gates `plan-approval`, `pr-review`, `findings-decision`, `review-findings`, `merge-approval` — both substrings must be present so the prose change is mechanically verifiable via `grep` (RC-3)
-- [ ] The end-to-end test at `tests/bats/shared/hooks/auto-mode-end-to-end.bats` is extended to assert that an orchestrator-style `advance` attempt past a `context: "pause"` step is denied (auto-pauses) AND that `record-findings ... auto-fixed` is rejected (RC-1, RC-2)
+- [x] `cmd_advance` refuses to advance past a `context: "pause"` step without atomically pausing the workflow in the same operation; `status` becomes `"paused"`, `pauseReason` is derived from the destination step's `name` (lower-case + spaces-to-hyphens; e.g. `"Plan approval"` → `plan-approval`, `"PR review"` → `pr-review`) and validated against the existing `cmd_pause` whitelist (rejected if unmapped), and `pausedAt` is stamped (RC-1)
+- [x] Non-pause-context steps continue to advance and bump `currentStep` exactly as before — no `pausedAt` written, no `status` change, no rejection (RC-1)
+- [x] A second `cmd_advance` call on a `status: "paused"` workflow is rejected with a clear error unless `cmd_resume` has run (RC-1)
+- [x] The explicit `pause` call documented in `references/step-execution-details.md:97-104` is retired in favor of the atomic auto-pause in `advance` (RC-1)
+- [x] A Bats regression at `tests/bats/skills/orchestrating-workflows/workflow-state-advance-pause-context.bats` asserts the orchestrator-style sequence `advance` -> `advance` -> `advance` past step 4 of a feature workflow leaves step 4 paused (not skipped) and rejects the third call (RC-1)
+- [x] `record-findings` `auto-fixed` decision is removed from the valid set at `workflow-state.sh:1397`; any call passing `auto-fixed` exits non-zero with a clear error message (RC-2)
+- [x] A Bats regression asserts `record-findings ... auto-fixed` is rejected and that the orchestrator's apply-fixes path emits one of the remaining valid decisions (`advanced` / `user-advanced` / `paused` / `auto-advanced`) instead (RC-2)
+- [x] `plugins/lwndev-sdlc/skills/orchestrating-workflows/SKILL.md` `Output Style -> Load-bearing carve-outs` section gains an explicit paragraph that (a) cites the "work without stopping for clarifying questions" reminder phrase verbatim and (b) states the carve-out does NOT apply to workflow-defined approval gates `plan-approval`, `pr-review`, `findings-decision`, `review-findings`, `merge-approval` — both substrings must be present so the prose change is mechanically verifiable via `grep` (RC-3)
+- [x] The end-to-end test at `tests/bats/shared/hooks/auto-mode-end-to-end.bats` is extended to assert that an orchestrator-style `advance` attempt past a `context: "pause"` step is denied (auto-pauses) AND that `record-findings ... auto-fixed` is rejected (RC-1, RC-2)
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `Completed`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-05-17
 
 **Pull Request:** [#N](https://github.com/lwndev/lwndev-marketplace/pull/N)
 
