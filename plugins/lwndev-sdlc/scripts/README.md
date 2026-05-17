@@ -23,7 +23,6 @@ Scripts that read or write the consumer repo's filesystem (`next-id.sh`, `resolv
 | `resolve-requirement-doc.sh` | FR-3 | Map a requirement ID (`FEAT-020`) to its unique document path. |
 | `check-acceptance.sh` | FR-6 | Flip a single acceptance-criteria checkbox, fence-aware. |
 | `checkbox-flip-all.sh` | FR-7 | Flip every unchecked checkbox inside a named section, fence-aware. |
-| `create-pr.sh` | FR-9 | Push the current branch and create a PR from the template. |
 | `branch-id-parse.sh` | FR-10 | Classify a branch name into work-item `{id, type, dir}` JSON. |
 | `prepare-fork.sh` | FEAT-021 | Run the FEAT-014 pre-fork ceremony (SKILL.md readability check, tier resolution, audit-trail write, FR-14 echo line) and print the resolved tier. |
 

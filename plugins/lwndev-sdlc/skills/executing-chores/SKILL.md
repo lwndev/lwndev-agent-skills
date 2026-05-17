@@ -73,7 +73,7 @@ Execute chore task workflows with systematic tracking from branch creation throu
    bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/create-pr.sh" chore "<CHORE-NNN>" "<summary>" [--closes <issueRef>]
    ```
 
-   Does `git push -u origin <branch>` then `gh pr create` against `scripts/assets/pr-body.tmpl`. **MUST include `--closes #N` if an issue exists** — auto-closes the linked issue on merge. Exit codes: `0` on success (PR URL on stdout); `1` on push or PR-creation failure; `2` on missing/invalid args.
+   Multi-backend dispatcher (FEAT-033): pushes the current branch, then dispatches on `backend-detect.sh` output. GitHub path runs `gh pr create` against `scripts/assets/pr-body.tmpl`; Azure DevOps path runs `az repos pr create` against the AzDO body template. **MUST include `--closes #N` (GitHub) or `--issue-ref AB#NNN` (AzDO Boards) if an issue exists** — `--closes` auto-closes the linked GitHub issue on merge; `--issue-ref` is rendered into the AzDO description for cross-link visibility. Exit codes: `0` on success (PR URL on stdout) OR on graceful-skip (`gh`/`az` absent, unauthenticated, or `az devops` extension missing — `[warn]` line on stderr); `1` on push failure or backend-CLI hard failure; `2` on missing/invalid args.
 9. Update chore document completion section (status, date, PR link).
 
 > **Note:** Issue tracking (start/completion comments) is handled by the orchestrator via `managing-work-items`. This skill focuses on chore execution and verification.

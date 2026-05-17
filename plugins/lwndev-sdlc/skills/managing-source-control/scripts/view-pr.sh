@@ -161,6 +161,7 @@ case "$backend" in
     az_out="$(az repos pr show \
       --id "$resolved_pr" \
       ${az_org_url:+--organization "$az_org_url"} \
+      ${az_project:+--project "$az_project"} \
       2>"$az_stderr_file")"
     rc=$?
     set -e

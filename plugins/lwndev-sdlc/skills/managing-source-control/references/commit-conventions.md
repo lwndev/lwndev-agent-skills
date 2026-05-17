@@ -78,7 +78,8 @@ feat(FEAT-033): complete phase 1 - Scaffold skill + backend-detect
 
 ## Staging Rules
 
-- `commit-work.sh` stages explicit paths -- no `git add -A` / `git add .`.
+- `commit-work.sh` does NOT stage — the caller stages explicit paths with `git add <path>...` before invoking the script, then `commit-work.sh` runs `git commit -m ...` on whatever is already staged.
+- Callers MUST stage explicit paths -- no `git add -A` / `git add .`.
 - `implementing-plan-phases/scripts/commit-and-push-phase.sh` uses `git add -A` *intentionally* because phase commits sweep every plan-touched file.
 - Never include `.env`, credentials, large binaries, or local-only files.
 

@@ -2,8 +2,6 @@
 
 Reference for the PR body template used by `scripts/create-pr.sh` on the Azure DevOps path.
 
-> **Phase 3 status**: the AzDO path of `create-pr.sh` is a stub that emits `[warn] Azure DevOps PR creation not yet implemented.` and exits 0. Phase 4 implements the full `az repos pr create` invocation against this template.
-
 ## Template Structure
 
 The AzDO body mirrors the GitHub template structure for visual consistency, with placeholder substitution rules identical to the GitHub flavor:

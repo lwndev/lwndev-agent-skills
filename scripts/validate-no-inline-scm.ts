@@ -19,6 +19,16 @@
  * are NOT flagged. Genuine command invocations (`gh pr create`,
  * `az repos pr update`, etc.) at the start of a statement ARE flagged.
  *
+ * Out of scope: SKILL.md / reference markdown / fixture assets. The NFR-5
+ * contract targets executable shell code, not prose. Documentation may
+ * legitimately describe dispatcher internals using `gh pr ...` / `az repos
+ * ...` phrasing as part of explaining what `create-pr.sh` / `merge-pr.sh`
+ * etc. do. Reviewers should still call out any markdown that *instructs*
+ * a caller to invoke `gh`/`az` directly instead of going through the
+ * managing-source-control dispatcher — but that is a manual review concern,
+ * not a regex one (we would generate false positives for every reference
+ * doc that names the underlying CLI).
+ *
  * Output format:
  *   [validate-no-inline-scm] FAIL: <path>:<line>: <matched-line>
  *   <N> violations

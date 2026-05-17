@@ -39,8 +39,6 @@ This `SKILL.md` is a **reference document read inline by the orchestrator's main
 | `list-pr.sh` | List PRs filtered by head branch. | dispatched (`gh pr list --head ...` / `az repos pr list --source-branch ...`) |
 | `pr-diff.sh` | Emit unified diff of the PR against its base. | dispatched (`gh pr diff` / `git diff origin/<base>...HEAD`) |
 
-> **Phase 1 status**: only `backend-detect.sh` is implemented. Branch/commit scripts arrive in Phase 2; PR dispatchers arrive in Phases 3-4.
-
 ## Backend Detection
 
 Detect the SCM backend by inspecting `git remote get-url origin` and the `SDLC_SCM_BACKEND` env override:
