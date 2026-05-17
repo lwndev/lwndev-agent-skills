@@ -249,13 +249,21 @@ None — the scripts are bash; no TS modules are added.
 
 ## Acceptance Criteria
 
-- [ ] `pr-comment.sh` exists on the ADO backend with signature parity to the GitHub backend (positional body, `--body`, `--body-file`, `--reply-to`).
-- [ ] Backend is auto-detected from origin URL or `SDLC_SCM_BACKEND` env override — no explicit `--backend` flag on the new scripts.
-- [ ] Round-trip integration test (post comment, list threads, assert presence) passes on both GitHub and ADO test PRs when env-gated credentials are available.
-- [ ] `list-pr-comments.sh` emits NDJSON with the schema defined in FR-5, identical field names across backends.
-- [ ] `/review` (and any other consumer skill) can post ADO PR comments without backend-specific branching or extra arguments.
-- [ ] SKILL.md is updated: Script Entry Points table, graceful-degradation matrix, References section (if new reference docs are added).
-- [ ] All graceful-degradation paths exit 0 with a `[warn]` line — no failure mode halts the workflow (NFR-1).
-- [ ] The `az devops invoke` resource-name probe is implemented with a deterministic fallback order and one-shot caching (FR-4 NFR-3).
-- [ ] All new bash scripts pass `shellcheck` (matches existing scripts in this skill).
-- [ ] All new Bats tests pass under `npm run test:bats`.
+- [x] `pr-comment.sh` exists on the ADO backend with signature parity to the GitHub backend (positional body, `--body`, `--body-file`, `--reply-to`).
+- [x] Backend is auto-detected from origin URL or `SDLC_SCM_BACKEND` env override — no explicit `--backend` flag on the new scripts.
+- [x] Round-trip integration test (post comment, list threads, assert presence) passes on both GitHub and ADO test PRs when env-gated credentials are available.
+- [x] `list-pr-comments.sh` emits NDJSON with the schema defined in FR-5, identical field names across backends.
+- [x] `/review` (and any other consumer skill) can post ADO PR comments without backend-specific branching or extra arguments.
+- [x] SKILL.md is updated: Script Entry Points table, graceful-degradation matrix, References section (if new reference docs are added).
+- [x] All graceful-degradation paths exit 0 with a `[warn]` line — no failure mode halts the workflow (NFR-1).
+- [x] The `az devops invoke` resource-name probe is implemented with a deterministic fallback order and one-shot caching (FR-4 NFR-3).
+- [x] All new bash scripts pass `shellcheck` (matches existing scripts in this skill).
+- [x] All new Bats tests pass under `npm run test:bats`.
+
+## Completion
+
+**Status:** `Complete`
+
+**Completed:** 2026-05-17
+
+**Pull Request:** [#286](https://github.com/lwndev/lwndev-marketplace/pull/286)
