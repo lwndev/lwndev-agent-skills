@@ -82,7 +82,7 @@ The orchestrator's `Output Style -> Load-bearing carve-outs` section must explic
 
 **Completed:** 2026-05-17
 
-**Pull Request:** [#N](https://github.com/lwndev/lwndev-marketplace/pull/N)
+**Pull Request:** [#287](https://github.com/lwndev/lwndev-marketplace/pull/287)
 
 ## Notes
 
