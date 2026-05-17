@@ -5,7 +5,9 @@ import { join } from 'node:path';
 import semver from 'semver';
 
 const ROOT = join(__dirname, '..', '..');
-const INTEGRATION_TEST = join(ROOT, 'tests/unit/qa-integration.test.ts');
+// FEAT-033 Phase 6 / FR-9 adoption sweep: renamed from qa-integration.test.ts
+// to executing-qa.qa-integration.test.ts to drop the canonical qa-* prefix.
+const INTEGRATION_TEST = join(ROOT, 'tests/unit/executing-qa.qa-integration.test.ts');
 const ROOT_VITEST_BIN = join(ROOT, 'node_modules/.bin/vitest');
 const FIXTURE_PACKAGE_JSON = join(ROOT, 'tests/fixtures/qa-fixture/package.json');
 const CAPABILITY_DISCOVERY_SH = join(

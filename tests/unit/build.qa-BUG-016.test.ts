@@ -5,8 +5,11 @@ import { spawnSync } from 'node:child_process';
 
 const SHARED_DIR = 'tests/bats/shared';
 const QA_DIR = 'tests/bats/qa';
-const RELOCATED_BASENAME = 'qa-CHORE-037-husky-hooks.bats';
-const PRE_MOVE_PATH = join(SHARED_DIR, RELOCATED_BASENAME);
+// FEAT-033 Phase 6 / FR-9 adoption sweep: husky-hooks bats dropped the `qa-`
+// prefix to stay in tests/bats/qa/ without tripping the FR-9 safety-net glob
+// (tests/bats/qa/qa-*.bats). The file content is unchanged.
+const RELOCATED_BASENAME = 'husky-hooks.bats';
+const PRE_MOVE_PATH = join(SHARED_DIR, 'qa-CHORE-037-husky-hooks.bats');
 const POST_MOVE_PATH = join(QA_DIR, RELOCATED_BASENAME);
 
 describe('BUG-016: relocated QA fixture — inputs', () => {
@@ -50,7 +53,7 @@ describe('BUG-016: tests/bats/qa/ directory — cross-cutting', () => {
     expect(statSync(QA_DIR).isDirectory()).toBe(true);
   });
 
-  it('[P1] tests/bats/qa/ contains the relocated fixture as the sole .bats entry (so far)', () => {
+  it('[P1] tests/bats/qa/ contains the relocated fixture', () => {
     const batsFiles = readdirSync(QA_DIR).filter((f) => f.endsWith('.bats'));
     expect(batsFiles).toContain(RELOCATED_BASENAME);
   });
