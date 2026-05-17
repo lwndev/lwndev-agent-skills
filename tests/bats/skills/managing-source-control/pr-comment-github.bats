@@ -254,12 +254,4 @@ set_origin() {
   [ ! -f "${STUBDIR}/gh.invoked" ]
 }
 
-# ---------- ADO backend (Phase 1 placeholder) ----------
-
-@test "ADO origin → [info] Phase 2 placeholder, exit 0" {
-  set_origin "https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
-  run --separate-stderr bash "$PR_COMMENT" 1761 "Test comment"
-  [ "$status" -eq 0 ]
-  [[ "$stderr" == *"[info] ADO pr-comment.sh arriving in Phase 2."* ]]
-  [ ! -f "${STUBDIR}/gh.invoked" ]
-}
+# ADO-origin coverage moved to pr-comment-azdo.bats (Phase 2).

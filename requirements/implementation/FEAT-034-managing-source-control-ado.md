@@ -16,7 +16,7 @@ The work is structured in five phases: GitHub `pr-comment.sh` first (Phase 1 —
 
 ### Phase 1: GitHub `pr-comment.sh` + Bats coverage
 **Feature:** [FEAT-034](../features/FEAT-034-managing-source-control-ado.md) | [#280](https://github.com/lwndev/lwndev-marketplace/issues/280)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** None
 
 #### Rationale
@@ -47,7 +47,7 @@ The work is structured in five phases: GitHub `pr-comment.sh` first (Phase 1 —
 
 ### Phase 2: ADO `pr-comment.sh` top-level + reply + resource-name probe
 **Feature:** [FEAT-034](../features/FEAT-034-managing-source-control-ado.md) | [#280](https://github.com/lwndev/lwndev-marketplace/issues/280)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 1
 **ComplexityOverride:** opus
 
@@ -68,15 +68,15 @@ The work is structured in five phases: GitHub `pr-comment.sh` first (Phase 1 —
 7. Add a Bats fixture `tests/bats/skills/managing-source-control/pr-comment-dispatch.bats` covering the cross-backend dispatch concerns: `backend-detect.sh` returning `null` → `[info] No recognized SCM backend detected from origin. Skipping PR comment.` exit 0 (FR-6); `SDLC_SCM_BACKEND=github` override against a non-github origin honors the override semantics from `backend-detect.sh` (no new behavior — assert pass-through).
 
 #### Deliverables
-- [ ] `pr-comment.sh` ADO branch replaces the Phase-1 stub with the full FR-2 + FR-3 + FR-4 flow.
-- [ ] `az devops invoke` resource-name probe with `PullRequestThreads → pullrequestthreads → threads` fallback order.
-- [ ] Probe cache at `/tmp/sdlc-azdo-pr-thread-resource.<org>.<repo>` with 24h TTL and `probe-failed` sentinel (NFR-3).
-- [ ] Reply path resolves `parentCommentId` from the existing thread (FR-3).
-- [ ] Raw-HTTP `curl` fallback with PAT-based Basic auth and `SDLC_AZDO_HTTP=curl` force-flag (FR-4).
-- [ ] All ADO graceful-skip paths from the SKILL.md matrix emit `[warn]` and exit 0 (NFR-1).
-- [ ] `tests/bats/skills/managing-source-control/pr-comment-azdo.bats` covers FR-2 / FR-3 / FR-4 / NFR-3 / Edge 4 / Edge 6.
-- [ ] `tests/bats/skills/managing-source-control/pr-comment-dispatch.bats` covers FR-6 dispatch invariants.
-- [ ] All new and modified Bats fixtures pass under `npm run test:bats`.
+- [x] ADO branch of `plugins/lwndev-sdlc/skills/managing-source-control/scripts/pr-comment.sh` replaces the Phase-1 stub with the full FR-2 + FR-3 + FR-4 flow.
+- [x] Resource-name probe in `pr-comment.sh` ADO branch tries `PullRequestThreads → pullrequestthreads → threads` via `az devops invoke` in order.
+- [x] Probe cache at `/tmp/sdlc-azdo-pr-thread-resource.<org>.<repo>` with 24h TTL and `probe-failed` sentinel (NFR-3).
+- [x] Reply path resolves `parentCommentId` from the existing thread (FR-3).
+- [x] Raw-HTTP `curl` fallback with PAT-based Basic auth and `SDLC_AZDO_HTTP=curl` force-flag (FR-4).
+- [x] All ADO graceful-skip paths from the SKILL.md matrix emit `[warn]` and exit 0 (NFR-1).
+- [x] `tests/bats/skills/managing-source-control/pr-comment-azdo.bats` covers FR-2 / FR-3 / FR-4 / NFR-3 / Edge 4 / Edge 6.
+- [x] `tests/bats/skills/managing-source-control/pr-comment-dispatch.bats` covers FR-6 dispatch invariants.
+- [x] All new and modified Bats fixtures pass under `npm run test:bats`.
 
 #### Success Criteria
 - `pr-comment.sh <pr> "body"` against an `azdo` origin posts a new thread via the probed resource token and prints the discussion URL.
