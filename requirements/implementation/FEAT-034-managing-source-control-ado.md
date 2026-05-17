@@ -47,7 +47,7 @@ The work is structured in five phases: GitHub `pr-comment.sh` first (Phase 1 —
 
 ### Phase 2: ADO `pr-comment.sh` top-level + reply + resource-name probe
 **Feature:** [FEAT-034](../features/FEAT-034-managing-source-control-ado.md) | [#280](https://github.com/lwndev/lwndev-marketplace/issues/280)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 1
 **ComplexityOverride:** opus
 
@@ -88,7 +88,7 @@ The work is structured in five phases: GitHub `pr-comment.sh` first (Phase 1 —
 
 ### Phase 3: `list-pr-comments.sh` both backends + NDJSON schema
 **Feature:** [FEAT-034](../features/FEAT-034-managing-source-control-ado.md) | [#280](https://github.com/lwndev/lwndev-marketplace/issues/280)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 2
 
 #### Rationale
@@ -103,12 +103,12 @@ The work is structured in five phases: GitHub `pr-comment.sh` first (Phase 1 —
 4. Add Bats fixture `tests/bats/skills/managing-source-control/list-pr-comments.bats`: STUBDIR-stubbed `gh` and `az`; cases: github empty PR emits zero NDJSON lines + exits 0 (Edge 10); github single comment emits one line with correct field shape; github multi-comment emits multiple lines in chronological order; azdo single-thread-multi-comment emits comments with shared `thread_id`; azdo multi-thread interleave preserves thread linkage; azdo deleted-comment row carries `is_deleted: true`; missing backend (null) → zero records + `[info]` + exit 0; `gh` missing → zero records + `[warn]` + exit 0 (Edge 13); `gh api` 404 → zero records + `[warn]` + exit 0 (Edge 8).
 
 #### Deliverables
-- [ ] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/list-pr-comments.sh` exists, executable, passes `shellcheck`.
-- [ ] GitHub branch flattens `gh api .../issues/<pr>/comments` into the FR-5 NDJSON schema with sentinel values for ADO-only fields.
-- [ ] ADO branch reuses the Phase-2 probe cache and flattens threads → comments preserving `thread_id` linkage.
-- [ ] Both backends emit chronological order, one record per line, no whole-tree buffering (NFR-2).
-- [ ] Graceful-skip paths emit zero NDJSON records + appropriate `[info]`/`[warn]` (Edge 13).
-- [ ] `tests/bats/skills/managing-source-control/list-pr-comments.bats` covers both backends + all graceful-skip paths.
+- [x] `plugins/lwndev-sdlc/skills/managing-source-control/scripts/list-pr-comments.sh` exists, executable, passes `shellcheck`.
+- [x] GitHub branch flattens `gh api .../issues/<pr>/comments` into the FR-5 NDJSON schema with sentinel values for ADO-only fields.
+- [x] ADO branch reuses the Phase-2 probe cache and flattens threads → comments preserving `thread_id` linkage.
+- [x] Both backends emit chronological order, one record per line, no whole-tree buffering (NFR-2).
+- [x] Graceful-skip paths emit zero NDJSON records + appropriate `[info]`/`[warn]` (Edge 13).
+- [x] `tests/bats/skills/managing-source-control/list-pr-comments.bats` covers both backends + all graceful-skip paths.
 
 #### Success Criteria
 - `list-pr-comments.sh <pr>` on github emits NDJSON whose schema matches FR-5 exactly.
