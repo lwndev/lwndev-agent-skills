@@ -5,7 +5,7 @@ bats_require_minimum_version 1.5.0
 # Targets P0/P1 scenarios that the implementation team's bats fixtures did not explicitly cover.
 
 setup() {
-  REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../.." && pwd)"
+  REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../../../.." && pwd)"
   SCRIPTS="$REPO_ROOT/plugins/lwndev-sdlc/skills/managing-source-control/scripts"
   TMP="$(mktemp -d)"
   STUBDIR="$TMP/stub"
