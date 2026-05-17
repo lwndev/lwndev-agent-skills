@@ -43,6 +43,12 @@ if [ "\$1" = "branch" ] && [ "\$2" = "--show-current" ]; then
   printf '%s\n' '${branch}'
   exit 0
 fi
+# FEAT-033: backend-detect.sh (called by view-pr.sh dispatcher) reads the
+# origin URL to determine which SCM backend to dispatch on.
+if [ "\$1" = "remote" ] && [ "\$2" = "get-url" ] && [ "\$3" = "origin" ]; then
+  printf '%s\n' "\${GIT_REMOTE_ORIGIN:-https://github.com/foo/bar}"
+  exit 0
+fi
 exit 0
 EOF
   chmod +x "${STUB_DIR}/git"
@@ -207,19 +213,48 @@ EOF
 }
 
 @test "build-health gate: shared script unresolvable → exit 1 with 'build-health gate unavailable'" {
-  # Copy preflight-checks.sh to an isolated tmp dir so PREFLIGHT_DIR's
-  # ../../../scripts relative fallback resolves to a directory without
-  # verify-build-health.sh. CLAUDE_PLUGIN_ROOT must also be unset (or point
-  # to a path without scripts/verify-build-health.sh) for the gate to fail.
-  ISOLATED="$(mktemp -d)"
+  # Isolate preflight-checks.sh so the build-health gate's lookup fails on
+  # both branches:
+  #   1. CLAUDE_PLUGIN_ROOT points at a plugin tree with view-pr.sh (so the
+  #      earlier dispatcher resolution succeeds) but no scripts/verify-build-health.sh
+  #      (so the gate's first branch fails its `-f` check).
+  #   2. preflight-checks.sh is copied 4 levels deep under TMPROOT so the
+  #      relative `${PREFLIGHT_DIR}/../../../scripts/` fallback resolves to
+  #      ${TMPROOT}/scripts/, which we never create — the second branch's
+  #      `-f` check also fails. The deep nesting prevents the fallback from
+  #      escaping into any ambient `scripts/` dir on the runner.
+  TMPROOT="$(mktemp -d)"
+  ISOLATED="${TMPROOT}/a/b/c/d"
+  mkdir -p "$ISOLATED"
   cp "$PREFLIGHT" "${ISOLATED}/preflight-checks.sh"
+
+  # Plant a stub plugin tree: contains view-pr.sh (returns happy-path PR
+  # JSON so preflight gets past the PR-state checks) but no scripts/ dir.
+  PLUGIN_ROOT="${TMPROOT}/plugin-root"
+  mkdir -p "${PLUGIN_ROOT}/skills/managing-source-control/scripts"
+  cat > "${PLUGIN_ROOT}/skills/managing-source-control/scripts/view-pr.sh" <<'VIEWPR_STUB'
+#!/usr/bin/env bash
+printf '{"number":142,"title":"Test title","state":"OPEN","mergeable":"MERGEABLE","url":"https://github.com/foo/bar/pull/142"}\n'
+exit 0
+VIEWPR_STUB
+  chmod +x "${PLUGIN_ROOT}/skills/managing-source-control/scripts/view-pr.sh"
+
   write_git_stub "" "feat/FEAT-022-foo"
   write_gh_stub "ok"
-  run env -u CLAUDE_PLUGIN_ROOT bash "${ISOLATED}/preflight-checks.sh"
+  run env CLAUDE_PLUGIN_ROOT="${PLUGIN_ROOT}" bash "${ISOLATED}/preflight-checks.sh"
+  if ! [[ "$output" == *'build-health gate unavailable'* ]]; then
+    # Diagnostic for CI: surface the path resolution context so future
+    # editors can see why the gate didn't trip.
+    echo "DIAG TMPROOT=${TMPROOT}" >&2
+    echo "DIAG ISOLATED=${ISOLATED}" >&2
+    echo "DIAG PLUGIN_ROOT=${PLUGIN_ROOT}" >&2
+    echo "DIAG fallback=${TMPROOT}/scripts/verify-build-health.sh exists? $([ -f "${TMPROOT}/scripts/verify-build-health.sh" ] && echo yes || echo no)" >&2
+    echo "DIAG output=${output}" >&2
+  fi
   [ "$status" -eq 1 ]
   [[ "$output" == *'"status":"abort"'* ]]
   [[ "$output" == *'build-health gate unavailable'* ]]
-  rm -rf "$ISOLATED"
+  rm -rf "$TMPROOT"
 }
 
 @test "gh missing on PATH → exit 1 with missing-gh stderr" {

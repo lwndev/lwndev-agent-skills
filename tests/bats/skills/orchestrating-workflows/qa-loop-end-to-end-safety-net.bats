@@ -41,6 +41,10 @@ setup() {
   git init -q
   git config user.email "test@bats"
   git config user.name "Bats Test"
+  # FEAT-033: preflight delegates PR ops to managing-source-control's
+  # dispatchers, which probe the origin URL via backend-detect.sh. Add a
+  # synthetic origin so the dispatcher routes through the github path.
+  git remote add origin "https://github.com/foo/bar"
   git add -A
   git commit -q -m "init fixture"
 
@@ -65,6 +69,8 @@ exit 0
 EOF
   chmod +x "${STUB_DIR}/npm"
   export PATH="${STUB_DIR}:${PATH}"
+  # FEAT-033: point dispatchers at the real plugin tree.
+  export CLAUDE_PLUGIN_ROOT="$PLUGIN_DIR"
 
   # Establish a feature-like branch so preflight branch check passes.
   git checkout -q -b feat/FEAT-999-fixture

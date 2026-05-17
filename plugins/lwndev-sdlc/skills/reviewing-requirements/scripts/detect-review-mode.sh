@@ -9,14 +9,18 @@
 #
 # Precedence (first match wins):
 #   1. --pr <N> flag (explicit user override; does NOT probe gh).
-#   2. Open PR via `gh pr list --head <prefix>/<ID>-* --json number,state`
-#      where prefix is feat|chore|fix by ID prefix (FEAT-|CHORE-|BUG-).
+#   2. Open PR via the managing-source-control `list-pr.sh --head <prefix>/<ID>-*`
+#      dispatcher (FEAT-033 FR-4), where prefix is feat|chore|fix by ID prefix
+#      (FEAT-|CHORE-|BUG-). The dispatcher returns a normalized JSON array of
+#      `{number, state}` entries (NFR-3); we filter for `state == "OPEN"` and
+#      take the first match.
 #   3. Test plan at qa/test-plans/QA-plan-<ID>.md exists.
 #   4. Fallback: standard.
 #
-# When `gh` is missing or unauthenticated, step 2 is silently skipped. When
-# `gh pr list` returns a non-empty array whose first element has no `number`
-# field, a [warn] line is emitted and detection falls through to step 3.
+# When the dispatcher emits a `[warn]`/`[info]` (e.g. `gh` missing, not
+# authenticated, no backend), step 2 is silently skipped. When the response
+# is a non-empty array whose first OPEN element has no `number` field, a
+# [warn] line is emitted and detection falls through to step 3.
 #
 # Usage:
 #   detect-review-mode.sh <ID> [--pr <N>]
@@ -119,52 +123,67 @@ if [[ -n "$PR_NUM" ]]; then
   exit 0
 fi
 
-# Step 2: open PR detection via gh.
-# Silent on gh-missing / unauthenticated -> fall through to step 3.
-gh_step_done=0
-if command -v gh >/dev/null 2>&1; then
-  if gh auth status >/dev/null 2>&1; then
-    # Derive branch prefix from ID prefix.
-    case "$ID" in
-      FEAT-*) branch_prefix="feat" ;;
-      CHORE-*) branch_prefix="chore" ;;
-      BUG-*) branch_prefix="fix" ;;
-      *)     branch_prefix="" ;;
-    esac
+# Step 2: open PR detection via list-pr.sh dispatcher (FEAT-033 FR-4).
+# Silent on dispatcher graceful-skip ([warn]/[info]) -> fall through to step 3.
+_DRM_SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LIST_PR_DISPATCHER=""
+if [[ -n "${CLAUDE_PLUGIN_ROOT:-}" && -f "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/list-pr.sh" ]]; then
+  LIST_PR_DISPATCHER="${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/list-pr.sh"
+elif [[ -f "${_DRM_SCRIPT_DIR}/../../managing-source-control/scripts/list-pr.sh" ]]; then
+  LIST_PR_DISPATCHER="$(cd "${_DRM_SCRIPT_DIR}/../../managing-source-control/scripts" && pwd)/list-pr.sh"
+fi
 
-    if [[ -n "$branch_prefix" ]]; then
-      # gh pr list filters by --head pattern; use the --jq extractor documented
-      # in FR-1 to pick the first OPEN PR's number.
-      gh_out=""
-      if gh_out=$(gh pr list --head "${branch_prefix}/${ID}-*" --json number,state --jq '[.[] | select(.state=="OPEN")]' 2>/dev/null); then
-        # Expect a JSON array. If non-empty, check for `number` on first element.
-        if [[ "$HAS_JQ" -eq 1 ]]; then
-          len=$(printf '%s' "$gh_out" | jq 'length' 2>/dev/null || echo 0)
-          if [[ "$len" =~ ^[0-9]+$ ]] && [[ "$len" -gt 0 ]]; then
-            first_num=$(printf '%s' "$gh_out" | jq -r '.[0].number // empty' 2>/dev/null || true)
-            if [[ -n "$first_num" && "$first_num" =~ ^[0-9]+$ ]]; then
-              emit_code_review "$first_num"
-              exit 0
-            else
-              echo "[warn] detect-review-mode: gh response missing 'number' field; falling through." >&2
-              gh_step_done=1
-            fi
+gh_step_done=0
+if [[ -n "$LIST_PR_DISPATCHER" ]]; then
+  # Derive branch prefix from ID prefix.
+  case "$ID" in
+    FEAT-*) branch_prefix="feat" ;;
+    CHORE-*) branch_prefix="chore" ;;
+    BUG-*) branch_prefix="fix" ;;
+    *)     branch_prefix="" ;;
+  esac
+
+  if [[ -n "$branch_prefix" ]]; then
+    _drm_stderr_tmp="$(mktemp)"
+    list_out="$(bash "$LIST_PR_DISPATCHER" --head "${branch_prefix}/${ID}-*" 2>"$_drm_stderr_tmp" || true)"
+    list_err="$(cat "$_drm_stderr_tmp" 2>/dev/null || true)"
+    rm -f "$_drm_stderr_tmp"
+
+    # Skip if dispatcher emitted [warn]/[info] (graceful-skip path).
+    if ! printf '%s' "$list_err" | grep -Eq '^\[(warn|info)\]'; then
+      if [[ "$HAS_JQ" -eq 1 ]]; then
+        # Filter for OPEN state, take the first element's number.
+        first_num=$(printf '%s' "$list_out" | jq -r '[.[] | select(.state=="OPEN")] | .[0].number // empty' 2>/dev/null || true)
+        if [[ -n "$first_num" && "$first_num" =~ ^[0-9]+$ ]]; then
+          emit_code_review "$first_num"
+          exit 0
+        fi
+        # Non-empty array but no OPEN+number match: warn and fall through.
+        len=$(printf '%s' "$list_out" | jq 'length' 2>/dev/null || echo 0)
+        if [[ "$len" =~ ^[0-9]+$ ]] && [[ "$len" -gt 0 ]]; then
+          # Only warn when there were entries but none satisfied the filter.
+          has_open=$(printf '%s' "$list_out" | jq '[.[] | select(.state=="OPEN")] | length' 2>/dev/null || echo 0)
+          if [[ "$has_open" =~ ^[0-9]+$ ]] && [[ "$has_open" -gt 0 ]]; then
+            echo "[warn] detect-review-mode: gh response missing 'number' field; falling through." >&2
+            gh_step_done=1
           fi
-        else
-          # Pure-bash: grep numerically for "number":N; bail on malformed shape.
-          if [[ "$gh_out" != "[]" && -n "$gh_out" ]]; then
-            if [[ "$gh_out" =~ \"number\":[[:space:]]*([0-9]+) ]]; then
-              first_num="${BASH_REMATCH[1]}"
-              emit_code_review "$first_num"
-              exit 0
-            else
-              # Non-empty but no number field -> warn and fall through.
-              # (`[]` or empty responses fall to step 3 silently.)
-              if [[ "$gh_out" != "[]" && "$gh_out" != "" ]]; then
-                echo "[warn] detect-review-mode: gh response missing 'number' field; falling through." >&2
-              fi
-              gh_step_done=1
-            fi
+        fi
+      else
+        # Pure-bash: grep numerically for "number":N when an OPEN state is present.
+        if [[ "$list_out" != "[]" && -n "$list_out" ]]; then
+          # Match the first object whose state is "OPEN" and has a numeric `number`.
+          if [[ "$list_out" =~ \{[^}]*\"number\":[[:space:]]*([0-9]+)[^}]*\"state\":[[:space:]]*\"OPEN\" ]]; then
+            first_num="${BASH_REMATCH[1]}"
+            emit_code_review "$first_num"
+            exit 0
+          elif [[ "$list_out" =~ \{[^}]*\"state\":[[:space:]]*\"OPEN\"[^}]*\"number\":[[:space:]]*([0-9]+) ]]; then
+            first_num="${BASH_REMATCH[1]}"
+            emit_code_review "$first_num"
+            exit 0
+          elif [[ "$list_out" =~ \"state\":[[:space:]]*\"OPEN\" ]]; then
+            # An OPEN entry exists but no `number` field — malformed response.
+            echo "[warn] detect-review-mode: gh response missing 'number' field; falling through." >&2
+            gh_step_done=1
           fi
         fi
       fi

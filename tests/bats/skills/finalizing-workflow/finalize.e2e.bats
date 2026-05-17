@@ -45,6 +45,10 @@ setup() {
   # cwd changes.
   export SKILL_DIR="$REAL_SKILL_DIR"
   export PLUGIN_ROOT="$REAL_PLUGIN_ROOT"
+  # FEAT-033: finalize.sh / preflight-checks.sh / reconcile-affected-files.sh
+  # now delegate PR ops to the managing-source-control dispatchers, which
+  # resolve relative to CLAUDE_PLUGIN_ROOT.
+  export CLAUDE_PLUGIN_ROOT="$REAL_PLUGIN_ROOT"
 }
 
 teardown() {
@@ -69,20 +73,19 @@ case "$1" in
 esac
 
 if [ "$1" = "pr" ] && [ "$2" = "view" ]; then
-  # Detect --json files form → emit one path per line. Args arrive as
-  # separate tokens, so match against the joined arg list (with surrounding
-  # spaces so the first/last token matches too).
-  case " $* " in
-    *" --json files "*)
-      # reconcile-affected-files.sh pipes through gh's built-in --jq so the
-      # stub emits raw paths.
-      for p in $GH_PR_FILES; do
-        printf '%s\n' "$p"
-      done
-      exit 0
-      ;;
-  esac
-  # Generic `gh pr view --json number,title,state,mergeable,url` form.
+  # FEAT-033: view-pr.sh dispatcher always requests the unioned projection
+  # `--json number,title,state,mergeable,url,files`. Emit a single JSON
+  # object covering all consumer reads (preflight + reconcile).
+  files_array="[]"
+  if [ -n "$GH_PR_FILES" ]; then
+    sep=""
+    files_array="["
+    for p in $GH_PR_FILES; do
+      files_array="${files_array}${sep}{\"path\":\"${p}\"}"
+      sep=","
+    done
+    files_array="${files_array}]"
+  fi
   if command -v jq >/dev/null 2>&1; then
     jq -cn \
       --argjson number "$GH_PR_NUMBER" \
@@ -90,10 +93,11 @@ if [ "$1" = "pr" ] && [ "$2" = "view" ]; then
       --arg state "$GH_PR_STATE" \
       --arg mergeable "$GH_PR_MERGEABLE" \
       --arg url "$GH_PR_URL" \
-      '{number: $number, title: $title, state: $state, mergeable: $mergeable, url: $url}'
+      --argjson files "$files_array" \
+      '{number: $number, title: $title, state: $state, mergeable: $mergeable, url: $url, files: $files}'
   else
-    printf '{"number":%s,"title":"%s","state":"%s","mergeable":"%s","url":"%s"}\n' \
-      "$GH_PR_NUMBER" "$GH_PR_TITLE" "$GH_PR_STATE" "$GH_PR_MERGEABLE" "$GH_PR_URL"
+    printf '{"number":%s,"title":"%s","state":"%s","mergeable":"%s","url":"%s","files":%s}\n' \
+      "$GH_PR_NUMBER" "$GH_PR_TITLE" "$GH_PR_STATE" "$GH_PR_MERGEABLE" "$GH_PR_URL" "$files_array"
   fi
   exit 0
 fi
@@ -122,6 +126,15 @@ case "\$1" in
   push|fetch|pull)
     # Remote operations: succeed silently, do NOT invoke real git.
     exit 0
+    ;;
+  remote)
+    # FEAT-033: backend-detect.sh asks for the origin URL. The fixture repo
+    # has no origin set, so synthesize a github URL here.
+    if [ "\$2" = "get-url" ] && [ "\$3" = "origin" ]; then
+      printf '%s\n' "https://github.com/example/repo"
+      exit 0
+    fi
+    exec "$REAL_GIT" "\$@"
     ;;
   revert|reset)
     # Log loudly for no-rollback assertions but still succeed.

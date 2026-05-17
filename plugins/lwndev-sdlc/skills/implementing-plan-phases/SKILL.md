@@ -36,8 +36,8 @@ Script paths below are relative to `${CLAUDE_PLUGIN_ROOT}/skills/implementing-pl
 4. Create the feature branch (if not already on it):
 
    ```bash
-   branch=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<2-3 word summary>")
-   bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-branch.sh" "$branch"
+   branch=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<2-3 word summary>")
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/ensure-branch.sh" "$branch"
    ```
 
    `build-branch-name.sh`: exit `1` = empty slug (re-prompt for a more descriptive summary); `2` = invalid type. `ensure-branch.sh`: `0` on success (`on <branch>` / `switched to <branch>` / `created <branch>`); `2` missing arg; `3` dirty tree (stash or commit first, then retry).
@@ -51,10 +51,10 @@ Script paths below are relative to `${CLAUDE_PLUGIN_ROOT}/skills/implementing-pl
 
     ```bash
     bash "$SCRIPTS/verify-all-phases-complete.sh" "<plan-path>"
-    bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-pr.sh" feat "<FEAT-NNN>" "<summary>" [--closes <issueRef>]
+    bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/create-pr.sh" feat "<FEAT-NNN>" "<summary>" [--closes <issueRef>]
     ```
 
-    `verify-all-phases-complete.sh`: exit `0` with `all phases complete` only when every phase is `✅ Complete`; otherwise `1` with JSON `{"incomplete":[{"phase":<N>,...}...]}` — or stderr `[error] no phase blocks found in plan` when the plan has no `### Phase` blocks. Treat any non-zero as "do not create PR". `create-pr.sh`: reads current branch, runs `git push -u origin <branch>`, assembles title `feat(<FEAT-NNN>): <summary>`, substitutes `scripts/assets/pr-body.tmpl`, runs `gh pr create`. Pass `--closes #N` when a GitHub issue exists. Exit `0` PR URL on stdout; `1` on git/gh failure; `2` on malformed args.
+    `verify-all-phases-complete.sh`: exit `0` with `all phases complete` only when every phase is `✅ Complete`; otherwise `1` with JSON `{"incomplete":[{"phase":<N>,...}...]}` — or stderr `[error] no phase blocks found in plan` when the plan has no `### Phase` blocks. Treat any non-zero as "do not create PR". `create-pr.sh` (FEAT-033 multi-backend dispatcher): reads the current branch, runs `git push -u origin <branch>`, assembles title `feat(<FEAT-NNN>): <summary>`, then dispatches on `backend-detect.sh` output. GitHub path substitutes `scripts/assets/pr-body.tmpl` and runs `gh pr create`; Azure DevOps path uses the AzDO body template and runs `az repos pr create`. Pass `--closes #N` for GitHub auto-close or `--issue-ref AB#NNN` for AzDO Boards cross-link. Exit `0` on success (PR URL on stdout) OR on graceful-skip (`gh`/`az` absent, unauthenticated, or `az devops` extension missing — `[warn]` line on stderr); `1` on push failure or backend-CLI hard failure; `2` on malformed args.
 
 > **Note:** Issue tracking (start/completion comments) is handled by the orchestrator via `managing-work-items`. This skill focuses on implementation, verification, and status tracking.
 
@@ -126,7 +126,7 @@ Plans use `### Phase N: <name>` headings with a `**Status:**` line (`Pending` / 
 
 ## Branch Naming
 
-Format: `feat/{Feature ID}-{2-3-word-summary}`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<summary>"` (see Step 4) rather than hand-kebabing. Examples: `feat/FEAT-001-scaffold-skill-command`, `feat/FEAT-002-validate-skill-command`, `feat/FEAT-007-chore-task-skill`.
+Format: `feat/{Feature ID}-{2-3-word-summary}`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/build-branch-name.sh" feat "<FEAT-NNN>" "<summary>"` (see Step 4) rather than hand-kebabing. Examples: `feat/FEAT-001-scaffold-skill-command`, `feat/FEAT-002-validate-skill-command`, `feat/FEAT-007-chore-task-skill`.
 
 ## Verification
 

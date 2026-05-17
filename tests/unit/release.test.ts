@@ -36,6 +36,11 @@ async function createTestRepo(): Promise<string> {
   execSync('git init -b main', { cwd: dir, env: cleanEnv, stdio: 'pipe' });
   execSync('git config user.email "test@test.com"', { cwd: dir, env: cleanEnv, stdio: 'pipe' });
   execSync('git config user.name "Test"', { cwd: dir, env: cleanEnv, stdio: 'pipe' });
+  // Disable auto-gc so background pack writes don't race with afterEach `rm -rf`
+  // (CI saw ENOTEMPTY on `.git/objects` cleanup when gc was repacking in the
+  // background after `git commit` / `git tag` operations).
+  execSync('git config gc.auto 0', { cwd: dir, env: cleanEnv, stdio: 'pipe' });
+  execSync('git config gc.autoDetach false', { cwd: dir, env: cleanEnv, stdio: 'pipe' });
 
   // Create plugin structure
   const pluginDir = join(dir, 'plugins', 'test-plugin');

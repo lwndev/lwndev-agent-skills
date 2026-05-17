@@ -41,8 +41,8 @@ Execute bug fix workflows with root cause driven execution from branch creation 
 4. Create the git branch. Build the name and ensure checkout with:
 
    ```bash
-   branch=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" fix "<BUG-NNN>" "<2-4 word description>")
-   bash "${CLAUDE_PLUGIN_ROOT}/scripts/ensure-branch.sh" "$branch"
+   branch=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/build-branch-name.sh" fix "<BUG-NNN>" "<2-4 word description>")
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/ensure-branch.sh" "$branch"
    ```
 
    `build-branch-name.sh` calls `slugify.sh` internally (`bash "${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh" "<description>"`) — handles lowercasing, punctuation stripping, stopword removal (`a`, `an`, `the`, `of`, `for`, `to`, `and`, `or`), and the 4-token cap. Exit codes: `build-branch-name.sh` returns `1` on empty slug (ask for a more descriptive title) and `2` on invalid type. `ensure-branch.sh` returns `0` on success, `2` on missing arg, `3` on dirty working tree (stash or commit first).
@@ -57,7 +57,7 @@ Execute bug fix workflows with root cause driven execution from branch creation 
 7. Commit changes with:
 
    ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/scripts/commit-work.sh" fix <category> "<description>"
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/commit-work.sh" fix <category> "<description>"
    ```
 
    **The script does not stage files** — run `git add <paths>` first. It runs `git commit -m "fix(<category>): <description>"` and prints the short SHA on success. Exit codes: `0` on success (SHA on stdout); `1` on commit failure (git stderr passes through); `2` on missing/invalid type arg.
@@ -72,10 +72,10 @@ Execute bug fix workflows with root cause driven execution from branch creation 
 10. Create the pull request with:
 
     ```bash
-    bash "${CLAUDE_PLUGIN_ROOT}/scripts/create-pr.sh" fix "<BUG-NNN>" "<summary>" [--closes <issueRef>]
+    bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/create-pr.sh" fix "<BUG-NNN>" "<summary>" [--closes <issueRef>]
     ```
 
-    Does `git push -u origin <branch>` then `gh pr create` against `scripts/assets/pr-body.tmpl`. **MUST include `--closes #N` if an issue exists** — auto-closes the linked issue on merge. Exit codes: `0` on success (PR URL on stdout); `1` on push or PR-creation failure; `2` on missing/invalid args.
+    Multi-backend dispatcher (FEAT-033): pushes the current branch, then dispatches on `backend-detect.sh` output. GitHub path runs `gh pr create` against `scripts/assets/pr-body.tmpl`; Azure DevOps path runs `az repos pr create` against the AzDO body template. **MUST include `--closes #N` (GitHub) or `--issue-ref AB#NNN` (AzDO Boards) if an issue exists** — `--closes` auto-closes the linked GitHub issue on merge; `--issue-ref` is rendered into the AzDO description for cross-link visibility. Exit codes: `0` on success (PR URL on stdout) OR on graceful-skip (`gh`/`az` absent, unauthenticated, or `az devops` extension missing — `[warn]` line on stderr); `1` on push failure or backend-CLI hard failure; `2` on missing/invalid args.
 11. Update the bug document completion section (status, date, PR link)
 
 > **Note:** Issue tracking (start/completion comments) is handled by the orchestrator via `managing-work-items`. This skill focuses on root cause driven execution and verification.
@@ -160,7 +160,7 @@ If a new root cause surfaces during execution:
 
 ## Branch Naming
 
-Format: `fix/BUG-XXX-{2-4-word-description}`. Always assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/build-branch-name.sh" fix "<BUG-NNN>" "<description>"` (see Quick Start step 4) — the script applies slugify normalization uniformly.
+Format: `fix/BUG-XXX-{2-4-word-description}`. Always assemble via `bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/build-branch-name.sh" fix "<BUG-NNN>" "<description>"` (see Quick Start step 4) — the script applies slugify normalization uniformly.
 
 - Uses Bug ID (not GitHub issue number) for consistent naming
 - Keep the description brief but descriptive (2-4 words)
@@ -172,7 +172,7 @@ Examples:
 
 ## Commit Message Format
 
-Format: `fix(category): brief description`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/scripts/commit-work.sh" fix <category> "<description>"` (see Quick Start step 7). **Callers must `git add` relevant paths before invoking** — the script does not auto-stage.
+Format: `fix(category): brief description`. Assemble via `bash "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/commit-work.sh" fix <category> "<description>"` (see Quick Start step 7). **Callers must `git add` relevant paths before invoking** — the script does not auto-stage.
 
 | Category | Use When |
 |----------|----------|

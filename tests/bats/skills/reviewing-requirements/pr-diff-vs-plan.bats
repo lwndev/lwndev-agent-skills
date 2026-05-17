@@ -14,6 +14,23 @@ setup() {
   STUB_DIR="${FIXTURE_DIR}/stubs"
   mkdir -p "$STUB_DIR"
 
+  # FEAT-033: pr-diff-vs-plan.sh now delegates to managing-source-control's
+  # pr-diff.sh dispatcher. Point CLAUDE_PLUGIN_ROOT at the real plugin so the
+  # dispatcher resolves.
+  REAL_PLUGIN_ROOT="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc" && pwd)"
+  export CLAUDE_PLUGIN_ROOT="$REAL_PLUGIN_ROOT"
+
+  # Default git stub so backend-detect.sh sees a github origin URL.
+  cat > "${STUB_DIR}/git" <<'EOF'
+#!/usr/bin/env bash
+if [ "$1" = "remote" ] && [ "$2" = "get-url" ] && [ "$3" = "origin" ]; then
+  printf '%s\n' "https://github.com/foo/bar"
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "${STUB_DIR}/git"
+
   # Default test plan referencing each artifact class we may flag.
   TEST_PLAN="${FIXTURE_DIR}/testplan.md"
   cat > "$TEST_PLAN" <<'EOF'
@@ -38,10 +55,14 @@ teardown() {
 
 write_gh_stub_diff() {
   # Writes a `gh` stub that prints $GH_DIFF_STDOUT on `gh pr diff` and exits
-  # with $GH_DIFF_RC.
+  # with $GH_DIFF_RC. Also handles `gh auth status` (pr-diff.sh dispatcher
+  # checks auth before running the diff).
   cat > "${STUB_DIR}/gh" <<'EOF'
 #!/usr/bin/env bash
 case "$1 $2" in
+  "auth status")
+    exit "${GH_AUTH_RC:-0}"
+    ;;
   "pr diff")
     rc="${GH_DIFF_RC:-0}"
     err="${GH_DIFF_ERR:-}"
@@ -72,6 +93,18 @@ empty_path_for_no_gh() {
       ln -sf "/opt/homebrew/bin/$bin" "$dir/$bin" 2>/dev/null || true
     fi
   done
+  # Provide a git stub so backend-detect.sh inside the pr-diff dispatcher
+  # produces a github backend (rather than null). The dispatcher then hits
+  # the `command -v gh` check and emits its missing-gh [warn].
+  cat > "$dir/git" <<'EOF'
+#!/usr/bin/env bash
+if [ "$1" = "remote" ] && [ "$2" = "get-url" ] && [ "$3" = "origin" ]; then
+  printf '%s\n' "https://github.com/foo/bar"
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "$dir/git"
   printf '%s' "$dir"
 }
 
@@ -131,7 +164,7 @@ empty_path_for_no_gh() {
 # Graceful-skip paths
 # =====================================================================
 
-@test "gh not on PATH -> exit 0, [warn] gh CLI not found, empty stdout" {
+@test "gh not on PATH -> exit 0, [warn] gh pr diff failed, empty stdout" {
   nogh="$(empty_path_for_no_gh)"
   err_file="${FIXTURE_DIR}/err"
   out_file="${FIXTURE_DIR}/out"
@@ -140,7 +173,10 @@ empty_path_for_no_gh() {
   [ "$rc" -eq 0 ]
   err="$(cat "$err_file")"
   out="$(cat "$out_file")"
-  [[ "$err" == *"[warn] gh CLI not found"* ]]
+  # FEAT-033: the dispatcher emits its own `[warn] GitHub CLI (gh) not found on
+  # PATH.` line; pr-diff-vs-plan.sh wraps it as `[warn] gh pr diff failed: ...`.
+  [[ "$err" == *"[warn] gh pr diff failed"* ]]
+  [[ "$err" == *"GitHub CLI (gh) not found on PATH"* ]]
   [ -z "$out" ]
 }
 

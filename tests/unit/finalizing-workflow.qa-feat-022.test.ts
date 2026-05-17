@@ -213,16 +213,26 @@ describe('State transitions — idempotency', () => {
       doc,
       ['## Affected Files', '', '- `a.md` (planned but not modified)', '- `b.md`', ''].join('\n')
     );
-    // Stub gh via PATH
+    // FEAT-033 Phase 5: reconcile-affected-files.sh now calls the
+    // managing-source-control view-pr.sh dispatcher. Stub `git remote get-url
+    // origin` so backend-detect.sh resolves a github backend, and stub `gh
+    // pr view` to return the full view-pr JSON shape including a `files`
+    // array.
     const stubDir = join(dir, 'stub');
     mkdirSync(stubDir, { recursive: true });
     writeFileSync(
+      join(stubDir, 'git'),
+      `#!/usr/bin/env bash\nif [ "$1" = "remote" ] && [ "$2" = "get-url" ] && [ "$3" = "origin" ]; then\n  echo "https://github.com/foo/bar"\n  exit 0\nfi\nexit 0\n`
+    );
+    chmodSync(join(stubDir, 'git'), 0o755);
+    writeFileSync(
       join(stubDir, 'gh'),
-      `#!/usr/bin/env bash\n# Stub: only b.md is in the PR.\nif [[ "$*" == *"--json files"* ]]; then\n  echo "b.md"\nfi\nexit 0\n`
+      `#!/usr/bin/env bash\n# Stub: only b.md is in the PR.\nif [ "$1" = "auth" ] && [ "$2" = "status" ]; then\n  exit 0\nfi\nif [ "$1" = "pr" ] && [ "$2" = "view" ]; then\n  printf '{"number":42,"title":"x","state":"OPEN","mergeable":"MERGEABLE","url":"https://example/pull/42","files":[{"path":"b.md"}]}\\n'\n  exit 0\nfi\nexit 0\n`
     );
     chmodSync(join(stubDir, 'gh'), 0o755);
     const r = run(RECONCILE_AFFECTED, [doc, '42'], {
       PATH: `${stubDir}:${process.env.PATH}`,
+      CLAUDE_PLUGIN_ROOT: join(REPO_ROOT, 'plugins', 'lwndev-sdlc'),
     });
     expect(r.status).toBe(0);
     // Already annotated — should not re-annotate.

@@ -10,6 +10,23 @@ setup() {
   STUB_DIR="${TMPDIR_TEST}/stubs"
   mkdir -p "$STUB_DIR"
   export PATH="${STUB_DIR}:${PATH}"
+
+  # FEAT-033: reconcile-affected-files.sh now delegates to view-pr.sh, which
+  # routes through backend-detect.sh. Point CLAUDE_PLUGIN_ROOT at the real
+  # plugin so the dispatcher resolves to its actual scripts.
+  REAL_PLUGIN_ROOT="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc" && pwd)"
+  export CLAUDE_PLUGIN_ROOT="$REAL_PLUGIN_ROOT"
+
+  # Stub `git` so backend-detect.sh sees a github origin URL.
+  cat > "${STUB_DIR}/git" <<'EOF'
+#!/usr/bin/env bash
+if [ "$1" = "remote" ] && [ "$2" = "get-url" ] && [ "$3" = "origin" ]; then
+  printf '%s\n' "https://github.com/foo/bar"
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "${STUB_DIR}/git"
 }
 
 teardown() {
@@ -18,14 +35,27 @@ teardown() {
   fi
 }
 
-# Helper: write a gh stub that emits the given paths (newline-separated)
-# when invoked as `gh pr view <N> --json files --jq '.files[].path'`.
+# Helper: write a gh stub that returns the view-pr.sh-shaped JSON. The
+# dispatcher invokes `gh pr view <N> --json number,title,state,mergeable,url,files`
+# and emits the full JSON. We build a files array from the newline-separated
+# paths arg.
 write_gh_stub() {
   local paths_multiline="$1"
+  # Build the JSON files array.
+  local files_array="[]"
+  if [ -n "$paths_multiline" ]; then
+    files_array="$(printf '%s' "$paths_multiline" \
+      | awk 'NF { printf "%s{\"path\":\"%s\"}", (NR>1?",":""), $0 } END { printf "" }')"
+    files_array="[${files_array}]"
+  fi
   cat > "${STUB_DIR}/gh" <<EOF
 #!/usr/bin/env bash
+# gh auth status — always succeed inside tests.
+if [ "\$1" = "auth" ] && [ "\$2" = "status" ]; then
+  exit 0
+fi
 if [ "\$1" = "pr" ] && [ "\$2" = "view" ]; then
-  printf '%s' '${paths_multiline}'
+  printf '{"number":42,"title":"x","state":"OPEN","mergeable":"MERGEABLE","url":"https://example/pull/42","files":%s}\n' '${files_array}'
   exit 0
 fi
 exit 0
@@ -36,6 +66,10 @@ EOF
 write_gh_fail_stub() {
   cat > "${STUB_DIR}/gh" <<'EOF'
 #!/usr/bin/env bash
+# gh auth status — succeed; the failure simulation must come from gh pr view.
+if [ "$1" = "auth" ] && [ "$2" = "status" ]; then
+  exit 0
+fi
 echo "gh: connection refused" >&2
 exit 1
 EOF

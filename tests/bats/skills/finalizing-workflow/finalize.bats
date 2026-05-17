@@ -35,6 +35,12 @@ setup() {
   PLUGIN_SCRIPTS_DIR="${PLUGIN_ROOT}/scripts"
   mkdir -p "$PLUGIN_SCRIPTS_DIR"
 
+  # FEAT-033: finalize.sh now delegates merge to the managing-source-control
+  # dispatcher. Point CLAUDE_PLUGIN_ROOT at the real plugin so the dispatcher
+  # (merge-pr.sh + backend-detect.sh) resolves to its actual scripts.
+  REAL_PLUGIN_ROOT="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc" && pwd)"
+  export CLAUDE_PLUGIN_ROOT="$REAL_PLUGIN_ROOT"
+
   # Put stubs first on PATH; keep the rest of PATH intact so bash/awk/sed/mktemp
   # etc. still resolve.
   export PATH="${STUB_DIR}:${PATH}"
@@ -100,6 +106,15 @@ case "\$1" in
     exit 0
     ;;
   commit)       exit 0 ;;
+  remote)
+    # backend-detect.sh asks for the origin URL. Default to a github URL so
+    # the dispatcher routes through the gh path stubbed below.
+    if [ "\$2" = "get-url" ] && [ "\$3" = "origin" ]; then
+      printf '%s\n' "\${GIT_REMOTE_ORIGIN:-https://github.com/foo/bar}"
+      exit 0
+    fi
+    exit 0
+    ;;
   rev-parse)
     if [ "\$2" = "--short" ] && [ "\$3" = "HEAD" ]; then
       printf '%s' "\${GIT_REV_SHORT-abc1234}"
@@ -147,6 +162,11 @@ write_gh_stub() {
   cat > "${STUB_DIR}/gh" <<EOF
 #!/usr/bin/env bash
 printf '%s\n' "TRACE:gh:\$*" >> "${TRACER}"
+# merge-pr.sh (FEAT-033) calls 'gh auth status' before merging — always
+# succeed so the dispatcher routes through to the real merge call.
+if [ "\$1" = "auth" ] && [ "\$2" = "status" ]; then
+  exit 0
+fi
 if [ "\$1" = "pr" ] && [ "\$2" = "merge" ]; then
   if [ "\${GH_MERGE_RC:-0}" -ne 0 ]; then
     echo "merge failed" >&2

@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
 # pr-diff-vs-plan.sh — PR diff vs test-plan drift detector (FEAT-026 / FR-6).
 #
-# Fetches the unified diff for a pull request via `gh pr diff <N>` and flags
-# any test-plan references that align with changed / deleted / renamed files
-# or changed function/class/interface/type signatures.
+# Fetches the unified diff for a pull request via the managing-source-control
+# `pr-diff.sh` dispatcher (FEAT-033 FR-4) and flags any test-plan references
+# that align with changed / deleted / renamed files or changed function /
+# class / interface / type signatures.
 #
 # Output shape (all three arrays always present):
 #   {"flaggedFiles":[...],"flaggedIdentifiers":[...],"flaggedSignatures":[...]}
 # Each entry:
 #   {"testPlanLine":N,"scenarioSnippet":"...","drift":"deleted|renamed|signature-changed|content-changed","detail":"..."}
 #
-# Graceful degradation: if `gh` is not on PATH, emit a `[warn] gh CLI not
-# found — ...` line to stderr and exit `0` with empty stdout. If `gh pr diff`
-# itself fails, emit `[warn] gh pr diff failed: <err>. Skipping ...` to stderr
-# and exit `0` with empty stdout.
+# Graceful degradation: if the dispatcher emits a `[warn]`/`[info]` (e.g.
+# `gh` not on PATH, not authenticated, dispatcher missing) the script emits
+# `[warn] gh pr diff failed: <first line>. Skipping ...` to stderr and exits
+# `0` with empty stdout.
 #
 # Usage:
 #   pr-diff-vs-plan.sh <pr-number> <test-plan>
@@ -25,9 +26,10 @@
 #      hex)
 #
 # Dependencies:
-#   bash, grep, awk. `gh` optional — graceful skip if missing. `jq` is optional
-#   — used for JSON assembly when available; falls back to pure-bash printf
-#   construction otherwise.
+#   bash, grep, awk. `pr-diff.sh` (managing-source-control dispatcher) — does
+#   the optional `gh`/`az` plumbing and graceful-skip on missing CLI. `jq` is
+#   optional — used for JSON assembly when available; falls back to pure-bash
+#   printf construction otherwise.
 
 set -euo pipefail
 
@@ -63,25 +65,35 @@ if command -v jq >/dev/null 2>&1; then
   HAS_JQ=1
 fi
 
-# --- gh availability ----------------------------------------------------------
+# --- Resolve pr-diff.sh dispatcher --------------------------------------------
 
-if ! command -v gh >/dev/null 2>&1; then
-  echo "[warn] gh CLI not found — cannot fetch PR diff. Skipping pr-diff-vs-plan check." >&2
+_PR_DIFF_VS_PLAN_SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PR_DIFF_DISPATCHER=""
+if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/pr-diff.sh" ]; then
+  PR_DIFF_DISPATCHER="${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/pr-diff.sh"
+elif [ -f "${_PR_DIFF_VS_PLAN_SCRIPT_DIR}/../../managing-source-control/scripts/pr-diff.sh" ]; then
+  PR_DIFF_DISPATCHER="$(cd "${_PR_DIFF_VS_PLAN_SCRIPT_DIR}/../../managing-source-control/scripts" && pwd)/pr-diff.sh"
+fi
+
+if [ -z "$PR_DIFF_DISPATCHER" ]; then
+  echo "[warn] pr-diff.sh dispatcher not found — cannot fetch PR diff. Skipping pr-diff-vs-plan check." >&2
   exit 0
 fi
 
 # --- Fetch PR diff ------------------------------------------------------------
 
 _diff_err_tmp=$(mktemp)
-if ! DIFF=$(gh pr diff "$PR_NUM" 2>"$_diff_err_tmp"); then
-  _err_text=$(cat "$_diff_err_tmp" 2>/dev/null || true)
-  rm -f "$_diff_err_tmp"
-  # Trim the error text to the first line for the [warn].
+DIFF=$(bash "$PR_DIFF_DISPATCHER" "$PR_NUM" 2>"$_diff_err_tmp")
+_diff_rc=$?
+_err_text=$(cat "$_diff_err_tmp" 2>/dev/null || true)
+rm -f "$_diff_err_tmp"
+
+# Treat dispatcher graceful-skip ([warn]/[info]) or non-zero exit as failure.
+if [ "$_diff_rc" -ne 0 ] || printf '%s' "$_err_text" | grep -Eq '^\[(warn|info)\]'; then
   _err_line=$(printf '%s' "$_err_text" | head -n 1)
   echo "[warn] gh pr diff failed: ${_err_line:-unknown error}. Skipping pr-diff-vs-plan check." >&2
   exit 0
 fi
-rm -f "$_diff_err_tmp"
 
 # --- Parse the diff -----------------------------------------------------------
 # Produce four newline-separated lists:

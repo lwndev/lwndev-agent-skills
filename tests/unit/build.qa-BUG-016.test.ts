@@ -5,8 +5,11 @@ import { spawnSync } from 'node:child_process';
 
 const SHARED_DIR = 'tests/bats/shared';
 const QA_DIR = 'tests/bats/qa';
-const RELOCATED_BASENAME = 'qa-CHORE-037-husky-hooks.bats';
-const PRE_MOVE_PATH = join(SHARED_DIR, RELOCATED_BASENAME);
+// FEAT-033 Phase 6 / FR-9 adoption sweep: husky-hooks bats dropped the `qa-`
+// prefix to stay in tests/bats/qa/ without tripping the FR-9 safety-net glob
+// (tests/bats/qa/qa-*.bats). The file content is unchanged.
+const RELOCATED_BASENAME = 'husky-hooks.bats';
+const PRE_MOVE_PATH = join(SHARED_DIR, 'qa-CHORE-037-husky-hooks.bats');
 const POST_MOVE_PATH = join(QA_DIR, RELOCATED_BASENAME);
 
 describe('BUG-016: relocated QA fixture — inputs', () => {
@@ -18,13 +21,17 @@ describe('BUG-016: relocated QA fixture — inputs', () => {
     expect(existsSync(POST_MOVE_PATH)).toBe(true);
   });
 
-  it('[P0] tests/bats/shared/ contains exactly 14 canonical .bats files', () => {
+  it('[P0] tests/bats/shared/ contains exactly 10 canonical .bats files', () => {
     expect(existsSync(SHARED_DIR)).toBe(true);
     // Filter out *.qa.bats adopted siblings (FEAT-032 convention); count only canonical peers.
+    // FEAT-033 Phase 2 relocated build-branch-name.bats, ensure-branch.bats, and
+    // commit-work.bats to tests/bats/skills/managing-source-control/ (was 14, now 11).
+    // FEAT-033 Phase 5 also removed the plugin-level create-pr.sh shim (and its
+    // shared/create-pr.bats peer), so the canonical count drops to 10.
     const batsFiles = readdirSync(SHARED_DIR).filter(
       (f) => f.endsWith('.bats') && !f.includes('.qa.')
     );
-    expect(batsFiles.length).toBe(14);
+    expect(batsFiles.length).toBe(10);
   });
 
   it('[P0] relocated file is non-empty and a regular file', () => {
@@ -46,7 +53,7 @@ describe('BUG-016: tests/bats/qa/ directory — cross-cutting', () => {
     expect(statSync(QA_DIR).isDirectory()).toBe(true);
   });
 
-  it('[P1] tests/bats/qa/ contains the relocated fixture as the sole .bats entry (so far)', () => {
+  it('[P1] tests/bats/qa/ contains the relocated fixture', () => {
     const batsFiles = readdirSync(QA_DIR).filter((f) => f.endsWith('.bats'));
     expect(batsFiles).toContain(RELOCATED_BASENAME);
   });

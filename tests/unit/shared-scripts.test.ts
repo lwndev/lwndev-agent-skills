@@ -24,12 +24,9 @@ const CANONICAL_SCRIPTS = [
   'next-id.sh',
   'slugify.sh',
   'resolve-requirement-doc.sh',
-  'build-branch-name.sh',
-  'ensure-branch.sh',
   'check-acceptance.sh',
   'checkbox-flip-all.sh',
-  'commit-work.sh',
-  'create-pr.sh',
+  // create-pr.sh moved to managing-source-control skill in FEAT-033 Phase 5.
   'branch-id-parse.sh',
   'prepare-fork.sh',
   'verify-build-health.sh',

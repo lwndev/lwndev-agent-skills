@@ -9,7 +9,8 @@
 #   3. Bookkeeping (feature/chore/bug only): resolve doc → idempotency check →
 #      (if not idempotent) checkbox flip + completion upsert + affected-files
 #      reconcile → commit + push.
-#   4. Execution: gh pr merge → git checkout main → git fetch → git pull.
+#   4. Execution: managing-source-control/scripts/merge-pr.sh → git checkout
+#      main → git fetch → git pull.
 #
 # Invariant (NO-ROLLBACK): on any failure after BK-5 commit/push, the script
 # MUST NOT revert or reset the bookkeeping commit. Re-invocation relies on
@@ -432,13 +433,24 @@ run_bk5() {
 # -----------------------------------------------------------------------------
 
 run_execution() {
-  # Merge.
+  # Merge via the managing-source-control dispatcher (FEAT-033 FR-7). The
+  # dispatcher resolves the SCM backend (gh / az) and applies the appropriate
+  # merge call. NFR-1 graceful-skip paths emit `[warn]` / `[info]` on stderr
+  # and exit 0; finalize requires the merge to actually succeed, so we treat
+  # any `[warn]` / `[info]` line as fatal here regardless of exit code.
+  local merge_pr_script
+  if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/merge-pr.sh" ]; then
+    merge_pr_script="${CLAUDE_PLUGIN_ROOT}/skills/managing-source-control/scripts/merge-pr.sh"
+  else
+    merge_pr_script="${PLUGIN_ROOT}/skills/managing-source-control/scripts/merge-pr.sh"
+  fi
+
   set +e
   local merge_err
-  merge_err="$(gh pr merge --merge --delete-branch 2>&1 >/dev/null)"
+  merge_err="$(bash "$merge_pr_script" "$PR_NUMBER" 2>&1 >/dev/null)"
   local merge_rc=$?
   set -e
-  if [ "$merge_rc" -ne 0 ]; then
+  if [ "$merge_rc" -ne 0 ] || printf '%s' "$merge_err" | grep -Eq '^\[(warn|info)\]'; then
     if [ -n "$merge_err" ]; then
       printf '%s\n' "$merge_err" >&2
     fi

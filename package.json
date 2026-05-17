@@ -3,7 +3,7 @@
   "scripts": {
     "scaffold": "tsx scripts/scaffold.ts",
     "build": "tsx scripts/build.ts",
-    "validate": "tsx scripts/validate-test-layout.ts && tsx scripts/build.ts",
+    "validate": "tsx scripts/validate-test-layout.ts && tsx scripts/validate-no-inline-scm.ts && tsx scripts/build.ts",
     "test": "npm run test:unit && npm run test:bats",
     "test:unit": "vitest run",
     "test:bats": "npx bats -r --jobs 8 --no-parallelize-within-files tests/bats",

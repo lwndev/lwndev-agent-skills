@@ -31,17 +31,23 @@ import { spawnSync, spawn } from 'node:child_process';
 
 const REPO_ROOT = process.cwd();
 const SCRIPTS = join(REPO_ROOT, 'plugins/lwndev-sdlc/scripts');
+// FEAT-033 Phase 2: build-branch-name.sh, ensure-branch.sh, and commit-work.sh
+// were moved into the managing-source-control skill. slugify.sh stays at the
+// plugin-root scripts/ dir; build-branch-name.sh resolves it via CLAUDE_PLUGIN_ROOT
+// or a relative ../../../scripts/ fallback.
+const MSC_SCRIPTS = join(REPO_ROOT, 'plugins/lwndev-sdlc/skills/managing-source-control/scripts');
 
 const SH = {
   nextId: join(SCRIPTS, 'next-id.sh'),
   slugify: join(SCRIPTS, 'slugify.sh'),
   resolveDoc: join(SCRIPTS, 'resolve-requirement-doc.sh'),
-  buildBranch: join(SCRIPTS, 'build-branch-name.sh'),
-  ensureBranch: join(SCRIPTS, 'ensure-branch.sh'),
+  buildBranch: join(MSC_SCRIPTS, 'build-branch-name.sh'),
+  ensureBranch: join(MSC_SCRIPTS, 'ensure-branch.sh'),
   checkAc: join(SCRIPTS, 'check-acceptance.sh'),
   flipAll: join(SCRIPTS, 'checkbox-flip-all.sh'),
-  commitWork: join(SCRIPTS, 'commit-work.sh'),
-  createPr: join(SCRIPTS, 'create-pr.sh'),
+  commitWork: join(MSC_SCRIPTS, 'commit-work.sh'),
+  // FEAT-033 Phase 5: create-pr.sh moved to managing-source-control skill.
+  createPr: join(MSC_SCRIPTS, 'create-pr.sh'),
   branchParse: join(SCRIPTS, 'branch-id-parse.sh'),
 };
 
@@ -344,24 +350,47 @@ describe('[QA FEAT-020] Environment: non-default locale does not break slugify',
 
 describe('[QA FEAT-020] Dependency failure: create-pr.sh error paths with PATH-shadowed git/gh', () => {
   it('exits 1 with pr-body.tmpl missing at runtime', () => {
+    // FEAT-033 Phase 3: the plugin-level create-pr.sh is now a shim that
+    // delegates to the skill-scoped dispatcher, which resolves the template
+    // relative to its OWN script location (skills/managing-source-control/
+    // scripts → plugin-root/scripts/assets/pr-body.tmpl). To exercise the
+    // "template missing" branch, we must also copy the dispatcher tree under
+    // tmp and invoke it directly so the template-path walk lands inside the
+    // empty tmp scripts/assets/ dir.
     const tmp = makeTmp();
     try {
-      const scriptsCopy = join(tmp, 'scripts');
-      mkdirSync(scriptsCopy, { recursive: true });
-      const src = readFileSync(SH.createPr, 'utf8');
-      const createPrCopy = join(scriptsCopy, 'create-pr.sh');
-      writeFileSync(createPrCopy, src);
+      const skillScriptsDir = join(tmp, 'skills', 'managing-source-control', 'scripts');
+      mkdirSync(skillScriptsDir, { recursive: true });
+      mkdirSync(join(tmp, 'scripts', 'assets'), { recursive: true });
+
+      // Copy the real backend-detect.sh + the real skill create-pr.sh into the
+      // synthetic plugin tree. The plugin layout puts pr-body.tmpl at
+      // <plugin>/scripts/assets/pr-body.tmpl — and we leave that dir empty so
+      // the template is missing at runtime. SH.createPr already points to the
+      // skill-scoped path (FEAT-033 Phase 5), so source the real script
+      // directly from its sibling.
+      const skillCreatePr = SH.createPr;
+      const skillBackendDetect = join(MSC_SCRIPTS, 'backend-detect.sh');
+      const createPrSrc = readFileSync(skillCreatePr, 'utf8');
+      const backendDetectSrc = readFileSync(skillBackendDetect, 'utf8');
+      const createPrCopy = join(skillScriptsDir, 'create-pr.sh');
+      const backendDetectCopy = join(skillScriptsDir, 'backend-detect.sh');
+      writeFileSync(createPrCopy, createPrSrc);
+      writeFileSync(backendDetectCopy, backendDetectSrc);
       chmodSync(createPrCopy, 0o755);
-      mkdirSync(join(scriptsCopy, 'assets'), { recursive: true });
+      chmodSync(backendDetectCopy, 0o755);
 
       const gitStub = join(tmp, 'git');
       writeFileSync(
         gitStub,
-        '#!/usr/bin/env bash\ncase "$1" in\n  rev-parse) echo "feat/FEAT-001-foo"; exit 0 ;;\n  push) exit 0 ;;\nesac\nexit 0\n'
+        '#!/usr/bin/env bash\ncase "$1" in\n  rev-parse) echo "feat/FEAT-001-foo"; exit 0 ;;\n  push) exit 0 ;;\n  remote) [ "$2" = "get-url" ] && echo "https://github.com/example/repo.git" && exit 0; exit 0 ;;\nesac\nexit 0\n'
       );
       chmodSync(gitStub, 0o755);
       const ghStub = join(tmp, 'gh');
-      writeFileSync(ghStub, '#!/usr/bin/env bash\necho "https://example/pull/1"; exit 0\n');
+      writeFileSync(
+        ghStub,
+        '#!/usr/bin/env bash\ncase "$1" in\n  auth) exit 0 ;;\n  pr) echo "https://example/pull/1"; exit 0 ;;\nesac\nexit 0\n'
+      );
       chmodSync(ghStub, 0o755);
       const env = { ...process.env, PATH: `${tmp}:${process.env.PATH}` };
 
@@ -376,17 +405,20 @@ describe('[QA FEAT-020] Dependency failure: create-pr.sh error paths with PATH-s
   it('git push failure exits 1 without invoking gh pr create', () => {
     const tmp = makeTmp();
     try {
+      // FEAT-033 Phase 3: dispatcher calls backend-detect.sh first, which
+      // shells out to `git remote get-url origin`. Stub it to a GitHub URL so
+      // the GitHub branch is selected and the push-failure path is exercised.
       const gitStub = join(tmp, 'git');
       writeFileSync(
         gitStub,
-        '#!/usr/bin/env bash\ncase "$1" in\n  rev-parse) echo "feat/FEAT-001-foo"; exit 0 ;;\n  push) echo "error: push failed" >&2; exit 1 ;;\nesac\nexit 0\n'
+        '#!/usr/bin/env bash\ncase "$1" in\n  rev-parse) echo "feat/FEAT-001-foo"; exit 0 ;;\n  push) echo "error: push failed" >&2; exit 1 ;;\n  remote) [ "$2" = "get-url" ] && echo "https://github.com/example/repo.git" && exit 0; exit 0 ;;\nesac\nexit 0\n'
       );
       chmodSync(gitStub, 0o755);
       const ghSentinel = join(tmp, 'gh-sentinel');
       const ghStub = join(tmp, 'gh');
       writeFileSync(
         ghStub,
-        `#!/usr/bin/env bash\ntouch "${ghSentinel}"\necho "https://example/pull/1"\nexit 0\n`
+        `#!/usr/bin/env bash\ncase "$1" in\n  auth) exit 0 ;;\n  pr) touch "${ghSentinel}"; echo "https://example/pull/1"; exit 0 ;;\nesac\nexit 0\n`
       );
       chmodSync(ghStub, 0o755);
       const env = { ...process.env, PATH: `${tmp}:${process.env.PATH}` };
@@ -426,17 +458,19 @@ describe('[QA FEAT-020] Cross-cutting: shell-metacharacter safety in create-pr.s
   it('handles backticks, $-substitution, and `&` in summary without corruption', () => {
     const tmp = makeTmp();
     try {
+      // FEAT-033 Phase 3: extend stubs to handle backend-detect.sh's
+      // `git remote get-url origin` probe and `gh auth status` gate.
       const capturedBody = join(tmp, 'gh-body.txt');
       const gitStub = join(tmp, 'git');
       writeFileSync(
         gitStub,
-        '#!/usr/bin/env bash\ncase "$1" in\n  rev-parse) echo "feat/FEAT-001-foo"; exit 0 ;;\n  push) exit 0 ;;\nesac\nexit 0\n'
+        '#!/usr/bin/env bash\ncase "$1" in\n  rev-parse) echo "feat/FEAT-001-foo"; exit 0 ;;\n  push) exit 0 ;;\n  remote) [ "$2" = "get-url" ] && echo "https://github.com/example/repo.git" && exit 0; exit 0 ;;\nesac\nexit 0\n'
       );
       chmodSync(gitStub, 0o755);
       const ghStub = join(tmp, 'gh');
       writeFileSync(
         ghStub,
-        `#!/usr/bin/env bash\nwhile [[ $# -gt 0 ]]; do\n  case "$1" in\n    --body) shift; printf '%s' "$1" > "${capturedBody}"; shift ;;\n    *) shift ;;\n  esac\ndone\necho "https://example/pull/1"\nexit 0\n`
+        `#!/usr/bin/env bash\ncase "$1" in\n  auth) exit 0 ;;\n  pr)\n    if [ "$2" = "create" ]; then\n      shift 2\n      while [[ $# -gt 0 ]]; do\n        case "$1" in\n          --body) shift; printf '%s' "$1" > "${capturedBody}"; shift ;;\n          *) shift ;;\n        esac\n      done\n      echo "https://example/pull/1"\n      exit 0\n    fi\n    exit 0\n    ;;\nesac\nexit 0\n`
       );
       chmodSync(ghStub, 0o755);
       const env = { ...process.env, PATH: `${tmp}:${process.env.PATH}` };
@@ -455,11 +489,15 @@ describe('[QA FEAT-020] Cross-cutting: shell-metacharacter safety in create-pr.s
 });
 
 describe('[QA FEAT-020] Cross-cutting: ${BASH_SOURCE%/*} sibling resolution under symlink', () => {
-  it('build-branch-name.sh finds slugify.sh when scripts/ is reached via symlink', () => {
+  it('build-branch-name.sh finds slugify.sh when its scripts/ dir is reached via symlink', () => {
+    // FEAT-033 Phase 2: build-branch-name.sh moved into the managing-source-control
+    // skill. slugify.sh still lives at the plugin-root scripts/ dir. The script
+    // resolves slugify via the BASH_SOURCE-relative fallback (../../../scripts/),
+    // so the symlink alias must preserve the path-walk-up to the real plugin tree.
     const tmp = makeTmp();
     try {
       const linkDir = join(tmp, 'alias');
-      symlinkSync(SCRIPTS, linkDir);
+      symlinkSync(MSC_SCRIPTS, linkDir);
       const linkedBuild = join(linkDir, 'build-branch-name.sh');
       const res = runBash(linkedBuild, ['feat', 'FEAT-001', 'sample title here']);
       expect(res.status).toBe(0);

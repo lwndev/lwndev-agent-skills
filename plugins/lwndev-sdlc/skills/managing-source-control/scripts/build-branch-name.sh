@@ -32,8 +32,15 @@ case "$type" in
     ;;
 esac
 
-# Call the sibling slugify.sh using its absolute path, so this works regardless of CWD.
-slugify="${BASH_SOURCE%/*}/slugify.sh"
+# slugify.sh lives at the plugin root scripts/ dir (not moved with this script).
+# Resolve via CLAUDE_PLUGIN_ROOT when provided (skill runtime contract); otherwise
+# fall back to the on-disk plugin-root layout: skills/managing-source-control/scripts/
+# is three levels deep, so ../../../scripts/ resolves to plugins/lwndev-sdlc/scripts/.
+if [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
+  slugify="${CLAUDE_PLUGIN_ROOT}/scripts/slugify.sh"
+else
+  slugify="${BASH_SOURCE%/*}/../../../scripts/slugify.sh"
+fi
 
 # Capture the slug; propagate slugify's exit status (1 = empty slug).
 if ! slug=$(bash "$slugify" "$summary"); then
