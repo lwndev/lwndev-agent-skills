@@ -151,7 +151,7 @@ The work is structured in five phases: GitHub `pr-comment.sh` first (Phase 1 —
 
 ### Phase 5: Round-trip integration tests (env-gated)
 **Feature:** [FEAT-034](../features/FEAT-034-managing-source-control-ado.md) | [#280](https://github.com/lwndev/lwndev-marketplace/issues/280)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 4
 
 #### Rationale
