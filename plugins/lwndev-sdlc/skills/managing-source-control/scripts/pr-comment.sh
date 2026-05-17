@@ -355,12 +355,12 @@ case "$backend" in
       done
 
       if [ -z "$resource_token" ]; then
-        printf '%s\n%s\n' "$(date +%s)" "probe-failed" > "$cache_file"
+        printf '%s\n%s\n' "$(date +%s)" "probe-failed" > "${cache_file}.tmp" && mv "${cache_file}.tmp" "$cache_file"
         echo "[warn] ADO PR-thread resource probe failed across [PullRequestThreads, pullrequestthreads, threads]. Skipping comment." >&2
         exit 0
       fi
 
-      printf '%s\n%s\n' "$(date +%s)" "$resource_token" > "$cache_file"
+      printf '%s\n%s\n' "$(date +%s)" "$resource_token" > "${cache_file}.tmp" && mv "${cache_file}.tmp" "$cache_file"
     fi
 
     # ----- Resolve body now (needed for both top-level + reply paths). ----
@@ -393,15 +393,18 @@ case "$backend" in
         --data-binary @"$payload_file" 2>/dev/null || true)"
       if [ -z "$response" ]; then
         echo "[warn] curl POST returned empty response; skipping." >&2
+        rm -f "$payload_file"
         exit 0
       fi
       local thread_id
       thread_id="$(printf '%s' "$response" | jq -r '.id // empty' 2>/dev/null || true)"
       if [ -z "$thread_id" ] || [ "$thread_id" = "null" ]; then
         echo "[warn] curl POST response did not contain a thread id; skipping." >&2
+        rm -f "$payload_file"
         exit 0
       fi
       printf '%s?discussionId=%s\n' "$pr_url_base" "$thread_id"
+      rm -f "$payload_file"
       exit 0
     }
 
@@ -420,9 +423,11 @@ case "$backend" in
         --data-binary @"$payload_file" 2>/dev/null || true)"
       if [ -z "$response" ]; then
         echo "[warn] curl POST returned empty response; skipping." >&2
+        rm -f "$payload_file"
         exit 0
       fi
       printf '%s?discussionId=%s\n' "$pr_url_base" "$thread_id"
+      rm -f "$payload_file"
       exit 0
     }
 

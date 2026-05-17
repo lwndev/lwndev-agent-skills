@@ -56,6 +56,8 @@ When the user opts to apply fixes, the orchestrator (not a subagent) applies the
 
 At every reviewing-requirements decision point, call `record-findings` **before** `advance` or `pause` to persist the findings in the workflow state file. The call must always precede the state-transition call so that findings survive even if the transition call fails or the process exits.
 
+**Exception:** The apply-fixes path (errors present → user chose "Apply fixes") does not call `record-findings` before edits — it records the outcome of the post-edit re-fork instead (see the Apply-fixes row in the Decision-to-Call Mapping below). This is the BUG-018 / RC-2 invariant.
+
 ### Decision-to-Call Mapping
 
 | Decision taken | `record-findings` invocation |

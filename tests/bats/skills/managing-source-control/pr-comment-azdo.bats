@@ -239,7 +239,7 @@ STUBEOF
   chmod +x "${STUBDIR}/curl"
 
   # Symlink the rest of the tools backend-detect / pr-comment need.
-  for _tool in bash dirname jq date base64 head sed tr cat mktemp cp rm chmod grep awk touch ls printf env id sleep; do
+  for _tool in bash dirname jq date base64 head sed tr cat mktemp cp mv rm mkdir chmod grep awk touch ls printf env id sleep; do
     _real="$(command -v "$_tool" 2>/dev/null || true)"
     if [ -n "$_real" ]; then
       ln -sf "$_real" "${STUBDIR}/${_tool}"
@@ -335,11 +335,14 @@ set_origin() {
 
 @test "probe succeeds on first candidate (PullRequestThreads), cache populated" {
   rm -f /tmp/sdlc-azdo-pr-thread-resource.contoso.plugin-repo
+  rm -f /tmp/sdlc-azdo-pr-thread-resource.contoso.plugin-repo.tmp
   AZ_PROBE_MODE=first run bash "$PR_COMMENT" 1761 "body"
   [ "$status" -eq 0 ]
   [ -f /tmp/sdlc-azdo-pr-thread-resource.contoso.plugin-repo ]
   payload="$(sed -n '2p' /tmp/sdlc-azdo-pr-thread-resource.contoso.plugin-repo)"
   [ "$payload" = "PullRequestThreads" ]
+  # Atomic-write: the `.tmp` staging file must be renamed away on success.
+  [ ! -f /tmp/sdlc-azdo-pr-thread-resource.contoso.plugin-repo.tmp ]
 }
 
 @test "probe falls through to second candidate (pullrequestthreads)" {
@@ -435,6 +438,31 @@ set_origin() {
   [[ "$stderr" == *"[warn] az devops invoke failed; falling back to raw HTTP via curl."* ]] \
     || { >&3 echo "STDERR=$stderr"; false; }
   [ -f "${STATEDIR}/curl.invoked" ]
+}
+
+# ---------- Tmpfile leak guard (top-level + reply curl paths) ----------
+
+@test "forced-curl top-level: payload tmpfile is removed before exit (no leak)" {
+  payload_tmp="${REPO_DIR}/payload-tmp"
+  mkdir -p "$payload_tmp"
+  run env TMPDIR="$payload_tmp" SDLC_AZDO_HTTP=curl AZURE_DEVOPS_PAT=pat-secret \
+    bash "$PR_COMMENT" 1761 "body"
+  [ "$status" -eq 0 ] || { >&3 echo "OUT=$output"; false; }
+  [ -f "${STATEDIR}/curl.invoked" ]
+  remaining="$(ls -A "$payload_tmp" 2>/dev/null || true)"
+  [ -z "$remaining" ] || { >&3 echo "leaked tmpfiles: $remaining"; false; }
+}
+
+@test "forced-curl reply: payload tmpfile is removed before exit (no leak)" {
+  payload_tmp="${REPO_DIR}/payload-tmp"
+  mkdir -p "$payload_tmp"
+  AZ_THREAD_MODE=populated run env TMPDIR="$payload_tmp" \
+    SDLC_AZDO_HTTP=curl AZURE_DEVOPS_PAT=pat-secret \
+    bash "$PR_COMMENT" 1761 --body "reply text" --reply-to 42
+  [ "$status" -eq 0 ] || { >&3 echo "OUT=$output"; false; }
+  [ -f "${STATEDIR}/curl.invoked" ]
+  remaining="$(ls -A "$payload_tmp" 2>/dev/null || true)"
+  [ -z "$remaining" ] || { >&3 echo "leaked tmpfiles: $remaining"; false; }
 }
 
 @test "az devops invoke POST failure without PAT → [warn] skip, exit 0" {

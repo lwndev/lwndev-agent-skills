@@ -248,7 +248,7 @@ STUBEOF
   chmod +x "${STUBDIR}/az"
 
   # Symlink core utilities the script + backend-detect need.
-  for _tool in bash dirname jq date base64 head sed tr cat mktemp cp rm chmod grep awk touch ls printf env id sleep; do
+  for _tool in bash dirname jq date base64 head sed tr cat mktemp cp mv rm chmod grep awk touch ls printf env id sleep; do
     _real="$(command -v "$_tool" 2>/dev/null || true)"
     if [ -n "$_real" ]; then
       ln -sf "$_real" "${STUBDIR}/${_tool}"
@@ -456,6 +456,20 @@ set_origin() {
   # call) — assert by checking the az.log GET count.
   get_count="$(grep -c -- '--http-method GET' "${STATEDIR}/az.log" || true)"
   [ "$get_count" = "1" ] || { >&3 echo "az.log:"; >&3 cat "${STATEDIR}/az.log"; false; }
+}
+
+@test "azdo probe-cache write is atomic (no .tmp residue after success)" {
+  set_origin "https://dev.azure.com/${AZDO_TEST_ORG}/sdlc-tools/_git/${AZDO_TEST_REPO}"
+  # Clear the cache pre-populated by setup() so the probe path actually runs.
+  rm -f "$CACHE_FILE" "${CACHE_FILE}.tmp"
+  AZ_THREADS_FIXTURE=single-thread AZ_PROBE_MODE=first \
+    run bash "$LIST_PR_COMMENTS" 42
+  [ "$status" -eq 0 ] || { >&3 echo "OUT=$output"; false; }
+  [ -f "$CACHE_FILE" ]
+  payload="$(sed -n '2p' "$CACHE_FILE")"
+  [ "$payload" = "PullRequestThreads" ]
+  # The `.tmp` staging file must be renamed away on success.
+  [ ! -f "${CACHE_FILE}.tmp" ]
 }
 
 # ---------- ADO NFR-1 graceful skips ----------

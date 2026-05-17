@@ -273,12 +273,12 @@ case "$backend" in
       done
 
       if [ -z "$resource_token" ]; then
-        printf '%s\n%s\n' "$(date +%s)" "probe-failed" > "$cache_file"
+        printf '%s\n%s\n' "$(date +%s)" "probe-failed" > "${cache_file}.tmp" && mv "${cache_file}.tmp" "$cache_file"
         echo "[warn] ADO PR-thread resource probe failed across [PullRequestThreads, pullrequestthreads, threads]. Skipping comment." >&2
         exit 0
       fi
 
-      printf '%s\n%s\n' "$(date +%s)" "$resource_token" > "$cache_file"
+      printf '%s\n%s\n' "$(date +%s)" "$resource_token" > "${cache_file}.tmp" && mv "${cache_file}.tmp" "$cache_file"
     fi
 
     # ----- Fetch threads + comments. ---------------------------------------
