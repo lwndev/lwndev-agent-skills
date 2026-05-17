@@ -88,7 +88,7 @@ The work is structured in five phases: GitHub `pr-comment.sh` first (Phase 1 —
 
 ### Phase 3: `list-pr-comments.sh` both backends + NDJSON schema
 **Feature:** [FEAT-034](../features/FEAT-034-managing-source-control-ado.md) | [#280](https://github.com/lwndev/lwndev-marketplace/issues/280)
-**Status:** 🔄 In Progress
+**Status:** ✅ Complete
 **Depends on:** Phase 2
 
 #### Rationale
@@ -120,7 +120,7 @@ The work is structured in five phases: GitHub `pr-comment.sh` first (Phase 1 —
 
 ### Phase 4: SKILL.md + reference docs
 **Feature:** [FEAT-034](../features/FEAT-034-managing-source-control-ado.md) | [#280](https://github.com/lwndev/lwndev-marketplace/issues/280)
-**Status:** Pending
+**Status:** 🔄 In Progress
 **Depends on:** Phase 3
 
 #### Rationale
@@ -136,12 +136,12 @@ The work is structured in five phases: GitHub `pr-comment.sh` first (Phase 1 —
 5. Update the SKILL.md `References` section to link both new reference docs (`pr-comments-github.md`, `pr-comments-azdo.md`) — and remove the stale "arriving in Phase 3" placeholders for PR templates if they still exist after FEAT-033.
 
 #### Deliverables
-- [ ] SKILL.md Script Entry Points table includes `pr-comment.sh` and `list-pr-comments.sh` rows (FR-7).
-- [ ] SKILL.md Graceful Degradation matrix has rows for `AZURE_DEVOPS_PAT` unset and probe exhaustion (FR-7 NFR-1).
-- [ ] `references/pr-comments-azdo.md` documents the ADO API surface, probe rationale, and cache rules.
-- [ ] `references/pr-comments-github.md` documents the GitHub API surface and the NDJSON sentinel-field mapping.
-- [ ] SKILL.md `References` section links both new reference docs.
-- [ ] `npm run validate` passes (skill metadata still valid; new reference docs picked up if validator scans them).
+- [x] SKILL.md Script Entry Points table includes `pr-comment.sh` and `list-pr-comments.sh` rows (FR-7).
+- [x] SKILL.md Graceful Degradation matrix has rows for `AZURE_DEVOPS_PAT` unset and probe exhaustion (FR-7 NFR-1).
+- [x] `references/pr-comments-azdo.md` documents the ADO API surface, probe rationale, and cache rules.
+- [x] `references/pr-comments-github.md` documents the GitHub API surface and the NDJSON sentinel-field mapping.
+- [x] SKILL.md `References` section links both new reference docs.
+- [x] `npm run validate` passes (skill metadata still valid; new reference docs picked up if validator scans them).
 
 #### Success Criteria
 - A consumer skill reading SKILL.md can discover the new entry points and the new graceful-skip paths without reading the requirement doc.

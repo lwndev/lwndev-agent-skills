@@ -38,6 +38,8 @@ This `SKILL.md` is a **reference document read inline by the orchestrator's main
 | `view-pr.sh` | Fetch PR state, reviews, file list. | dispatched (`gh pr view --json ...` / `az repos pr show`) |
 | `list-pr.sh` | List PRs filtered by head branch. | dispatched (`gh pr list --head ...` / `az repos pr list --source-branch ...`) |
 | `pr-diff.sh` | Emit unified diff of the PR against its base. | dispatched (`gh pr diff` / `git diff origin/<base>...HEAD`) |
+| `pr-comment.sh` | Post a top-level PR comment or reply to an existing thread. | dispatched |
+| `list-pr-comments.sh` | List PR comments as NDJSON, one record per comment. | dispatched |
 
 ## Backend Detection
 
@@ -105,6 +107,8 @@ PR operations are supplementary -- they must **never** block workflow progressio
 | `az` not logged in | Azure DevOps | `[warn] Azure CLI not authenticated -- run az login (Azure AD) or az devops login --pat <token>.` Skip. Exit 0. |
 | Unrecognized origin remote | Any | `[info] No recognized SCM backend detected from origin.` Skip. Exit 0. |
 | Network / not-found / non-zero CLI exit | Any | `[warn]` with the first line of CLI stderr; skip; workflow continues. Exit 0. |
+| `AZURE_DEVOPS_PAT` not set on curl fallback path | Azure DevOps | `[warn] AZURE_DEVOPS_PAT not set; cannot post PR comment via raw HTTP. Skipping.` Skip. Exit 0. |
+| ADO PR-thread resource probe exhausted | Azure DevOps | `[warn] ADO PR-thread resource probe failed across [PullRequestThreads, pullrequestthreads, threads]. Skipping comment.` Skip. Exit 0. |
 | Internal script error (jq parse, missing required arg) | Any | Surface stderr verbatim. Exit non-zero. |
 
 The "skip + exit 0" contract matches `managing-work-items` and ensures graceful-degradation never halts the workflow.
@@ -139,5 +143,5 @@ https://dev.azure.com/contoso/sdlc-tools/_git/plugin-repo/pullrequest/42
 
 - **Branch conventions**: [references/branch-conventions.md](references/branch-conventions.md) -- branch prefix table, naming format, slug rules.
 - **Commit conventions**: [references/commit-conventions.md](references/commit-conventions.md) -- conventional commit format per type, scope conventions, multi-line body guidance.
-- **PR templates (GitHub)**: arriving in Phase 3.
-- **PR templates (Azure DevOps)**: arriving in Phase 3.
+- **PR comments (GitHub)**: [references/pr-comments-github.md](references/pr-comments-github.md) -- `gh pr comment` flags, `gh api` comment shape, NDJSON field mapping with sentinel values.
+- **PR comments (Azure DevOps)**: [references/pr-comments-azdo.md](references/pr-comments-azdo.md) -- ADO PR-thread API surface, probe rationale, cache rules, curl fallback.
