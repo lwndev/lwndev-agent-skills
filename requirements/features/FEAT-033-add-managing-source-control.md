@@ -263,21 +263,29 @@ Under `tests/bats/skills/managing-source-control/`:
 - PR template auto-detection from `.github/PULL_REQUEST_TEMPLATE.md` / Azure DevOps equivalents.
 
 ## Acceptance Criteria
-- [ ] `managing-source-control` skill exists at `plugins/lwndev-sdlc/skills/managing-source-control/` with `SKILL.md`, `scripts/`, and `references/` mirroring `managing-work-items`.
-- [ ] `backend-detect.sh` parses `git remote get-url origin` to `github` / `azdo` / `null` and honors `SDLC_SCM_BACKEND` env-var override (FR-1).
-- [ ] Branch / commit / push scripts (`ensure-branch.sh`, `build-branch-name.sh`, `commit-work.sh`) are backend-agnostic and existing call sites work unchanged (FR-2, FR-3, FR-4).
-- [ ] PR dispatchers (`create-pr.sh`, `merge-pr.sh`, `view-pr.sh`, `list-pr.sh`, `pr-diff.sh`) dispatch on backend and produce equivalent behavior across `gh` and `az` (FR-5).
-- [ ] Auto-close token in PR body adapts per backend: `Closes #N` for GitHub, `AB#<id>` for Azure Boards, Jira key when work-item backend is Jira (FR-6).
-- [ ] `finalize.sh` continues to handle git sync (checkout, fetch, pull) backend-agnostically (FR-7).
-- [ ] PR body templates exist per backend at `references/pr-templates-github.md` and `references/pr-templates-azdo.md` with placeholder substitution matching existing `create-pr.sh` template behavior (FR-8).
-- [ ] All `gh` / `az` failure modes (missing CLI, not authenticated, missing `az devops` extension, network, not-found) skip gracefully with `[warn]` / `[info]` lines per NFR-1 — workflow continues; only the PR step is skipped.
-- [ ] `implementing-plan-phases`, `executing-chores`, `executing-bug-fixes`, `finalizing-workflow`, `reviewing-requirements`, and `orchestrating-workflows` (specifically `resolve-pr-number.sh`) all delegate to the new skill's scripts; no skill contains inline `gh` or `az` calls (FR-11, NFR-5).
-- [ ] PR view/list dispatchers emit GitHub-equivalent JSON shape from the `az` path so existing consumer `jq` queries in `preflight-checks.sh`, `reconcile-affected-files.sh`, and `detect-review-mode.sh` work unchanged (NFR-3).
-- [ ] An enforcing check (preferred: `scripts/validate-no-inline-scm.ts` invoked by `npm run validate`; fallback: CI step) fails the build when an inline `gh pr`, `gh issue`, `az repos`, or `az boards` call is introduced outside `managing-source-control/scripts/` or `managing-work-items/scripts/` (NFR-5).
-- [ ] `orchestrating-workflows` `Read`s the new `SKILL.md` at workflow start (inline pattern, not Agent fork) — same invocation contract as `managing-work-items` (FR-12).
-- [ ] Bats tests under `tests/bats/skills/managing-source-control/` cover backend detection, env-var override, each dispatcher with a `gh` stub, each dispatcher with an `az` stub, and each graceful-skip path (NFR-4).
-- [ ] Unit test `tests/unit/managing-source-control.test.ts` validates skill frontmatter and structure (NFR-4).
-- [ ] All existing workflow chains continue to function on a GitHub repo (regression — NFR-2).
-- [ ] All existing workflow chains function on an Azure DevOps repo (new green path).
-- [ ] `npm run validate` passes, including any NFR-5 grep check for residual inline `gh` / `az` calls.
-- [ ] `npm test` passes (Vitest + Bats).
+- [x] `managing-source-control` skill exists at `plugins/lwndev-sdlc/skills/managing-source-control/` with `SKILL.md`, `scripts/`, and `references/` mirroring `managing-work-items`.
+- [x] `backend-detect.sh` parses `git remote get-url origin` to `github` / `azdo` / `null` and honors `SDLC_SCM_BACKEND` env-var override (FR-1).
+- [x] Branch / commit / push scripts (`ensure-branch.sh`, `build-branch-name.sh`, `commit-work.sh`) are backend-agnostic and existing call sites work unchanged (FR-2, FR-3, FR-4).
+- [x] PR dispatchers (`create-pr.sh`, `merge-pr.sh`, `view-pr.sh`, `list-pr.sh`, `pr-diff.sh`) dispatch on backend and produce equivalent behavior across `gh` and `az` (FR-5).
+- [x] Auto-close token in PR body adapts per backend: `Closes #N` for GitHub, `AB#<id>` for Azure Boards, Jira key when work-item backend is Jira (FR-6).
+- [x] `finalize.sh` continues to handle git sync (checkout, fetch, pull) backend-agnostically (FR-7).
+- [x] PR body templates exist per backend at `references/pr-templates-github.md` and `references/pr-templates-azdo.md` with placeholder substitution matching existing `create-pr.sh` template behavior (FR-8).
+- [x] All `gh` / `az` failure modes (missing CLI, not authenticated, missing `az devops` extension, network, not-found) skip gracefully with `[warn]` / `[info]` lines per NFR-1 — workflow continues; only the PR step is skipped.
+- [x] `implementing-plan-phases`, `executing-chores`, `executing-bug-fixes`, `finalizing-workflow`, `reviewing-requirements`, and `orchestrating-workflows` (specifically `resolve-pr-number.sh`) all delegate to the new skill's scripts; no skill contains inline `gh` or `az` calls (FR-11, NFR-5).
+- [x] PR view/list dispatchers emit GitHub-equivalent JSON shape from the `az` path so existing consumer `jq` queries in `preflight-checks.sh`, `reconcile-affected-files.sh`, and `detect-review-mode.sh` work unchanged (NFR-3).
+- [x] An enforcing check (preferred: `scripts/validate-no-inline-scm.ts` invoked by `npm run validate`; fallback: CI step) fails the build when an inline `gh pr`, `gh issue`, `az repos`, or `az boards` call is introduced outside `managing-source-control/scripts/` or `managing-work-items/scripts/` (NFR-5).
+- [x] `orchestrating-workflows` `Read`s the new `SKILL.md` at workflow start (inline pattern, not Agent fork) — same invocation contract as `managing-work-items` (FR-12).
+- [x] Bats tests under `tests/bats/skills/managing-source-control/` cover backend detection, env-var override, each dispatcher with a `gh` stub, each dispatcher with an `az` stub, and each graceful-skip path (NFR-4).
+- [x] Unit test `tests/unit/managing-source-control.test.ts` validates skill frontmatter and structure (NFR-4).
+- [x] All existing workflow chains continue to function on a GitHub repo (regression — NFR-2).
+- [x] All existing workflow chains function on an Azure DevOps repo (new green path).
+- [x] `npm run validate` passes, including any NFR-5 grep check for residual inline `gh` / `az` calls.
+- [x] `npm test` passes (Vitest + Bats).
+
+## Completion
+
+**Status:** `Complete`
+
+**Completed:** 2026-05-17
+
+**Pull Request:** [#278](https://github.com/lwndev/lwndev-marketplace/pull/278)
