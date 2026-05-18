@@ -469,8 +469,17 @@ describe('integration tests', () => {
       const count = stateCmd('phase-count FEAT-001');
       expect(count).toBe('3');
 
-      // Advance through steps 0-5 (pre-phase steps)
+      // Advance through steps 0-5 (pre-phase steps). BUG-018 / RC-1:
+      // advancing onto a `context: "pause"` step now atomically auto-pauses
+      // the workflow. The feature chain has a pause-context step at index 3
+      // (Plan approval); after the third advance lands there, the workflow
+      // status is "paused" and the next advance is rejected until `resume`
+      // runs. Mirror the real orchestrator's resume-after-pause flow here.
       for (let i = 0; i < 6; i++) {
+        const status = JSON.parse(stateCmd('status FEAT-001')).status;
+        if (status === 'paused') {
+          stateCmd('resume FEAT-001');
+        }
         stateCmd('advance FEAT-001');
       }
 

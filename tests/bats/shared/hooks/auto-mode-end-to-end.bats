@@ -272,3 +272,41 @@ init_active() {
   # 4. Destructive gh pr merge -> denied.
   [ "$(bash_decision "gh pr merge 1 --squash")" = "deny" ]
 }
+
+# ---------------------------------------------------------------------------
+# BUG-018 / RC-1 — advance bypass: advancing past a context: "pause" step
+# must auto-pause atomically; the second advance must be rejected.
+# ---------------------------------------------------------------------------
+
+@test "BUG-018 RC-1: orchestrator-style advance past pause-context step auto-pauses; second advance rejected" {
+  # Chore chain: index 4 is "PR review" (context: pause). Seed currentStep=3
+  # (execute-chore, fork) so the first advance lands on the pause step.
+  bash "$WORKFLOW_STATE" init CHORE-100 chore >/dev/null
+  local state_file=".sdlc/workflows/CHORE-100.json"
+  jq '.currentStep = 3
+      | .steps[0].status = "complete"
+      | .steps[1].status = "complete"
+      | .steps[2].status = "complete"' \
+    "$state_file" > "${state_file}.tmp" && mv "${state_file}.tmp" "$state_file"
+  # advance #1: auto-pauses with pr-review.
+  bash "$WORKFLOW_STATE" advance CHORE-100 >/dev/null 2>&1
+  [ "$(jq -r '.status' "$state_file")" = "paused" ]
+  [ "$(jq -r '.pauseReason' "$state_file")" = "pr-review" ]
+  # advance #2 (orchestrator-style attempt to walk past the gate): MUST be
+  # rejected by the script-layer check, regardless of any hook state.
+  run --separate-stderr bash "$WORKFLOW_STATE" advance CHORE-100
+  [ "$status" -ne 0 ]
+  [[ "$stderr" =~ workflow\ paused ]]
+}
+
+# ---------------------------------------------------------------------------
+# BUG-018 / RC-2 — `record-findings ... auto-fixed` must be rejected via the
+# standard call path with a clear error.
+# ---------------------------------------------------------------------------
+
+@test "BUG-018 RC-2: record-findings auto-fixed is rejected via the standard call path" {
+  bash "$WORKFLOW_STATE" init FEAT-200 feature >/dev/null
+  run --separate-stderr bash "$WORKFLOW_STATE" record-findings FEAT-200 1 1 0 0 auto-fixed "Apply fixes"
+  [ "$status" -ne 0 ]
+  [[ "$stderr" =~ decision\ to\ be\ one\ of:\ advanced,\ auto-advanced,\ user-advanced,\ paused ]]
+}

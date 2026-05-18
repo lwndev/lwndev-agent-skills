@@ -22,7 +22,7 @@ State-transition calls per branch:
 - `advance` → `record-findings {ID} {stepIndex} 0 0 0 advanced 'No issues found'` then `advance {ID} "{artifact-path}"`.
 - `auto-advance` → display findings; emit `[info] {N} warnings, {N} info from reviewing-requirements ({mode}) — auto-advancing (chain={type}, complexity={complexity})`; parse individual findings via `parse-findings.sh`'s `individual` field to `/tmp/findings-{ID}-{stepIndex}.json`; `record-findings {ID} {stepIndex} 0 {W} {I} auto-advanced '{summary}' --details-file /tmp/findings-{ID}-{stepIndex}.json` then `rm -f` that file; `advance {ID} "{artifact-path}"`.
 - `prompt-user` → `set-gate {ID} findings-decision`; display findings; prompt "{N} warnings and {N} info found by reviewing-requirements. Review findings above and continue? (yes / no)"; `clear-gate {ID}`; if yes → `record-findings ... user-advanced` + `advance`; if no → `record-findings ... paused` + `pause {ID} review-findings` and halt.
-- `pause-errors` → `set-gate {ID} findings-decision`; display findings + auto-fixable items from Fix Summary / Update Summary; offer Apply-fixes (→ `record-findings ... auto-fixed` then apply edits in main context then re-fork once, see Applying Auto-Fixes) or Pause (→ `record-findings ... paused` + `pause {ID} review-findings` and halt).
+- `pause-errors` → `set-gate {ID} findings-decision`; display findings + auto-fixable items from Fix Summary / Update Summary; offer Apply-fixes (→ apply edits in main context then re-fork `reviewing-requirements` once; persist the re-fork outcome via `record-findings ... --rerun` using one of `advanced` / `auto-advanced` / `user-advanced` / `paused`, see Applying Auto-Fixes) or Pause (→ `record-findings ... paused` + `pause {ID} review-findings` and halt). BUG-018 / RC-2: the `auto-fixed` decision was removed; do not record any decision before applying the edits.
 
 ## Applying Auto-Fixes
 
@@ -56,6 +56,8 @@ When the user opts to apply fixes, the orchestrator (not a subagent) applies the
 
 At every reviewing-requirements decision point, call `record-findings` **before** `advance` or `pause` to persist the findings in the workflow state file. The call must always precede the state-transition call so that findings survive even if the transition call fails or the process exits.
 
+**Exception:** The apply-fixes path (errors present → user chose "Apply fixes") does not call `record-findings` before edits — it records the outcome of the post-edit re-fork instead (see the Apply-fixes row in the Decision-to-Call Mapping below). This is the BUG-018 / RC-2 invariant.
+
 ### Decision-to-Call Mapping
 
 | Decision taken | `record-findings` invocation |
@@ -64,7 +66,7 @@ At every reviewing-requirements decision point, call `record-findings` **before*
 | Warnings/info only → auto-advance (FEAT-015 gate) | `record-findings {ID} {stepIndex} 0 {W} {I} auto-advanced '{summary}' --details-file {tmp}` |
 | Warnings/info only → user confirmed | `record-findings {ID} {stepIndex} 0 {W} {I} user-advanced '{summary}'` |
 | Warnings/info only → user declined | `record-findings {ID} {stepIndex} 0 {W} {I} paused '{summary}'` |
-| Errors present → user chose "Apply fixes" | `record-findings {ID} {stepIndex} {E} {W} {I} auto-fixed '{summary}'` |
+| Errors present → user chose "Apply fixes" | Do NOT call `record-findings` here. Apply edits in main context, then re-fork `reviewing-requirements` once and record the re-run outcome with `--rerun` (one of `advanced` / `auto-advanced` / `user-advanced` / `paused`). BUG-018 / RC-2 removed the `auto-fixed` decision. |
 | Errors present → user chose "Pause" | `record-findings {ID} {stepIndex} {E} {W} {I} paused '{summary}'` |
 | Re-run after auto-fix (any outcome) | `record-findings {ID} {stepIndex} {E2} {W2} {I2} {rerun-decision} '{rerun-summary}' --rerun` |
 | Re-run after auto-fix → auto-advanced | (same as above plus `--details-file {tmp}`) |

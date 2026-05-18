@@ -99,7 +99,7 @@ usage() {
   echo "                                Persist findings on a step entry. --type defaults to review." >&2
   echo "  record-findings --type review <ID> <stepIndex> <errors> <warnings> <info> <decision> <summary> [--rerun] [--details-file <path>]" >&2
   echo "                                Persist reviewing-requirements findings on a step entry." >&2
-  echo "                                decision must be one of: advanced, auto-advanced, user-advanced, auto-fixed, paused." >&2
+  echo "                                decision must be one of: advanced, auto-advanced, user-advanced, paused." >&2
   echo "                                --rerun writes to rerunFindings instead of findings." >&2
   echo "                                --details-file is only used when decision is auto-advanced." >&2
   echo "  record-findings --type qa <ID> <stepIndex> <verdict> <passed> <failed> <errored> <summary>" >&2
@@ -1110,6 +1110,17 @@ cmd_advance() {
   file=$(state_file "$id")
   validate_state_file "$file"
 
+  # BUG-018 / RC-1: reject advance on a paused workflow. The orchestrator must
+  # explicitly `resume` before advancing again. Without this guard, a second
+  # `advance` call would unpause-by-side-effect and walk past the gate.
+  local current_workflow_status current_pause_reason
+  current_workflow_status=$(jq -r '.status' "$file")
+  current_pause_reason=$(jq -r '.pauseReason // ""' "$file")
+  if [[ "$current_workflow_status" == "paused" ]]; then
+    echo "[error] cannot advance: workflow paused (pauseReason=${current_pause_reason}); resume first" >&2
+    exit 1
+  fi
+
   local current_step total_steps current_status
   current_step=$(jq -r '.currentStep' "$file")
   total_steps=$(jq -r '.steps | length' "$file")
@@ -1125,24 +1136,80 @@ cmd_advance() {
   now=$(now_iso)
   local next_step=$((current_step + 1))
 
+  # BUG-018 / RC-1: check whether the destination step (the one currentStep
+  # will land on after this advance) is a `context: "pause"` step. If so,
+  # derive a `pauseReason` from its `name` (lower-case + spaces-to-hyphens),
+  # validate against the `cmd_pause` whitelist, and fold the pause mutation
+  # into the SAME jq invocation that flips the current step's status. This
+  # makes the advance + auto-pause atomic — no intermediate
+  # "step complete + workflow in-progress on a pause-context step" state.
+  local next_context=""
+  local derived_pause_reason=""
+  if (( next_step < total_steps )); then
+    next_context=$(jq -r ".steps[${next_step}].context // \"\"" "$file")
+  fi
+
+  if [[ "$next_context" == "pause" ]]; then
+    local next_name
+    next_name=$(jq -r ".steps[${next_step}].name // \"\"" "$file")
+    # Derive reason: lowercase, collapse runs of whitespace to a single space
+    # before hyphenating. Trim leading/trailing whitespace. Matches AC1
+    # mapping: "Plan approval" -> plan-approval, "PR review" -> pr-review.
+    derived_pause_reason=$(printf '%s' "$next_name" \
+      | tr '[:upper:]' '[:lower:]' \
+      | tr -s '[:space:]' ' ' \
+      | sed -e 's/^ //' -e 's/ $//' \
+      | tr ' ' '-')
+
+    case "$derived_pause_reason" in
+      plan-approval|pr-review|review-findings|qa-error|qa-loop-exhausted|fix-suite-failed|adoption-failed) ;;
+      *)
+        echo "[error] derived pauseReason '${derived_pause_reason}' is not in cmd_pause whitelist" >&2
+        exit 1
+        ;;
+    esac
+  fi
+
   # Update current step to complete, advance currentStep
   local artifact_arg="null"
   if [[ -n "$artifact" ]]; then
     artifact_arg=$(jq -n --arg a "$artifact" '$a')
   fi
 
-  jq \
-    --argjson step "$current_step" \
-    --argjson next "$next_step" \
-    --arg now "$now" \
-    --argjson artifact "$artifact_arg" \
-    '.steps[$step].status = "complete"
-     | .steps[$step].completedAt = $now
-     | (if $artifact != null then .steps[$step].artifact = $artifact else . end)
-     | .currentStep = $next
-     | .gate = null
-     | .gateSetAt = null' \
-    "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+  if [[ -n "$derived_pause_reason" ]]; then
+    # Atomic auto-pause: the same jq mutation that flips step status sets
+    # workflow.status = "paused", pauseReason, and pausedAt.
+    jq \
+      --argjson step "$current_step" \
+      --argjson next "$next_step" \
+      --arg now "$now" \
+      --argjson artifact "$artifact_arg" \
+      --arg reason "$derived_pause_reason" \
+      '.steps[$step].status = "complete"
+       | .steps[$step].completedAt = $now
+       | (if $artifact != null then .steps[$step].artifact = $artifact else . end)
+       | .currentStep = $next
+       | .gate = null
+       | .gateSetAt = null
+       | .status = "paused"
+       | .pauseReason = $reason
+       | .pausedAt = $now' \
+      "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+    echo "[info] auto-paused on step ${next_step} (pauseReason=${derived_pause_reason})" >&2
+  else
+    jq \
+      --argjson step "$current_step" \
+      --argjson next "$next_step" \
+      --arg now "$now" \
+      --argjson artifact "$artifact_arg" \
+      '.steps[$step].status = "complete"
+       | .steps[$step].completedAt = $now
+       | (if $artifact != null then .steps[$step].artifact = $artifact else . end)
+       | .currentStep = $next
+       | .gate = null
+       | .gateSetAt = null' \
+      "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+  fi
 
   # Update phase completion count if the completed step had a phaseNumber
   local has_phase
@@ -1393,10 +1460,16 @@ cmd_record_findings_review() {
   fi
 
   # Validate decision is one of the allowed values.
+  # BUG-018 / RC-2: `auto-fixed` was removed from the valid set. The
+  # orchestrator's apply-fixes path must re-fork `reviewing-requirements` and
+  # record the re-run outcome with one of `advanced` / `auto-advanced` /
+  # `user-advanced` / `paused`. Marker-gating was rejected because it would
+  # leave a path where a future "work without stopping" reinterpretation could
+  # write the marker and bypass the gate.
   case "$decision" in
-    advanced|auto-advanced|user-advanced|auto-fixed|paused) ;;
+    advanced|auto-advanced|user-advanced|paused) ;;
     *)
-      echo "Error: record-findings requires decision to be one of: advanced, auto-advanced, user-advanced, auto-fixed, paused; got '${decision}'." >&2
+      echo "Error: record-findings requires decision to be one of: advanced, auto-advanced, user-advanced, paused; got '${decision}'." >&2
       exit 1
       ;;
   esac

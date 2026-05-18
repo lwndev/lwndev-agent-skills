@@ -97,8 +97,9 @@ After step 4 completes (if `issueRef` is set): invoke `managing-work-items comme
 **Step 4 — Plan Approval** (feature chain only):
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
-${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} plan-approval
 ```
+The `advance` call atomically auto-pauses the workflow when stepping onto a `context: "pause"` step (BUG-018 / RC-1): `status` becomes `paused`, `pauseReason` is derived from the step name (`"Plan approval"` -> `plan-approval`), and `pausedAt` is stamped. No separate `pause` call is needed.
+
 Display: "Implementation plan created at `requirements/implementation/{ID}-*.md`. Review it and re-invoke `/orchestrating-workflows {ID}` to continue."
 
 Halt execution. The user re-invokes the skill to resume.
@@ -106,27 +107,24 @@ Halt execution. The user re-invokes the skill to resume.
 **Step 5+N+2 — PR Review**:
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
-${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} pr-review
 ```
-Display the PR number, link, and branch. Halt execution.
+Atomic auto-pause as above; derived `pauseReason` is `pr-review`. Display the PR number, link, and branch. Halt execution.
 
 #### Chore Chain Pause Steps
 
 **Step 5 — PR Review** (the only pause in the chore chain):
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
-${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} pr-review
 ```
-Display the PR number, link, and branch. Halt execution. The user re-invokes with `/orchestrating-workflows {ID}` to resume after review.
+Atomic auto-pause as above; derived `pauseReason` is `pr-review`. Display the PR number, link, and branch. Halt execution. The user re-invokes with `/orchestrating-workflows {ID}` to resume after review.
 
 #### Bug Chain Pause Steps
 
 **Step 5 — PR Review** (the only pause in the bug chain):
 ```bash
 ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh advance {ID}
-${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh pause {ID} pr-review
 ```
-Display the PR number, link, and branch. Halt execution. The user re-invokes with `/orchestrating-workflows {ID}` to resume after review.
+Atomic auto-pause as above; derived `pauseReason` is `pr-review`. Display the PR number, link, and branch. Halt execution. The user re-invokes with `/orchestrating-workflows {ID}` to resume after review.
 
 ## Preparing fork flags
 
