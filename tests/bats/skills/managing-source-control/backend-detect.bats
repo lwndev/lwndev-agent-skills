@@ -156,3 +156,89 @@ set_origin() {
   [ "$output" = "null" ]
   [[ "$stderr" == *"[warn] SDLC_SCM_BACKEND=github"* ]]
 }
+
+# BUG-019: user-prefixed HTTPS origin coverage
+
+@test "user-prefixed dev.azure.com HTTPS origin → azdo JSON" {
+  set_origin "https://alice@dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
+  run bash "$DETECT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"backend":"azdo"'* ]]
+  [[ "$output" == *'"organization":"contoso"'* ]]
+  [[ "$output" == *'"project":"sdlc-tools"'* ]]
+  [[ "$output" == *'"repo":"plugin-repo"'* ]]
+}
+
+@test "user-prefixed dev.azure.com: organization field does not contain @ or user string" {
+  set_origin "https://alice@dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
+  run bash "$DETECT"
+  [ "$status" -eq 0 ]
+  org=$(echo "$output" | grep -o '"organization":"[^"]*"' | cut -d'"' -f4)
+  [[ "$org" != *"@"* ]]
+  [[ "$org" != *"alice"* ]]
+}
+
+@test "user-prefixed *.visualstudio.com HTTPS origin → azdo JSON" {
+  set_origin "https://alice@contoso.visualstudio.com/sdlc-tools/_git/plugin-repo"
+  run bash "$DETECT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"backend":"azdo"'* ]]
+  [[ "$output" == *'"organization":"contoso"'* ]]
+  [[ "$output" == *'"project":"sdlc-tools"'* ]]
+  [[ "$output" == *'"repo":"plugin-repo"'* ]]
+}
+
+@test "user-prefixed *.visualstudio.com: organization field does not contain @ or user string" {
+  set_origin "https://alice@contoso.visualstudio.com/sdlc-tools/_git/plugin-repo"
+  run bash "$DETECT"
+  [ "$status" -eq 0 ]
+  org=$(echo "$output" | grep -o '"organization":"[^"]*"' | cut -d'"' -f4)
+  [[ "$org" != *"@"* ]]
+  [[ "$org" != *"alice"* ]]
+}
+
+@test "user-prefixed *.visualstudio.com/DefaultCollection/ HTTPS origin → azdo JSON" {
+  set_origin "https://alice@contoso.visualstudio.com/DefaultCollection/sdlc-tools/_git/plugin-repo"
+  run bash "$DETECT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"backend":"azdo"'* ]]
+  [[ "$output" == *'"organization":"contoso"'* ]]
+  [[ "$output" == *'"project":"sdlc-tools"'* ]]
+  [[ "$output" == *'"repo":"plugin-repo"'* ]]
+}
+
+@test "user-prefixed *.visualstudio.com/DefaultCollection/: organization field does not contain @ or user string" {
+  set_origin "https://alice@contoso.visualstudio.com/DefaultCollection/sdlc-tools/_git/plugin-repo"
+  run bash "$DETECT"
+  [ "$status" -eq 0 ]
+  org=$(echo "$output" | grep -o '"organization":"[^"]*"' | cut -d'"' -f4)
+  [[ "$org" != *"@"* ]]
+  [[ "$org" != *"alice"* ]]
+}
+
+@test "token-prefixed GitHub HTTPS origin → github JSON" {
+  set_origin "https://ghp_redacted@github.com/lwndev/lwndev-marketplace.git"
+  run bash "$DETECT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"backend":"github"'* ]]
+  [[ "$output" == *'"owner":"lwndev"'* ]]
+  [[ "$output" == *'"repo":"lwndev-marketplace"'* ]]
+}
+
+@test "token-prefixed GitHub HTTPS: owner field does not contain @ or token string" {
+  set_origin "https://ghp_redacted@github.com/lwndev/lwndev-marketplace.git"
+  run bash "$DETECT"
+  [ "$status" -eq 0 ]
+  owner=$(echo "$output" | grep -o '"owner":"[^"]*"' | cut -d'"' -f4)
+  [[ "$owner" != *"@"* ]]
+  [[ "$owner" != *"ghp_redacted"* ]]
+}
+
+@test "SDLC_SCM_BACKEND=azdo on user-prefixed dev.azure.com origin → no [warn], azdo JSON" {
+  set_origin "https://alice@dev.azure.com/contoso/sdlc-tools/_git/plugin-repo"
+  SDLC_SCM_BACKEND=azdo run --separate-stderr bash "$DETECT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"backend":"azdo"'* ]]
+  [[ "$output" == *'"organization":"contoso"'* ]]
+  [[ "$stderr" != *"[warn]"* ]]
+}
