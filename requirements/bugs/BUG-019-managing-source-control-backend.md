@@ -49,7 +49,12 @@ The SSH branches (`git@github.com:`, `git@ssh.dev.azure.com:v3/`) are unaffected
 - `tests/bats/skills/managing-source-control/backend-detect.bats` — add coverage for user-prefixed variants of every affected HTTPS form.
 
 Out of scope (different script, different responsibility):
-- `plugins/lwndev-sdlc/skills/managing-work-items/scripts/backend-detect.sh` — name collision only; classifies issue references (`#N` / `KEY-N`), not git origin URLs. Not affected.
+- `plugins/lwndev-sdlc/skills/managing-work-items/scripts/backend-detect.sh` (planned but not modified)
+- `qa/test-plans/QA-plan-BUG-019.md`
+- `qa/test-results/QA-results-BUG-019.md`
+- `requirements/bugs/BUG-019-managing-source-control-backend.md`
+- `tests/bats/skills/managing-source-control/backend-detect.qa.bats`
+- `tests/unit/qa-BUG-018-advance-pause.test.ts`
 
 ## Acceptance Criteria
 
@@ -63,9 +68,9 @@ Out of scope (different script, different responsibility):
 
 ## Completion
 
-**Status:** `In Progress`
+**Status:** `Complete`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-05-18
 
 **Pull Request:** [#290](https://github.com/lwndev/lwndev-marketplace/pull/290)
 
