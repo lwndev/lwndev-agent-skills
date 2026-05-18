@@ -13,10 +13,14 @@
 #
 # Recognized origin URL forms:
 #   GitHub HTTPS : https://github.com/<owner>/<repo>(.git)?
+#                  https://<token>@github.com/<owner>/<repo>(.git)?
 #   GitHub SSH   : git@github.com:<owner>/<repo>(.git)?
 #   AzDO HTTPS   : https://dev.azure.com/<org>/<project>/_git/<repo>
+#                  https://<user>@dev.azure.com/<org>/<project>/_git/<repo>
 #   AzDO legacy  : https://<org>.visualstudio.com/<project>/_git/<repo>
+#                  https://<user>@<org>.visualstudio.com/<project>/_git/<repo>
 #                  https://<org>.visualstudio.com/DefaultCollection/<project>/_git/<repo>
+#                  https://<user>@<org>.visualstudio.com/DefaultCollection/<project>/_git/<repo>
 #   AzDO SSH     : git@ssh.dev.azure.com:v3/<org>/<project>/<repo>
 #
 # `SDLC_SCM_BACKEND` env override: when set to `github` or `azdo`, the override
@@ -45,9 +49,9 @@ parse_github() {
   local origin="$1"
   local owner repo
 
-  if [[ "$origin" =~ ^https?://github\.com/([^/]+)/([^/]+)$ ]]; then
-    owner="${BASH_REMATCH[1]}"
-    repo="${BASH_REMATCH[2]%.git}"
+  if [[ "$origin" =~ ^https?://([^/@]+@)?github\.com/([^/]+)/([^/]+)$ ]]; then
+    owner="${BASH_REMATCH[2]}"
+    repo="${BASH_REMATCH[3]%.git}"
   elif [[ "$origin" =~ ^git@github\.com:([^/]+)/([^/]+)$ ]]; then
     owner="${BASH_REMATCH[1]}"
     repo="${BASH_REMATCH[2]%.git}"
@@ -69,14 +73,14 @@ parse_azdo() {
   local origin="$1"
   local org project repo
 
-  if [[ "$origin" =~ ^https?://dev\.azure\.com/([^/]+)/([^/]+)/_git/([^/]+)$ ]]; then
-    org="${BASH_REMATCH[1]}"
-    project="${BASH_REMATCH[2]}"
-    repo="${BASH_REMATCH[3]%.git}"
-  elif [[ "$origin" =~ ^https?://([^./]+)\.visualstudio\.com/(DefaultCollection/)?([^/]+)/_git/([^/]+)$ ]]; then
-    org="${BASH_REMATCH[1]}"
+  if [[ "$origin" =~ ^https?://([^/@]+@)?dev\.azure\.com/([^/]+)/([^/]+)/_git/([^/]+)$ ]]; then
+    org="${BASH_REMATCH[2]}"
     project="${BASH_REMATCH[3]}"
     repo="${BASH_REMATCH[4]%.git}"
+  elif [[ "$origin" =~ ^https?://([^/@]+@)?([^./]+)\.visualstudio\.com/(DefaultCollection/)?([^/]+)/_git/([^/]+)$ ]]; then
+    org="${BASH_REMATCH[2]}"
+    project="${BASH_REMATCH[4]}"
+    repo="${BASH_REMATCH[5]%.git}"
   elif [[ "$origin" =~ ^git@ssh\.dev\.azure\.com:v3/([^/]+)/([^/]+)/([^/]+)$ ]]; then
     org="${BASH_REMATCH[1]}"
     project="${BASH_REMATCH[2]}"
