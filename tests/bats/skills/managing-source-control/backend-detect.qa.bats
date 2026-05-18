@@ -19,7 +19,8 @@ bats_require_minimum_version 1.5.0
 #  - BASH_REMATCH index-shift canary on every HTTPS variant
 
 setup() {
-  SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../plugins/lwndev-sdlc/skills/managing-source-control/scripts" && pwd)"
+  REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")" && git rev-parse --show-toplevel)"
+  SCRIPT_DIR="${REPO_ROOT}/plugins/lwndev-sdlc/skills/managing-source-control/scripts"
   DETECT="${SCRIPT_DIR}/backend-detect.sh"
   REPO_DIR="$(mktemp -d "${BATS_TMPDIR:-/tmp}/qa-bug-019.XXXXXX")"
   cd "$REPO_DIR"
