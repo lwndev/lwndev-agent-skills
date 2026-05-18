@@ -63,11 +63,11 @@ Out of scope (different script, different responsibility):
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `In Progress`
 
 **Completed:** YYYY-MM-DD
 
-**Pull Request:** [#N](https://github.com/org/repo/pull/N)
+**Pull Request:** [#290](https://github.com/lwndev/lwndev-marketplace/pull/290)
 
 ## Notes
 
