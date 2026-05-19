@@ -1195,7 +1195,7 @@ cmd_advance() {
        | .pauseReason = $reason
        | .pausedAt = $now' \
       "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
-    echo "[info] auto-paused on step ${next_step} (pauseReason=${derived_pause_reason})" >&2
+    echo "[info] auto-paused on step ${next_step} (pauseReason=${derived_pause_reason}) - HALT all further tool calls and surface the pause artifact to the user" >&2
   else
     jq \
       --argjson step "$current_step" \
@@ -1287,10 +1287,13 @@ cmd_set_gate() {
     exit 1
   fi
 
-  if [[ "$gate_type" != "findings-decision" ]]; then
-    echo "Error: Invalid gate type '${gate_type}'. Expected 'findings-decision'." >&2
-    exit 1
-  fi
+  case "$gate_type" in
+    findings-decision|merge-approval) ;;
+    *)
+      echo "Error: Invalid gate type '${gate_type}'. Expected one of: findings-decision, merge-approval." >&2
+      exit 1
+      ;;
+  esac
 
   # BUG-015 / RC-3: stamp gateSetAt with the current ISO-8601 UTC time.
   # `guard-findings-edits.sh` compares approval-marker mtime against this

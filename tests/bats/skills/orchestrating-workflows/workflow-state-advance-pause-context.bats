@@ -112,6 +112,18 @@ inject_unmapped_pause_step() {
   echo "stderr=$stderr"
   [[ "$stderr" =~ \[info\]\ auto-paused ]]
   [[ "$stderr" =~ pauseReason=plan-approval ]]
+  # BUG-020 / AC7 — the strengthened audit line MUST also carry the load-bearing
+  # HALT and surface tokens (case-sensitive) so an orchestrator reading the
+  # line in isolation has the reaction protocol inline.
+  [[ "$stderr" =~ HALT ]]
+  [[ "$stderr" =~ surface ]]
+  # The separator between `(pauseReason=<reason>)` and `HALT` MUST be plain
+  # ASCII `- ` hyphen-space (not em-dash / en-dash) so future style edits
+  # cannot silently break grep-based callers.
+  [[ "$stderr" =~ \)\ -\ HALT ]]
+  # Negative: no em-dash or en-dash codepoints in the emitted line.
+  [[ ! "$stderr" =~ — ]]
+  [[ ! "$stderr" =~ – ]]
 }
 
 # ---- Reject second advance on a paused workflow ----------------------------

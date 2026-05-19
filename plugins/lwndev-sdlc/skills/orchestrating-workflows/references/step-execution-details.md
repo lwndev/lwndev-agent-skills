@@ -20,7 +20,18 @@ The classifier scores each phase via `phase-complexity-budget.sh` (FEAT-029 FR-3
 
 **Step 5+N+1 — Create PR**: See PR Creation below.
 
-**Step 5+N+4 — `finalizing-workflow`**: No special argument needed. The skill merges the current PR and resets to main. Run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow`. This step is **baseline-locked** at `haiku` — the pre-fork echo uses the `baseline-locked` tag, and only a hard override (`--model`, `--model-for`) can push it off its baseline. Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
+**Step 5+N+4 — `finalizing-workflow`**: No special argument needed. The skill merges the current PR and resets to main. This step is **baseline-locked** at `haiku`. Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
+
+Pre-fork sequence (BUG-020 / RC-5):
+
+1. Open the `merge-approval` gate so `stop-hook.sh:51-54` exits `0` while the orchestrator waits for the user's confirmation in main context (closes the 9-block override path):
+   ```bash
+   ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-gate {ID} merge-approval
+   ```
+2. Display the merge-confirmation prompt to the user, surfacing the canonical approval grammar (`merge {ID}`) that Hook A converts to `.approval-merge-approval-{ID}`. Example: `Ready to merge PR #<N> (<branch>)? Reply 'merge {ID}' to proceed.`
+3. Wait for user input. The `merge-approval` gate keeps the stop-hook quiet during the wait; no narration, no follow-on tool calls.
+4. After the user types `merge {ID}` (Hook A writes the marker), run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow` (echo uses the `baseline-locked` tag; only a hard override `--model` / `--model-for` can push it off baseline) and fork `finalizing-workflow` via the Agent tool (Hook C allows the fork only because the marker exists).
+5. On the subagent's return, call `advance {ID}`. `cmd_advance:1192-1193` clears `.gate` and `.gateSetAt` inline as part of the step-complete mutation — do NOT issue an explicit `clear-gate` call (it would trip Hook B's clear-gate marker check redundantly and is not needed).
 
 ### Chore Chain Step-Specific Fork Instructions
 
@@ -46,7 +57,18 @@ Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-1
 
 After step 4 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type work-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md).
 
-**Step 7 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag). Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
+**Step 7 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag).
+
+Pre-fork sequence (BUG-020 / RC-5):
+
+1. Open the `merge-approval` gate so `stop-hook.sh:51-54` exits `0` while the orchestrator waits for the user's confirmation in main context:
+   ```bash
+   ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-gate {ID} merge-approval
+   ```
+2. Display the merge-confirmation prompt with the canonical approval grammar (`merge {ID}`). Example: `Ready to merge PR #<N> (<branch>)? Reply 'merge {ID}' to proceed.`
+3. Wait for user input. The `merge-approval` gate keeps the stop-hook quiet during the wait.
+4. After the user types `merge {ID}` (Hook A writes the marker), run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow` and fork `finalizing-workflow` via the Agent tool (Hook C allows the fork only because the marker exists). Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
+5. On the subagent's return, call `advance {ID}`. `cmd_advance:1192-1193` clears `.gate` and `.gateSetAt` inline — do NOT issue an explicit `clear-gate` call.
 
 ### Bug Chain Main-Context Steps (Steps 1, 3, 6)
 
@@ -88,9 +110,29 @@ Run the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-1
 
 After step 4 completes (if `issueRef` is set): invoke `managing-work-items comment <issueRef> --type bug-complete --context '{"workItemId": "{ID}", "prNumber": <pr-number>}'` inline per "How to Invoke `managing-work-items`" in [issue-tracking.md](issue-tracking.md).
 
-**Step 7 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag). Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
+**Step 7 — `finalizing-workflow`**: No special argument needed. Pre-fork step-name `finalizing-workflow` (baseline-locked `haiku`; echo uses the `baseline-locked` tag).
+
+Pre-fork sequence (BUG-020 / RC-5):
+
+1. Open the `merge-approval` gate so `stop-hook.sh:51-54` exits `0` while the orchestrator waits for the user's confirmation in main context:
+   ```bash
+   ${CLAUDE_SKILL_DIR}/scripts/workflow-state.sh set-gate {ID} merge-approval
+   ```
+2. Display the merge-confirmation prompt with the canonical approval grammar (`merge {ID}`). Example: `Ready to merge PR #<N> (<branch>)? Reply 'merge {ID}' to proceed.`
+3. Wait for user input. The `merge-approval` gate keeps the stop-hook quiet during the wait.
+4. After the user types `merge {ID}` (Hook A writes the marker), run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow` and fork `finalizing-workflow` via the Agent tool (Hook C allows the fork only because the marker exists). Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
+5. On the subagent's return, call `advance {ID}`. `cmd_advance:1192-1193` clears `.gate` and `.gateSetAt` inline — do NOT issue an explicit `clear-gate` call.
 
 ### Pause Steps
+
+**Auto-mode reaction protocol (load-bearing).** When `cmd_advance` lands on a `context: "pause"` step it emits a **load-bearing** structured log line to stderr of the shape `[info] auto-paused on step <N> (pauseReason=<reason>) - HALT all further tool calls and surface the pause artifact to the user`. On observing this line the orchestrator MUST:
+
+1. **HALT** all further tool calls in the current turn. No `advance`, no `resume`, no follow-on fork, no narration that resembles continuation.
+2. **Surface the pause artifact** to the user: for `plan-approval`, the plan file path under `requirements/implementation/{ID}-*.md`; for `pr-review`, the PR number, URL, and branch.
+3. Surface the resume command `/orchestrating-workflows {ID}` so the user knows how to continue.
+4. Return control to the user. The Claude Code "work without stopping for clarifying questions" / auto-mode system reminder does NOT authorize bypass of this halt — workflow-defined approval gates override "work without stopping" per the SKILL.md `## Output Style > Load-bearing carve-outs` rule. This halt is mandatory regardless of any session-level "work without stopping" / no-clarifying-questions / auto-mode authorization.
+
+The `[info] auto-paused` audit line is itself the trigger — no separate "pause notification" is emitted. Subsequent `advance` calls on the paused workflow are mechanically rejected by `cmd_advance:1119-1122`, and `resume` is denied by Hook B without a fresh approval marker; but the orchestrator's job at the moment of pause is to surface the artifact and stop, not to rely on those guards.
 
 #### Feature Chain Pause Steps
 
