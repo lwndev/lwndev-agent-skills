@@ -89,6 +89,14 @@ For the `Finalize` fork step in all three chains, the orchestrator must set the 
 - `tests/bats/skills/orchestrating-workflows/workflow-state-set-gate.bats` (new or extended) — assert `cmd_set_gate` accepts `merge-approval` and rejects unknown gate values with the existing error pattern (RC-4, RC-5)
 - `tests/bats/shared/hooks/auto-mode-end-to-end.bats` — extend to assert the stop-hook exits `0` when `.gate == "merge-approval"` and `status == "in-progress"`, simulating the Finalize step main-context wait (RC-4, RC-5)
 - `tests/unit/orchestrating-workflows-pause-step-docs.test.ts` (new) — grep-based assertions over step-execution-details.md and SKILL.md (RC-1, RC-3, RC-4)
+- `package-lock.json`
+- `qa/test-plans/QA-plan-BUG-020.md`
+- `qa/test-results/QA-results-BUG-020.md`
+- `requirements/bugs/BUG-020-pause-step-documentation-hardening.md`
+- `tests/bats/skills/orchestrating-workflows/workflow-state-advance-pause-context.qa.bats`
+- `tests/bats/skills/orchestrating-workflows/workflow-state-set-gate.qa-bug-020-gate-clearing.bats`
+- `tests/bats/skills/orchestrating-workflows/workflow-state-set-gate.qa.bats`
+- `tests/unit/orchestrating-workflows-pause-step-docs.qa.test.ts`
 
 ## Acceptance Criteria
 
@@ -114,11 +122,11 @@ For the `Finalize` fork step in all three chains, the orchestrator must set the 
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `Complete`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-05-23
 
-**Pull Request:** [#N](https://github.com/lwndev/lwndev-marketplace/pull/N)
+**Pull Request:** [#297](https://github.com/lwndev/lwndev-marketplace/pull/297)
 
 ## Notes
 
