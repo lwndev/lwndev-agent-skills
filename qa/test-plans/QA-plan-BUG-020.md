@@ -17,6 +17,16 @@ The orchestrator's pause-step user-review contract is hardened in two ways. Firs
 - Test command: npm test
 - Language: typescript
 
+```json
+{
+  "mode": "test-framework",
+  "framework": "vitest",
+  "packageManager": "npm",
+  "testCommand": "npm test",
+  "language": "typescript"
+}
+```
+
 ## Scenarios (by dimension)
 
 ### Inputs
