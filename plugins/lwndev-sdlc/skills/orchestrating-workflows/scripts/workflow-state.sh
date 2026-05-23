@@ -93,7 +93,7 @@ usage() {
   echo "                                cannot be determined (graceful). Exits 1 if current < required" >&2
   echo "                                and emits the documented warning line to stderr." >&2
   echo "  set-gate <ID> <gate-type>     Signal that the orchestrator is waiting for user input within an" >&2
-  echo "                                in-progress step. Valid gate types: findings-decision." >&2
+  echo "                                in-progress step. Valid gate types: findings-decision, merge-approval." >&2
   echo "  clear-gate <ID>               Remove the active gate (sets gate to null)." >&2
   echo "  record-findings [--type qa|review] <ID> <stepIndex> ..." >&2
   echo "                                Persist findings on a step entry. --type defaults to review." >&2

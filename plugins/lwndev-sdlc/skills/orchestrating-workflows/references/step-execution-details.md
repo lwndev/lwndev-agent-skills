@@ -31,7 +31,7 @@ Pre-fork sequence (BUG-020 / RC-5):
 2. Display the merge-confirmation prompt to the user, surfacing the canonical approval grammar (`merge {ID}`) that Hook A converts to `.approval-merge-approval-{ID}`. Example: `Ready to merge PR #<N> (<branch>)? Reply 'merge {ID}' to proceed.`
 3. Wait for user input. The `merge-approval` gate keeps the stop-hook quiet during the wait; no narration, no follow-on tool calls.
 4. After the user types `merge {ID}` (Hook A writes the marker), run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow` (echo uses the `baseline-locked` tag; only a hard override `--model` / `--model-for` can push it off baseline) and fork `finalizing-workflow` via the Agent tool (Hook C allows the fork only because the marker exists).
-5. On the subagent's return, call `advance {ID}`. `cmd_advance:1192-1193` clears `.gate` and `.gateSetAt` inline as part of the step-complete mutation — do NOT issue an explicit `clear-gate` call (it would trip Hook B's clear-gate marker check redundantly and is not needed).
+5. On the subagent's return, call `advance {ID}`. `cmd_advance:1209-1210` clears `.gate` and `.gateSetAt` inline as part of the step-complete mutation — do NOT issue an explicit `clear-gate` call (it would trip Hook B's clear-gate marker check redundantly and is not needed).
 
 ### Chore Chain Step-Specific Fork Instructions
 
@@ -68,7 +68,7 @@ Pre-fork sequence (BUG-020 / RC-5):
 2. Display the merge-confirmation prompt with the canonical approval grammar (`merge {ID}`). Example: `Ready to merge PR #<N> (<branch>)? Reply 'merge {ID}' to proceed.`
 3. Wait for user input. The `merge-approval` gate keeps the stop-hook quiet during the wait.
 4. After the user types `merge {ID}` (Hook A writes the marker), run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow` and fork `finalizing-workflow` via the Agent tool (Hook C allows the fork only because the marker exists). Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
-5. On the subagent's return, call `advance {ID}`. `cmd_advance:1192-1193` clears `.gate` and `.gateSetAt` inline — do NOT issue an explicit `clear-gate` call.
+5. On the subagent's return, call `advance {ID}`. `cmd_advance:1209-1210` clears `.gate` and `.gateSetAt` inline — do NOT issue an explicit `clear-gate` call.
 
 ### Bug Chain Main-Context Steps (Steps 1, 3, 6)
 
@@ -121,7 +121,7 @@ Pre-fork sequence (BUG-020 / RC-5):
 2. Display the merge-confirmation prompt with the canonical approval grammar (`merge {ID}`). Example: `Ready to merge PR #<N> (<branch>)? Reply 'merge {ID}' to proceed.`
 3. Wait for user input. The `merge-approval` gate keeps the stop-hook quiet during the wait.
 4. After the user types `merge {ID}` (Hook A writes the marker), run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow` and fork `finalizing-workflow` via the Agent tool (Hook C allows the fork only because the marker exists). Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
-5. On the subagent's return, call `advance {ID}`. `cmd_advance:1192-1193` clears `.gate` and `.gateSetAt` inline — do NOT issue an explicit `clear-gate` call.
+5. On the subagent's return, call `advance {ID}`. `cmd_advance:1209-1210` clears `.gate` and `.gateSetAt` inline — do NOT issue an explicit `clear-gate` call.
 
 ### Pause Steps
 
