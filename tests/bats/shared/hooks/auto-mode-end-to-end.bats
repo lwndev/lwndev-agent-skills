@@ -132,6 +132,39 @@ init_active() {
 }
 
 # ---------------------------------------------------------------------------
+# BUG-020 / AC9 — stop-hook exits 0 when .gate == "merge-approval" and
+# status == "in-progress" (matching the existing findings-decision behavior).
+# This closes the 9-block stop-hook override path on the Finalize main-context
+# wait. The gate value flows through the existing `if [[ -n "$GATE" ]]; then
+# exit 0; fi` branch at stop-hook.sh:51-54 with no code change.
+# ---------------------------------------------------------------------------
+
+@test "BUG-020 AC9: stop-hook exits 0 when .gate == merge-approval and status == in-progress" {
+  STOP_HOOK="${PLUGIN_ROOT}/skills/orchestrating-workflows/scripts/stop-hook.sh"
+  init_active BUG-020 bug
+  # The workflow is in-progress (init leaves it so) — open the merge-approval
+  # gate exactly as the Finalize fork-step pre-fork sequence does.
+  bash "$WORKFLOW_STATE" set-gate BUG-020 merge-approval >/dev/null
+  # Sanity-check the state shape that drives stop-hook's decision.
+  state=$(bash "$WORKFLOW_STATE" status BUG-020)
+  [ "$(echo "$state" | jq -r '.status')" = "in-progress" ]
+  [ "$(echo "$state" | jq -r '.gate')" = "merge-approval" ]
+  run --separate-stderr bash "$STOP_HOOK"
+  [ "$status" -eq 0 ]
+  # No nudge written to stderr when the gate is open.
+  [ -z "$stderr" ]
+}
+
+@test "BUG-020 AC9 regression: stop-hook exits 0 when .gate == findings-decision and status == in-progress" {
+  STOP_HOOK="${PLUGIN_ROOT}/skills/orchestrating-workflows/scripts/stop-hook.sh"
+  init_active FEAT-220 feature
+  bash "$WORKFLOW_STATE" set-gate FEAT-220 findings-decision >/dev/null
+  run --separate-stderr bash "$STOP_HOOK"
+  [ "$status" -eq 0 ]
+  [ -z "$stderr" ]
+}
+
+# ---------------------------------------------------------------------------
 # Latent gate — pause review-findings, agent self-resumes
 # ---------------------------------------------------------------------------
 
