@@ -44,7 +44,7 @@ Script paths below are relative to `${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/sc
 1. Accept a requirement ID; record the active marker; record the diff baseline:
    - `Write .sdlc/qa/.executing-active`
    - `bash "$SCRIPTS/qa-baseline.sh" init <ID>`
-2. Mode auto-detect (FEAT-032 FR-3): `bash "$SCRIPTS/detect-re-qa-mode.sh" <ID>`. JSON `{mode, files}`. `mode=re-qa` -> Step 5 re-QA branch (skip persona-loaded test-writing); `mode=initial` -> initial-run path.
+2. Mode auto-detect (FEAT-032 FR-3, BUG-022): `bash "$SCRIPTS/detect-re-qa-mode.sh" <ID>`. JSON `{mode, files}`. Detection cross-checks `workflow-state.sh get-qa-state <ID>` (`qaFixAttempts`/`qaLastVerdict`) — fresh IDs resolve `initial` regardless of committed `qa-*` files or marker state. `mode=re-qa` -> Step 5 re-QA branch (skip persona-loaded test-writing); `mode=initial` -> initial-run path.
 3. Capability discovery + drift check:
    - `bash "$SCRIPTS/capability-discovery.sh" <consumer-root> <ID>`
    - `bash "$SCRIPTS/capability-report-diff.sh" "<plan-file>" "<fresh-json>"`
@@ -101,7 +101,7 @@ The following MUST always be emitted even when they resemble narration:
 At skill start:
 
 1. Write `.sdlc/qa/.executing-active` (empty file). Signals the stop hook that `executing-qa` is active.
-2. `bash "${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/qa-baseline.sh" init <ID>` writes `.sdlc/qa/.executing-qa-baseline-<ID>` with the current HEAD SHA. The FR-10 stop-hook diff guard reads this baseline to scope the diff check.
+2. `bash "${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/qa-baseline.sh" init <ID>` writes `.sdlc/qa/.executing-qa-baseline-<ID>` with the current HEAD SHA. The FR-10 stop-hook diff guard reads this baseline to scope the diff check. This marker is NOT a prior-run signal for `detect-re-qa-mode.sh` — detection uses `workflow-state.sh get-qa-state <ID>` instead (BUG-022).
 
 The stop hook removes both files on success; in orchestrated workflows the orchestrator cleans up after return. To clear the baseline manually: `bash "$SCRIPTS/qa-baseline.sh" clear <ID>`.
 
@@ -125,7 +125,7 @@ If no ID is provided, ask for one.
 
 2. **Initialize state**:
    - `Write .sdlc/qa/.executing-active` (empty file).
-   - `bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/qa-baseline.sh init <ID>` — writes the diff-guard baseline. Idempotent on re-QA: rewrites the marker to the current HEAD (the marker's existence — not its SHA — is what `detect-re-qa-mode.sh` keys on).
+   - `bash ${CLAUDE_PLUGIN_ROOT}/skills/executing-qa/scripts/qa-baseline.sh init <ID>` — writes the diff-guard baseline. Used by the FR-10 stop-hook diff guard to scope the diff check; NOT used by `detect-re-qa-mode.sh` for re-QA detection (BUG-022).
 
 3. **Mode auto-detect (FEAT-032 FR-3)**:
    ```
