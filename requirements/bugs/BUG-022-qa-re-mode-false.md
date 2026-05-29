@@ -80,9 +80,14 @@ change merges to main without QA having exercised it.
 ## Affected Files
 
 - `plugins/lwndev-sdlc/skills/executing-qa/scripts/detect-re-qa-mode.sh` — re-QA decision (conjunction at line 76); primary fix surface.
-- `plugins/lwndev-sdlc/skills/executing-qa/scripts/qa-baseline.sh` — unconditional `init` marker write (lines 33-36); mechanism context.
+- `plugins/lwndev-sdlc/skills/executing-qa/scripts/qa-baseline.sh` (planned but not modified)
 - `plugins/lwndev-sdlc/skills/executing-qa/SKILL.md` — Quick Start step 1/step 2 ordering and the "State File Management" section; update in lockstep with any chosen fix.
-- `tests/bats/skills/executing-qa/` — regression coverage for the detection contract.
+- `tests/bats/skills/executing-qa/` (planned but not modified)
+- `qa/test-plans/QA-plan-BUG-022.md`
+- `qa/test-results/QA-results-BUG-022.md`
+- `requirements/bugs/BUG-022-qa-re-mode-false.md`
+- `tests/bats/skills/executing-qa/re-qa-mode.bats`
+- `tests/bats/skills/executing-qa/re-qa-mode.qa.bats`
 
 ## Acceptance Criteria
 
@@ -93,9 +98,11 @@ change merges to main without QA having exercised it.
 
 ## Completion
 
-**Status:** `Completed`
-**Date:** 2026-05-29
-**PR:** [#306](https://github.com/lwndev/lwndev-marketplace/pull/306)
+**Status:** `Complete`
+
+**Completed:** 2026-05-29
+
+**Pull Request:** [#306](https://github.com/lwndev/lwndev-marketplace/pull/306)
 
 ## Notes
 
