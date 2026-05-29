@@ -66,11 +66,11 @@ Correct sites to retain `--project` (no change): `view-pr.sh:136` (`pr list`), `
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `In Progress`
 
 **Completed:** YYYY-MM-DD
 
-**Pull Request:** [#N](https://github.com/org/repo/pull/N)
+**Pull Request:** [#305](https://github.com/lwndev/lwndev-marketplace/pull/305)
 
 ## Notes
 
