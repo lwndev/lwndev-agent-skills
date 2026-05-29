@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# detect-re-qa-mode.sh (FEAT-032 FR-3) — Auto-detect whether executing-qa is
-# running in initial-run mode or re-QA mode for the given requirement ID.
+# detect-re-qa-mode.sh (FEAT-032 FR-3, BUG-022) — Auto-detect whether
+# executing-qa is running in initial-run mode or re-QA mode for the given
+# requirement ID.
 #
 # Re-QA mode is entered when BOTH of these hold:
-#   (a) The qa-baseline marker file `.sdlc/qa/.executing-qa-baseline-<ID>` exists
-#       (set by qa-baseline.sh init from a prior executing-qa run for the same ID).
+#   (a) The requirement ID has a genuine prior QA run recorded in workflow state:
+#       qaFixAttempts >= 1 OR qaLastVerdict is non-null.
+#       State is read via workflow-state.sh get-qa-state <ID> (co-located in
+#       the orchestrating-workflows skill). Fail-safe: any read failure
+#       (missing state file, non-zero exit, malformed JSON) yields
+#       priorRun=false -> mode=initial. Never fails to re-qa on unavailable state.
 #   (b) At least one committed QA test file matches the v1 glob set:
 #         tests/unit/qa-*.test.ts
 #         tests/unit/qa-*.test.js
@@ -22,15 +27,16 @@ set -euo pipefail
 #   {"mode":"initial","files":[]}
 #
 # Exit codes:
-#   0 always (mode is on stdout; missing marker / missing files are not errors)
+#   0 always (mode is on stdout; state-read failures are not errors)
 #   2 missing/invalid args
 #
 # Notes:
-#   * The script does NOT touch the marker file — it only reads.
+#   * The script does NOT touch any marker or state file — it only reads.
 #   * The script uses `git ls-files` so untracked qa-*.test.ts files do NOT
 #     trigger re-QA mode (mirroring the FR-9 finalize safety-net contract).
-#   * No new marker is introduced for re-QA — re-detection on every entry uses
-#     the existing baseline marker as the "this ID has run before" signal.
+#   * The baseline marker (.sdlc/qa/.executing-qa-baseline-<ID>) is NOT used
+#     for re-QA detection. It is written by qa-baseline.sh init (always) for
+#     the FR-10 stop-hook diff guard; its presence is not a prior-run signal.
 
 usage() {
   echo "Usage: detect-re-qa-mode.sh <ID>" >&2
@@ -49,7 +55,9 @@ if [[ -z "$ID" ]]; then
   exit 2
 fi
 
-MARKER_PATH=".sdlc/qa/.executing-qa-baseline-${ID}"
+# Resolve workflow-state.sh relative to this script's directory.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WFSTATE="${SCRIPT_DIR}/../../orchestrating-workflows/scripts/workflow-state.sh"
 
 # Glob set per FR-3 v1. Forward-compat .py/.go globs intentionally absent in
 # v1 per Edge Case 17.
@@ -72,8 +80,24 @@ if [[ -n "$FILES" ]]; then
   FILES_JSON="$(printf '%s\n' "$FILES" | jq -R -s 'split("\n") | map(select(length > 0))')"
 fi
 
+# Determine whether a genuine prior QA run exists for this ID.
+# Cross-check workflow state (BUG-022 fix): a prior run requires qaFixAttempts>=1
+# OR qaLastVerdict non-null. Fail-safe to priorRun=false on any read error so
+# initial runs are never misclassified as re-qa when state is unavailable.
+PRIOR_RUN=false
+if [[ -x "$WFSTATE" ]] || [[ -f "$WFSTATE" ]]; then
+  _state_json="$(bash "$WFSTATE" get-qa-state "$ID" 2>/dev/null || true)"
+  if [[ -n "$_state_json" ]]; then
+    _fix_attempts="$(printf '%s' "$_state_json" | jq -r '.qaFixAttempts // 0' 2>/dev/null || true)"
+    _last_verdict="$(printf '%s' "$_state_json" | jq -r '.qaLastVerdict // "null"' 2>/dev/null || true)"
+    if [[ "${_fix_attempts:-0}" -ge 1 ]] || [[ "$_last_verdict" != "null" && -n "$_last_verdict" ]]; then
+      PRIOR_RUN=true
+    fi
+  fi
+fi
+
 MODE="initial"
-if [[ -f "$MARKER_PATH" ]] && [[ "$(printf '%s' "$FILES_JSON" | jq 'length')" -gt 0 ]]; then
+if [[ "$PRIOR_RUN" == "true" ]] && [[ "$(printf '%s' "$FILES_JSON" | jq 'length')" -gt 0 ]]; then
   MODE="re-qa"
 fi
 
