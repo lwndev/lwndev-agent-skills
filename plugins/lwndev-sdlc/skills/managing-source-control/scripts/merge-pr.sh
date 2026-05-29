@@ -118,7 +118,6 @@ case "$backend" in
       --delete-source-branch true \
       --squash false \
       ${az_org_url:+--organization "$az_org_url"} \
-      ${project:+--project "$project"} \
       >/dev/null 2>"$az_stderr_file"
     rc=$?
     set -e

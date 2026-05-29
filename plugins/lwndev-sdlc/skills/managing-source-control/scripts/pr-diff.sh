@@ -104,7 +104,6 @@ case "$backend" in
         --id "$pr_number" \
         --query targetRefName -o tsv \
         ${az_org_url:+--organization "$az_org_url"} \
-        ${project:+--project "$project"} \
         2>"$az_stderr_file")"
     rc=$?
     set -e
