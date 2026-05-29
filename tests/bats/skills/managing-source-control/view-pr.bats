@@ -233,11 +233,11 @@ set_origin() {
   # files reconstructed from `git diff --name-only origin/main...HEAD` stub.
   [[ "$output" == *'"path":"a.txt"'* ]]
   [[ "$output" == *'"path":"b.txt"'* ]]
-  # az repos pr show must receive --organization AND --project so the call
-  # does not rely on `az devops configure --defaults project=...` being set.
+  # az repos pr show receives --organization but NOT --project (BUG-021: az repos
+  # pr show does not accept --project; project is redundant since PR ids are
+  # org-globally unique).
   grep -qF -- "--organization" "${STUBDIR}/az.args"
-  grep -qF -- "--project" "${STUBDIR}/az.args"
-  grep -qF -- "sdlc-tools" "${STUBDIR}/az.args"
+  ! grep -qF -- "--project" "${STUBDIR}/az.args"
 }
 
 @test "Azure DevOps origin (no PR number) → resolves via branch lookup, normalized JSON" {

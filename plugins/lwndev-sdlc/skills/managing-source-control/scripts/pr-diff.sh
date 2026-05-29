@@ -38,21 +38,16 @@ detect_out="$(bash "$DETECT" 2>/dev/null || true)"
 
 backend=""
 organization=""
-project=""
 if [ -n "$detect_out" ] && [ "$detect_out" != "null" ]; then
   if command -v jq >/dev/null 2>&1; then
     backend="$(printf '%s' "$detect_out" | jq -r '.backend // ""' 2>/dev/null || true)"
     organization="$(printf '%s' "$detect_out" | jq -r '.organization // ""' 2>/dev/null || true)"
-    project="$(printf '%s' "$detect_out" | jq -r '.project // ""' 2>/dev/null || true)"
   else
     if [[ "$detect_out" =~ \"backend\":\"([^\"]+)\" ]]; then
       backend="${BASH_REMATCH[1]}"
     fi
     if [[ "$detect_out" =~ \"organization\":\"([^\"]+)\" ]]; then
       organization="${BASH_REMATCH[1]}"
-    fi
-    if [[ "$detect_out" =~ \"project\":\"([^\"]+)\" ]]; then
-      project="${BASH_REMATCH[1]}"
     fi
   fi
 fi
@@ -104,7 +99,6 @@ case "$backend" in
         --id "$pr_number" \
         --query targetRefName -o tsv \
         ${az_org_url:+--organization "$az_org_url"} \
-        ${project:+--project "$project"} \
         2>"$az_stderr_file")"
     rc=$?
     set -e
