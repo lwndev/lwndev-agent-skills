@@ -93,7 +93,9 @@ change merges to main without QA having exercised it.
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `Completed`
+**Date:** 2026-05-29
+**PR:** [#306](https://github.com/lwndev/lwndev-marketplace/pull/306)
 
 ## Notes
 
