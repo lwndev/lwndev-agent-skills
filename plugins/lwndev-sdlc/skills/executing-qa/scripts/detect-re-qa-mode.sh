@@ -31,7 +31,11 @@ set -euo pipefail
 #   2 missing/invalid args
 #
 # Notes:
-#   * The script does NOT touch any marker or state file — it only reads.
+#   * The script does NOT directly write any marker or state file. Note that
+#     the get-qa-state read can transitively rewrite the state file: it routes
+#     through workflow-state.sh validate_state_file -> _migrate_state_file,
+#     which migrates a pre-FEAT-032 schema (missing qaFixAttempts/qaLastVerdict/
+#     etc.) in place. That migration is idempotent and benign.
 #   * The script uses `git ls-files` so untracked qa-*.test.ts files do NOT
 #     trigger re-QA mode (mirroring the FR-9 finalize safety-net contract).
 #   * The baseline marker (.sdlc/qa/.executing-qa-baseline-<ID>) is NOT used
