@@ -1,8 +1,8 @@
 #!/usr/bin/env bats
 # QA-BUG-022 — adversarial QA for the detect-re-qa-mode.sh state-cross-check fix.
-# SUT: plugins/lwndev-sdlc/skills/executing-qa/scripts/detect-re-qa-mode.sh (repo
-# working-tree copy carrying the BUG-022 fix). Ephemeral QA tests; consumed by
-# addressing-qa-findings, adopted into a *.qa.bats sibling on PASS.
+# SUT: plugins/lwndev-sdlc/skills/executing-qa/scripts/detect-re-qa-mode.sh.
+# Adopted from the ephemeral QA run (qa-detect-re-qa-mode.bats) into this
+# permanent *.qa.bats sibling next to the peer regression re-qa-mode.bats.
 #
 # Coverage focuses on adversarial dimensions NOT already exercised by the
 # permanent regression at tests/bats/skills/executing-qa/re-qa-mode.bats:
@@ -13,10 +13,10 @@
 #   Cross-cutting (idempotency, two-ID isolation on one branch)
 
 setup() {
-  # tests/bats/qa is THREE levels below repo root.
-  SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../plugins/lwndev-sdlc/skills/executing-qa/scripts" && pwd)"
+  # tests/bats/skills/executing-qa is FOUR levels below repo root.
+  SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/executing-qa/scripts" && pwd)"
   SCRIPT="${SCRIPT_DIR}/detect-re-qa-mode.sh"
-  WFSTATE="$(cd "${BATS_TEST_DIRNAME}/../../../plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts" && pwd)/workflow-state.sh"
+  WFSTATE="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/orchestrating-workflows/scripts" && pwd)/workflow-state.sh"
   TMPDIR_TEST="$(mktemp -d)"
   cd "$TMPDIR_TEST"
   git init -q
