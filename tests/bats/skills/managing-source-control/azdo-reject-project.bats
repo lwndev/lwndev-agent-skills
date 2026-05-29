@@ -13,10 +13,7 @@ bats_require_minimum_version 1.5.0
 # the env override still selects the corrected argv.
 
 setup() {
-  SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../skills/managing-source-control/scripts" && pwd 2>/dev/null)" \
-    || SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../plugins/lwndev-sdlc/skills/managing-source-control/scripts" && pwd)"
-  # Canonical location (tests/bats/qa -> repo root -> plugins/...).
-  SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../plugins/lwndev-sdlc/skills/managing-source-control/scripts" && pwd)"
+  SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/managing-source-control/scripts" && pwd)"
   VIEW_PR="${SCRIPT_DIR}/view-pr.sh"
   MERGE_PR="${SCRIPT_DIR}/merge-pr.sh"
   PR_DIFF="${SCRIPT_DIR}/pr-diff.sh"
