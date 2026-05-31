@@ -89,3 +89,10 @@ Candidate mechanisms from the issue (one to be selected during planning/review):
 - GitHub issue: lwndev/lwndev-marketplace#303
 
 ---
+
+## Completion
+
+**Status:** Completed
+**Date:** 2026-05-31
+**PR:** https://github.com/lwndev/lwndev-marketplace/pull/308
+**Mechanism chosen:** A — `qa-dispatch.sh` + `detect-phase.sh` + `addressing-qa-findings/SKILL.md` updated.
