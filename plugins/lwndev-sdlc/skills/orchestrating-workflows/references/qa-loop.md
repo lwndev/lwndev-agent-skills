@@ -6,12 +6,13 @@ The orchestrator's QA step is verdict-gated. After `executing-qa` returns, the o
 
 | Row | Condition | Dispatch token | Action |
 |-----|-----------|----------------|--------|
-| 1 | Initial PASS (`qaFixAttempts == 0` AND verdict == `PASS`) | `advance` | Advance to next step. |
+| 1a | Initial PASS (`qaFixAttempts == 0`, verdict `PASS`) AND un-adopted `qa-*` files git-visible | `adopt-phase` | Fork `addressing-qa-findings` (adopt mode) to rename qa-* before FR-9 gate. |
+| 1b | Initial PASS (`qaFixAttempts == 0`, verdict `PASS`) AND no `qa-*` files present | `advance` | Advance to next step (trivial change / EXPLORATORY-ONLY-equivalent). |
 | 2 | EXPLORATORY-ONLY (only from initial run; re-QA cannot return this per FR-3) | `advance` | Advance to next step. No fixes needed. |
 | 3 | ISSUES-FOUND AND `qaFixAttempts < qaLoopCap` | `fix-phase` | Increment counter; fork `addressing-qa-findings` (fix mode); re-invoke `executing-qa` (re-QA); loop. |
 | 4 | ISSUES-FOUND AND `qaFixAttempts >= qaLoopCap` | `pause:qa-loop-exhausted` | Pause with resume options (see FR-8). |
 | 5 | Post-fix PASS needing adoption (`qaFixAttempts > 0` AND `adoptedTests` empty) | `adopt-phase` | Fork `addressing-qa-findings` (adopt mode); on `done | phase=adopted` advance. |
-| 6 | Post-adopt PASS (`qaFixAttempts > 0` AND `adoptedTests` non-empty) | `advance` | Advance to next step. |
+| 6 | Post-adopt PASS (`adoptedTests` non-empty) | `advance` | Advance to next step. |
 | 7 | ERROR | `pause:qa-error` | Pause; surface error reason; user resolves manually. |
 
 Note: `dispatch=re-qa` is not emitted by `qa-dispatch.sh`. The orchestrator emits it internally after a fix-phase returns `done | phase=fix-committed`.
@@ -68,6 +69,7 @@ Error: --approve-advance and --qa-loop-cap are mutually exclusive
 ## Edge Case Cross-References
 
 - **Edge Case 5**: re-QA PASS on first attempt — `qaFixAttempts = 1`, verdict `PASS`, `adoptedTests` empty → dispatch `adopt-phase`.
+- **BUG-023**: initial-run PASS with un-adopted `qa-*` files — `qaFixAttempts = 0`, verdict `PASS`, `adoptedTests` empty, git-visible `qa-*` → dispatch `adopt-phase` (row 1a). Prevents FR-9 deadlock at finalize. `run-adopt-loop.sh` exit 2 (no files) treated as clean → advance.
 - **Edge Case 8**: re-QA mode entered but QA files manually deleted — `executing-qa` emits `ERROR` with verbatim NFR-2 reason; orchestrator pauses with `qa-error`.
 - **Edge Case 13**: full-suite gate failed after fix — no auto-revert in v1; user resolves manually. The `fix-suite-failed` pause reason surfaces the FR-4 step-4 failure reason verbatim.
 - **Edge Case 14**: `adoption-failed` with partial progress — `adoptedTests` records already-adopted paths across the pause; on re-invoke the adopt phase skips already-adopted files.

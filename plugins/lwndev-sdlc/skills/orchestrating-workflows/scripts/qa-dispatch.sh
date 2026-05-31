@@ -107,18 +107,37 @@ dispatch=""
 case "${qa_last_verdict:-}" in
 
   PASS)
-    if [[ "$qa_fix_attempts" -eq 0 ]]; then
-      # Initial-run PASS — advance directly.
-      dispatch="advance"
-      $explain && echo "[qa-dispatch] initial-run PASS (qaFixAttempts=0) → advance" >&2 || true
-    elif [[ "$adopted_tests_len" -gt 0 ]]; then
-      # Post-adopt PASS — all tests adopted; advance.
+    if [[ "$adopted_tests_len" -gt 0 ]]; then
+      # Post-adopt PASS — all tests adopted; advance. Guard first to prevent
+      # re-looping into adopt-phase after adoption completes (qaFixAttempts
+      # may still be 0 on an initial-PASS adopt path).
       dispatch="advance"
       $explain && echo "[qa-dispatch] post-adopt PASS (qaFixAttempts=${qa_fix_attempts}, adoptedTests=${adopted_tests_len}) → advance" >&2 || true
-    else
-      # Post-fix PASS needing adoption.
+    elif [[ "$qa_fix_attempts" -gt 0 ]]; then
+      # Post-fix PASS needing adoption (qaFixAttempts>0, adoptedTests empty).
       dispatch="adopt-phase"
       $explain && echo "[qa-dispatch] post-fix PASS (qaFixAttempts=${qa_fix_attempts}, adoptedTests=0) → adopt-phase" >&2 || true
+    else
+      # Initial-run PASS (qaFixAttempts=0, adoptedTests empty). Check whether
+      # un-adopted qa-* files are git-visible. If yes, route to adopt-phase so
+      # they are renamed before finalizing-workflow's FR-9 gate runs.
+      # Use the same three canonical globs the FR-9 gate uses (Edge Case 17
+      # lockstep: do NOT add pytest/go-test globs here).
+      qa_files_present=false
+      if git ls-files \
+          'tests/unit/qa-*.test.ts' \
+          'tests/unit/qa-*.test.js' \
+          'tests/bats/qa/qa-*.bats' \
+          2>/dev/null | grep -q .; then
+        qa_files_present=true
+      fi
+      if $qa_files_present; then
+        dispatch="adopt-phase"
+        $explain && echo "[qa-dispatch] initial-run PASS with un-adopted qa-* files → adopt-phase" >&2 || true
+      else
+        dispatch="advance"
+        $explain && echo "[qa-dispatch] initial-run PASS (qaFixAttempts=0, no qa-* files) → advance" >&2 || true
+      fi
     fi
     ;;
 

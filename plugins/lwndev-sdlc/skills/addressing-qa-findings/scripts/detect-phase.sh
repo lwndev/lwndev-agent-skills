@@ -63,9 +63,23 @@ if [[ "$verdict" = "ISSUES-FOUND" && "$adopted_count" = "0" ]]; then
   exit 0
 fi
 
-if [[ "$verdict" = "PASS" && "$attempts" -gt 0 && "$adopted_count" = "0" ]]; then
-  echo "phase=adopt"
-  exit 0
+if [[ "$verdict" = "PASS" && "$adopted_count" = "0" ]]; then
+  # Route to adopt-phase when attempts>0 (post-fix PASS) OR when qa-* files
+  # are git-visible (initial-run PASS with un-adopted tests — BUG-023 fix).
+  # Use the same three canonical FR-9 globs (Edge Case 17 lockstep: do NOT
+  # add pytest/go-test globs).
+  qa_files_present=false
+  if git ls-files \
+      'tests/unit/qa-*.test.ts' \
+      'tests/unit/qa-*.test.js' \
+      'tests/bats/qa/qa-*.bats' \
+      2>/dev/null | grep -q .; then
+    qa_files_present=true
+  fi
+  if [[ "$attempts" -gt 0 ]] || $qa_files_present; then
+    echo "phase=adopt"
+    exit 0
+  fi
 fi
 
 echo "phase=unknown"

@@ -36,7 +36,7 @@ phase=$(bash "${CLAUDE_PLUGIN_ROOT}/skills/addressing-qa-findings/scripts/detect
 | Trigger | Phase |
 |---------|-------|
 | `qaLastVerdict == "ISSUES-FOUND"` AND `adoptedTests == []` | `phase=fix` |
-| `qaLastVerdict == "PASS"` AND `qaFixAttempts > 0` AND `adoptedTests == []` | `phase=adopt` |
+| `qaLastVerdict == "PASS"` AND `adoptedTests == []` AND (`qaFixAttempts > 0` OR git-visible un-adopted `qa-*` files exist) | `phase=adopt` |
 | anything else | `phase=unknown` — emit `failed | unable to auto-detect phase from state` and exit |
 
 ## Quick Start — Fix Phase
@@ -169,5 +169,6 @@ Failure shapes (verbatim per FR-4 / FR-5 / Edge Case 13):
 |---------|-------|
 | QA verdict `ISSUES-FOUND` from `executing-qa` | this skill (fix phase) |
 | QA verdict `PASS` after a prior fix attempt | this skill (adopt phase) |
-| QA verdict `PASS` on first run | advance directly to `finalizing-workflow` |
+| QA verdict `PASS` on first run with un-adopted `qa-*` files | this skill (adopt phase) — initial-PASS adoption before finalize |
+| QA verdict `PASS` on first run with no `qa-*` files | advance directly to `finalizing-workflow` |
 | QA verdict `ERROR` | orchestrator pauses with `qa-error` |
