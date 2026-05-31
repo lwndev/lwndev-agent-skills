@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.27.1] - 2026-05-31
+
+Maintenance release: three bug fixes to the SDLC workflow skills plus a dependency bump. No new features or breaking changes.
+
+### Bug Fixes
+
+- **BUG-021:** Remove the unsupported `--project` flag from `az repos pr show`/`update` in `managing-source-control`. Azure DevOps PR view/update operations no longer fail on backends where the flag is rejected ([#305](https://github.com/lwndev/lwndev-marketplace/pull/305)).
+- **BUG-022:** Cross-check workflow state in `detect-re-qa-mode.sh` so the QA loop reliably distinguishes a re-QA run from a first run, including transitive state migration ([#306](https://github.com/lwndev/lwndev-marketplace/pull/306)).
+- **BUG-020:** Harden orchestrator pause-step documentation and the merge-approval gate; correct `set-gate` help text and `cmd_advance` line citations ([#297](https://github.com/lwndev/lwndev-marketplace/pull/297)).
+
+### Chores
+
+- **deps:** Bump `brace-expansion` to 5.0.6 to clear an npm audit advisory.
+
+[1.27.1]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.27.0...lwndev-sdlc@1.27.1
+
 ## [1.27.0] - 2026-05-18
 
 ### Features
