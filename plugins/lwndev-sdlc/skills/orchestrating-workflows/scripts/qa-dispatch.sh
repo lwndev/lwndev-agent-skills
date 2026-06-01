@@ -7,8 +7,9 @@
 # and emits one dispatch token on stdout, then exits 0.
 #
 # Dispatch tokens (load-bearing — orchestrator branches on these verbatim):
-#   dispatch=advance              — initial PASS, EXPLORATORY-ONLY, or post-adopt PASS
-#   dispatch=adopt-phase          — post-fix PASS needing adoption (adoptedTests empty)
+#   dispatch=advance              — initial PASS (no git-visible qa-* files), EXPLORATORY-ONLY, or post-adopt PASS
+#   dispatch=adopt-phase          — PASS needing adoption (adoptedTests empty): post-fix PASS (qaFixAttempts>0),
+#                                   or initial-run PASS with git-visible un-adopted qa-* files (BUG-023)
 #   dispatch=fix-phase            — ISSUES-FOUND and qaFixAttempts < qaLoopCap
 #   dispatch=pause:qa-loop-exhausted — ISSUES-FOUND and qaFixAttempts >= qaLoopCap
 #   dispatch=pause:qa-error       — verdict == ERROR

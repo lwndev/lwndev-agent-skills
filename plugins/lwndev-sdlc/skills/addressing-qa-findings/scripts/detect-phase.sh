@@ -12,7 +12,9 @@ set -euo pipefail
 #
 # Output (stdout, single line):
 #   phase=fix     — verdict == ISSUES-FOUND AND adoptedTests == []
-#   phase=adopt   — verdict == PASS AND qaFixAttempts > 0 AND adoptedTests == []
+#   phase=adopt   — verdict == PASS AND adoptedTests == []
+#                   AND (qaFixAttempts > 0 OR git-visible qa-* files)
+#                   (the qa-* files branch is the BUG-023 initial-run PASS case)
 #   phase=unknown — anything else
 #
 # Exit codes:
