@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.27.3] - 2026-06-01
+
+Maintenance release: relocates the `finalizing-workflow` write-surface guard to a reliable enforcement point. No new features or breaking changes.
+
+### Bug Fixes
+
+- **BUG-024:** Move the finalize write-surface guard out of the dead, forked Stop hook (which never ran) into a pre-merge in-script check (`arm-baseline.sh` + `check-write-surface.sh`), with the baseline stored in the git dir. The guard now actually blocks merges that touch the protected write surface ([#310](https://github.com/lwndev/lwndev-marketplace/pull/310)).
+
+[1.27.3]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.27.2...lwndev-sdlc@1.27.3
+
 ## [1.27.2] - 2026-05-31
 
 Maintenance release: one bug fix to the QA-adoption routing in the SDLC workflow skills. No new features or breaking changes.
