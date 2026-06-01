@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.27.2] - 2026-05-31
+
+Maintenance release: one bug fix to the QA-adoption routing in the SDLC workflow skills. No new features or breaking changes.
+
+### Bug Fixes
+
+- **BUG-023:** Route an initial-run QA `PASS` through `addressing-qa-findings` (adopt phase) whenever committed `qa-*` test files are git-visible, instead of advancing straight to `finalizing-workflow`. Initial-PASS QA tests are now promoted into their `*.qa.*` regression siblings rather than being left on the branch to trip the FR-9 finalize gate. Updates `qa-dispatch.sh`/`detect-phase` routing to the OR-form contract and aligns the contract comments ([#308](https://github.com/lwndev/lwndev-marketplace/pull/308)).
+
+[1.27.2]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.27.1...lwndev-sdlc@1.27.2
+
 ## [1.27.1] - 2026-05-31
 
 Maintenance release: three bug fixes to the SDLC workflow skills plus a dependency bump. No new features or breaking changes.
