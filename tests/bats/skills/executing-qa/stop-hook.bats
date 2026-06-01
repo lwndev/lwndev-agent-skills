@@ -19,6 +19,15 @@ setup() {
   # Create a throwaway workspace.
   TMPDIR_TEST="$(mktemp -d)"
 
+  # Per-test QA ID. The capability JSON the stop hook reads lives at a fixed
+  # global path (/tmp/qa-capability-<ID>.json) keyed only by ID, so every test
+  # sharing one literal ID would race on that one file under `bats --jobs`
+  # (a concurrent `jq -n > …` truncation reads back empty → framework lost →
+  # diff guard wrongly skipped). Derive a process-unique ID from the unique
+  # TMPDIR_TEST (sanitised to the [A-Za-z0-9_-]+ charset the hook greps for in
+  # QA-results-<ID>.md filenames) so each test owns its own capability file.
+  QA_ID="FEAT-030-$(basename "$TMPDIR_TEST" | tr -cd 'A-Za-z0-9')"
+
   # Initialise a git repo (identity required for commits).
   git -C "$TMPDIR_TEST" init -q
   git -C "$TMPDIR_TEST" config user.email "test@bats"
@@ -38,10 +47,10 @@ setup() {
   git -C "$TMPDIR_TEST" commit -q -m "initial"
 
   # Write a valid v2 QA results artifact.
-  write_results_artifact "$TMPDIR_TEST" "FEAT-030" "PASS"
+  write_results_artifact "$TMPDIR_TEST" "$QA_ID" "PASS"
 
   # Write a vitest capability JSON.
-  write_capability_json "$TMPDIR_TEST" "FEAT-030" "vitest"
+  write_capability_json "$TMPDIR_TEST" "$QA_ID" "vitest"
 
   # Write the ACTIVE file so the hook is not short-circuited.
   touch "$TMPDIR_TEST/.sdlc/qa/.executing-active"
@@ -53,6 +62,12 @@ setup() {
 teardown() {
   if [[ -n "${TMPDIR_TEST:-}" && -d "$TMPDIR_TEST" ]]; then
     rm -rf "$TMPDIR_TEST"
+  fi
+  # The capability JSON lives at the fixed global /tmp path; remove this test's
+  # own copy so it neither leaks nor lingers for an unrelated run. Safe under
+  # parallelism because QA_ID is process-unique.
+  if [[ -n "${QA_ID:-}" ]]; then
+    rm -f "/tmp/qa-capability-${QA_ID}.json"
   fi
 }
 
@@ -141,12 +156,12 @@ write_baseline() {
 
 @test "FR-10: pure addition inside test root is allowed" {
   cd "$TMPDIR_TEST"
-  write_baseline "$TMPDIR_TEST" "FEAT-030"
+  write_baseline "$TMPDIR_TEST" "$QA_ID"
 
   # Add a new spec file inside __tests__.
   printf 'test("qa", () => {})\n' > "$TMPDIR_TEST/__tests__/qa-inputs.spec.ts"
 
-  run bash "$STOP_HOOK" <<< "$(build_hook_input "FEAT-030")"
+  run bash "$STOP_HOOK" <<< "$(build_hook_input "$QA_ID")"
   [ "$status" -eq 0 ]
   # Active file should be removed.
   [ ! -f "$TMPDIR_TEST/.sdlc/qa/.executing-active" ]
@@ -158,12 +173,12 @@ write_baseline() {
 
 @test "FR-10: modification of existing test file inside test root is allowed" {
   cd "$TMPDIR_TEST"
-  write_baseline "$TMPDIR_TEST" "FEAT-030"
+  write_baseline "$TMPDIR_TEST" "$QA_ID"
 
   # Modify existing spec.
   printf '// updated\ntest("qa", () => {})\n' > "$TMPDIR_TEST/__tests__/foo.spec.ts"
 
-  run bash "$STOP_HOOK" <<< "$(build_hook_input "FEAT-030")"
+  run bash "$STOP_HOOK" <<< "$(build_hook_input "$QA_ID")"
   [ "$status" -eq 0 ]
 }
 
@@ -173,14 +188,14 @@ write_baseline() {
 
 @test "FR-10: edit outside test root is blocked with verbatim error" {
   cd "$TMPDIR_TEST"
-  write_baseline "$TMPDIR_TEST" "FEAT-030"
+  write_baseline "$TMPDIR_TEST" "$QA_ID"
 
   # Commit a production file modification after baseline.
   printf 'export const x = 2;\n' > "$TMPDIR_TEST/src/index.ts"
   git -C "$TMPDIR_TEST" add "src/index.ts"
   git -C "$TMPDIR_TEST" commit -q -m "qa: accidentally edit production file"
 
-  run bash "$STOP_HOOK" <<< "$(build_hook_input "FEAT-030")"
+  run bash "$STOP_HOOK" <<< "$(build_hook_input "$QA_ID")"
   [ "$status" -eq 2 ]
   [[ "$output" == *"Stop hook: executing-qa modified production files outside the framework test root"* ]]
   [[ "$output" == *"src/index.ts"* ]]
@@ -193,17 +208,17 @@ write_baseline() {
 
 @test "FR-10: QA result and plan artifacts are always allowed" {
   cd "$TMPDIR_TEST"
-  write_baseline "$TMPDIR_TEST" "FEAT-030"
+  write_baseline "$TMPDIR_TEST" "$QA_ID"
 
   # Modify the QA results artifact itself.
   # (already written by write_results_artifact; just touch it)
-  printf '# extra line\n' >> "$TMPDIR_TEST/qa/test-results/QA-results-FEAT-030.md"
+  printf '# extra line\n' >> "$TMPDIR_TEST/qa/test-results/QA-results-${QA_ID}.md"
 
   # Also add a test plan artifact.
   mkdir -p "$TMPDIR_TEST/qa/test-plans"
-  printf '# test plan\n' > "$TMPDIR_TEST/qa/test-plans/QA-plan-FEAT-030.md"
+  printf '# test plan\n' > "$TMPDIR_TEST/qa/test-plans/QA-plan-${QA_ID}.md"
 
-  run bash "$STOP_HOOK" <<< "$(build_hook_input "FEAT-030")"
+  run bash "$STOP_HOOK" <<< "$(build_hook_input "$QA_ID")"
   [ "$status" -eq 0 ]
 }
 
@@ -218,7 +233,7 @@ write_baseline() {
   printf 'export const x = 99;\n' > "$TMPDIR_TEST/src/index.ts"
 
   # Baseline captures HEAD (the original commit, before this dirty change).
-  write_baseline "$TMPDIR_TEST" "FEAT-030"
+  write_baseline "$TMPDIR_TEST" "$QA_ID"
 
   # No further changes to src/index.ts after baseline — git diff HEAD..HEAD is empty
   # for committed files, but src/index.ts is only staged/modified; since diff is
@@ -231,7 +246,7 @@ write_baseline() {
   # history. So the diff output for committed changes (tracked by git diff HEAD)
   # is empty for src/index.ts because only the index was changed before baseline.
   # We verify hook passes (no false positive).
-  run bash "$STOP_HOOK" <<< "$(build_hook_input "FEAT-030")"
+  run bash "$STOP_HOOK" <<< "$(build_hook_input "$QA_ID")"
   [ "$status" -eq 0 ]
 }
 
@@ -243,10 +258,10 @@ write_baseline() {
   cd "$TMPDIR_TEST"
   # Deliberately do NOT write the baseline marker.
 
-  run bash "$STOP_HOOK" <<< "$(build_hook_input "FEAT-030")"
+  run bash "$STOP_HOOK" <<< "$(build_hook_input "$QA_ID")"
   [ "$status" -eq 2 ]
   [[ "$output" == *"missing baseline marker"* ]]
-  [[ "$output" == *".executing-qa-baseline-FEAT-030"* ]]
+  [[ "$output" == *".executing-qa-baseline-${QA_ID}"* ]]
   [[ "$output" == *"Re-run executing-qa from the start"* ]]
 }
 
@@ -256,13 +271,13 @@ write_baseline() {
 
 @test "FR-10: rename from inside test root to outside is blocked" {
   cd "$TMPDIR_TEST"
-  write_baseline "$TMPDIR_TEST" "FEAT-030"
+  write_baseline "$TMPDIR_TEST" "$QA_ID"
 
   # Commit a rename after baseline: move __tests__/foo.spec.ts -> src/foo.spec.ts
   git -C "$TMPDIR_TEST" mv "__tests__/foo.spec.ts" "src/foo.spec.ts"
   git -C "$TMPDIR_TEST" commit -q -m "rename spec out of test root"
 
-  run bash "$STOP_HOOK" <<< "$(build_hook_input "FEAT-030")"
+  run bash "$STOP_HOOK" <<< "$(build_hook_input "$QA_ID")"
   [ "$status" -eq 2 ]
   [[ "$output" == *"Stop hook: executing-qa modified production files"* ]]
   [[ "$output" == *"src/foo.spec.ts"* ]]
@@ -274,25 +289,25 @@ write_baseline() {
 
 @test "FR-10: cleanup on success removes both active file and baseline marker" {
   cd "$TMPDIR_TEST"
-  write_baseline "$TMPDIR_TEST" "FEAT-030"
+  write_baseline "$TMPDIR_TEST" "$QA_ID"
 
-  run bash "$STOP_HOOK" <<< "$(build_hook_input "FEAT-030")"
+  run bash "$STOP_HOOK" <<< "$(build_hook_input "$QA_ID")"
   [ "$status" -eq 0 ]
   [ ! -f "$TMPDIR_TEST/.sdlc/qa/.executing-active" ]
-  [ ! -f "$TMPDIR_TEST/.sdlc/qa/.executing-qa-baseline-FEAT-030" ]
+  [ ! -f "$TMPDIR_TEST/.sdlc/qa/.executing-qa-baseline-${QA_ID}" ]
 }
 
 @test "FR-10: cleanup on failure removes both active file and baseline marker" {
   cd "$TMPDIR_TEST"
-  write_baseline "$TMPDIR_TEST" "FEAT-030"
+  write_baseline "$TMPDIR_TEST" "$QA_ID"
 
   # Cause a failure by committing a production file modification after baseline.
   printf 'export const x = 2;\n' > "$TMPDIR_TEST/src/index.ts"
   git -C "$TMPDIR_TEST" add "src/index.ts"
   git -C "$TMPDIR_TEST" commit -q -m "qa: accidentally edit production file"
 
-  run bash "$STOP_HOOK" <<< "$(build_hook_input "FEAT-030")"
+  run bash "$STOP_HOOK" <<< "$(build_hook_input "$QA_ID")"
   [ "$status" -eq 2 ]
   [ ! -f "$TMPDIR_TEST/.sdlc/qa/.executing-active" ]
-  [ ! -f "$TMPDIR_TEST/.sdlc/qa/.executing-qa-baseline-FEAT-030" ]
+  [ ! -f "$TMPDIR_TEST/.sdlc/qa/.executing-qa-baseline-${QA_ID}" ]
 }
