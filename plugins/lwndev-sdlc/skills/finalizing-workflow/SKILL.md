@@ -62,17 +62,9 @@ This skill is forked by `orchestrating-workflows` as the terminal step of every 
 
 ## Write Surface
 
-The only paths this skill may mutate are:
+Allowed paths: `requirements/{features,chores,bugs}/<ID>-*.md` only. Allowed operations: `gh pr merge`, `git checkout main`, `git fetch`, `git pull`, and a bookkeeping `git add` + commit of the requirement doc. Forbidden: `git rm`, `git mv`, `rm`, `git restore --staged`, and content edits outside that surface.
 
-- `requirements/features/<ID>-*.md`
-- `requirements/chores/<ID>-*.md`
-- `requirements/bugs/<ID>-*.md`
-
-Allowed operations: `gh pr merge` / `git merge`, `git checkout main`, `git fetch`, `git pull`, and the BK-5 `git add` + commit of the requirement doc above.
-
-Forbidden: `git rm`, `git mv`, `rm`, `git restore --staged`, and content edits outside the write surface. If `preflight-checks.sh` blocks the merge, surface the stderr verbatim and return `failed | preflight blocked: <reason>`. Do NOT remove, rename, or otherwise mutate any file to unblock the merge.
-
-The stop-hook (`scripts/stop-hook.sh`) enforces this surface on Stop: it diffs all commits since the finalize-start baseline SHA (`baseline..HEAD`) and blocks if any path outside `requirements/<type>/<ID>-*.md` was touched. A commit that modifies only the requirement doc (BK-5 bookkeeping) passes.
+If `preflight-checks.sh` blocks the merge, surface the stderr verbatim and return `failed | preflight blocked: <reason>`. Do NOT delete or rename any file to unblock the merge. The stop-hook (`scripts/stop-hook.sh`) enforces this on Stop via a committed-diff guard (`baseline..HEAD`).
 
 ## Usage
 
@@ -85,20 +77,16 @@ Capture the branch, confirm intent up-front, then delegate the full sequence (pr
    > Ready to merge PR #\<N\> ("\<title\>") and finalize the requirement document. Proceed?
 
 4. On no / n / empty, abort before invoking the script and report `Aborted — no changes made.` Do not run `finalize.sh`.
-5. On confirmation, write the finalize active-marker and baseline SHA (used by the stop-hook diff guard), then run the script and report its stdout verbatim:
+5. On confirmation, write the stop-hook markers then run the script:
 
    ```bash
-   # Resolve the workflow ID from the branch name.
    finalize_id=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/branch-id-parse.sh" "$branch" 2>/dev/null | jq -r '.id // "unknown"' || echo "unknown")
-   # Write markers for the stop-hook diff guard.
-   mkdir -p .sdlc/finalize
-   touch .sdlc/finalize/.finalize-active
+   mkdir -p .sdlc/finalize && touch .sdlc/finalize/.finalize-active
    git rev-parse HEAD > ".sdlc/finalize/.finalize-baseline-${finalize_id}"
-   # Run finalize.
    bash "${CLAUDE_PLUGIN_ROOT}/skills/finalizing-workflow/scripts/finalize.sh" "$branch"
    ```
 
-   If `finalize.sh` exits non-zero, surface its stderr verbatim and return `failed | preflight blocked: <reason>` (or the relevant failure reason). Do NOT run any git mutation to recover.
+   If `finalize.sh` exits non-zero, surface its stderr verbatim and return `failed | preflight blocked: <reason>`. Do NOT run any git mutation to recover.
 
 `finalize.sh` does **not** prompt — confirmation is owned entirely by this skill. The script runs unattended after confirmation.
 
@@ -111,12 +99,6 @@ On non-zero exit, `finalize.sh` emits a single `[error]` (or `[warn]`) stderr li
 ## Relationship to Other Skills
 
 Terminal step in all workflow chains. Reconciliation steps are optional but recommended.
-
-```
-Features: ... → implementing-plan-phases → PR review → reviewing-requirements → executing-qa → finalizing-workflow
-Chores:   ... → executing-chores   → PR review → reviewing-requirements → executing-qa → finalizing-workflow
-Bugs:     ... → executing-bug-fixes → PR review → reviewing-requirements → executing-qa → finalizing-workflow
-```
 
 | Task | Recommended Approach |
 |------|---------------------|
