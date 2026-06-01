@@ -32,8 +32,9 @@ set -euo pipefail
 #   0  success — adopted; new path on stdout
 #   1  filesystem / `git mv` failure (target already exists, file outside repo,
 #      etc.) — git stderr passes through
-#   2  SUT cannot be determined — no resolvable imports, multiple plausible
-#      peers, no existing peer test, or framework not supported in v1
+#   2  SUT cannot be determined — no resolvable imports, no existing peer test,
+#      or framework not supported in v1. Multiple resolvable peers are tolerated:
+#      the lexicographically-first peer by full repo-relative path is chosen.
 #
 # On exit 2, a structured stderr line of the form:
 #   adopt-qa-test: <path>: <reason>
@@ -294,14 +295,15 @@ dispatch_vitest_jest() {
 $imports
 EOF
 
-  if [[ "$seen_count" -eq 0 && "$multi_seen" -eq 0 ]]; then
+  if [[ "$seen_count" -eq 0 ]]; then
     emit_fail "no existing peer test found for any imported SUT"
     exit 2
   fi
-  if [[ "$seen_count" -gt 1 ]] || [[ "$multi_seen" -eq 1 && "$seen_count" -ge 1 ]] || [[ "$multi_seen" -eq 1 && "$seen_count" -eq 0 ]]; then
-    emit_fail "multiple plausible peer tests found; expected exactly one"
-    exit 2
-  fi
+
+  # Multiple resolved peers: pick the lexicographically-first by full repo-relative
+  # path. LC_ALL=C pins byte-order comparison, making the pick stable across
+  # locales and machines (P0 determinism requirement).
+  resolved="$(printf '%s\n' "$peers" | grep -v '^$' | LC_ALL=C sort | head -n 1)"
 
   # Compute target: <peer-dir>/<peer-base-without-.test><.qa><.ext-of-qa>
   local peer_dir peer_file peer_base
@@ -401,10 +403,11 @@ EOF
     emit_fail "no existing peer .bats test found for any loaded script"
     exit 2
   fi
-  if [[ "$seen_count" -gt 1 ]]; then
-    emit_fail "multiple plausible peer .bats tests found; expected exactly one"
-    exit 2
-  fi
+
+  # Multiple resolved peers: pick the lexicographically-first by full repo-relative
+  # path. LC_ALL=C pins byte-order comparison, making the pick stable across
+  # locales and machines (P0 determinism requirement).
+  resolved="$(printf '%s\n' "$peers" | grep -v '^$' | LC_ALL=C sort | head -n 1)"
 
   local peer_dir peer_file peer_base
   peer_dir="$(dirname -- "$resolved")"
