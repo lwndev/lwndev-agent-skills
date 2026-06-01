@@ -119,6 +119,35 @@ EOF
   [[ "$output" == *"adopt-qa-test: tests/unit/qa-lonely-edge.test.ts: no existing peer test found for any imported SUT"* ]]
 }
 
+# ---- Exit-2: <<MULTI>> sentinel with no singular peer (ambiguous reason) -----
+
+@test "exit 2 MULTI sentinel with no other singular peer: multi-peer reason verbatim" {
+  # Single SUT (widget) base matches 2+ peers under tests/ -> <<MULTI>> sentinel.
+  # No other import resolves singularly -> seen_count=0, multi_seen=1.
+  # Must exit 2 with the multi-peer reason, NOT "no existing peer test found".
+  mkdir -p src tests/unit tests/integration
+  cat > src/widget.ts <<'EOF'
+export const widget = 0;
+EOF
+  cat > tests/unit/widget.test.ts <<'EOF'
+test("widget unit", () => {});
+EOF
+  cat > tests/integration/widget.test.ts <<'EOF'
+test("widget int", () => {});
+EOF
+  cat > tests/unit/qa-widget-only.test.ts <<'EOF'
+import { widget } from "../../src/widget";
+test("widget", () => {});
+EOF
+  git add . && git commit -q -m "init"
+
+  run bash "$ADOPT" tests/unit/qa-widget-only.test.ts
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"adopt-qa-test: tests/unit/qa-widget-only.test.ts: multiple plausible peer tests match a single imported SUT; cannot disambiguate"* ]]
+  # QA file untouched (no adoption occurred)
+  [ -f "tests/unit/qa-widget-only.test.ts" ]
+}
+
 # ---- Exit-0: multi-SUT vitest picks lexicographically-first peer -----------
 
 @test "exit 0 when QA test imports multiple SUTs: picks lex-first peer by full path" {
