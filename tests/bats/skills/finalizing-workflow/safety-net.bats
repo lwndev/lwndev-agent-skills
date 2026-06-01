@@ -281,3 +281,29 @@ EOF
   # but the abort JSON captures the leaked paths in the reason field.
   [[ "$output" == *'qa-bash-input.test.ts'* ]]
 }
+
+# ---- BUG-023 regression: after initial-PASS adoption FR-9 passes ----------------
+# Simulate the state after adopt-qa-test.sh has moved qa-*.test.ts to *.qa.test.ts.
+# git ls-files returns empty for the three canonical globs → gate passes.
+
+@test "BUG-023 regression: after initial-PASS adoption git ls-files returns empty → FR-9 passes" {
+  # Post-adoption: no qa-* files tracked; only the adopted *.qa.* sibling exists.
+  # Our stub returns empty for ls-files (adopted *.qa.* infix is not glob-matched).
+  write_git_stub_with_ls ""
+  write_gh_stub_ok
+  run bash "$PREFLIGHT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'"status":"ok"'* ]]
+}
+
+@test "BUG-023 regression: qa-* file still present (not adopted) still trips FR-9" {
+  # Confirms the gate was not weakened: a genuine orphan still blocks finalize.
+  write_git_stub_with_ls "tests/unit/qa-BUG-023-edge.test.ts
+"
+  write_gh_stub_ok
+  run bash "$PREFLIGHT"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'"status":"abort"'* ]]
+  [[ "$output" == *'QA test files were not adopted'* ]]
+  [[ "$output" == *'qa-BUG-023-edge.test.ts'* ]]
+}

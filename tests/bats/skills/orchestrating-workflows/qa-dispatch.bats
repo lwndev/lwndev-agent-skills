@@ -1,14 +1,16 @@
 #!/usr/bin/env bats
-# Bats fixture for qa-dispatch.sh (FEAT-032 FR-7).
+# Bats fixture for qa-dispatch.sh (FEAT-032 FR-7, BUG-023).
 #
 # Covers:
-#   * FR-7 row 1: initial-run PASS (qaFixAttempts=0, verdict=PASS) → dispatch=advance
+#   * FR-7 row 1a: initial-run PASS with un-adopted qa-* files → dispatch=adopt-phase (BUG-023)
+#   * FR-7 row 1b: initial-run PASS with no qa-* files → dispatch=advance
 #   * FR-7 row 2: EXPLORATORY-ONLY → dispatch=advance
 #   * FR-7 row 3: ISSUES-FOUND + qaFixAttempts < qaLoopCap → dispatch=fix-phase
 #   * FR-7 row 4: ISSUES-FOUND + qaFixAttempts >= qaLoopCap → dispatch=pause:qa-loop-exhausted
 #   * FR-7 row 5: post-fix PASS + adoptedTests empty → dispatch=adopt-phase
 #   * FR-7 row 6: post-adopt PASS (adoptedTests non-empty) → dispatch=advance
 #   * FR-7 row 7: ERROR → dispatch=pause:qa-error
+#   * No infinite loop after initial-PASS adoption (adoptedTests>0) → advance even with stray qa-* file
 #   * --explain flag emits to stderr
 #   * Missing args → exit 2
 
@@ -20,6 +22,14 @@ setup() {
   QD="${SCRIPT_DIR}/qa-dispatch.sh"
   TMPDIR_TEST="$(mktemp -d)"
   mkdir -p "${TMPDIR_TEST}/.sdlc/workflows"
+  # Initialize a real git repo so the git ls-files presence-check works.
+  git -C "$TMPDIR_TEST" init -q
+  git -C "$TMPDIR_TEST" config user.email "test@bats"
+  git -C "$TMPDIR_TEST" config user.name "Bats Test"
+  # Commit a placeholder so HEAD exists.
+  printf 'placeholder\n' > "${TMPDIR_TEST}/README"
+  git -C "$TMPDIR_TEST" add README
+  git -C "$TMPDIR_TEST" commit -q -m "init"
 }
 
 teardown() {
@@ -72,10 +82,54 @@ seed_qa_state() {
 EOF
 }
 
-# ---- FR-7 row 1: initial-run PASS -----------------------------------------------
+# ---- FR-7 row 1a: initial-run PASS WITH un-adopted qa-* files (BUG-023) ---------
 
-@test "FR-7 row 1: initial-run PASS (qaFixAttempts=0) → dispatch=advance" {
+@test "BUG-023 FR-7 row 1a: initial-run PASS + un-adopted qa-*.test.ts → dispatch=adopt-phase" {
   seed_qa_state FEAT-032 0 PASS
+  # Commit a qa-* file so git ls-files sees it.
+  mkdir -p "${TMPDIR_TEST}/tests/unit"
+  printf 'test("edge", () => {});\n' > "${TMPDIR_TEST}/tests/unit/qa-BUG-023-edge.test.ts"
+  git -C "$TMPDIR_TEST" add tests/unit/qa-BUG-023-edge.test.ts
+  git -C "$TMPDIR_TEST" commit -q -m "add qa file"
+  cd "$TMPDIR_TEST"
+  run --separate-stderr bash "$QD" FEAT-032
+  [ "$status" -eq 0 ]
+  [ "$output" = "dispatch=adopt-phase" ]
+}
+
+@test "BUG-023 FR-7 row 1a: initial-run PASS + un-adopted qa-*.bats → dispatch=adopt-phase" {
+  seed_qa_state FEAT-032 0 PASS
+  mkdir -p "${TMPDIR_TEST}/tests/bats/qa"
+  printf '#!/usr/bin/env bats\n@test "x" { true; }\n' > "${TMPDIR_TEST}/tests/bats/qa/qa-BUG-023-edge.bats"
+  git -C "$TMPDIR_TEST" add tests/bats/qa/qa-BUG-023-edge.bats
+  git -C "$TMPDIR_TEST" commit -q -m "add qa bats file"
+  cd "$TMPDIR_TEST"
+  run --separate-stderr bash "$QD" FEAT-032
+  [ "$status" -eq 0 ]
+  [ "$output" = "dispatch=adopt-phase" ]
+}
+
+# ---- FR-7 row 1b: initial-run PASS with no qa-* files → advance -----------------
+
+@test "FR-7 row 1b: initial-run PASS (qaFixAttempts=0) + no qa-* files → dispatch=advance" {
+  seed_qa_state FEAT-032 0 PASS
+  # No qa-* files committed — only the README from setup().
+  cd "$TMPDIR_TEST"
+  run --separate-stderr bash "$QD" FEAT-032
+  [ "$status" -eq 0 ]
+  [ "$output" = "dispatch=advance" ]
+}
+
+# ---- No infinite loop: adoptedTests>0 → advance even with stray qa-* file ------
+
+@test "BUG-023 no-loop guard: initial-PASS adoptedTests>0 → advance (loop termination)" {
+  # After adoption, adoptedTests is non-empty. Even if a stray qa-* file were
+  # somehow present, the adoptedTests>0 guard must win and return advance.
+  seed_qa_state FEAT-032 0 PASS '["tests/unit/foo.qa.test.ts"]'
+  mkdir -p "${TMPDIR_TEST}/tests/unit"
+  printf 'test("edge", () => {});\n' > "${TMPDIR_TEST}/tests/unit/qa-stray.test.ts"
+  git -C "$TMPDIR_TEST" add tests/unit/qa-stray.test.ts
+  git -C "$TMPDIR_TEST" commit -q -m "add stray qa file"
   cd "$TMPDIR_TEST"
   run --separate-stderr bash "$QD" FEAT-032
   [ "$status" -eq 0 ]
