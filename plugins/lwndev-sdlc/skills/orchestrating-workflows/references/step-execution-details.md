@@ -33,6 +33,8 @@ Pre-fork sequence (BUG-020 / RC-5):
 4. After the user types `merge {ID}` (Hook A writes the marker), run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow` (echo uses the `baseline-locked` tag; only a hard override `--model` / `--model-for` can push it off baseline) and fork `finalizing-workflow` via the Agent tool (Hook C allows the fork only because the marker exists).
 5. On the subagent's return, call `advance {ID}`. `cmd_advance:1209-1210` clears `.gate` and `.gateSetAt` inline as part of the step-complete mutation — do NOT issue an explicit `clear-gate` call (it would trip Hook B's clear-gate marker check redundantly and is not needed).
 
+> Do NOT delete, rename, or modify any file outside `requirements/<type>/{ID}-*.md`. If `preflight-checks.sh` blocks the merge, surface the stderr verbatim and return `failed | preflight blocked: <reason>` as your final line. Do NOT run `git rm` / `git mv` / `git restore --staged` / `rm` against files not owned by this workflow to unblock yourself.
+
 ### Chore Chain Step-Specific Fork Instructions
 
 Steps 2, 4, and 7 follow the same fork pattern as the feature chain without chore-specific overrides. Every non-skipped fork runs the FEAT-014 pre-fork sequence (resolve-tier / record-model-selection / FR-14 echo) with the appropriate step-name and mode before spawning the subagent, and passes the resolved tier as the Agent tool's `model` parameter. Steps skipped by CHORE-031 conditions call only `advance` — no pre-fork sequence, no audit trail entry, and no `modelSelections` entry for that step index:
@@ -69,6 +71,8 @@ Pre-fork sequence (BUG-020 / RC-5):
 3. Wait for user input. The `merge-approval` gate keeps the stop-hook quiet during the wait.
 4. After the user types `merge {ID}` (Hook A writes the marker), run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow` and fork `finalizing-workflow` via the Agent tool (Hook C allows the fork only because the marker exists). Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
 5. On the subagent's return, call `advance {ID}`. `cmd_advance:1209-1210` clears `.gate` and `.gateSetAt` inline — do NOT issue an explicit `clear-gate` call.
+
+> Do NOT delete, rename, or modify any file outside `requirements/<type>/{ID}-*.md`. If `preflight-checks.sh` blocks the merge, surface the stderr verbatim and return `failed | preflight blocked: <reason>` as your final line. Do NOT run `git rm` / `git mv` / `git restore --staged` / `rm` against files not owned by this workflow to unblock yourself.
 
 ### Bug Chain Main-Context Steps (Steps 1, 3, 6)
 
@@ -122,6 +126,8 @@ Pre-fork sequence (BUG-020 / RC-5):
 3. Wait for user input. The `merge-approval` gate keeps the stop-hook quiet during the wait.
 4. After the user types `merge {ID}` (Hook A writes the marker), run the FEAT-014 pre-fork sequence with step-name `finalizing-workflow` and fork `finalizing-workflow` via the Agent tool (Hook C allows the fork only because the marker exists). Subagent must return the canonical contract shape; see SKILL.md `## Output Style`.
 5. On the subagent's return, call `advance {ID}`. `cmd_advance:1209-1210` clears `.gate` and `.gateSetAt` inline — do NOT issue an explicit `clear-gate` call.
+
+> Do NOT delete, rename, or modify any file outside `requirements/<type>/{ID}-*.md`. If `preflight-checks.sh` blocks the merge, surface the stderr verbatim and return `failed | preflight blocked: <reason>` as your final line. Do NOT run `git rm` / `git mv` / `git restore --staged` / `rm` against files not owned by this workflow to unblock yourself.
 
 ### Pause Steps
 
