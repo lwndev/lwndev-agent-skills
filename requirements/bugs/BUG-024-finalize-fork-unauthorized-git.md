@@ -73,7 +73,7 @@ The fork's prompt-following heuristic treats "delete/rename the offending file" 
 
 **Completed:** 2026-06-01
 
-**Pull Request:** TBD
+**Pull Request:** [#310](https://github.com/lwndev/lwndev-marketplace/pull/310)
 
 ## Notes
 
