@@ -1,9 +1,12 @@
 #!/usr/bin/env bats
-# qa-BUG-024-write-surface.bats — Adversarial QA for the BUG-024 pre-merge
+# check-write-surface.qa.bats — Adopted QA regression for the BUG-024 pre-merge
 # write-surface guard (finalizing-workflow/scripts/check-write-surface.sh).
 #
-# EPHEMERAL QA TEST (executing-qa). Targets gaps NOT covered by the developer's
-# committed check-write-surface.bats, which exercises only git rm / git mv:
+# Adopted from the ephemeral executing-qa test qa-BUG-024-write-surface.bats
+# (manual adoption — adopt-qa-test.sh cannot resolve a load/source peer for an
+# inline-path bats test, issue #304). Sibling of check-write-surface.bats.
+# Targets gaps NOT covered by the developer's check-write-surface.bats, which
+# exercises only git rm / git mv:
 #   - content edit (M-status) to an out-of-surface tracked file (committed,
 #     staged, working-tree) — the plan's Inputs P1 scenario
 #   - awkward filenames (space, leading dash, Unicode, nested dir) — Inputs P2,
@@ -13,7 +16,7 @@
 #
 # All tests run against a real temp git repo. No network / GitHub calls.
 
-CHECK="$(cd "${BATS_TEST_DIRNAME}/../../../plugins/lwndev-sdlc/skills/finalizing-workflow/scripts" && pwd)/check-write-surface.sh"
+CHECK="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/finalizing-workflow/scripts" && pwd)/check-write-surface.sh"
 
 setup() {
   REPO="$(mktemp -d)"
