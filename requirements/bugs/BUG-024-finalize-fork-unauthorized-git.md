@@ -69,11 +69,11 @@ The fork's prompt-following heuristic treats "delete/rename the offending file" 
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `Completed`
 
-**Completed:** YYYY-MM-DD
+**Completed:** 2026-06-01
 
-**Pull Request:** [#N](https://github.com/org/repo/pull/N)
+**Pull Request:** TBD
 
 ## Notes
 
