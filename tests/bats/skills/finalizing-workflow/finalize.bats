@@ -460,3 +460,25 @@ setup_happy_path() {
   run grep -F "TRACE:gh:pr merge" "$TRACER"
   [ "$status" -ne 0 ]
 }
+
+@test "14. FR-9 preflight block (qa-* safety-net) → exit 1, stderr propagated, merge dispatcher never reached (RC-2)" {
+  # Preflight exits 1 with an FR-9 qa-* block message (the documented bug trigger).
+  write_preflight 1 "" '[error] preflight: tracked qa-* files must be adopted before merge: tests/unit/qa-BUG-019-advance-pause.test.ts'
+  write_branch_parse 0 '{"id":"BUG-019","type":"bug","dir":"requirements/bugs"}'
+  write_gh_stub
+  write_git_stub
+
+  run bash -c "bash '$FINALIZE' 'fix/BUG-019-x' 2>/tmp/finalize14.err"
+  [ "$status" -eq 1 ]
+  err_content="$(cat /tmp/finalize14.err)"
+  [[ "$err_content" == *"qa-BUG-019-advance-pause.test.ts"* ]]
+  rm -f /tmp/finalize14.err
+
+  # Merge dispatcher must NOT have been reached.
+  run grep -F "TRACE:gh:pr merge" "$TRACER"
+  [ "$status" -ne 0 ]
+
+  # Branch parse must NOT have been reached (preflight aborted first).
+  run grep -F "TRACE:branch-id-parse.sh" "$TRACER"
+  [ "$status" -ne 0 ]
+}

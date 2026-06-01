@@ -91,6 +91,66 @@ fatal_unexpected() {
 }
 
 # -----------------------------------------------------------------------------
+# Write-surface guard (BUG-024).
+#
+# The forked finalize subagent's SKILL.md Stop hook does NOT fire — a forked
+# subagent raises SubagentStop, not Stop, and SubagentStop fires only after the
+# fork has already merged. Enforcement therefore lives HERE, in the script the
+# fork actually runs, as a pre-merge check that cannot be skipped.
+#
+# arm_write_surface_baseline captures the pre-finalize tip ONCE (capture-if-
+# absent, keyed by workflow ID) before any mutation; check_write_surface runs
+# immediately before the merge dispatch and aborts (exit 1) if any committed,
+# staged, or working-tree change touched a path outside the allowed surface.
+# -----------------------------------------------------------------------------
+
+FINALIZE_ID=""
+FINALIZE_BASELINE_SHA=""
+FINALIZE_BASELINE_FILE=""
+
+arm_write_surface_baseline() {
+  # Derive the workflow ID from the branch WITHOUT invoking branch-id-parse.sh
+  # (which must not run before pre-flight). Fall back to a sanitized branch slug.
+  FINALIZE_ID="$(printf '%s' "$branch" | sed -nE 's#^[^/]*/([A-Za-z]+-[0-9]+).*#\1#p')"
+  if [ -z "$FINALIZE_ID" ]; then
+    FINALIZE_ID="$(printf '%s' "$branch" | tr '/ ' '__' | tr -cd 'A-Za-z0-9_.-')"
+  fi
+  [ -z "$FINALIZE_ID" ] && FINALIZE_ID="unknown"
+
+  # Marker lives in the git dir (same as arm-baseline.sh) so a clean-tree
+  # pre-flight never trips on it.
+  local git_dir
+  git_dir="$(git rev-parse --git-dir 2>/dev/null || true)"
+  if [ -n "$git_dir" ]; then
+    FINALIZE_BASELINE_FILE="${git_dir}/sdlc-finalize-baseline-${FINALIZE_ID}"
+  fi
+
+  if [ -f "${SKILL_DIR}/arm-baseline.sh" ]; then
+    FINALIZE_BASELINE_SHA="$(bash "${SKILL_DIR}/arm-baseline.sh" "$FINALIZE_ID" 2>/dev/null || true)"
+  fi
+}
+
+check_write_surface() {
+  [ -n "$FINALIZE_BASELINE_SHA" ] || return 0
+  [ -f "${SKILL_DIR}/check-write-surface.sh" ] || return 0
+
+  local guard_err guard_rc
+  set +e
+  guard_err="$(bash "${SKILL_DIR}/check-write-surface.sh" "$FINALIZE_BASELINE_SHA" 2>&1 >/dev/null)"
+  guard_rc=$?
+  set -e
+
+  if [ "$guard_rc" -ne 0 ]; then
+    if [ -n "$guard_err" ]; then
+      printf '%s\n' "$guard_err" >&2
+    fi
+    # Keep the baseline marker: a re-run after the user reverts the offending
+    # change must reuse this same baseline. Do NOT merge.
+    exit 1
+  fi
+}
+
+# -----------------------------------------------------------------------------
 # Step 1: Pre-flight checks.
 # -----------------------------------------------------------------------------
 
@@ -513,10 +573,25 @@ BOOKKEEPING_SUMMARY=""
 BK_COMMIT_SHA=""
 FINAL_STATE_LINE=""
 
+# Arm the write-surface baseline BEFORE pre-flight so a re-run after a pre-flight
+# block reuses the original clean tip (capture-if-absent).
+arm_write_surface_baseline
+
 run_preflight
 run_branch_parse
 run_bookkeeping
+
+# Pre-merge write-surface guard: abort BEFORE the merge if the fork mutated any
+# path outside requirements/<type>/<ID>-*.md (BUG-024). Runs on the feature
+# branch, so HEAD is still the branch tip (no main-advanced false-block).
+check_write_surface
+
 run_execution
+
+# Finalize succeeded — drop the baseline marker so the next finalize re-arms.
+if [ -n "$FINALIZE_BASELINE_SHA" ] && [ -n "$FINALIZE_BASELINE_FILE" ]; then
+  rm -f "$FINALIZE_BASELINE_FILE"
+fi
 
 # Final stdout report.
 printf 'Merged PR #%s — %s\n' "$PR_NUMBER" "$PR_TITLE"

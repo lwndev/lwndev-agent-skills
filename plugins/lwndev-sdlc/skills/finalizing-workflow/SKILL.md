@@ -55,6 +55,12 @@ This skill is forked by `orchestrating-workflows` as the terminal step of every 
 
 **Precedence**: the return contract takes precedence over the lite rules when the two conflict. The subagent MUST emit the contract shape as the final line of the response even if it reads like narration.
 
+## Write Surface
+
+Allowed paths: `requirements/{features,chores,bugs}/<ID>-*.md` only. Allowed operations: `gh pr merge`, `git checkout main`, `git fetch`, `git pull`, and a bookkeeping `git add` + commit of the requirement doc. Forbidden: `git rm`, `git mv`, `rm`, `git restore --staged`, and content edits outside that surface.
+
+If `preflight-checks.sh` blocks the merge, surface the stderr verbatim and return `failed | preflight blocked: <reason>`. Do NOT delete or rename any file to unblock the merge. `finalize.sh` enforces this itself: it arms a baseline at start (`scripts/arm-baseline.sh`) and runs a pre-merge guard (`scripts/check-write-surface.sh`) on the feature branch BEFORE the merge dispatch, aborting (exit 1) if any committed (`baseline..HEAD`), staged, or working-tree change touched a path outside the surface. The check lives in the script the fork runs — not a Stop hook, which never fires for a forked subagent.
+
 ## Usage
 
 Capture the branch, confirm intent up-front, then delegate the full sequence (pre-flight, bookkeeping, merge, reset) to `finalize.sh`:
@@ -66,11 +72,13 @@ Capture the branch, confirm intent up-front, then delegate the full sequence (pr
    > Ready to merge PR #\<N\> ("\<title\>") and finalize the requirement document. Proceed?
 
 4. On no / n / empty, abort before invoking the script and report `Aborted — no changes made.` Do not run `finalize.sh`.
-5. On confirmation, run the script and report its stdout verbatim:
+5. On confirmation, run the script:
 
    ```bash
    bash "${CLAUDE_PLUGIN_ROOT}/skills/finalizing-workflow/scripts/finalize.sh" "$branch"
    ```
+
+   `finalize.sh` self-arms the write-surface baseline and runs the pre-merge guard internally — no marker preamble is needed. If `finalize.sh` exits non-zero, surface its stderr verbatim and return `failed | preflight blocked: <reason>`. Do NOT run any git mutation to recover.
 
 `finalize.sh` does **not** prompt — confirmation is owned entirely by this skill. The script runs unattended after confirmation.
 
@@ -83,12 +91,6 @@ On non-zero exit, `finalize.sh` emits a single `[error]` (or `[warn]`) stderr li
 ## Relationship to Other Skills
 
 Terminal step in all workflow chains. Reconciliation steps are optional but recommended.
-
-```
-Features: ... → implementing-plan-phases → PR review → reviewing-requirements → executing-qa → finalizing-workflow
-Chores:   ... → executing-chores   → PR review → reviewing-requirements → executing-qa → finalizing-workflow
-Bugs:     ... → executing-bug-fixes → PR review → reviewing-requirements → executing-qa → finalizing-workflow
-```
 
 | Task | Recommended Approach |
 |------|---------------------|
