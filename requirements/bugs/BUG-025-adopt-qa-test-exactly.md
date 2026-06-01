@@ -91,20 +91,11 @@ Adoption exits 2 (`multiple plausible peer tests found; expected exactly one`) f
 
 ## Completion
 
-**Status:** `Pending`
+**Status:** `Completed`
 
-<!--
-Update status as work progresses:
-- Pending: Not yet started
-- In Progress: Branch created, work underway
-- Completed: PR merged
+**Completed:** 2026-06-01
 
-When completed, fill in the fields below:
--->
-
-**Completed:** YYYY-MM-DD
-
-**Pull Request:** [#N](https://github.com/org/repo/pull/N)
+**Pull Request:** [#312](https://github.com/lwndev/lwndev-marketplace/pull/312)
 
 <!--
 Optional: Brief summary of implementation if it differs from the plan
