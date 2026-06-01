@@ -3,11 +3,6 @@ name: finalizing-workflow
 description: Merges the current PR, checks out main, fetches, and pulls — reducing the repetitive end-of-workflow sequence to a single slash command. Use when the user says "finalize", "merge and reset", "finalize workflow", or after QA passes.
 allowed-tools:
   - Bash
-hooks:
-  Stop:
-    - hooks:
-        - type: command
-          command: "${CLAUDE_PLUGIN_ROOT}/skills/finalizing-workflow/scripts/stop-hook.sh"
 ---
 
 # Finalizing Workflow
@@ -64,7 +59,7 @@ This skill is forked by `orchestrating-workflows` as the terminal step of every 
 
 Allowed paths: `requirements/{features,chores,bugs}/<ID>-*.md` only. Allowed operations: `gh pr merge`, `git checkout main`, `git fetch`, `git pull`, and a bookkeeping `git add` + commit of the requirement doc. Forbidden: `git rm`, `git mv`, `rm`, `git restore --staged`, and content edits outside that surface.
 
-If `preflight-checks.sh` blocks the merge, surface the stderr verbatim and return `failed | preflight blocked: <reason>`. Do NOT delete or rename any file to unblock the merge. The stop-hook (`scripts/stop-hook.sh`) enforces this on Stop via a committed-diff guard (`baseline..HEAD`).
+If `preflight-checks.sh` blocks the merge, surface the stderr verbatim and return `failed | preflight blocked: <reason>`. Do NOT delete or rename any file to unblock the merge. `finalize.sh` enforces this itself: it arms a baseline at start (`scripts/arm-baseline.sh`) and runs a pre-merge guard (`scripts/check-write-surface.sh`) on the feature branch BEFORE the merge dispatch, aborting (exit 1) if any committed (`baseline..HEAD`), staged, or working-tree change touched a path outside the surface. The check lives in the script the fork runs — not a Stop hook, which never fires for a forked subagent.
 
 ## Usage
 
@@ -77,16 +72,13 @@ Capture the branch, confirm intent up-front, then delegate the full sequence (pr
    > Ready to merge PR #\<N\> ("\<title\>") and finalize the requirement document. Proceed?
 
 4. On no / n / empty, abort before invoking the script and report `Aborted — no changes made.` Do not run `finalize.sh`.
-5. On confirmation, write the stop-hook markers then run the script:
+5. On confirmation, run the script:
 
    ```bash
-   finalize_id=$(bash "${CLAUDE_PLUGIN_ROOT}/scripts/branch-id-parse.sh" "$branch" 2>/dev/null | jq -r '.id // "unknown"' || echo "unknown")
-   mkdir -p .sdlc/finalize && touch .sdlc/finalize/.finalize-active
-   git rev-parse HEAD > ".sdlc/finalize/.finalize-baseline-${finalize_id}"
    bash "${CLAUDE_PLUGIN_ROOT}/skills/finalizing-workflow/scripts/finalize.sh" "$branch"
    ```
 
-   If `finalize.sh` exits non-zero, surface its stderr verbatim and return `failed | preflight blocked: <reason>`. Do NOT run any git mutation to recover.
+   `finalize.sh` self-arms the write-surface baseline and runs the pre-merge guard internally — no marker preamble is needed. If `finalize.sh` exits non-zero, surface its stderr verbatim and return `failed | preflight blocked: <reason>`. Do NOT run any git mutation to recover.
 
 `finalize.sh` does **not** prompt — confirmation is owned entirely by this skill. The script runs unattended after confirmation.
 
