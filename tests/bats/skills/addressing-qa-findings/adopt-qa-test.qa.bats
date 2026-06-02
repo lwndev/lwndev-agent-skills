@@ -13,7 +13,7 @@
 #   Dependency        -> restored <<MULTI>>-no-singular ambiguity reason (RC fix 80653d1)
 
 setup() {
-  SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../plugins/lwndev-sdlc/skills/addressing-qa-findings/scripts" && pwd)"
+  SCRIPT_DIR="$(cd "${BATS_TEST_DIRNAME}/../../../../plugins/lwndev-sdlc/skills/addressing-qa-findings/scripts" && pwd)"
   ADOPT="${SCRIPT_DIR}/adopt-qa-test.sh"
 
   TMPDIR_TEST="$(mktemp -d)"
