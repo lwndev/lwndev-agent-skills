@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.27.4] - 2026-06-02
+
+Maintenance release: one bug fix to QA-test adoption plus a dev-dependency bump. No new features or breaking changes.
+
+### Bug Fixes
+
+- **BUG-025:** `adopt-qa-test.sh` now tolerates a QA test whose SUT resolves to multiple peer tests — it picks the lexicographically-first peer and adopts into its `*.qa.*` sibling instead of failing the adopt, while preserving the multi-peer reason for the ambiguous single-SUT case ([#312](https://github.com/lwndev/lwndev-marketplace/pull/312)).
+
+### Chores
+
+- **deps-dev:** bump the npm_and_yarn group across 2 directories with 1 update ([#313](https://github.com/lwndev/lwndev-marketplace/pull/313)).
+
+[1.27.4]: https://github.com/lwndev/lwndev-marketplace/compare/lwndev-sdlc@1.27.3...lwndev-sdlc@1.27.4
+
 ## [1.27.3] - 2026-06-01
 
 Maintenance release: relocates the `finalizing-workflow` write-surface guard to a reliable enforcement point. No new features or breaking changes.
