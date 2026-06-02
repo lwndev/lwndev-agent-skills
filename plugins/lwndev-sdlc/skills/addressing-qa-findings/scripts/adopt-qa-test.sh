@@ -32,8 +32,11 @@ set -euo pipefail
 #   0  success — adopted; new path on stdout
 #   1  filesystem / `git mv` failure (target already exists, file outside repo,
 #      etc.) — git stderr passes through
-#   2  SUT cannot be determined — no resolvable imports, multiple plausible
-#      peers, no existing peer test, or framework not supported in v1
+#   2  SUT cannot be determined — no resolvable imports, no existing peer test,
+#      a single imported SUT whose base name matches multiple ambiguous peers
+#      (with no other SUT resolving singularly), or framework not supported in
+#      v1. Multiple resolvable peers across distinct SUTs are tolerated: the
+#      lexicographically-first peer by full repo-relative path is chosen.
 #
 # On exit 2, a structured stderr line of the form:
 #   adopt-qa-test: <path>: <reason>
@@ -242,10 +245,11 @@ locate_js_peer_test() {
       echo "$found"
       return 0
     fi
-    # If multiple peer matches in parallel test root, treat as ambiguous: caller
-    # raises the multi-peer error.
+    # Multiple peer matches for this single SUT base under the test root: emit a
+    # sentinel the caller recognizes as per-SUT ambiguity. The caller tolerates it
+    # when another SUT resolves singularly (multi_seen is skipped); only when NO
+    # SUT resolves singularly does it surface the multi-peer reason (seen_count=0).
     if [[ "$count" -gt 1 ]]; then
-      # Emit a sentinel that the caller recognizes as multi-peer ambiguity.
       echo "<<MULTI>>"
       return 0
     fi
@@ -294,14 +298,24 @@ dispatch_vitest_jest() {
 $imports
 EOF
 
-  if [[ "$seen_count" -eq 0 && "$multi_seen" -eq 0 ]]; then
+  if [[ "$seen_count" -eq 0 ]]; then
+    # No SUT resolved to a singular peer. Distinguish the two zero-resolved
+    # causes so the FR-5 pause UI reason is accurate:
+    #   - multi_seen=1: at least one SUT base matched 2+ peers under tests/ and
+    #     none resolved singularly — peers exist but are ambiguous for that SUT.
+    #   - else: genuinely no peer test exists for any imported SUT.
+    if [[ "$multi_seen" -eq 1 ]]; then
+      emit_fail "multiple plausible peer tests match a single imported SUT; cannot disambiguate"
+      exit 2
+    fi
     emit_fail "no existing peer test found for any imported SUT"
     exit 2
   fi
-  if [[ "$seen_count" -gt 1 ]] || [[ "$multi_seen" -eq 1 && "$seen_count" -ge 1 ]] || [[ "$multi_seen" -eq 1 && "$seen_count" -eq 0 ]]; then
-    emit_fail "multiple plausible peer tests found; expected exactly one"
-    exit 2
-  fi
+
+  # Multiple resolved peers: pick the lexicographically-first by full repo-relative
+  # path. LC_ALL=C pins byte-order comparison, making the pick stable across
+  # locales and machines (P0 determinism requirement).
+  resolved="$(printf '%s\n' "$peers" | grep -v '^$' | LC_ALL=C sort | head -n 1)"
 
   # Compute target: <peer-dir>/<peer-base-without-.test><.qa><.ext-of-qa>
   local peer_dir peer_file peer_base
@@ -401,10 +415,11 @@ EOF
     emit_fail "no existing peer .bats test found for any loaded script"
     exit 2
   fi
-  if [[ "$seen_count" -gt 1 ]]; then
-    emit_fail "multiple plausible peer .bats tests found; expected exactly one"
-    exit 2
-  fi
+
+  # Multiple resolved peers: pick the lexicographically-first by full repo-relative
+  # path. LC_ALL=C pins byte-order comparison, making the pick stable across
+  # locales and machines (P0 determinism requirement).
+  resolved="$(printf '%s\n' "$peers" | grep -v '^$' | LC_ALL=C sort | head -n 1)"
 
   local peer_dir peer_file peer_base
   peer_dir="$(dirname -- "$resolved")"
