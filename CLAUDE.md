@@ -142,3 +142,19 @@ Push behavior into deterministic scripts, not SKILL.md prose. This is a first-cl
 - **Keep SKILL.md lean.** SKILL.md is a hot path for token cost on every invocation. Long-form logic belongs in scripts; long-form detail belongs under `references/`. A SKILL.md change should typically be a one-line invocation swap plus a contract note — not a procedure rewrite.
 - **Load-bearing output from scripts is contract.** Tagged lines (`[info]`, `[warn]`, `[model]`, FR-14 echoes, report paths) are the script's structured log and the skill emits them verbatim. Do not paraphrase.
 - **Write prose at Caveman "Lite" grunt level to cut tokens.** Adopt the style described at https://github.com/juliusbrussee/caveman: drop filler, keep grammar. Professional tone, no fluff. Contrast: *"Your component re-renders because you create a new object reference each render. Inline object props fail shallow comparison every time. Wrap it in `useMemo`."* (Lite) vs. the Full-grunt *"New object ref each render. Inline object prop = new ref = re-render. Wrap in `useMemo`."* Lite keeps articles and full sentences so the guidance still reads as technical writing, but strips hedges, restatements, and narration. Apply this to SKILL.md bodies, `references/` docs, issue descriptions, commit messages, and PR bodies in this repo. Load-bearing carve-outs (orchestrator error messages, security warnings, interactive prompts, structured log lines) stay verbatim — Lite does not override contracts.
+
+## Agent skills
+
+Config consumed by the `mattpocock/skills` engineering skills (`/triage`, `/to-tickets`, `/to-spec`, `/wayfinder`, `/domain-modeling`, and others). These files describe *this repo's* conventions; edit them directly rather than re-running setup.
+
+### Issue tracker
+
+GitHub Issues on `lwndev/lwndev-marketplace`, driven by the `gh` CLI. Sub-issues and native issue dependencies are enabled, so `/wayfinder` maps use them directly. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles, each label string equal to its role name (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` plus `docs/adr/` at the repo root, both created lazily by `/domain-modeling`. `docs/shared/` is vendored upstream reference, not domain documentation. See `docs/agents/domain.md`.
