@@ -1,4 +1,9 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load '../../helpers/git-env'
+sanitize_git_env
+
 # QA-BUG-022 — adversarial QA for the detect-re-qa-mode.sh state-cross-check fix.
 # SUT: plugins/lwndev-sdlc/skills/executing-qa/scripts/detect-re-qa-mode.sh.
 # Adopted from the ephemeral QA run (qa-detect-re-qa-mode.bats) into this

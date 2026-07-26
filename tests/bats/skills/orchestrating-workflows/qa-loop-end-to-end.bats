@@ -1,4 +1,9 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load '../../helpers/git-env'
+sanitize_git_env
+
 # End-to-end NFR-4 acceptance fixture for FEAT-032 (happy path).
 #
 # Drives the full `ISSUES-FOUND -> addressing-qa-findings (fix) -> re-QA PASS

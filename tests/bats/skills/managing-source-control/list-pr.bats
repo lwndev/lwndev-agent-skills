@@ -1,5 +1,10 @@
 #!/usr/bin/env bats
 bats_require_minimum_version 1.5.0
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load '../../helpers/git-env'
+sanitize_git_env
+
 # Bats fixture for managing-source-control/scripts/list-pr.sh (FEAT-033 Phase 4).
 # Verifies GitHub and Azure DevOps paths emit the normalized
 # `[{number, state}, ...]` shape (NFR-3) and the NFR-1 skip matrix.

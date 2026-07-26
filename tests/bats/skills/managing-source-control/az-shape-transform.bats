@@ -1,5 +1,10 @@
 #!/usr/bin/env bats
 bats_require_minimum_version 1.5.0
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load '../../helpers/git-env'
+sanitize_git_env
+
 # Bats fixture for managing-source-control/scripts/az-shape-transform.sh
 # (FEAT-033 Phase 4). Verifies the FR-5 transform table: status → state,
 # mergeStatus → mergeable, _links.web.href → url, pullRequestId → number,

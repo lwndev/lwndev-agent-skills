@@ -15,6 +15,9 @@ export default defineConfig({
       // drivers via a copied tempdir; never executed by the host vitest.
       'tests/fixtures/feat-032-known-buggy/**',
     ],
+    // Strips inherited GIT_* env vars in every worker so fixture git calls can
+    // never target the real repository (issue #326).
+    setupFiles: ['tests/setup/git-env.ts'],
     fileParallelism: true,
     // Default 5000ms is too tight for execSync-heavy tests under full-suite
     // load (tsx cold-starts of release.ts / scaffold.ts / build.ts can

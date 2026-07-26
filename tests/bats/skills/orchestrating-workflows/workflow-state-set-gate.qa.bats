@@ -1,4 +1,9 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load '../../helpers/git-env'
+sanitize_git_env
+
 # QA adversarial fixture for BUG-020 — cmd_set_gate whitelist extension.
 #
 # Independent re-verification of the Inputs dimension P0/P1 scenarios from

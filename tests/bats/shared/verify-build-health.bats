@@ -1,4 +1,9 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load '../helpers/git-env'
+sanitize_git_env
+
 # Bats fixture for verify-build-health.sh (BUG-013).
 #
 # Covers: detection of package.json scripts, fail-fast on first failure,

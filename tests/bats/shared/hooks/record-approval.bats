@@ -1,4 +1,9 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load '../../helpers/git-env'
+sanitize_git_env
+
 # Bats fixture for BUG-014 Hook A — record-approval.sh.
 #
 # Covers (AC2, AC3, plus QA test plan scenarios):

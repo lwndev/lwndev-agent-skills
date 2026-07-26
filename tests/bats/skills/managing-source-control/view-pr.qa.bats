@@ -1,6 +1,10 @@
 #!/usr/bin/env bats
 bats_require_minimum_version 1.5.0
 
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load '../../helpers/git-env'
+sanitize_git_env
+
 # BUG-021 regression: az repos pr show must NOT receive --project.
 # az repos pr list (branch lookup) MUST still receive --project (RC-4).
 # Complements view-pr.bats; uses the same stubbing convention.

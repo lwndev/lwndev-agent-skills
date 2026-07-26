@@ -1,3 +1,12 @@
+# Git exports GIT_DIR (and friends) to every hook. Left set, they redirect every
+# child `git` call in the test suite at the real repository regardless of cwd
+# (issue #326). Strip by prefix, not by name list, so a future GIT_* variable is
+# covered too — POSIX sh has no ${!GIT_*}.
+for __git_env_var in $(env | sed -n 's/^\(GIT_[A-Za-z0-9_]*\)=.*/\1/p'); do
+  unset "$__git_env_var"
+done
+unset __git_env_var
+
 npm test
 npm audit --audit-level=high
 npm run validate

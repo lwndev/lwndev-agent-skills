@@ -1,4 +1,9 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load '../../helpers/git-env'
+sanitize_git_env
+
 # Bats fixture for qa-dispatch.sh (FEAT-032 FR-7, BUG-023).
 #
 # Covers:

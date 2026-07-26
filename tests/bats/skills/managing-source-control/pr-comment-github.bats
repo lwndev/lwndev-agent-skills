@@ -1,5 +1,10 @@
 #!/usr/bin/env bats
 bats_require_minimum_version 1.5.0
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load '../../helpers/git-env'
+sanitize_git_env
+
 # Bats fixture for managing-source-control/scripts/pr-comment.sh (FEAT-034 Phase 1).
 #
 # Strategy: PATH-prepend a stub directory containing fake `git` and `gh`

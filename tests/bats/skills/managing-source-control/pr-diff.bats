@@ -1,5 +1,10 @@
 #!/usr/bin/env bats
 bats_require_minimum_version 1.5.0
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load '../../helpers/git-env'
+sanitize_git_env
+
 # Bats fixture for managing-source-control/scripts/pr-diff.sh (FEAT-033
 # Phase 4). GitHub path emits `gh pr diff`; AzDO path resolves the base
 # branch via `az repos pr show` and runs `git diff origin/<base>...HEAD`

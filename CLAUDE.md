@@ -129,6 +129,7 @@ QA-authored tests are ephemeral by design: they are committed to the branch duri
 - Skill validation uses the `ai-skills-manager` programmatic API (`validate()`)
 - Skills use YAML frontmatter in SKILL.md for metadata extraction
 - Tests run in parallel (`fileParallelism: true` in `vitest.config.ts`); any test that needs to mutate a skill or plugin tree must use `mkdtemp` outside `plugins/` (writing into the real `plugins/` tree races with other parallel test files). For tests that need to drive `npm run validate` against a fixture tree, set `PLUGINS_DIR=<tmp>` in the child env — `scripts/lib/constants.ts` reads it at module load.
+- **Tests must never inherit git environment.** Git exports `GIT_DIR` (and friends) to every hook, and `.husky/pre-push` runs `npm test`. An inherited `GIT_DIR` makes every fixture `git` call target the real repository regardless of `cwd`: `git init` re-inits it — flipping `core.bare` to `true` when `GIT_DIR` is a linked worktree gitdir, which breaks every later git command and scrambles worktree indexes — and `git config` leaks fixture identity into `.git/config`, misattributing later commits (issue #326). Passing `cwd` is not protection; `GIT_DIR` overrides it. Three guards, all enforced by `tests/unit/git-env-isolation.test.ts`: Vitest strips `GIT_*` in every worker via `setupFiles: ['tests/setup/git-env.ts']` (automatic — no per-test change); `.husky/pre-push` strips `GIT_*` by prefix before running the suite; and **every new Bats file must `load` `tests/bats/helpers/git-env.bash` and call `sanitize_git_env` at file scope**, above `setup()`. The Bats rule is unconditional — it applies even to fixtures that never touch git — because a "does this file use git?" detector fails open on indirect invocations like `"$REAL_GIT" init` or `git -C <dir> init`.
 - Plugin discovery is filesystem-driven: directories under `plugins/` with `.claude-plugin/plugin.json` are treated as plugins
 - No build output — plugins live in their final structure under `plugins/` and marketplace source paths point directly to them
 
@@ -142,19 +143,3 @@ Push behavior into deterministic scripts, not SKILL.md prose. This is a first-cl
 - **Keep SKILL.md lean.** SKILL.md is a hot path for token cost on every invocation. Long-form logic belongs in scripts; long-form detail belongs under `references/`. A SKILL.md change should typically be a one-line invocation swap plus a contract note — not a procedure rewrite.
 - **Load-bearing output from scripts is contract.** Tagged lines (`[info]`, `[warn]`, `[model]`, FR-14 echoes, report paths) are the script's structured log and the skill emits them verbatim. Do not paraphrase.
 - **Write prose at Caveman "Lite" grunt level to cut tokens.** Adopt the style described at https://github.com/juliusbrussee/caveman: drop filler, keep grammar. Professional tone, no fluff. Contrast: *"Your component re-renders because you create a new object reference each render. Inline object props fail shallow comparison every time. Wrap it in `useMemo`."* (Lite) vs. the Full-grunt *"New object ref each render. Inline object prop = new ref = re-render. Wrap in `useMemo`."* Lite keeps articles and full sentences so the guidance still reads as technical writing, but strips hedges, restatements, and narration. Apply this to SKILL.md bodies, `references/` docs, issue descriptions, commit messages, and PR bodies in this repo. Load-bearing carve-outs (orchestrator error messages, security warnings, interactive prompts, structured log lines) stay verbatim — Lite does not override contracts.
-
-## Agent skills
-
-Config consumed by the `mattpocock/skills` engineering skills (`/triage`, `/to-tickets`, `/to-spec`, `/wayfinder`, `/domain-modeling`, and others). These files describe *this repo's* conventions; edit them directly rather than re-running setup.
-
-### Issue tracker
-
-GitHub Issues on `lwndev/lwndev-marketplace`, driven by the `gh` CLI. Sub-issues and native issue dependencies are enabled, so `/wayfinder` maps use them directly. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-The five canonical triage roles, each label string equal to its role name (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Single-context: one `CONTEXT.md` plus `docs/adr/` at the repo root, both created lazily by `/domain-modeling`. `docs/shared/` is vendored upstream reference, not domain documentation. See `docs/agents/domain.md`.

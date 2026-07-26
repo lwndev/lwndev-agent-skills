@@ -1,4 +1,9 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load '../../helpers/git-env'
+sanitize_git_env
+
 # Bats coverage for FEAT-032 / Phase 2 / FR-13 deletion-ownership invariant.
 #
 # `addressing-qa-findings/scripts/adopt-qa-test.sh` is the SOLE owner of

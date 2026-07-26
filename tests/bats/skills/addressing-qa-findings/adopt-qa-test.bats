@@ -1,4 +1,9 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load '../../helpers/git-env'
+sanitize_git_env
+
 # Bats coverage for adopt-qa-test.sh (FEAT-032 / Phase 2 / FR-5 / FR-6 / FR-13 / BUG-025).
 #
 # Covers per-framework dispatch + exit-code surface:

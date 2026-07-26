@@ -1,4 +1,9 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load '../../helpers/git-env'
+sanitize_git_env
+
 # FEAT-032 FR-12 — commit-qa-artifact.sh: stages and commits the QA results
 # artifact with verdict-and-mode-aware messages, post-condition: clean tree.
 
