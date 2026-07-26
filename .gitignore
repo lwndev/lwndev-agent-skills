@@ -1,5 +1,8 @@
-# Don't include dependencies
-node_modules/
+# Don't include dependencies.
+# Unslashed on purpose: `node_modules/` matches only a directory, so a
+# `node_modules` SYMLINK (e.g. a worktree pointed at the main checkout) slips
+# past it and gets committed by `git add -A`.
+node_modules
 
 # Don't include compiled scripts
 dist-scripts/
