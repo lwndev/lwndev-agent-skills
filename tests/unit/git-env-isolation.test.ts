@@ -139,14 +139,15 @@ function listBatsFiles(dir: string): string[] {
 /**
  * Extract the argument of the `load` line that pulls in the git-env helper.
  *
- * Accepts every spelling Bats accepts — single-quoted, double-quoted and bare —
- * rather than pinning the repo's current single-quote habit. A stricter matcher
- * reports a correctly-protected file as an offender, with no message saying
- * what is wrong, and then silently skips it in every downstream check.
+ * Accepts every spelling Bats accepts — single-quoted, double-quoted and bare,
+ * with or without a trailing comment — rather than pinning the repo's current
+ * habit. A stricter matcher reports a correctly-protected file as an offender,
+ * with a message saying the load is missing when it is right there, and then
+ * silently skips that file in every downstream check.
  */
 function findGitEnvLoad(src: string): string | null {
   for (const line of src.split('\n')) {
-    const m = line.match(/^\s*load\s+(?:'([^']*)'|"([^"]*)"|(\S+))\s*$/);
+    const m = line.match(/^\s*load\s+(?:'([^']*)'|"([^"]*)"|(\S+))\s*(?:#.*)?$/);
     if (!m) continue;
     const spec = m[1] ?? m[2] ?? m[3];
     if (spec && /helpers\/git-env$/.test(spec)) return spec;
