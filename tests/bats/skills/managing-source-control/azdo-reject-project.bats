@@ -2,8 +2,7 @@
 bats_require_minimum_version 1.5.0
 
 # Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
-load '../../helpers/git-env'
-sanitize_git_env
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
 
 # BUG-021 adversarial QA: the pre-fix failure mode was `az repos pr show/update`
 # rejecting `--project` with `unrecognized arguments: --project`. These tests

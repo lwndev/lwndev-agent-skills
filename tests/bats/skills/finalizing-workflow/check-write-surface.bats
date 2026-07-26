@@ -1,8 +1,7 @@
 #!/usr/bin/env bats
 
 # Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
-load '../../helpers/git-env'
-sanitize_git_env
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
 
 # check-write-surface.bats — Regression tests for
 # finalizing-workflow/scripts/check-write-surface.sh (BUG-024 pre-merge guard).

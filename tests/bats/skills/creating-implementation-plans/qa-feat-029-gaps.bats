@@ -1,8 +1,7 @@
 #!/usr/bin/env bats
 
 # Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
-load '../../helpers/git-env'
-sanitize_git_env
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
 
 # Adversarial QA gaps for FEAT-029 — covers P0/P1 scenarios in
 # qa/test-plans/QA-plan-FEAT-029.md not exercised by the existing bats

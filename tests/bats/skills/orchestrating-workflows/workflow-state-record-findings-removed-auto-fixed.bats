@@ -1,8 +1,7 @@
 #!/usr/bin/env bats
 
 # Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
-load '../../helpers/git-env'
-sanitize_git_env
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
 
 # Bats fixture for BUG-018 / RC-2 — `auto-fixed` removed from
 # `record-findings` (review) decision whitelist.

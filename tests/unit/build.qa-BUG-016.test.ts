@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const SHARED_DIR = 'tests/bats/shared';
+const SHARED_SCRIPTS_DIR = 'plugins/lwndev-sdlc/scripts';
 const QA_DIR = 'tests/bats/qa';
 // FEAT-033 Phase 6 / FR-9 adoption sweep: husky-hooks bats dropped the `qa-`
 // prefix to stay in tests/bats/qa/ without tripping the FR-9 safety-net glob
@@ -21,19 +22,35 @@ describe('BUG-016: relocated QA fixture — inputs', () => {
     expect(existsSync(POST_MOVE_PATH)).toBe(true);
   });
 
-  it('[P0] tests/bats/shared/ contains exactly 11 canonical .bats files', () => {
+  it('[P0] every canonical .bats under tests/bats/shared/ has a shared-script peer', () => {
     expect(existsSync(SHARED_DIR)).toBe(true);
-    // Filter out *.qa.bats adopted siblings (FEAT-032 convention); count only canonical peers.
-    // FEAT-033 Phase 2 relocated build-branch-name.bats, ensure-branch.bats, and
-    // commit-work.bats to tests/bats/skills/managing-source-control/ (was 14, now 11).
-    // FEAT-033 Phase 5 also removed the plugin-level create-pr.sh shim (and its
-    // shared/create-pr.bats peer), so the canonical count drops to 10.
-    // Issue #326 added git-env.bats (coverage for the shared Bats git-env
-    // helper), bringing the canonical count to 11.
-    const batsFiles = readdirSync(SHARED_DIR).filter(
-      (f) => f.endsWith('.bats') && !f.includes('.qa.')
+    // Set-based parity, not a hard-coded total. CLAUDE.md ("QA Test Lifecycle"):
+    // length assertions over directories that may receive *.qa.* siblings must
+    // filter those out and use set-based parity rather than hard-coded totals.
+    //
+    // A bare count expresses no invariant — it fires on any unrelated change to
+    // the directory and is "fixed" by bumping another magic number. The real
+    // invariant is one canonical fixture per canonical shared script, so a
+    // relocation (FEAT-033 Phase 2) or a removed shim (FEAT-033 Phase 5) shows
+    // up as the specific name that moved.
+    const fixtures = new Set(
+      readdirSync(SHARED_DIR)
+        .filter((f) => f.endsWith('.bats') && !f.includes('.qa.'))
+        .map((f) => f.replace(/\.bats$/, ''))
     );
-    expect(batsFiles.length).toBe(11);
+    const scripts = new Set(
+      readdirSync(SHARED_SCRIPTS_DIR)
+        .filter((f) => f.endsWith('.sh'))
+        .map((f) => f.replace(/\.sh$/, ''))
+    );
+
+    // Fixtures with no shared-script peer, by design. git-env.bats covers
+    // tests/bats/helpers/git-env.bash — a test helper, not a plugin script, so
+    // it has no peer under plugins/lwndev-sdlc/scripts/ (issue #326).
+    const PEERLESS = new Set(['git-env']);
+
+    expect([...fixtures].filter((f) => !scripts.has(f) && !PEERLESS.has(f)).sort()).toEqual([]);
+    expect([...scripts].filter((s) => !fixtures.has(s)).sort()).toEqual([]);
   });
 
   it('[P0] relocated file is non-empty and a regular file', () => {

@@ -187,10 +187,19 @@ For each P0/P1 scenario whose `mode: test-framework` marker is set:
 
 1. **Write a test file** under the framework's test root with a `qa-` filename prefix. Defaults:
    - vitest / jest: `tests/unit/qa-<dimension>.test.ts`
+   - bats: `tests/bats/qa/qa-<dimension>.bats`
    - pytest: `tests/test_qa_<dimension>.py`
    - go test: `qa_<dimension>_test.go` next to the package under test
 
    Create the parent directory if absent (edge case 6). The skill prose still owns "what tests to write" (the scenario lines from the plan dictate the assertions).
+
+   **Bats files must open with the git-env prologue** (issue #326), above `setup()` and copied verbatim:
+   ```bash
+   #!/usr/bin/env bats
+   # Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+   load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+   ```
+   Unconditional — it applies even to fixtures that never touch git. Omitting it fails `tests/unit/git-env-isolation.test.ts`, which flips the verdict to `ISSUES-FOUND` against code this run never touched. The prefix strip keeps the load resolvable after `adopt-qa-test.sh` moves the file to a different depth.
 
 2. **Run the framework** via the script:
    ```

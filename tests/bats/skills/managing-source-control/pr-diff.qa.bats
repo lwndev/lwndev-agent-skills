@@ -2,8 +2,7 @@
 bats_require_minimum_version 1.5.0
 
 # Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
-load '../../helpers/git-env'
-sanitize_git_env
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
 
 # BUG-021 regression: az repos pr show (--query targetRefName) must NOT receive
 # --project when called from pr-diff.sh.

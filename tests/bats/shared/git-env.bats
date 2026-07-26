@@ -6,8 +6,7 @@
 # this file covers the helper's own behaviour.
 
 # Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
-load '../helpers/git-env'
-sanitize_git_env
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
 
 setup() {
   HELPER="${BATS_TEST_DIRNAME}/../helpers/git-env.bash"
@@ -49,13 +48,44 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "sanitize_git_env survives a readonly GIT_* variable" {
+  # Bats sources test files under `set -e` and the helper now self-invokes on
+  # load, so a non-zero unset would abort every fixture in the repo at gather
+  # time. A readonly GIT_* var (a profile pinning GIT_EDITOR, a CI wrapper) is
+  # the realistic trigger.
+  run bash -c "source '${HELPER}'; readonly GIT_RO=1; sanitize_git_env; echo rc=\$?"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"rc=0"* ]]
+}
+
+@test "loading the helper sanitizes with no explicit call" {
+  # The keystone property: sourcing IS the sanitization. A fixture that only
+  # loads the helper — no `sanitize_git_env` line — must still come up clean.
+  probe="${BATS_TEST_TMPDIR}/load-only.bats"
+  {
+    echo '#!/usr/bin/env bats'
+    echo "load '${HELPER%.bash}'"
+    echo '@test "poison is gone at file scope" {'
+    echo '  [ -z "${GIT_DIR+set}" ]'
+    echo '}'
+  } >"$probe"
+
+  GIT_DIR=/poison/.git run bats "$probe"
+  [ "$status" -eq 0 ]
+}
+
 @test "after sanitizing, a poisoned GIT_DIR no longer redirects git" {
   # The bug in one assertion: with GIT_DIR set, `git rev-parse --absolute-git-dir`
   # from a temp repo reports the POISONED repo. After sanitizing it reports the
   # temp repo, so every subsequent write lands in the fixture.
-  poison="$(mktemp -d)"
+  #
+  # Both repos live under BATS_TEST_TMPDIR, which bats removes for us. A bare
+  # mktemp -d plus a trailing rm leaks two initialized repos into the system
+  # temp dir on any run where an assertion above the cleanup fails.
+  poison="${BATS_TEST_TMPDIR}/poison"
+  work="${BATS_TEST_TMPDIR}/work"
+  mkdir -p "$poison" "$work"
   git -C "$poison" init -q -b main
-  work="$(mktemp -d)"
   git -C "$work" init -q -b main
 
   export GIT_DIR="${poison}/.git"
@@ -68,6 +98,4 @@ setup() {
   run git rev-parse --absolute-git-dir
   [ "$status" -eq 0 ]
   [[ "$output" == "$(cd "$work" && pwd -P)"* ]]
-
-  rm -rf "$poison" "$work"
 }

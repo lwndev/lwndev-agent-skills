@@ -2,7 +2,15 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    testMatch: ['tests/unit/**/*.test.ts'],
+    // `include`, not `testMatch` — Vitest has no `testMatch` option, so the
+    // previous spelling was a silent no-op and the default `**/*.test.ts` glob
+    // collected everything, leaving the `exclude` entries below as the only
+    // thing keeping deliberately-failing fixtures out of the host suite.
+    //
+    // `.test.js` is in the glob because CLAUDE.md names `tests/unit/qa-*.test.js`
+    // as a canonical QA-phase file class; a `.ts`-only include would silently
+    // stop collecting QA JavaScript tests.
+    include: ['tests/unit/**/*.test.{ts,js}'],
     exclude: [
       '**/node_modules/**',
       '.claude/worktrees/**',
