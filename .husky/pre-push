@@ -3,9 +3,19 @@
 # (issue #326). Strip by prefix, not by name list, so a future GIT_* variable is
 # covered too — POSIX sh has no ${!GIT_*}.
 for __git_env_var in $(env | sed -n 's/^\(GIT_[A-Za-z0-9_]*\)=.*/\1/p'); do
-  unset "$__git_env_var"
+  # Probe in a subshell before unsetting for real. `unset` is a POSIX special
+  # builtin, so failing on a readonly variable exits the shell outright in dash
+  # — `|| true` does not save it — and husky runs this hook under `sh -e`
+  # (.husky/_/h: `sh -e "$s" "$@"`). A developer profile or CI wrapper pinning
+  # an exported GIT_* readonly would otherwise abort the push before npm test,
+  # npm audit and npm run validate ever start, blaming this prologue rather
+  # than the readonly declaration. readonly is inherited by the subshell, so the
+  # probe fails exactly when the real unset would.
+  if (unset "$__git_env_var") 2>/dev/null; then
+    unset "$__git_env_var" 2>/dev/null || true
+  fi
 done
-unset __git_env_var
+unset __git_env_var 2>/dev/null || true
 
 npm test
 npm audit --audit-level=high

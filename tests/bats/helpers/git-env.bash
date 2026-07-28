@@ -7,7 +7,10 @@
 #
 # EVERY .bats file loads this, whether or not it currently uses git — the rule
 # is unconditional so it cannot fail open on an indirect invocation such as
-# "$REAL_GIT" init. Enforced by tests/unit/git-env-isolation.test.ts.
+# "$REAL_GIT" init. Enforced by tests/unit/git-env-isolation.test.ts, which
+# checks three properties of the load and nothing else: it runs on source (above
+# the first setup()/@test block, outside any heredoc), its spec resolves here,
+# and the spec is depth-independent. Quoting style is free.
 #
 # Loading this file IS the sanitization: the call at the bottom runs on source.
 # That makes the property fail-closed by construction — there is no second line

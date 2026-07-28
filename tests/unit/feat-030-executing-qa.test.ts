@@ -25,6 +25,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { childEnvWithoutVitest } from '../setup/child-env';
 
 const ROOT = process.cwd();
 const FIXTURE_SRC = join(ROOT, 'scripts/__tests__/fixtures/feat-030-known-buggy');
@@ -129,21 +130,10 @@ function clearStopHookCapability(): void {
 }
 
 function runFramework(repoDir: string, capabilityPath: string, glob: string): ExecJson {
-  // Strip VITEST_* env vars when invoking the nested vitest run so the child
-  // does not inherit the parent suite's worker / thread / config hints.
-  // Disable ANSI color output in the child so run-framework.sh's vitest
-  // summary-line regex (`^[[:space:]]*Tests[[:space:]]+`) matches — the
-  // parent suite leaves FORCE_COLOR set, which leaks into the child and
-  // turns the `Tests …` line into `\x1b[2m      Tests \x1b[22m …`,
-  // breaking the regex.
-  const childEnv: NodeJS.ProcessEnv = { ...process.env };
-  for (const key of Object.keys(childEnv)) {
-    if (key.startsWith('VITEST') || key === 'VITE_NODE_DEPS_MODULE_DIRECTORIES') {
-      delete childEnv[key];
-    }
-  }
-  childEnv.NO_COLOR = '1';
-  childEnv.FORCE_COLOR = '0';
+  // Strips VITEST_* worker hints (a nested vitest run hangs on them) and
+  // disables ANSI colour (run-framework.sh's `Tests …` regex does not survive
+  // it). See tests/setup/child-env.ts for the full rationale.
+  const childEnv = childEnvWithoutVitest();
   const result = spawnSync('bash', [RUN_FRAMEWORK, capabilityPath, glob], {
     cwd: repoDir,
     encoding: 'utf-8',

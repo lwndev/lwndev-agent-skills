@@ -345,10 +345,17 @@ parse_bats_loads() {
   local file="$1"
   # Match: `load '<file>'`, `load "<file>"`, `load <file>` (unquoted),
   # `source '<file>'`, `source "<file>"`, `. '<file>'`.
+  #
+  # The git-env sanitizer load is dropped: it is a test helper every .bats file
+  # in this repo carries unconditionally (issue #326), never a SUT. Left in, it
+  # makes `$loads` non-empty for every input, so the "no resolvable load/source
+  # directives" branch below becomes unreachable and a QA test that loads no SUT
+  # at all is misreported as "no existing peer .bats test found".
   grep -hE "^[[:space:]]*(load|source|\.)[[:space:]]+['\"]?[^'\"]+['\"]?" "$file" 2>/dev/null \
     | sed -E "s/^[[:space:]]*(load|source|\.)[[:space:]]+//" \
     | sed -E "s/^['\"]//; s/['\"]$//" \
     | grep -v '^$' \
+    | grep -vE 'helpers/git-env(\.bash)?$' \
     || true
 }
 

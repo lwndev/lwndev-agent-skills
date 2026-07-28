@@ -25,6 +25,7 @@ import * as path from 'node:path';
 // `../setup/git-env` would run the sanitizer, making the "setupFiles ran"
 // assertion below pass off this file's own import.
 import { stripGitEnv, GIT_ENV_PREFIX, GIT_ENV_SETUP_MARKER } from '../setup/strip-git-env';
+import { childEnvWithoutVitest } from '../setup/child-env';
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const BATS_DIR = path.join(REPO_ROOT, 'tests', 'bats');
@@ -104,21 +105,51 @@ describe('Sanitizer wiring', () => {
     const prologue = lines.slice(0, firstNpm).join('\n');
     expect(prologue).not.toMatch(/^\s*npm\b/m);
 
-    const probe = spawnSync('sh', ['-c', `${prologue}\nenv | grep -c '^GIT_' || true`], {
+    const poison = {
+      ...process.env,
+      GIT_DIR: '/poison/.git',
+      GIT_WORK_TREE: '/poison',
+      GIT_INDEX_FILE: '/poison/.git/index',
+      // A name no list would enumerate. Its removal is what proves the
+      // prologue strips by prefix rather than by a fixed name list — which
+      // is exactly how this bug stayed hidden.
+      GIT_SOME_FUTURE_VAR: 'x',
+    };
+
+    // `sh -e`, because that is what husky runs the hook under (.husky/_/h ends
+    // in `sh -e "$s" "$@"`). Probing with a plain `sh -c` cannot observe a
+    // prologue that aborts the real hook on its first non-zero command.
+    const probe = spawnSync('sh', ['-e', '-c', `${prologue}\nenv | grep -c '^GIT_' || true`], {
       encoding: 'utf8',
-      env: {
-        ...process.env,
-        GIT_DIR: '/poison/.git',
-        GIT_WORK_TREE: '/poison',
-        GIT_INDEX_FILE: '/poison/.git/index',
-        // A name no list would enumerate. Its removal is what proves the
-        // prologue strips by prefix rather than by a fixed name list — which
-        // is exactly how this bug stayed hidden.
-        GIT_SOME_FUTURE_VAR: 'x',
-      },
+      env: poison,
     });
     expect(probe.status).toBe(0);
     expect(probe.stdout.trim()).toBe('0');
+  });
+
+  it('.husky/pre-push survives an exported readonly GIT_* variable', () => {
+    // `unset` is a POSIX special builtin: in dash, failing on a readonly name
+    // exits the shell regardless of `|| true`. Under husky's `sh -e` an
+    // unguarded prologue therefore kills the hook before any test runs, and
+    // the push is rejected citing the git-env prologue rather than the
+    // readonly declaration that actually caused it.
+    const hook = fs.readFileSync(path.join(REPO_ROOT, '.husky', 'pre-push'), 'utf8');
+    const lines = hook.split('\n');
+    const firstNpm = lines.findIndex((l) => /^\s*npm\b/.test(l));
+    const prologue = lines.slice(0, firstNpm).join('\n');
+
+    const probe = spawnSync(
+      'sh',
+      ['-e', '-c', `export GIT_RO=1\nreadonly GIT_RO\n${prologue}\nenv | grep -c '^GIT_' || true`],
+      {
+        encoding: 'utf8',
+        env: { ...process.env, GIT_DIR: '/poison/.git', GIT_WORK_TREE: '/poison' },
+      }
+    );
+    // Exit 0: the prologue ran to completion instead of aborting the hook.
+    expect(probe.status, `prologue aborted under sh -e:\n${probe.stderr}`).toBe(0);
+    // The readonly name is the only survivor — everything unsettable is gone.
+    expect(probe.stdout.trim()).toBe('1');
   });
 });
 
@@ -136,23 +167,77 @@ function listBatsFiles(dir: string): string[] {
   return out;
 }
 
+/** A `load` line whose argument names the git-env helper, in any Bats spelling. */
+const GIT_ENV_LOAD = /^\s*load\s+(?:'([^']*)'|"([^"]*)"|(\S+))\s*(?:#.*)?$/;
+
 /**
- * Extract the argument of the `load` line that pulls in the git-env helper.
- *
- * Accepts every spelling Bats accepts — single-quoted, double-quoted and bare,
- * with or without a trailing comment — rather than pinning the repo's current
- * habit. A stricter matcher reports a correctly-protected file as an offender,
- * with a message saying the load is missing when it is right there, and then
- * silently skips that file in every downstream check.
+ * Opens a block: `@test "..." {`, `setup() {`, `function teardown {`. Code below
+ * one of these runs only when that block is called, never on source.
  */
-function findGitEnvLoad(src: string): string | null {
+const BLOCK_OPENER = /^\s*(?:@test\b|function\s|[A-Za-z_][A-Za-z0-9_]*\s*\(\s*\))/;
+
+/** Opens a heredoc: `<<EOF`, `<<-'EOF'`, `<< "EOF"`. Its body is data, not code. */
+const HEREDOC_OPEN = /<<-?\s*(['"]?)([A-Za-z_][A-Za-z0-9_]*)\1/;
+
+interface GitEnvLoadScan {
+  /** Spec of a load that Bats executes on source, or null if there is none. */
+  spec: string | null;
+  /** A git-env load line exists, but in a position where it cannot execute. */
+  inert: boolean;
+}
+
+/**
+ * Find the `load` that pulls in the git-env helper AND actually runs.
+ *
+ * Textual presence is not the property under test — execution at file scope is.
+ * A scan that merely greps every line accepts a load emitted inside a heredoc
+ * (the `cat > "$probe" <<EOF` pattern this suite uses to generate probe
+ * fixtures) or sitting in a single `@test` body: the outer file then sanitizes
+ * nothing while all four static checks report green. So the search stops at the
+ * first block opener and skips heredoc bodies.
+ *
+ * That is stricter than "file scope" — a load below a closed function body would
+ * also execute on source — deliberately: the prologue region is checkable
+ * without a shell parser, and CLAUDE.md asks for the line at the top anyway.
+ *
+ * Spelling, by contrast, stays permissive: single-quoted, double-quoted and bare
+ * specs, with or without a trailing comment, are all what Bats accepts. Pinning
+ * the repo's current habit would report a correctly-protected file as missing
+ * its load and then skip it in every downstream check.
+ *
+ * `inert` distinguishes "no load here" from "load present but dead", so the
+ * failure names the actual defect instead of claiming a visible line is absent.
+ */
+function scanGitEnvLoad(src: string): GitEnvLoadScan {
+  let atFileScope = true;
+  let heredocTerminator: string | null = null;
+  let inert = false;
+
   for (const line of src.split('\n')) {
-    const m = line.match(/^\s*load\s+(?:'([^']*)'|"([^"]*)"|(\S+))\s*(?:#.*)?$/);
-    if (!m) continue;
-    const spec = m[1] ?? m[2] ?? m[3];
-    if (spec && /helpers\/git-env$/.test(spec)) return spec;
+    if (heredocTerminator !== null) {
+      if (line.trim() === heredocTerminator) heredocTerminator = null;
+      else if (GIT_ENV_LOAD.test(line)) inert = true;
+      continue;
+    }
+
+    const m = line.match(GIT_ENV_LOAD);
+    const spec = m ? (m[1] ?? m[2] ?? m[3]) : null;
+    if (spec && /helpers\/git-env$/.test(spec)) {
+      if (atFileScope) return { spec, inert: false };
+      inert = true;
+    }
+
+    if (BLOCK_OPENER.test(line)) atFileScope = false;
+    const hd = line.match(HEREDOC_OPEN);
+    if (hd) heredocTerminator = hd[2];
   }
-  return null;
+
+  return { spec: null, inert };
+}
+
+/** Spec of the file-scope git-env load, or null. */
+function findGitEnvLoad(src: string): string | null {
+  return scanGitEnvLoad(src).spec;
 }
 
 /**
@@ -185,6 +270,74 @@ function resolveLoadSpec(spec: string, batsDir: string): string {
 // token-matching guard could not police the call honestly anyway: it passed a
 // fixture whose only occurrence sat inside a never-called function, and it
 // skipped any fixture with no setup() at all.
+//
+// What IS policed, per CLAUDE.md, is three properties of the load and nothing
+// else: it runs on source, its spec resolves to the helper, and the spec is
+// depth-independent. Quoting style is free.
+// The scanner is the guard, so it gets its own coverage. Source is passed as a
+// string rather than written to a .bats file on disk: a probe fixture under
+// tests/bats/ would be picked up by listBatsFiles below and fail the very
+// assertions it exists to exercise.
+describe('scanGitEnvLoad', () => {
+  const SPEC = '${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env';
+  const PROLOGUE = `#!/usr/bin/env bats\nload "${SPEC}"\n`;
+
+  it('accepts the prologue load', () => {
+    expect(scanGitEnvLoad(PROLOGUE)).toEqual({ spec: SPEC, inert: false });
+  });
+
+  it('accepts single-quoted, double-quoted and bare specs, and a trailing comment', () => {
+    expect(findGitEnvLoad(`load '../helpers/git-env'\n`)).toBe('../helpers/git-env');
+    expect(findGitEnvLoad(`load "../helpers/git-env"\n`)).toBe('../helpers/git-env');
+    expect(findGitEnvLoad(`load ../helpers/git-env\n`)).toBe('../helpers/git-env');
+    expect(findGitEnvLoad(`load '../helpers/git-env'  # strip GIT_* (#326)\n`)).toBe(
+      '../helpers/git-env'
+    );
+  });
+
+  it('reports a load emitted inside a heredoc as inert', () => {
+    // The generated-probe pattern: the OUTER file never sources the helper, so
+    // its own git calls stay poisoned. A line-by-line grep sees the load and
+    // calls the file protected.
+    const src =
+      `#!/usr/bin/env bats\n` +
+      `@test "generates a probe" {\n` +
+      `  cat > "$probe" <<EOF\n` +
+      `load "${SPEC}"\n` +
+      `EOF\n` +
+      `}\n`;
+    expect(scanGitEnvLoad(src)).toEqual({ spec: null, inert: true });
+  });
+
+  it('reports a load inside a @test body as inert', () => {
+    const src = `#!/usr/bin/env bats\n@test "x" {\n  load "${SPEC}"\n}\n`;
+    expect(scanGitEnvLoad(src)).toEqual({ spec: null, inert: true });
+  });
+
+  it('reports a load below setup() as inert', () => {
+    const src = `#!/usr/bin/env bats\nsetup() {\n  :\n}\nload "${SPEC}"\n`;
+    expect(scanGitEnvLoad(src)).toEqual({ spec: null, inert: true });
+  });
+
+  it('reports a file with no git-env load as missing, not inert', () => {
+    expect(scanGitEnvLoad(`#!/usr/bin/env bats\nload '../helpers/other'\n`)).toEqual({
+      spec: null,
+      inert: false,
+    });
+  });
+
+  it('does not mistake a file-scope heredoc body for code', () => {
+    const src =
+      `#!/usr/bin/env bats\n` +
+      `cat > /tmp/probe <<'EOF'\n` +
+      `load "${SPEC}"\n` +
+      `EOF\n` +
+      `load "${SPEC}"\n`;
+    // The real load below the heredoc still counts.
+    expect(scanGitEnvLoad(src)).toEqual({ spec: SPEC, inert: false });
+  });
+});
+
 describe('Bats git-env guard', () => {
   const batsFiles = listBatsFiles(BATS_DIR);
 
@@ -192,11 +345,26 @@ describe('Bats git-env guard', () => {
     expect(batsFiles.length).toBeGreaterThan(30);
   });
 
+  const scans = batsFiles.map((abs) => ({
+    rel: path.relative(REPO_ROOT, abs),
+    scan: scanGitEnvLoad(fs.readFileSync(abs, 'utf8')),
+  }));
+
   it('every Bats file loads the helper', () => {
-    const offenders = batsFiles
-      .filter((abs) => findGitEnvLoad(fs.readFileSync(abs, 'utf8')) === null)
-      .map((abs) => path.relative(REPO_ROOT, abs));
+    // Only files with no git-env load anywhere. A present-but-dead load is the
+    // next assertion's business: reporting it as "missing" would send the reader
+    // looking for a line that is right there in front of them.
+    const offenders = scans.filter((s) => s.scan.spec === null && !s.scan.inert).map((s) => s.rel);
     expect(offenders, 'these .bats files are missing the git-env helper load').toEqual([]);
+  });
+
+  it('no Bats file has a git-env load that never executes', () => {
+    const offenders = scans.filter((s) => s.scan.spec === null && s.scan.inert).map((s) => s.rel);
+    expect(
+      offenders,
+      'these .bats files carry a git-env load that Bats never runs on source — it sits inside a ' +
+        'heredoc body or below the first setup()/@test block. Move it to the file prologue.'
+    ).toEqual([]);
   });
 
   it('every helper load path resolves to tests/bats/helpers/git-env.bash', () => {
@@ -269,21 +437,6 @@ describe('Bats git-env guard', () => {
 // ---------------------------------------------------------------------------
 // End-to-end: a poisoned GIT_DIR must not reach a sacrificial repo
 // ---------------------------------------------------------------------------
-
-/**
- * A nested `vitest run` hangs if it inherits the parent suite's VITEST_* worker
- * hints — same constraint tests/unit/feat-030-executing-qa.test.ts works around.
- * Colour is disabled so child output stays greppable on failure.
- */
-function childEnvWithoutVitest(): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...process.env };
-  for (const key of Object.keys(env)) {
-    if (key.startsWith('VITEST') || key === 'VITE_NODE_DEPS_MODULE_DIRECTORIES') delete env[key];
-  }
-  env.NO_COLOR = '1';
-  env.FORCE_COLOR = '0';
-  return env;
-}
 
 interface Sacrifice {
   root: string;

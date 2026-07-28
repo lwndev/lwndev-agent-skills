@@ -47,10 +47,30 @@ describe('BUG-016: relocated QA fixture — inputs', () => {
     // Fixtures with no shared-script peer, by design. git-env.bats covers
     // tests/bats/helpers/git-env.bash — a test helper, not a plugin script, so
     // it has no peer under plugins/lwndev-sdlc/scripts/ (issue #326).
-    const PEERLESS = new Set(['git-env']);
+    const PEERLESS_FIXTURES = new Set(['git-env']);
 
-    expect([...fixtures].filter((f) => !scripts.has(f) && !PEERLESS.has(f)).sort()).toEqual([]);
-    expect([...scripts].filter((s) => !fixtures.has(s)).sort()).toEqual([]);
+    // Shared scripts with no fixture peer, by design. Add a name here — with a
+    // one-line reason — for anything under plugins/lwndev-sdlc/scripts/ that is
+    // not independently testable: a sourced helper, a one-shot migration, a
+    // thin wrapper. Without this hatch the only way to land such a script is to
+    // create a placeholder .bats purely to satisfy the assertion, and pre-push
+    // blocks the push until you do.
+    const FIXTURELESS_SCRIPTS = new Set<string>([]);
+
+    expect(
+      [...fixtures].filter((f) => !scripts.has(f) && !PEERLESS_FIXTURES.has(f)).sort(),
+      `these tests/bats/shared/ fixtures have no peer script under ${SHARED_SCRIPTS_DIR}. ` +
+        'Either the script moved/was removed, or the fixture belongs elsewhere; if it covers ' +
+        'something that is not a plugin script, add it to PEERLESS_FIXTURES in this file.'
+    ).toEqual([]);
+    expect(
+      [...scripts].filter((s) => !fixtures.has(s) && !FIXTURELESS_SCRIPTS.has(s)).sort(),
+      `these scripts under ${SHARED_SCRIPTS_DIR} have no fixture under ${SHARED_DIR}. ` +
+        'Add the fixture, or — if the script is not independently testable — add it to ' +
+        'FIXTURELESS_SCRIPTS in this file with a reason. (This assertion lives in the BUG-016 ' +
+        'QA fixture for historical reasons; it is a shared-script parity check, not a BUG-016 ' +
+        'regression.)'
+    ).toEqual([]);
   });
 
   it('[P0] relocated file is non-empty and a regular file', () => {

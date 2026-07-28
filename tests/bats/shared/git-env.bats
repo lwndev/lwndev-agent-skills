@@ -48,14 +48,24 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "sanitize_git_env survives a readonly GIT_* variable" {
-  # Bats sources test files under `set -e` and the helper now self-invokes on
-  # load, so a non-zero unset would abort every fixture in the repo at gather
-  # time. A readonly GIT_* var (a profile pinning GIT_EDITOR, a CI wrapper) is
-  # the realistic trigger.
-  run bash -c "source '${HELPER}'; readonly GIT_RO=1; sanitize_git_env; echo rc=\$?"
+@test "sourcing the helper survives an exported readonly GIT_* variable" {
+  # Bats sources test files under `set -e` and the helper self-invokes on load,
+  # so a non-zero unset aborts every fixture in the repo at gather time. A
+  # readonly GIT_* var (a profile pinning GIT_EDITOR, a CI wrapper) is the
+  # realistic trigger.
+  #
+  # Shape matters, and an earlier version of this test had it wrong on both
+  # counts: it ran `bash -c` without `-e`, and declared the readonly AFTER the
+  # source, so the only invocation that matters — the self-invoking call at
+  # file scope — ran against a clean env. It passed against a helper with the
+  # `|| true` deleted, i.e. it verified nothing. Mutation-checked: with
+  # `sed 's/ || true//'` applied to the helper, this version fails.
+  #
+  # Exported, not just readonly: the variable must be visible to reach the
+  # unset in the first place.
+  run bash -e -c "export GIT_RO=1; readonly GIT_RO; source '${HELPER}'; echo survived"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"rc=0"* ]]
+  [[ "$output" == *"survived"* ]]
 }
 
 @test "loading the helper sanitizes with no explicit call" {
