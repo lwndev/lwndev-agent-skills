@@ -346,11 +346,13 @@ parse_bats_loads() {
   # Match: `load '<file>'`, `load "<file>"`, `load <file>` (unquoted),
   # `source '<file>'`, `source "<file>"`, `. '<file>'`.
   #
-  # The git-env sanitizer load is dropped: it is a test helper every .bats file
-  # in this repo carries unconditionally (issue #326), never a SUT. Left in, it
-  # makes `$loads` non-empty for every input, so the "no resolvable load/source
-  # directives" branch below becomes unreachable and a QA test that loads no SUT
-  # at all is misreported as "no existing peer .bats test found".
+  # A git-env sanitizer load is dropped: it is a test helper, never a SUT, and
+  # a repo that mandates one in every .bats file would emit it in QA-authored
+  # tests too. Counted as a load it makes `$loads` non-empty for every input, so
+  # the "no resolvable load/source directives" branch below becomes unreachable
+  # and a QA test that loads no SUT at all is misreported as "no existing peer
+  # .bats test found" — sending the operator hunting for a peer that was never
+  # missing.
   grep -hE "^[[:space:]]*(load|source|\.)[[:space:]]+['\"]?[^'\"]+['\"]?" "$file" 2>/dev/null \
     | sed -E "s/^[[:space:]]*(load|source|\.)[[:space:]]+//" \
     | sed -E "s/^['\"]//; s/['\"]$//" \
