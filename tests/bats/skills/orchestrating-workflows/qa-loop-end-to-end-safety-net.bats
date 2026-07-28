@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # End-to-end NFR-4 negative-variant: confirms the FR-9 safety-net trips when
 # the adopt phase is skipped. Same fixture as qa-loop-end-to-end.bats; the
 # only difference is that this test does NOT call run-adopt-loop.sh, so the

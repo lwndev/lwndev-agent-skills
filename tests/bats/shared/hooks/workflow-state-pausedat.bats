@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # Bats fixture for BUG-014 Phase 1 — workflow-state.sh `cmd_pause` writes
 # `pausedAt` (ISO-8601) so Hook B can compare an approval marker mtime against
 # the most recent pause time.

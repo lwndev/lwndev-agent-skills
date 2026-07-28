@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # Bats fixture for verify-references.sh (FEAT-026 / FR-3).
 #
 # Uses PATH-shadowing stubs for `gh` and `git` to cover every classification

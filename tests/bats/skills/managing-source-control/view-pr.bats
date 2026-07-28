@@ -1,5 +1,9 @@
 #!/usr/bin/env bats
 bats_require_minimum_version 1.5.0
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # Bats fixture for managing-source-control/scripts/view-pr.sh (FEAT-033
 # Phases 3 + 4).
 #

@@ -1,5 +1,9 @@
 #!/usr/bin/env bats
 bats_require_minimum_version 1.5.0
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # Round-trip integration test: pr-comment.sh + list-pr-comments.sh against a
 # real Azure DevOps PR (FEAT-034 Phase 5).
 #

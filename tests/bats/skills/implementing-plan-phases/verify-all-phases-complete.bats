@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # Bats fixture for verify-all-phases-complete.sh (FEAT-027 / FR-6).
 #
 # Covers: all-complete success, single non-complete phase failure, mixed-status

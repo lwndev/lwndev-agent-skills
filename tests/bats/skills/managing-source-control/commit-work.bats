@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # Bats fixture for commit-work.sh (FR-8).
 #
 # Covers: happy path (staged file → commit → short SHA printed),

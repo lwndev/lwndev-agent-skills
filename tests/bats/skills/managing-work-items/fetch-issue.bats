@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # Bats fixture for fetch-issue.sh (FEAT-025 / FR-6).
 #
 # Stubs external commands (`gh`, `acli`, `rovo-mcp-invoke`) via PATH

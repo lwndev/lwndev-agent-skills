@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # Bats fixture for qa-reconcile-delta.sh (FEAT-030 / FR-6, also #192 item 11.2).
 #
 # Behavior matrix lifted from agents/qa-reconciliation-agent.md (the deleted

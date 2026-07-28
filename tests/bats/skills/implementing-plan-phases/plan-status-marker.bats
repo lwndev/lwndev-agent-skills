@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # Bats fixture for plan-status-marker.sh (FEAT-027 / FR-2).
 #
 # Covers: canonical state transitions (Pending / in-progress / complete),

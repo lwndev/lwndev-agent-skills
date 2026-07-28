@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # QA adversarial fixture for BUG-020 — gate / gateSetAt clearing on state transitions.
 #
 # State-transitions P0/P1 from qa/test-plans/QA-plan-BUG-020.md:

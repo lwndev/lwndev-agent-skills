@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # finalize-write-surface.bats — Integration regression for the BUG-024 pre-merge
 # write-surface guard wired into finalize.sh.
 #

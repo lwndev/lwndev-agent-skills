@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # Bats coverage for the addressing-qa-findings fix-phase precheck helpers
 # (FEAT-032 / Phase 2 / FR-4).
 #

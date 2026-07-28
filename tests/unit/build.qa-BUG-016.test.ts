@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const SHARED_DIR = 'tests/bats/shared';
+const SHARED_SCRIPTS_DIR = 'plugins/lwndev-sdlc/scripts';
 const QA_DIR = 'tests/bats/qa';
 // FEAT-033 Phase 6 / FR-9 adoption sweep: husky-hooks bats dropped the `qa-`
 // prefix to stay in tests/bats/qa/ without tripping the FR-9 safety-net glob
@@ -21,17 +22,55 @@ describe('BUG-016: relocated QA fixture — inputs', () => {
     expect(existsSync(POST_MOVE_PATH)).toBe(true);
   });
 
-  it('[P0] tests/bats/shared/ contains exactly 10 canonical .bats files', () => {
+  it('[P0] every canonical .bats under tests/bats/shared/ has a shared-script peer', () => {
     expect(existsSync(SHARED_DIR)).toBe(true);
-    // Filter out *.qa.bats adopted siblings (FEAT-032 convention); count only canonical peers.
-    // FEAT-033 Phase 2 relocated build-branch-name.bats, ensure-branch.bats, and
-    // commit-work.bats to tests/bats/skills/managing-source-control/ (was 14, now 11).
-    // FEAT-033 Phase 5 also removed the plugin-level create-pr.sh shim (and its
-    // shared/create-pr.bats peer), so the canonical count drops to 10.
-    const batsFiles = readdirSync(SHARED_DIR).filter(
-      (f) => f.endsWith('.bats') && !f.includes('.qa.')
+    // Set-based parity, not a hard-coded total. CLAUDE.md ("QA Test Lifecycle"):
+    // length assertions over directories that may receive *.qa.* siblings must
+    // filter those out and use set-based parity rather than hard-coded totals.
+    //
+    // A bare count expresses no invariant — it fires on any unrelated change to
+    // the directory and is "fixed" by bumping another magic number. The real
+    // invariant is one canonical fixture per canonical shared script, so a
+    // relocation (FEAT-033 Phase 2) or a removed shim (FEAT-033 Phase 5) shows
+    // up as the specific name that moved.
+    const fixtures = new Set(
+      readdirSync(SHARED_DIR)
+        .filter((f) => f.endsWith('.bats') && !f.includes('.qa.'))
+        .map((f) => f.replace(/\.bats$/, ''))
     );
-    expect(batsFiles.length).toBe(10);
+    const scripts = new Set(
+      readdirSync(SHARED_SCRIPTS_DIR)
+        .filter((f) => f.endsWith('.sh'))
+        .map((f) => f.replace(/\.sh$/, ''))
+    );
+
+    // Fixtures with no shared-script peer, by design. git-env.bats covers
+    // tests/bats/helpers/git-env.bash — a test helper, not a plugin script, so
+    // it has no peer under plugins/lwndev-sdlc/scripts/ (issue #326).
+    const PEERLESS_FIXTURES = new Set(['git-env']);
+
+    // Shared scripts with no fixture peer, by design. Add a name here — with a
+    // one-line reason — for anything under plugins/lwndev-sdlc/scripts/ that is
+    // not independently testable: a sourced helper, a one-shot migration, a
+    // thin wrapper. Without this hatch the only way to land such a script is to
+    // create a placeholder .bats purely to satisfy the assertion, and pre-push
+    // blocks the push until you do.
+    const FIXTURELESS_SCRIPTS = new Set<string>([]);
+
+    expect(
+      [...fixtures].filter((f) => !scripts.has(f) && !PEERLESS_FIXTURES.has(f)).sort(),
+      `these tests/bats/shared/ fixtures have no peer script under ${SHARED_SCRIPTS_DIR}. ` +
+        'Either the script moved/was removed, or the fixture belongs elsewhere; if it covers ' +
+        'something that is not a plugin script, add it to PEERLESS_FIXTURES in this file.'
+    ).toEqual([]);
+    expect(
+      [...scripts].filter((s) => !fixtures.has(s) && !FIXTURELESS_SCRIPTS.has(s)).sort(),
+      `these scripts under ${SHARED_SCRIPTS_DIR} have no fixture under ${SHARED_DIR}. ` +
+        'Add the fixture, or — if the script is not independently testable — add it to ' +
+        'FIXTURELESS_SCRIPTS in this file with a reason. (This assertion lives in the BUG-016 ' +
+        'QA fixture for historical reasons; it is a shared-script parity check, not a BUG-016 ' +
+        'regression.)'
+    ).toEqual([]);
   });
 
   it('[P0] relocated file is non-empty and a regular file', () => {

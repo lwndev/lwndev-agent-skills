@@ -1,5 +1,9 @@
 #!/usr/bin/env bats
 bats_require_minimum_version 1.5.0
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # QA-FEAT-034: adversarial probes for managing-source-control PR comment scripts.
 # Built from the v2 QA plan at qa/test-plans/QA-plan-FEAT-034.md.
 # Targets P0/P1 scenarios that the implementation team's bats fixtures did not explicitly cover.

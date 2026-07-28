@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # Bats coverage for adopt-qa-test.sh (FEAT-032 / Phase 2 / FR-5 / FR-6 / FR-13 / BUG-025).
 #
 # Covers per-framework dispatch + exit-code surface:
@@ -99,6 +103,30 @@ EOF
   run bash "$ADOPT" tests/unit/qa-orphan.test.ts
   [ "$status" -eq 2 ]
   [[ "$output" == *"adopt-qa-test: tests/unit/qa-orphan.test.ts: no resolvable imports found in QA test"* ]]
+}
+
+@test "exit 2 when a QA bats test loads only the git-env helper" {
+  # The git-env sanitizer load is mandatory in every .bats file in this repo
+  # (issue #326), so it appears in QA-authored bats tests too. It is a test
+  # helper, never a SUT: counted as a load it would make `$loads` non-empty for
+  # every input, silently retiring the "no resolvable load/source directives"
+  # branch and sending the operator hunting for a missing peer .bats when the
+  # real defect is that the QA test loads nothing at all.
+  mkdir -p tests/bats/qa tests/bats/helpers
+  cat > tests/bats/helpers/git-env.bash <<'EOF'
+sanitize_git_env() { :; }
+sanitize_git_env
+EOF
+  cat > tests/bats/qa/qa-loads-nothing.bats <<'EOF'
+#!/usr/bin/env bats
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+@test "loads no SUT" { [ 1 -eq 1 ]; }
+EOF
+  git add . && git commit -q -m "init"
+
+  run bash "$ADOPT" tests/bats/qa/qa-loads-nothing.bats
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"no resolvable load/source directives found in QA bats test"* ]]
 }
 
 # ---- Exit-2: no existing peer test -----------------------------------------

@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # End-to-end integration fixtures for finalize.sh (Phase 6).
 #
 # Unlike finalize.bats (which stubs every subscript), this suite stubs only

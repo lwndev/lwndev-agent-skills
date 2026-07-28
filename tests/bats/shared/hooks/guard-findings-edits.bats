@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # Bats fixture for BUG-015 Hook — guard-findings-edits.sh.
 #
 # Covers (RC-1, RC-3 + QA test plan scenarios from QA-plan-BUG-015.md):

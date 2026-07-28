@@ -1,5 +1,9 @@
 #!/usr/bin/env bats
 bats_require_minimum_version 1.5.0
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # Bats fixture for managing-source-control/scripts/merge-pr.sh (FEAT-033
 # Phase 4). PATH-prepends stubs for `git`, `gh`, and `az` to drive both
 # backend paths plus the NFR-1 graceful-skip matrix.

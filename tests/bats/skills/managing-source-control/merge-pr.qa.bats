@@ -1,6 +1,9 @@
 #!/usr/bin/env bats
 bats_require_minimum_version 1.5.0
 
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # BUG-021 regression: az repos pr update must NOT receive --project.
 # Complements merge-pr.bats; uses the same stubbing convention.
 

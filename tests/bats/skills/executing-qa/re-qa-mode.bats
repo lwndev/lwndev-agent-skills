@@ -1,4 +1,8 @@
 #!/usr/bin/env bats
+
+# Strip inherited GIT_* env so fixture git calls cannot reach the real repo (#326).
+load "${BATS_TEST_DIRNAME%/tests/bats/*}/tests/bats/helpers/git-env"
+
 # FEAT-032 FR-3 — re-QA mode auto-detection (detect-re-qa-mode.sh) + FR-13
 # negative invariant (re-QA never deletes QA files).
 # BUG-022 — state-cross-check: detect uses qaFixAttempts/qaLastVerdict, not marker.
